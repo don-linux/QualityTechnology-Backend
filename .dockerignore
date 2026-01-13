@@ -1,0 +1,13 @@
+.git/
+.gitignore
+.gitattributes
+.devcontainer/
+.vscode/
+.venv/
+node_modules/
+.env.example
+*.log
+*.tmp
+.DS_Store
+README.md
+LICENSE
