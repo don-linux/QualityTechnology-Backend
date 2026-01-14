@@ -48,6 +48,23 @@ app.use(
 // 🧩 Para leer JSON en las peticiones
 app.use(express.json());
 
+// 🏠 Ruta raíz
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "✅ API de QualityTechnology funcionando correctamente",
+    version: "1.0.0",
+    endpoints: [
+      "/roles", "/usuarios", "/piletas", "/reproductores", "/engorda",
+      "/empleados", "/clientes", "/ventas", "/alimentos", "/lista-espera",
+      "/equipos", "/expedientes", "/nomina", "/vacaciones", "/caja-ahorro",
+      "/proveedores", "/plagas", "/ceiba/biometrias", "/ceiba/alimentacion",
+      "/ceiba/insumos", "/recepcion_insumos", "/visitas", "/medellin/banos",
+      "/medellin/parametros", "/medellin/medicamentos", "/medellin/recambios",
+      "/medellin/inventario"
+    ]
+  });
+});
+
 // 🔗 Registrar rutas
 app.use("/roles", rolesRoutes);
 app.use("/usuarios", usuariosRoutes);
