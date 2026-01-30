@@ -20,6 +20,13 @@ import vacacionesRoutes from "./routes/vacaciones.routes.js";
 import cajaAhorroRoutes from "./routes/cajaAhorro.routes.js";
 import proveedoresRoutes from "./routes/proveedores.routes.js";
 
+// Nuevas rutas agregadas
+import alevinesRoutes from "./routes/alevines.routes.js";
+import instalacionesRoutes from "./routes/instalaciones.routes.js";
+import flujoCajaRoutes from "./routes/flujoCaja.routes.js";
+import tesoreriaRoutes from "./routes/tesoreria.routes.js";
+import movimientoAlevinesRoutes from "./routes/movimientoAlevines.routes.js";
+
 // Rutas de Bitácoras (Nueva estructura MVC)
 import biometriaRoutes from "./routes/bitacoras/biometria.routes.js";
 import alimentacionRoutes from "./routes/bitacoras/alimentacion.routes.js";
@@ -41,7 +48,7 @@ dotenv.config();
 
 const app = express();
 
-// 🛡️ Configurar CORS
+// Configurar CORS
 const corsOptions = {
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -49,13 +56,13 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// 🧩 Middleware para leer JSON
+// Middleware para leer JSON
 app.use(express.json());
 
-// 🏠 Ruta raíz
+// Ruta raíz
 app.get("/", (req, res) => {
   res.json({
-    message: "✅ API de QualityTechnology funcionando correctamente",
+    message: "API de QualityTechnology funcionando correctamente",
     version: "1.0.0",
     estructura: "Nueva arquitectura MVC",
     endpoints: [
@@ -75,6 +82,11 @@ app.get("/", (req, res) => {
       "/vacaciones",
       "/caja-ahorro",
       "/proveedores",
+      "/alevines",
+      "/instalaciones",
+      "/flujo-caja",
+      "/tesoreria",
+      "/movimiento-alevines",
       "/plagas",
       "/ceiba/biometrias",
       "/ceiba/alimentacion",
@@ -90,7 +102,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// 🔗 Registrar rutas (nuevas estructura MVC)
+// Registrar rutas (nuevas estructura MVC)
 app.use("/roles", rolesRoutes);
 app.use("/usuarios", usuariosRoutes);
 app.use("/piletas", piletasRoutes);
@@ -108,6 +120,13 @@ app.use("/vacaciones", vacacionesRoutes);
 app.use("/caja-ahorro", cajaAhorroRoutes);
 app.use("/proveedores", proveedoresRoutes);
 
+// Nuevas rutas agregadas
+app.use("/alevines", alevinesRoutes);
+app.use("/instalaciones", instalacionesRoutes);
+app.use("/flujo-caja", flujoCajaRoutes);
+app.use("/tesoreria", tesoreriaRoutes);
+app.use("/movimiento-alevines", movimientoAlevinesRoutes);
+
 // Bitácoras (Nueva estructura MVC)
 app.use("/plagas", plagasRoutes);
 app.use("/ceiba/biometrias", biometriaRoutes);
@@ -121,11 +140,11 @@ app.use("/medellin/medicamentos", medicamentosRoutes);
 app.use("/medellin/recambios", recambiosRoutes);
 app.use("/medellin/inventario", inventarioRoutes);
 
-// 🚨 Middleware de manejo de errores (debe ir al final)
+// Middleware de manejo de errores (debe ir al final)
 app.use(errorHandler);
 
-// 🚀 Iniciar servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
