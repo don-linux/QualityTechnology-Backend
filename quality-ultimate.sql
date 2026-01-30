@@ -314,6 +314,28 @@ START 1
 CACHE 1;
 
 -- ----------------------------
+-- Sequence structure for alevines_fi_alevines_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."alevines_fi_alevines_id_seq";
+CREATE SEQUENCE "public"."alevines_fi_alevines_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 2147483647
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for movimiento_alevines_fi_movimiento_alevines_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."movimiento_alevines_fi_movimiento_alevines_id_seq";
+CREATE SEQUENCE "public"."movimiento_alevines_fi_movimiento_alevines_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 2147483647
+START 1
+CACHE 1;
+
+-- ----------------------------
 -- Sequence structure for nomina_fi_nomina_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."nomina_fi_nomina_id_seq";
@@ -451,6 +473,27 @@ CREATE TABLE "public"."alimentacion" (
 
 -- ----------------------------
 -- Records of alimentacion
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for alevines
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."alevines";
+CREATE TABLE "public"."alevines" (
+  "fi_alevines_id" int4 NOT NULL DEFAULT nextval('alevines_fi_alevines_id_seq'::regclass),
+  "fc_numero_lote" varchar(50) COLLATE "pg_catalog"."default",
+  "fn_peso_promedio" numeric,
+  "fn_cantidad" int4,
+  "fc_observacion" text COLLATE "pg_catalog"."default",
+  "fi_usuario_id" int4,
+  "fi_colecta_id" int4,
+  "fd_fecha_registro" timestamp(6) DEFAULT now(),
+  "fd_fecha_modificacion" timestamp(6) DEFAULT now()
+)
+;
+
+-- ----------------------------
+-- Records of alevines
 -- ----------------------------
 
 -- ----------------------------
@@ -1058,14 +1101,15 @@ CREATE TABLE "public"."medicamentos" (
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."movimiento_alevines";
 CREATE TABLE "public"."movimiento_alevines" (
-  "fi_movimiento_alevines_id" int4 NOT NULL,
+  "fi_movimiento_alevines_id" int4 NOT NULL DEFAULT nextval('movimiento_alevines_fi_movimiento_alevines_id_seq'::regclass),
   "fi_usuario_id" int4 NOT NULL,
   "fi_cantidad_alevines" int4 NOT NULL,
   "fn_peso_promedio" numeric NOT NULL,
   "fd_fecha_registro" date NOT NULL,
   "fd_fecha_modificacion" date NOT NULL,
   "fi_pileta_id" int4 NOT NULL,
-  "fi_alevines_id" int4 NOT NULL
+  "fi_alevines_id" int4 NOT NULL,
+  "fi_tipo" int4
 )
 ;
 
@@ -1695,6 +1739,20 @@ SELECT setval('"public"."ceiba_limpieza_fi_id_seq"', 3, true);
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
+ALTER SEQUENCE "public"."alevines_fi_alevines_id_seq"
+OWNED BY "public"."alevines"."fi_alevines_id";
+SELECT setval('"public"."alevines_fi_alevines_id_seq"', 1, false);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "public"."movimiento_alevines_fi_movimiento_alevines_id_seq"
+OWNED BY "public"."movimiento_alevines"."fi_movimiento_alevines_id";
+SELECT setval('"public"."movimiento_alevines_fi_movimiento_alevines_id_seq"', 1, false);
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
 ALTER SEQUENCE "public"."clientes_fi_cliente_id_seq"
 OWNED BY "public"."clientes"."fi_cliente_id";
 SELECT setval('"public"."clientes_fi_cliente_id_seq"', 7, true);
@@ -2049,6 +2107,11 @@ ALTER TABLE "public"."mantenimientos" ADD CONSTRAINT "mantenimientos_pkey" PRIMA
 -- Primary Key structure for table medicamentos
 -- ----------------------------
 ALTER TABLE "public"."medicamentos" ADD CONSTRAINT "medellin_medicamentos_pkey" PRIMARY KEY ("fi_id");
+
+-- ----------------------------
+-- Primary Key structure for table alevines
+-- ----------------------------
+ALTER TABLE "public"."alevines" ADD CONSTRAINT "alevines_pkey" PRIMARY KEY ("fi_alevines_id");
 
 -- ----------------------------
 -- Indexes structure for table movimiento_alevines

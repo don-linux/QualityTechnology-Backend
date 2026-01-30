@@ -5,8 +5,8 @@ import { authenticateToken } from "../middleware/auth.js";
 const router = express.Router();
 
 // Todas las rutas requieren autenticación
-router.get("/:usuario_id", authenticateToken, instalacionesController.getByUsuario);
 router.get("/granja/:nombre", authenticateToken, instalacionesController.getByGranja);
+router.get("/:usuario_id", authenticateToken, instalacionesController.getByUsuario);
 router.post("/", authenticateToken, instalacionesController.create);
 router.put("/:id", authenticateToken, instalacionesController.update);
 router.delete("/:id", authenticateToken, instalacionesController.delete);

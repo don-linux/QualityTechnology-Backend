@@ -13,8 +13,8 @@ router.get("/granja/:nombre", authenticateToken, piletasController.getByGranja);
 router.get("/inventario/:granja", authenticateToken, piletasController.getInventario);
 
 // Rastreabilidad
-router.get("/movimientos/:usuario_id/:granja", authenticateToken, piletasController.getRastreabilidad);
 router.get("/movimientos/filtro/:usuario_id/:granja", authenticateToken, piletasController.filtrarRastreabilidad);
+router.get("/movimientos/:usuario_id/:granja", authenticateToken, piletasController.getRastreabilidad);
 router.delete("/movimientos/eliminar", authenticateToken, piletasController.deleteRastreabilidad);
 
 // CRUD básico
