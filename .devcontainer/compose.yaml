@@ -1,6 +1,0 @@
-services:
-  express:
-    volumes:
-      - ../../../:/workspaces:cached
-
-    command: sleep infinity

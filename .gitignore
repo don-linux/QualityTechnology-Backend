@@ -1,7 +1,0 @@
-.env
-.venv/
-node_modules/
-*.log
-*.tmp
-.DS_Store
-AGENTS.md
