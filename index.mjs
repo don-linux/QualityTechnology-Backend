@@ -1,44 +1,55 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
 
 // Importar rutas
-import rolesRoutes from "./routes/roles.routes.js";
-import usuariosRoutes from "./routes/usuarios.routes.js";
-import piletaRoutes from "./routes/pileta.routes.js";
-import instalacionesRoutes from "./routes/instalaciones.routes.js";
-import alimentosRoutes from "./routes/alimentos.routes.js";
-import lotesRoutes from "./routes/lotes.routes.js"; 
-import reproductoresRouter from "./routes/reproductores.routes.js";
-import engordaRoutes from "./routes/engorda.routes.js";
-import empleadosRoutes from "./routes/empleados.routes.js";
-import clientesRoutes from "./routes/clientes.routes.js";
-import ventasRoutes from "./routes/venta.routes.js";
-import listaEsperaRoutes from "./routes/lista_espera.routes.js";
-import equiposRoutes from "./routes/equipos.routes.js";
-import expedientesRoutes from "./routes/expedientes.routes.js";
-import nominaRoutes from "./routes/nomina.routes.js";
-import vacacionesRoutes from "./routes/vacaciones.routes.js";
-import cajaAhorroRoutes from "./routes/cajaAhorro.routes.js";
-import proveedoresRoutes from "./routes/proveedores.routes.js";
-import flujoCajaRoutes from "./routes/flujoCaja.routes.js";
-import tesoreriaRoutes from "./routes/tesoreria.routes.js";
-import cuentasRoutes from "./routes/cuentas.routes.js";
+
+// 📄 Swagger setup
+const swaggerDocument = YAML.load("./swagger.yaml");
+
+import rolRoutes from "./src/routes/rolRoutes.js";
+import usuarioRoutes from "./src/routes/usuarioRoutes.js";
+import piletaRoutes from "./src/routes/piletaRoutes.js";
+import instalacionRoutes from "./src/routes/instalacionRoutes.js";
+import alimentoRoutes from "./src/routes/alimentoRoutes.js";
+import loteRoutes from "./src/routes/loteRoutes.js";
+import reproductorRoutes from "./src/routes/reproductorRoutes.js";
+import engordaRoutes from "./src/routes/engordaRoutes.js";
+import empleadoRoutes from "./src/routes/empleadoRoutes.js";
+import clienteRoutes from "./src/routes/clienteRoutes.js";
+import ventaRoutes from "./src/routes/ventaRoutes.js";
+import listaEsperaRoutes from "./src/routes/listaEsperaRoutes.js";
+import equipoRoutes from "./src/routes/equipoRoutes.js";
+import expedienteRoutes from "./src/routes/expedienteRoutes.js";
+import nominaRoutes from "./src/routes/nominaRoutes.js";
+import vacacionRoutes from "./src/routes/vacacionRoutes.js";
+import cajaAhorroRoutes from "./src/routes/cajaAhorroRoutes.js";
+import proveedorRoutes from "./src/routes/proveedorRoutes.js";
+import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
+import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
+import cuentaRoutes from "./src/routes/cuentaRoutes.js";
+
 // Rutas de Bitácoras
-import biometriaCeiba from "./routes/bitacoras/biometria.routes.js";
-// import alimentacionCeiba from './routes/bitacoras/alimentacion.routes.js';
-// import insumosCeiba from './routes/bitacoras/insumos.routes.js';
-// import plagasRoutes from './routes/bitacoras/plagas.routes.js';
-// import recepcionRoutes from './routes/bitacoras/recepcion_insumos.routes.js';
-// import visitasRoutes from './routes/bitacoras/visitas.routes.js';
-// import banosMedellin from './routes/bitacoras/banos.routes.js';
-// import parametrosMedellin from './routes/bitacoras/parametros.routes.js';
-// import medicamentosMedellin from './routes/bitacoras/medicamentos.routes.js';
-// import recambiosMedellin from './routes/bitacoras/recambios.routes.js';
-// import inventarioMedellin from './routes/bitacoras/inventario.routes.js';
+import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
+import bitacoraAlimentacionRoutes from './src/routes/bitacoras/bitacoraAlimentacionRoutes.js';
+import bitacoraInsumoRoutes from './src/routes/bitacoras/bitacoraInsumoRoutes.js';
+import bitacoraPlagaRoutes from './src/routes/bitacoras/bitacoraPlagaRoutes.js';
+import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
+import bitacoraVisitaRoutes from './src/routes/bitacoras/bitacoraVisitaRoutes.js';
+import bitacoraBanoRoutes from './src/routes/bitacoras/bitacoraBanoRoutes.js';
+import bitacoraParametroRoutes from './src/routes/bitacoras/bitacoraParametroRoutes.js';
+import bitacoraMedicamentoRoutes from './src/routes/bitacoras/bitacoraMedicamentoRoutes.js';
+import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoutes.js';
+import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
+
 dotenv.config();
 
 const app = express();
+
+// 📄 Documentación Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // 🛡️ Configurar CORS correctamente
 app.use(
@@ -53,40 +64,41 @@ app.use(
 app.use(express.json());
 
 // 🔗 Registrar rutas
-app.use("/roles", rolesRoutes);
-app.use("/usuarios", usuariosRoutes);
+app.use("/roles", rolRoutes);
+app.use("/usuarios", usuarioRoutes);
 app.use("/piletas", piletaRoutes);
-app.use("/instalaciones", instalacionesRoutes);
-app.use("/lotes", lotesRoutes);
-app.use("/reproductores", reproductoresRouter);
+app.use("/instalaciones", instalacionRoutes);
+app.use("/lotes", loteRoutes);
+app.use("/reproductores", reproductorRoutes);
 app.use("/engorda", engordaRoutes);
-app.use("/empleados", empleadosRoutes);
-app.use("/clientes", clientesRoutes);
-app.use("/ventas", ventasRoutes);
-app.use("/alimentos", alimentosRoutes);
+app.use("/empleados", empleadoRoutes);
+app.use("/clientes", clienteRoutes);
+app.use("/ventas", ventaRoutes);
+app.use("/alimentos", alimentoRoutes);
 app.use("/lista-espera", listaEsperaRoutes);
-app.use("/equipos", equiposRoutes);
-app.use("/expedientes", expedientesRoutes);
+app.use("/equipos", equipoRoutes);
+app.use("/expedientes", expedienteRoutes);
 app.use("/nomina", nominaRoutes);
-app.use("/vacaciones", vacacionesRoutes);
+app.use("/vacaciones", vacacionRoutes);
 app.use("/caja-ahorro", cajaAhorroRoutes);
-app.use("/proveedores", proveedoresRoutes);
+app.use("/proveedores", proveedorRoutes);
 app.use("/flujo-caja", flujoCajaRoutes);
 app.use("/tesoreria", tesoreriaRoutes);
-app.use("/cuentas", cuentasRoutes);
+app.use("/cuentas", cuentaRoutes);
 app.use("/uploads", express.static("uploads"));
-//bitacoras
-app.use("/biometrias", biometriaCeiba);
-//app.use("/plagas", plagasRoutes);
-//app.use("/ceiba/alimentacion", alimentacionCeiba);
-//app.use("/ceiba/insumos", insumosCeiba);
-//app.use("/recepcion_insumos", recepcionRoutes);
-//app.use("/visitas", visitasRoutes);
-//app.use("/medellin/banos", banosMedellin);
-//app.use("/medellin/parametros", parametrosMedellin);
-//app.use("/medellin/medicamentos", medicamentosMedellin);
-//app.use("/medellin/recambios", recambiosMedellin);
-//app.use("/medellin/inventario", inventarioMedellin);
+
+// Bitácoras
+app.use("/biometrias", bitacoraBiometriaRoutes);
+app.use("/plagas", bitacoraPlagaRoutes);
+app.use("/ceiba/alimentacion", bitacoraAlimentacionRoutes);
+app.use("/ceiba/insumos", bitacoraInsumoRoutes);
+app.use("/recepcion_insumos", recepcionInsumoRoutes);
+app.use("/visitas", bitacoraVisitaRoutes);
+app.use("/medellin/banos", bitacoraBanoRoutes);
+app.use("/medellin/parametros", bitacoraParametroRoutes);
+app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
+app.use("/medellin/recambios", bitacoraRecambioRoutes);
+app.use("/medellin/inventario", bitacoraInventarioRoutes);
 
 // 🚀 Iniciar servidor
 const PORT = process.env.PORT || 5000;

@@ -1,0 +1,52 @@
+import pool from "../db.js";
+
+class BitacoraInventarioModel {
+    static async getAll() {
+        const result = await pool.query("SELECT * FROM medellin_inventario_alevines ORDER BY fi_id DESC");
+        return result.rows;
+    }
+
+    static async create(data) {
+        const {
+            fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
+            fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id
+        } = data;
+
+        await pool.query(
+            `INSERT INTO medellin_inventario_alevines
+      (fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
+       fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id, fd_fecha_registro)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
+            [fn_num_instalacion, fn_cantidad, fn_talla, fc_lote || null, fc_observacion || null,
+                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, fi_usuario_id]
+        );
+    }
+
+    static async update(id, data) {
+        const {
+            fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
+            fd_fecha_siembra, fd_fecha_salida_hormonado
+        } = data;
+
+        await pool.query(
+            `UPDATE medellin_inventario_alevines SET
+        fn_num_instalacion=$1, fn_cantidad=$2, fn_talla=$3,
+        fc_lote=$4, fc_observacion=$5,
+        fd_fecha_siembra=$6, fd_fecha_salida_hormonado=$7,
+        fd_fecha_modificacion=NOW()
+       WHERE fi_id=$8`,
+            [fn_num_instalacion, fn_cantidad, fn_talla, fc_lote || null, fc_observacion || null,
+                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, id]
+        );
+    }
+
+    static async delete(id) {
+        await pool.query("DELETE FROM medellin_inventario_alevines WHERE fi_id=$1", [id]);
+    }
+
+    static async deleteAll() {
+        await pool.query("DELETE FROM medellin_inventario_alevines");
+    }
+}
+
+export default BitacoraInventarioModel;
