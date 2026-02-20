@@ -1,13 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import fs from "node:fs";
 import swaggerUi from "swagger-ui-express";
-import YAML from "yamljs";
+import { parse } from "yaml";
 
 // Importar rutas
 
 // 📄 Swagger setup
-const swaggerDocument = YAML.load("./swagger.yaml");
+const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
+const swaggerDocument = parse(swaggerFile);
 
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";

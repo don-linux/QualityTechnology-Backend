@@ -2253,6 +2253,23 @@ paths:
           description: "Equipo eliminado"
 
   /equipos/{equipo_id}/mantenimientos:
+    get:
+      summary: "Obtener mantenimientos por equipo"
+      parameters:
+        - name: equipo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Listado de mantenimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mantenimiento'
     post:
       summary: "Registrar mantenimiento para un equipo"
       parameters:
@@ -2301,25 +2318,6 @@ paths:
         '200':
           description: "Mantenimiento eliminado"
 
-  /equipos/{equipo_id}/mantenimientos:
-    get:
-      summary: "Obtener mantenimientos por equipo"
-      parameters:
-        - name: equipo_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Listado de mantenimientos"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Mantenimiento'
-
   /expedientes:
     get:
       summary: "Listar expedientes o buscar por nombre"
@@ -2348,6 +2346,11 @@ paths:
       responses:
         '201':
           description: "Expediente creado"
+    delete:
+      summary: "Eliminar todos los expedientes"
+      responses:
+        '200':
+          description: "Todos los expedientes eliminados"
 
   /expedientes/{id}:
     put:
@@ -2378,11 +2381,6 @@ paths:
       responses:
         '200':
           description: "Expediente eliminado"
-    delete:
-      summary: "Eliminar todos los expedientes"
-      responses:
-        '200':
-          description: "Todos los expedientes eliminados"
 
   /nomina:
     get:
