@@ -1,0 +1,3481 @@
+openapi: 3.0.0
+info:
+  title: "QualityTechnology API"
+  version: "1.0.0"
+  description: |
+    Documentación en español de la API REST de QualityTechnology.
+    Incluye rutas, parámetros, cuerpos de petición y esquemas inferidos
+    a partir del código del proyecto. Los esquemas usan la notación
+    húngara del proyecto (fc_ = string, fi_ = integer, fd_ = date/datetime, fn_ = number).
+
+servers:
+  - url: http://localhost:5000
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    Role:
+      type: object
+      description: "Representa un rol de usuario"
+      properties:
+        fi_rol_id:
+          type: integer
+        fc_nombre:
+          type: string
+      required: [fc_nombre]
+
+    Usuario:
+      type: object
+      properties:
+        fi_usuario_id:
+          type: integer
+        fc_nombre:
+          type: string
+        fc_contraseña:
+          type: string
+        fi_rol_id:
+          type: integer
+        rol_nombre:
+          type: string
+
+    UsuarioCreate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        contraseña:
+          type: string
+        rol_id:
+          type: integer
+      required: [nombre, contraseña, rol_id]
+
+    UsuarioLoginRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+        contraseña:
+          type: string
+      required: [nombre, contraseña]
+
+    UsuarioLoginResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+        token:
+          type: string
+        usuario:
+          type: object
+          properties:
+            id:
+              type: integer
+            nombre:
+              type: string
+            rol:
+              type: string
+
+    Instalacion:
+      type: object
+      properties:
+        fi_instalacion_id:
+          type: integer
+        nombre_instalacion:
+          type: string
+        tipo_instalacion:
+          type: string
+        fc_granja:
+          type: string
+        estado:
+          type: string
+        largo:
+          type: number
+        ancho:
+          type: number
+        altura:
+          type: number
+        material:
+          type: string
+        metros_cubicos:
+          type: number
+
+    Pileta:
+      type: object
+      properties:
+        fi_pileta_id:
+          type: integer
+        cantidad:
+          type: number
+        talla_gr:
+          type: number
+        fi_lote_id:
+          type: integer
+        no_lote:
+          type: string
+        observacion:
+          type: string
+        fecha_siembra:
+          type: string
+          format: date
+        fecha_ultima_biometria:
+          type: string
+          format: date
+        dias_en_pila:
+          type: number
+        dias_transcurridos:
+          type: number
+        nombre_instalacion:
+          type: string
+        fc_granja:
+          type: string
+
+    Lote:
+      type: object
+      properties:
+        fi_lote_id:
+          type: integer
+        no_lote:
+          type: string
+        alevines_inicial:
+          type: integer
+        fecha:
+          type: string
+          format: date
+        fi_instalacion_id:
+          type: integer
+        fc_granja:
+          type: string
+        familia:
+          type: string
+        huevos_ml:
+          type: number
+        observacion:
+          type: string
+
+    Reproductor:
+      type: object
+      properties:
+        fi_reproductor_id:
+          type: integer
+        fc_instalacion:
+          type: string
+        fn_cantidad:
+          type: number
+        fn_talla:
+          type: number
+        fn_machos:
+          type: number
+        fn_hembras:
+          type: number
+        fc_ratio:
+          type: string
+        fc_linea:
+          type: string
+        fc_familia:
+          type: string
+        fc_observacion:
+          type: string
+        fd_fecha_siembra:
+          type: string
+          format: date
+        fd_fecha_biometria:
+          type: string
+          format: date
+        dias_en_pila:
+          type: number
+
+    Engorda:
+      type: object
+      properties:
+        fi_engorda_id:
+          type: integer
+        fi_instalacion_id:
+          type: integer
+        destino_nombre:
+          type: string
+        fi_lote_id:
+          type: integer
+        no_lote:
+          type: string
+        cantidad:
+          type: number
+        talla_gr:
+          type: number
+        observacion:
+          type: string
+        fecha_siembra:
+          type: string
+          format: date
+        fecha_biometria:
+          type: string
+          format: date
+        dias_en_pila:
+          type: number
+        dias_transcurridos:
+          type: number
+        fi_usuario_id:
+          type: integer
+        fc_granja:
+          type: string
+
+    Empleado:
+      type: object
+      properties:
+        fi_empleado_id:
+          type: integer
+        fc_nombre:
+          type: string
+        fc_apellido_paterno:
+          type: string
+        fc_apellido_materno:
+          type: string
+        fc_genero:
+          type: string
+        fc_calle:
+          type: string
+        fc_cp:
+          type: string
+        fc_referencia:
+          type: string
+        fc_comentarios:
+          type: string
+        fi_usuario_id:
+          type: integer
+        fi_puesto_id:
+          type: integer
+        fi_departamento_id:
+          type: integer
+        fi_ciudad_id:
+          type: integer
+        fi_estado_id:
+          type: integer
+        fi_edad:
+          type: integer
+        fd_fecha_nacimiento:
+          type: string
+          format: date
+        fd_fecha_contratacion:
+          type: string
+          format: date
+
+    Cliente:
+      type: object
+      properties:
+        fi_cliente_id:
+          type: integer
+        fc_nombre:
+          type: string
+        fc_telefono:
+          type: string
+        fc_correo:
+          type: string
+        fc_localidad:
+          type: string
+        fc_cp:
+          type: string
+        fi_usuario_id:
+          type: integer
+        fd_fecha_registro:
+          type: string
+          format: date-time
+        fd_fecha_modificacion:
+          type: string
+          format: date-time
+
+    Venta:
+      type: object
+      properties:
+        fi_venta_id:
+          type: integer
+        fc_folio:
+          type: string
+        fd_fecha_venta:
+          type: string
+          format: date
+        fc_cliente:
+          type: string
+        fc_tipo_venta:
+          type: string
+        fn_cantidad_vendida:
+          type: number
+        fn_precio_venta:
+          type: number
+        fn_monto_total:
+          type: number
+        fn_abonado:
+          type: number
+        fn_adeudo:
+          type: number
+        fc_estado_pago:
+          type: string
+        fc_encargado_venta:
+          type: string
+        fc_observaciones:
+          type: string
+        fc_empresa:
+          type: string
+
+    ListaEspera:
+      type: object
+      properties:
+        fi_lista_id:
+          type: integer
+        fd_fecha_entrega:
+          type: string
+          format: date
+        fc_talla:
+          type: string
+        fn_cantidad:
+          type: number
+        fc_cliente:
+          type: string
+        fc_lugar_entrega:
+          type: string
+        fc_encargado_venta:
+          type: string
+        fc_unidad_produccion:
+          type: string
+        fc_hora_embolsado:
+          type: string
+        fc_hora_entrega:
+          type: string
+        fn_precio_venta:
+          type: number
+        fc_uap_asignada:
+          type: string
+        fc_granja_asignada:
+          type: string
+
+    Equipo:
+      type: object
+      properties:
+        fi_equipo_id:
+          type: integer
+        fc_nombre:
+          type: string
+        fc_marca:
+          type: string
+        fc_modelo:
+          type: string
+        fc_tipo:
+          type: string
+        fd_fecha_compra:
+          type: string
+          format: date
+        fn_costo:
+          type: number
+        fc_estado:
+          type: string
+        fc_ubicacion:
+          type: string
+        fc_responsable:
+          type: string
+        fd_proximo_mantenimiento:
+          type: string
+          format: date
+        fc_notas:
+          type: string
+        fi_usuario_id:
+          type: integer
+
+    Mantenimiento:
+      type: object
+      properties:
+        fi_mantenimiento_id:
+          type: integer
+        fi_equipo_id:
+          type: integer
+        fd_fecha:
+          type: string
+          format: date
+        fc_tipo:
+          type: string
+        fc_responsable:
+          type: string
+        fc_descripcion:
+          type: string
+        fn_costo:
+          type: number
+        fc_estado_post:
+          type: string
+        fd_proximo_mantenimiento:
+          type: string
+          format: date
+
+    Expediente:
+      type: object
+      description: "Entidad dinámica para expedientes. Los campos pueden variar."
+      additionalProperties: true
+
+    Nomina:
+      type: object
+      properties:
+        fi_nomina_id:
+          type: integer
+        fc_nombre_empleado:
+          type: string
+        fi_empleado_id:
+          type: integer
+        fd_fecha_pago:
+          type: string
+          format: date
+        fn_total:
+          type: number
+        fn_bono:
+          type: number
+        fn_deuda:
+          type: number
+        fn_descuento:
+          type: number
+        fn_anticipo:
+          type: number
+        fi_usuario_id:
+          type: integer
+
+    Vacacion:
+      type: object
+      properties:
+        fi_vacacion_id:
+          type: integer
+        fc_nombre_empleado:
+          type: string
+        fi_empleado_id:
+          type: integer
+        fc_departamento:
+          type: string
+        fd_inicio_periodo:
+          type: string
+          format: date
+        fd_fin_periodo:
+          type: string
+          format: date
+
+    CajaAhorroResumen:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoria:
+          type: string
+        granja:
+          type: string
+
+    Proveedor:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        empresa:
+          type: string
+        rfc:
+          type: string
+        categoria:
+          type: string
+        contacto:
+          type: string
+        telefono:
+          type: string
+        correo:
+          type: string
+        direccion:
+          type: string
+        forma_pago:
+          type: string
+        plazo_credito:
+          type: string
+        ultima_compra:
+          type: string
+          format: date
+        monto_promedio:
+          type: number
+        activo:
+          type: boolean
+
+    FlujoCajaMovimiento:
+      type: object
+      properties:
+        fi_movimiento_id:
+          type: integer
+        fc_granja:
+          type: string
+        fd_fecha:
+          type: string
+          format: date
+        fn_ingreso:
+          type: number
+        fn_egreso:
+          type: number
+        fc_descripcion:
+          type: string
+        fc_cuenta:
+          type: string
+        fc_categoria:
+          type: string
+        fc_subcategoria:
+          type: string
+        fc_beneficiario:
+          type: string
+        fc_noproyecto:
+          type: string
+        fc_factura:
+          type: string
+        fc_estatus:
+          type: string
+        fc_mes:
+          type: string
+        fd_fecha_registro:
+          type: string
+          format: date-time
+
+    TesoreriaOverview:
+      type: object
+      properties:
+        anio:
+          type: integer
+        periodo:
+          type: integer
+        mes_nombre:
+          type: string
+        fc_granja:
+          type: string
+        grupo:
+          type: string
+        subgrupo:
+          type: string
+        categoria:
+          type: string
+        total_ingreso:
+          type: number
+        total_egreso:
+          type: number
+        saldo_neto:
+          type: number
+
+    Cuenta:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        saldo:
+          type: number
+
+    MovimientoAlevines:
+      type: object
+      properties:
+        fi_movimiento_alevines_id:
+          type: integer
+        fi_usuario_id:
+          type: integer
+        fi_alevines_id:
+          type: integer
+        fi_pileta_id:
+          type: integer
+        fi_tipo:
+          type: integer
+        fi_cantidad_alevines:
+          type: integer
+        fn_peso_promedio:
+          type: number
+        fd_fecha_registro:
+          type: string
+          format: date-time
+        fd_fecha_modificacion:
+          type: string
+          format: date-time
+
+    Alevin:
+      type: object
+      properties:
+        fi_alevines_id:
+          type: integer
+        fc_numero_lote:
+          type: string
+        fn_peso_promedio:
+          type: number
+        fn_cantidad:
+          type: integer
+        fc_observacion:
+          type: string
+        fi_usuario_id:
+          type: integer
+        fi_colecta_id:
+          type: integer
+        fd_fecha_registro:
+          type: string
+          format: date-time
+        fd_fecha_modificacion:
+          type: string
+          format: date-time
+
+    CeibaInsumo:
+      type: object
+      properties:
+        fi_id:
+          type: integer
+        fd_fecha:
+          type: string
+          format: date
+        fc_cantidad_udm:
+          type: string
+        fc_num_lote:
+          type: string
+        fc_descripcion:
+          type: string
+        fc_observaciones:
+          type: string
+        fc_encargado_entrega:
+          type: string
+        fc_encargado_recepcion:
+          type: string
+        fi_usuario_id:
+          type: integer
+
+    BitacoraAlimentacion:
+      type: object
+      properties:
+        fi_id:
+          type: integer
+        fc_mes:
+          type: string
+        fn_num_instalacion:
+          type: number
+        fn_peso_promedio_entrada:
+          type: number
+        fd_fecha_siembra:
+          type: string
+          format: date
+        fc_origen_alevines:
+          type: string
+        fd_fecha:
+          type: string
+          format: date
+        fn_total_alimento_kg:
+          type: number
+        fn_mortalidad:
+          type: number
+        fc_recambio_agua:
+          type: string
+        fn_temp_agua:
+          type: number
+        fn_amonio:
+          type: number
+        fn_ph:
+          type: number
+        fc_observaciones:
+          type: string
+        fi_usuario_id:
+          type: integer
+
+    BitacoraVisita:
+      type: object
+      properties:
+        fi_id:
+          type: integer
+        fd_fecha:
+          type: string
+          format: date
+        fc_nombre_completo:
+          type: string
+        fc_origen:
+          type: string
+        fc_motivo:
+          type: string
+        fc_observaciones:
+          type: string
+        fc_foto_identificacion:
+          type: string
+        fd_entrada:
+          type: string
+          format: date-time
+        fd_salida:
+          type: string
+          format: date-time
+        fi_usuario_id:
+          type: integer
+        ubicacion:
+          type: string
+
+paths:
+  /roles:
+    get:
+      summary: "Obtener todos los roles"
+      description: "Devuelve una lista con todos los roles registrados."
+      responses:
+        '200':
+          description: "Listado de roles"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: "Crear un nuevo rol"
+      description: "Registrar un nuevo rol en la base de datos."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+              required: [nombre]
+      responses:
+        '201':
+          description: "Rol creado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: "Solicitud inválida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /roles/{id}:
+    put:
+      summary: "Actualizar un rol"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+      responses:
+        '200':
+          description: "Rol actualizado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          description: "Rol no encontrado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: "Eliminar un rol"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Rol eliminado (sin contenido)"
+        '404':
+          description: "Rol no encontrado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/login:
+    post:
+      summary: "Inicio de sesión"
+      description: "Autentica al usuario y devuelve un token JWT."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioLoginRequest'
+      responses:
+        '200':
+          description: "Inicio de sesión exitoso"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioLoginResponse'
+        '400':
+          description: "Faltan datos obligatorios"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Credenciales inválidas"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios:
+    get:
+      summary: "Obtener todos los usuarios"
+      description: "Requiere token JWT. Devuelve lista de usuarios."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de usuarios"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+        '401':
+          description: "No autorizado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: "Crear usuario"
+      description: "Requiere token JWT. Crea un nuevo usuario."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreate'
+      responses:
+        '201':
+          description: "Usuario creado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+        '400':
+          description: "Solicitud inválida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "No autorizado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/{id}:
+    put:
+      summary: "Actualizar usuario"
+      description: "Requiere token JWT. Actualiza un usuario por su ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                contraseña:
+                  type: string
+                rol_id:
+                  type: integer
+      responses:
+        '200':
+          description: "Usuario actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar usuario"
+      description: "Requiere token JWT. Elimina un usuario por su ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Usuario eliminado"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/lotes/{granja}:
+    get:
+      summary: "Obtener lotes por granja"
+      description: "Requiere token JWT. Devuelve lotes asociados a una granja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Lotes encontrados"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lote'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/lote-por-inst/{inst}/{granja}:
+    get:
+      summary: "Obtener lote por instalación y granja"
+      description: "Requiere token JWT. Devuelve el lote asociado a una instalación específica."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: inst
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Lote encontrado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lote'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/inventario/{granja}:
+    get:
+      summary: "Obtener inventario por granja"
+      description: "Requiere token JWT. Devuelve inventario y trazabilidad de piletas."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Inventario"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pileta'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/origen/{granja}:
+    get:
+      summary: "Obtener orígenes (instalaciones) por granja"
+      description: "Requiere token JWT. Devuelve orígenes disponibles para siembra."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Orígenes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/siembra:
+    post:
+      summary: "Registrar o actualizar siembra"
+      description: "Requiere token JWT. Crea o actualiza una siembra en una pileta."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fi_pileta_id:
+                  type: integer
+                fi_instalacion_id:
+                  type: integer
+                origen_instalacion:
+                  type: string
+                fi_lote_id:
+                  type: integer
+                cantidad:
+                  type: number
+                talla_gr:
+                  type: number
+                observacion:
+                  type: string
+                fecha_siembra:
+                  type: string
+                  format: date
+                fecha_ultima_biometria:
+                  type: string
+                  format: date
+                fi_usuario_id:
+                  type: integer
+                fc_granja:
+                  type: string
+      responses:
+        '200':
+          description: "Siembra registrada/actualizada"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/{id}:
+    delete:
+      summary: "Eliminar pileta"
+      description: "Requiere token JWT. Elimina una pileta por su ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Pileta eliminada"
+        '401':
+          description: "No autorizado"
+        '404':
+          description: "No encontrada"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/movimientos/{usuario}/{granja}:
+    get:
+      summary: "Obtener movimientos por usuario y granja"
+      description: "Requiere token JWT. Lista movimientos de alevinaje filtrados por usuario y granja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuario
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Movimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/movimientos/filtro/{usuario}/{granja}:
+    get:
+      summary: "Obtener movimientos con filtro"
+      description: "Requiere token JWT. Filtros por texto y rango de fechas."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuario
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: buscar
+          in: query
+          schema:
+            type: string
+        - name: fecha_inicio
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fecha_fin
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: "Movimientos filtrados"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/movimientos/registrar:
+    post:
+      summary: "Registrar movimiento de alevinaje"
+      description: "Requiere token JWT. Registra un movimiento y actualiza existencias."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origen_instalacion:
+                  type: string
+                origen_externo:
+                  type: string
+                fi_instalacion_id:
+                  type: integer
+                fi_lote_id:
+                  type: integer
+                cantidad:
+                  type: number
+                observacion:
+                  type: string
+                tipo_movimiento:
+                  type: string
+                fi_usuario_id:
+                  type: integer
+                fc_granja:
+                  type: string
+      responses:
+        '200':
+          description: "Movimiento registrado"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /piletas/movimientos/eliminar:
+    delete:
+      summary: "Eliminar movimientos"
+      description: "Requiere token JWT. Elimina movimientos según body (movimiento_id o eliminar_todos+granja)."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movimiento_id:
+                  type: integer
+                eliminar_todos:
+                  type: boolean
+                granja:
+                  type: string
+      responses:
+        '200':
+          description: "Operación completada"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /instalaciones:
+    get:
+      summary: "Obtener instalaciones"
+      description: "Requiere token JWT. Devuelve todas las instalaciones."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de instalaciones"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instalacion'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+    post:
+      summary: "Crear instalación"
+      description: "Requiere token JWT. Crea una nueva instalación."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Instalacion'
+      responses:
+        '201':
+          description: "Instalación creada"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /instalaciones/granja/{granja}:
+    get:
+      summary: "Obtener instalaciones por granja"
+      description: "Requiere token JWT. Filtra instalaciones por granja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado filtrado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instalacion'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /instalaciones/tipo/{tipo}/{granja}:
+    get:
+      summary: "Obtener instalaciones por tipo y granja"
+      description: "Requiere token JWT. Filtra por tipo y granja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado filtrado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instalacion'
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /instalaciones/{id}:
+    put:
+      summary: "Actualizar instalación"
+      description: "Requiere token JWT. Actualiza una instalación por ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Instalacion'
+      responses:
+        '200':
+          description: "Instalación actualizada"
+        '404':
+          description: "No encontrada"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar instalación"
+      description: "Requiere token JWT. Elimina una instalación por ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Instalación eliminada"
+        '404':
+          description: "No encontrada"
+        '500':
+          description: "Error del servidor"
+
+  /alimentos:
+    get:
+      summary: "Obtener alimentos"
+      description: "Requiere token JWT. Lista registros de alimentación."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de alimentos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: "No autorizado"
+    post:
+      summary: "Registrar alimento"
+      description: "Requiere token JWT. Registra un evento de alimentación."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fi_reproductor_id:
+                  type: integer
+                fi_pileta_id:
+                  type: integer
+                fi_engorda_id:
+                  type: integer
+                particula_mm:
+                  type: string
+                alimento_dia:
+                  type: string
+                porcion:
+                  type: string
+                gasto_alimento:
+                  type: number
+                fi_usuario_id:
+                  type: integer
+      responses:
+        '201':
+          description: "Alimento registrado"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /alimentos/{id}:
+    delete:
+      summary: "Eliminar registro de alimento"
+      description: "Requiere token JWT. Elimina un registro de alimento por ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Eliminado"
+        '401':
+          description: "No autorizado"
+        '500':
+          description: "Error del servidor"
+
+  /lotes/instalaciones/{granja}:
+    get:
+      summary: "Obtener instalaciones para crear lote"
+      description: "Requiere token JWT. Lista instalaciones por granja (para selección al crear lotes)."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de instalaciones"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: "No autorizado"
+
+  /lotes/familia/{instalacion}:
+    get:
+      summary: "Obtener familia por instalación"
+      description: "Requiere token JWT. Devuelve la familia asociada a una instalación (reproductores)."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: instalacion
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Familia"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: "No autorizado"
+
+  /lotes/granja/{granja}:
+    get:
+      summary: "Obtener lotes por granja"
+      description: "Requiere token JWT. Lista lotes de una granja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de lotes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lote'
+        '401':
+          description: "No autorizado"
+
+  /lotes/instalacion/{id}:
+    get:
+      summary: "Obtener lotes por instalación"
+      description: "Requiere token JWT. Obtiene lotes asociados a una instalación."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Listado de lotes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lote'
+        '401':
+          description: "No autorizado"
+
+  /lotes:
+    post:
+      summary: "Crear lote"
+      description: "Requiere token JWT. Crea un nuevo lote."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lote'
+      responses:
+        '201':
+          description: "Lote creado"
+        '400':
+          description: "Solicitud inválida"
+        '401':
+          description: "No autorizado"
+    put:
+      summary: "Actualizar lote"
+      description: "Requiere token JWT. Actualiza lote por ID (usar /lotes/{id})."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Lote actualizado"
+
+  /lotes/{id}:
+    put:
+      summary: "Actualizar lote por ID"
+      description: "Requiere token JWT. Actualiza los campos del lote especificado."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lote'
+      responses:
+        '200':
+          description: "Lote actualizado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar lote"
+      description: "Requiere token JWT. Elimina un lote por su ID."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Lote eliminado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+
+  /reproductores/{granja}:
+    get:
+      summary: "Obtener reproductores por granja"
+      description: "Devuelve reproductores y métricas (días en pila) para la granja indicada."
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de reproductores"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reproductor'
+        '500':
+          description: "Error del servidor"
+
+  /reproductores/movimientos/{granja}:
+    get:
+      summary: "Obtener trazabilidad de reproductores por granja"
+      description: "Devuelve movimientos/trazabilidad para reproductores de una granja."
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Lista de movimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '500':
+          description: "Error del servidor"
+
+  /reproductores:
+    post:
+      summary: "Registrar reproductor"
+      description: "Registra un reproductor y la trazabilidad inicial."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fc_instalacion:
+                  type: string
+                origen_texto:
+                  type: string
+                fn_cantidad:
+                  type: number
+                fn_talla:
+                  type: number
+                fi_usuario_id:
+                  type: integer
+                fc_granja:
+                  type: string
+                fn_machos:
+                  type: number
+                fn_hembras:
+                  type: number
+                fc_linea:
+                  type: string
+                fc_familia:
+                  type: string
+                fc_observacion:
+                  type: string
+      responses:
+        '200':
+          description: "Reproductor registrado"
+        '400':
+          description: "Solicitud inválida"
+        '500':
+          description: "Error del servidor"
+
+  /reproductores/{id}:
+    put:
+      summary: "Actualizar reproductor"
+      description: "Actualiza un reproductor y registra trazabilidad adicional."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: "Reproductor actualizado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar reproductor"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Reproductor eliminado"
+        '500':
+          description: "Error del servidor"
+
+  /engorda/granja/{granja}:
+    get:
+      summary: "Listar registros de Engorda por granja"
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de engorda"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Engorda'
+        '500':
+          description: "Error del servidor"
+
+  /engorda:
+    post:
+      summary: "Registrar o actualizar Engorda"
+      description: "Crea nuevo registro de engorda o actualiza uno existente si se incluye fi_engorda_id."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Engorda'
+      responses:
+        '200':
+          description: "Registro creado/actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '500':
+          description: "Error del servidor"
+
+  /engorda/{id}:
+    delete:
+      summary: "Eliminar registro de engorda"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Registro eliminado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+
+  /empleados:
+    get:
+      summary: "Obtener empleados"
+      description: "Devuelve lista de empleados."
+      responses:
+        '200':
+          description: "Listado de empleados"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Empleado'
+        '500':
+          description: "Error del servidor"
+    post:
+      summary: "Crear empleado"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empleado'
+      responses:
+        '201':
+          description: "Empleado creado"
+        '500':
+          description: "Error del servidor"
+
+  /empleados/{id}:
+    put:
+      summary: "Actualizar empleado"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empleado'
+      responses:
+        '200':
+          description: "Empleado actualizado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar empleado"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Empleado eliminado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+
+  /clientes:
+    get:
+      summary: "Obtener clientes"
+      responses:
+        '200':
+          description: "Listado de clientes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+    post:
+      summary: "Registrar cliente"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cliente'
+      responses:
+        '201':
+          description: "Cliente creado"
+        '500':
+          description: "Error del servidor"
+
+  /clientes/{id}:
+    put:
+      summary: "Actualizar cliente"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cliente'
+      responses:
+        '200':
+          description: "Cliente actualizado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar cliente"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Cliente eliminado"
+        '500':
+          description: "Error del servidor"
+
+  /ventas/clientes:
+    get:
+      summary: "Listar clientes para ventas"
+      description: "Lista clientes simplificados (id/nombre)."
+      responses:
+        '200':
+          description: "Listado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+
+  /ventas/encargados/{empresa}:
+    get:
+      summary: "Obtener encargados por empresa"
+      parameters:
+        - name: empresa
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de encargados"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+
+  /ventas:
+    get:
+      summary: "Listar ventas"
+      responses:
+        '200':
+          description: "Listado de ventas"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Venta'
+    post:
+      summary: "Registrar venta"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fc_folio:
+                  type: string
+                fd_fecha_venta:
+                  type: string
+                  format: date
+                fc_cliente:
+                  type: string
+                fc_tipo_venta:
+                  type: string
+                fn_cantidad_vendida:
+                  type: number
+                fn_precio_venta:
+                  type: number
+                fn_abonado:
+                  type: number
+                fc_encargado_venta:
+                  type: string
+                fc_observaciones:
+                  type: string
+                fc_empresa:
+                  type: string
+      responses:
+        '200':
+          description: "Venta registrada"
+        '400':
+          description: "Solicitud inválida"
+        '500':
+          description: "Error del servidor"
+
+  /ventas/{id}:
+    put:
+      summary: "Actualizar venta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Venta'
+      responses:
+        '200':
+          description: "Venta actualizada"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar venta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Venta eliminada"
+        '500':
+          description: "Error del servidor"
+
+  /lista-espera:
+    post:
+      summary: "Crear registro en lista de espera"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListaEspera'
+      responses:
+        '201':
+          description: "Creado"
+    get:
+      summary: "Obtener lista de espera"
+      responses:
+        '200':
+          description: "Listado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ListaEspera'
+
+  /lista-espera/{id}:
+    put:
+      summary: "Actualizar registro de lista de espera"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListaEspera'
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar registro de lista de espera"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Eliminado"
+
+  /lista-espera/convertir/{id}:
+    post:
+      summary: "Convertir registro de lista de espera a venta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Convertido a venta"
+        '404':
+          description: "Registro no encontrado"
+
+  /equipos/{usuario_id}:
+    get:
+      summary: "Obtener equipos por usuario"
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Listado de equipos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Equipo'
+
+  /equipos:
+    post:
+      summary: "Registrar equipo"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Equipo'
+      responses:
+        '201':
+          description: "Equipo creado"
+
+  /equipos/{id}:
+    put:
+      summary: "Actualizar equipo"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Equipo'
+      responses:
+        '200':
+          description: "Equipo actualizado"
+    delete:
+      summary: "Eliminar equipo"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Equipo eliminado"
+
+  /equipos/{equipo_id}/mantenimientos:
+    post:
+      summary: "Registrar mantenimiento para un equipo"
+      parameters:
+        - name: equipo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mantenimiento'
+      responses:
+        '201':
+          description: "Mantenimiento registrado"
+
+  /equipos/mantenimientos/{mantenimiento_id}:
+    put:
+      summary: "Actualizar mantenimiento"
+      parameters:
+        - name: mantenimiento_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mantenimiento'
+      responses:
+        '200':
+          description: "Mantenimiento actualizado"
+    delete:
+      summary: "Eliminar mantenimiento"
+      parameters:
+        - name: mantenimiento_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Mantenimiento eliminado"
+
+  /equipos/{equipo_id}/mantenimientos:
+    get:
+      summary: "Obtener mantenimientos por equipo"
+      parameters:
+        - name: equipo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Listado de mantenimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mantenimiento'
+
+  /expedientes:
+    get:
+      summary: "Listar expedientes o buscar por nombre"
+      parameters:
+        - name: nombre
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de expedientes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Expediente'
+    post:
+      summary: "Crear expediente"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Expediente'
+      responses:
+        '201':
+          description: "Expediente creado"
+
+  /expedientes/{id}:
+    put:
+      summary: "Actualizar expediente"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Expediente'
+      responses:
+        '200':
+          description: "Expediente actualizado"
+    delete:
+      summary: "Eliminar expediente"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Expediente eliminado"
+    delete:
+      summary: "Eliminar todos los expedientes"
+      responses:
+        '200':
+          description: "Todos los expedientes eliminados"
+
+  /nomina:
+    get:
+      summary: "Obtener nóminas (filtrado opcional)"
+      parameters:
+        - name: nombre
+          in: query
+          schema:
+            type: string
+        - name: fecha
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: "Listado de nóminas"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Nomina'
+    post:
+      summary: "Registrar pago de nómina"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Nomina'
+      responses:
+        '201':
+          description: "Pago registrado"
+
+  /nomina/{id}:
+    put:
+      summary: "Actualizar nómina"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Nomina'
+      responses:
+        '200':
+          description: "Nómina actualizada"
+    delete:
+      summary: "Eliminar nómina"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Nómina eliminada"
+
+  /vacaciones:
+    get:
+      summary: "Obtener todos los registros de vacaciones"
+      responses:
+        '200':
+          description: "Listado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vacacion'
+    post:
+      summary: "Crear registro de vacaciones"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Vacacion'
+      responses:
+        '201':
+          description: "Creado"
+    delete:
+      summary: "Eliminar todos los registros de vacaciones"
+      responses:
+        '200':
+          description: "Eliminados"
+
+  /vacaciones/{id}:
+    put:
+      summary: "Actualizar registro de vacaciones"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Vacacion'
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar registro de vacaciones"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Eliminado"
+
+  /caja-ahorro/{granja}:
+    get:
+      summary: "Obtener resumen de caja ahorro por granja"
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de resumen"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CajaAhorroResumen'
+
+  /caja-ahorro:
+    post:
+      summary: "Crear categoría de caja ahorro"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoria:
+                  type: string
+                granja:
+                  type: string
+      responses:
+        '201':
+          description: "Categoría creada"
+    put:
+      summary: "Actualizar categoría (por id en path)"
+      description: "Se actualizan campos dinámicamente"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar todas las categorías de una granja"
+      parameters:
+        - name: granja
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Eliminados"
+
+  /proveedores:
+    get:
+      summary: "Obtener proveedores"
+      responses:
+        '200':
+          description: "Listado de proveedores"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Proveedor'
+    post:
+      summary: "Crear proveedor"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Proveedor'
+      responses:
+        '201':
+          description: "Proveedor creado"
+
+  /proveedores/{id}:
+    put:
+      summary: "Actualizar proveedor"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Proveedor'
+      responses:
+        '200':
+          description: "Proveedor actualizado"
+    delete:
+      summary: "Eliminar proveedor"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Proveedor eliminado"
+
+  /flujo-caja/clientes:
+    get:
+      summary: "Obtener lista de clientes (para flujo de caja)"
+      responses:
+        '200':
+          description: "Listado de clientes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    nombre:
+                      type: string
+
+  /flujo-caja/proveedores:
+    get:
+      summary: "Obtener lista de proveedores (para flujo de caja)"
+      responses:
+        '200':
+          description: "Listado de proveedores"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    nombre:
+                      type: string
+
+  /flujo-caja/tesoreria/{granja}:
+    get:
+      summary: "Obtener tesorería por granja"
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Resumen de tesorería"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+
+  /flujo-caja/{granja}:
+    get:
+      summary: "Obtener movimientos de flujo de caja por granja"
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de movimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlujoCajaMovimiento'
+
+  /flujo-caja:
+    post:
+      summary: "Registrar movimiento de flujo de caja (soporta factura)"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                facturaFile:
+                  type: string
+                  format: binary
+                fc_granja:
+                  type: string
+                fd_fecha:
+                  type: string
+                  format: date
+                fn_ingreso:
+                  type: number
+                fn_egreso:
+                  type: number
+                fc_descripcion:
+                  type: string
+                fc_cuenta:
+                  type: string
+                fc_categoria:
+                  type: string
+                fc_subcategoria:
+                  type: string
+                fc_beneficiario:
+                  type: string
+                fc_noproyecto:
+                  type: string
+                fc_estatus:
+                  type: string
+      responses:
+        '201':
+          description: "Movimiento registrado"
+        '400':
+          description: "Solicitud inválida (por ejemplo cuenta inexistente o saldo insuficiente)"
+        '500':
+          description: "Error del servidor"
+
+  /flujo-caja/{id}:
+    put:
+      summary: "Actualizar movimiento de flujo de caja"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlujoCajaMovimiento'
+      responses:
+        '200':
+          description: "Movimiento actualizado"
+        '500':
+          description: "Error del servidor"
+    delete:
+      summary: "Eliminar movimiento de flujo de caja"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Eliminado"
+
+  /tesoreria:
+    get:
+      summary: "Obtener vista general de tesorería"
+      description: "Soporta filtros por anio, granja, grupo, subgrupo y categoria."
+      parameters:
+        - name: anio
+          in: query
+          schema:
+            type: integer
+        - name: granja
+          in: query
+          schema:
+            type: string
+        - name: grupo
+          in: query
+          schema:
+            type: string
+        - name: subgrupo
+          in: query
+          schema:
+            type: string
+        - name: categoria
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Datos de tesorería"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TesoreriaOverview'
+
+  /cuentas:
+    get:
+      summary: "Obtener cuentas"
+      responses:
+        '200':
+          description: "Listado de cuentas"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cuenta'
+    post:
+      summary: "Crear cuenta"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                saldo:
+                  type: number
+      responses:
+        '201':
+          description: "Cuenta creada"
+
+  /cuentas/{id}:
+    put:
+      summary: "Actualizar cuenta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cuenta'
+      responses:
+        '200':
+          description: "Cuenta actualizada"
+    delete:
+      summary: "Eliminar cuenta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Cuenta eliminada"
+
+  /cuentas/actualizar-saldo/{id}:
+    put:
+      summary: "Actualizar saldo de cuenta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  description: "ingreso o egreso"
+                monto:
+                  type: number
+      responses:
+        '200':
+          description: "Saldo actualizado"
+        '400':
+          description: "Solicitud inválida"
+
+  /biometrias/{granja}:
+    get:
+      summary: "Obtener biometrias por granja"
+      description: "Rutas protegidas por JWT."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Listado de biometrias"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+
+  /biometrias/info/{granja}/{instalacion}:
+    get:
+      summary: "Obtener info de biometría por granja e instalación"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: granja
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: instalacion
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Información"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /biometrias:
+    post:
+      summary: "Crear registro de biometría"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+    put:
+      summary: "Actualizar biometría (por ID)"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: "Actualizado"
+
+  /plagas:
+    get:
+      summary: "Listar bitácora de plagas"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear registro de plagas"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+    put:
+      summary: "Actualizar registro de plagas"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar registro de plagas"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Eliminado"
+
+  /ceiba/alimentacion:
+    get:
+      summary: "Listar bitácora de alimentación (Ceiba)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear registro de alimentación"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraAlimentacion'
+      responses:
+        '201':
+          description: "Creado"
+    put:
+      summary: "Actualizar registro de alimentación"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraAlimentacion'
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar registro(s) de alimentación"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Eliminado(s)"
+
+  /ceiba/insumos:
+    get:
+      summary: "Listar insumos (Ceiba)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear insumo"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CeibaInsumo'
+      responses:
+        '201':
+          description: "Creado"
+    put:
+      summary: "Actualizar insumo"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CeibaInsumo'
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar insumo(s)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Eliminado(s)"
+
+  /recepcion_insumos:
+    get:
+      summary: "Listar recepción de insumos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Registrar recepción de insumo"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+    put:
+      summary: "Actualizar recepción de insumo"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar recepción de insumo(s)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Eliminado(s)"
+
+  /visitas:
+    get:
+      summary: "Listar visitas"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de visitas"
+    post:
+      summary: "Registrar visita (con imagen opcional)"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fc_foto_identificacion:
+                  type: string
+                  format: binary
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_nombre_completo:
+                  type: string
+                fc_origen:
+                  type: string
+                fc_motivo:
+                  type: string
+                fc_observaciones:
+                  type: string
+      responses:
+        '201':
+          description: "Visita registrada"
+    put:
+      summary: "Actualizar visita (con imagen opcional)"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fc_foto_identificacion:
+                  type: string
+                  format: binary
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_nombre_completo:
+                  type: string
+      responses:
+        '200':
+          description: "Actualizado"
+    delete:
+      summary: "Eliminar visita o limpiar registros"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Eliminado(s)"
+
+  /medellin/banos:
+    get:
+      summary: "Listar bitácora de baños (Medellín)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear registro de baños"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+
+  /medellin/parametros:
+    get:
+      summary: "Listar parámetros (Medellín)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear parámetro"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+
+  /medellin/medicamentos:
+    get:
+      summary: "Listar medicamentos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear registro de medicamento"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+
+  /medellin/recambios:
+    get:
+      summary: "Listar recambios"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear recambio"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+
+  /medellin/inventario:
+    get:
+      summary: "Listar inventario (Medellín)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear registro de inventario"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: "Creado"
+
+  /alevines:
+    get:
+      summary: "Obtener alevines"
+      responses:
+        '200':
+          description: "Listado de alevines"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alevin'
+    post:
+      summary: "Crear alevín"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alevin'
+      responses:
+        '201':
+          description: "Alevín creado"
+
+  /alevines/{id}:
+    put:
+      summary: "Actualizar alevín"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alevin'
+      responses:
+        '200':
+          description: "Alevín actualizado"
+    delete:
+      summary: "Eliminar alevín"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Alevín eliminado"
+
+  /movimiento_alevines:
+    get:
+      summary: "Listar movimientos de alevines"
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear movimiento de alevines"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoAlevines'
+      responses:
+        '201':
+          description: "Movimiento creado"
+
+  /movimiento_alevines/{id}:
+    put:
+      summary: "Actualizar movimiento de alevines"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoAlevines'
+      responses:
+        '200':
+          description: "Movimiento actualizado"
+    delete:
+      summary: "Eliminar movimiento de alevines"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Eliminado"
+
+  /bitacoras/insumos:
+    get:
+      summary: "(Alias) Listar insumos"
+      description: "Ruta agrupada para documentación. Use /ceiba/insumos según el prefijo real."
+      responses:
+        '200':
+          description: "Listado"
+
+  /health:
+    get:
+      summary: "Comprobación de salud simple"
+      description: "Endpoint auxiliar para verificar que la API está arriba."
+      responses:
+        '200':
+          description: "OK"
