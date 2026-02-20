@@ -1,13 +1,21 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import fs from "node:fs";
 import swaggerUi from "swagger-ui-express";
-import YAML from "yamljs";
+import { parse } from "yaml";
 
 // Importar rutas
 
 // 📄 Swagger setup
-const swaggerDocument = YAML.load("./swagger.yaml");
+let swaggerDocument;
+try {
+  const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
+  swaggerDocument = parse(swaggerFile);
+} catch (error) {
+  console.error("Error loading or parsing './swagger.yaml'. Please ensure the file exists and contains valid YAML.\nDetails:", error.message);
+  process.exit(1);
+}
 
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
@@ -99,6 +107,10 @@ app.use("/medellin/parametros", bitacoraParametroRoutes);
 app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
 app.use("/medellin/recambios", bitacoraRecambioRoutes);
 app.use("/medellin/inventario", bitacoraInventarioRoutes);
+
+app.get("/", (req, res) => {
+  res.json({ message: "Backend de Quality Technology jalando" });
+});
 
 // 🚀 Iniciar servidor
 const PORT = process.env.PORT || 5000;

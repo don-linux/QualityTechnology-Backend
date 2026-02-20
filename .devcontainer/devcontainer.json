@@ -7,7 +7,7 @@
   "overrideCommand": false,
   "forwardPorts": [5000],
   "postCreateCommand": "npm ci || npm install",
-  "postStartCommand": "npm start",
+  "postStartCommand": "npm run dev",
   "customizations": {
     "vscode": {
       "extensions": [

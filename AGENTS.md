@@ -5,8 +5,11 @@ Guidelines for AI agents working in the QualityTechnology-Backend repository.
 ## Build/Development Commands
 
 ```bash
-# Start the development server
+# Start the production server
 npm start
+
+# Development mode with auto-reload
+npm run dev
 
 # Or use nodemon directly
 npx nodemon index.mjs
@@ -15,7 +18,34 @@ npx nodemon index.mjs
 npm install
 ```
 
-**Note:** No test framework or linting is currently configured. Tests can be added using Jest: `npm install --save-dev jest`.
+## Testing
+
+**Note:** No test framework is currently configured. To add tests:
+
+```bash
+# Install Jest
+npm install --save-dev jest
+
+# Add to package.json scripts:
+# "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+# "test:watch": "jest --watch"
+# "test:coverage": "jest --coverage"
+
+# Run all tests
+npm test
+
+# Run a single test file
+npx jest test/usuario.test.js
+
+# Run tests matching a pattern
+npx jest --testPathPattern=usuario
+```
+
+## API Documentation
+
+Swagger UI is available at: `http://localhost:5000/api-docs`
+
+API schema is defined in `swagger.yaml` in the project root.
 
 ## Technology Stack
 
@@ -24,6 +54,7 @@ npm install
 - **Database:** PostgreSQL (via `pg` pool)
 - **Auth:** JWT (`jsonwebtoken`) + bcrypt for passwords
 - **CORS:** Enabled for frontend at `http://localhost:3000`
+- **API Docs:** Swagger UI at `/api-docs`
 
 ## Code Style Guidelines
 
@@ -72,39 +103,89 @@ npm install
 - Use `RETURNING *` for INSERT/UPDATE when needed
 
 ### Route Structure
+Routes delegate to controllers. Use class-based controllers:
+
 ```javascript
+// src/routes/usuarioRoutes.js
 import express from "express";
-import pool from "../db.js";
+import usuarioController from "../controllers/usuarioController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// GET all
-router.get("/", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM table");
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+// Public routes (no auth required)
+router.post("/login", usuarioController.login);
 
-// POST create
-router.post("/", async (req, res) => {
-  const { field1, field2 } = req.body;
-  try {
-    const result = await pool.query(
-      "INSERT INTO table (field1, field2) VALUES ($1, $2) RETURNING *",
-      [field1, field2]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+// Protected routes (require JWT token)
+router.use(authMiddleware);
+
+router.get("/", usuarioController.getAll);
+router.post("/", usuarioController.create);
+router.put("/:id", usuarioController.update);
+router.delete("/:id", usuarioController.delete);
 
 export default router;
+```
+
+### Controller Pattern
+Controllers are classes with static methods:
+
+```javascript
+// src/controllers/usuarioController.js
+import usuarioModel from "../models/usuarioModel.js";
+
+class UsuarioController {
+    static async getAll(req, res) {
+        try {
+            const usuarios = await usuarioModel.getAll();
+            res.json(usuarios);
+        } catch (err) {
+            console.error("❌ Error al obtener usuarios:", err);
+            res.status(500).json({ error: "Error al obtener usuarios" });
+        }
+    }
+
+    static async create(req, res) {
+        const { field1, field2 } = req.body;
+        if (!field1 || !field2) {
+            return res.status(400).json({ error: "Faltan datos obligatorios" });
+        }
+        try {
+            await usuarioModel.create({ field1, field2 });
+            res.status(201).json({ mensaje: "Creado exitosamente" });
+        } catch (err) {
+            console.error("❌ Error al crear:", err);
+            res.status(500).json({ error: "Error al crear" });
+        }
+    }
+}
+
+export default UsuarioController;
+```
+
+### Model Pattern
+Models contain database queries:
+
+```javascript
+// src/models/usuarioModel.js
+import pool from "../db.js";
+
+class UsuarioModel {
+    static async getAll() {
+        const result = await pool.query("SELECT * FROM usuarios");
+        return result.rows;
+    }
+
+    static async create(data) {
+        const { field1, field2 } = data;
+        await pool.query(
+            "INSERT INTO tabla (field1, field2) VALUES ($1, $2)",
+            [field1, field2]
+        );
+    }
+}
+
+export default UsuarioModel;
 ```
 
 ### Security
@@ -128,11 +209,15 @@ JWT_SECRET=your_secret_key
 ## Project Structure
 
 ```
-routes/
-  ├── *.routes.js          # Main API routes
-  └── bitacoras/           # Log/registry routes
-index.mjs                  # Entry point (Express app)
-db.js                      # PostgreSQL pool configuration
+src/
+  ├── controllers/           # Route handlers (class-based)
+  ├── models/               # Database query functions
+  ├── middleware/           # Express middleware (auth, etc.)
+  ├── routes/               # API route definitions
+  │   └── bitacoras/        # Log/registry routes
+  └── db.js                 # PostgreSQL pool configuration
+index.mjs                   # Entry point (Express app)
+swagger.yaml                # API documentation
 ```
 
 ## Conventions to Follow
