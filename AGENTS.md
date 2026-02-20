@@ -170,22 +170,22 @@ Models contain database queries:
 // src/models/usuarioModel.js
 import pool from "../db.js";
 
-const usuarioModel = {
-    async getAll() {
+class UsuarioModel {
+    static async getAll() {
         const result = await pool.query("SELECT * FROM usuarios");
         return result.rows;
-    },
+    }
 
-    async create(data) {
+    static async create(data) {
         const { field1, field2 } = data;
         await pool.query(
             "INSERT INTO tabla (field1, field2) VALUES ($1, $2)",
             [field1, field2]
         );
-    },
-};
+    }
+}
 
-export default usuarioModel;
+export default UsuarioModel;
 ```
 
 ### Security

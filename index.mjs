@@ -8,8 +8,14 @@ import { parse } from "yaml";
 // Importar rutas
 
 // 📄 Swagger setup
-const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
-const swaggerDocument = parse(swaggerFile);
+let swaggerDocument;
+try {
+  const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
+  swaggerDocument = parse(swaggerFile);
+} catch (error) {
+  console.error("Error loading or parsing './swagger.yaml'. Please ensure the file exists and contains valid YAML.\nDetails:", error.message);
+  process.exit(1);
+}
 
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
