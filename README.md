@@ -1,5 +1,14 @@
 ## Configuración esencial (rápida)
 
+### Comandos para arrancar el proyecto
+
+- `npm install`
+	- **Sirve para:** instalar dependencias (primera vez o cuando cambie `package.json`).
+- `npm run dev`
+	- **Sirve para:** desarrollo local con recarga automática (`nodemon`).
+- `npm start`
+	- **Sirve para:** ejecución tipo producción (sin recarga automática, con `node`).
+
 ### Puertos esperados
 
 - **Frontend esperado:** `http://localhost:3000`

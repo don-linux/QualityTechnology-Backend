@@ -102,6 +102,10 @@ app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
 app.use("/medellin/recambios", bitacoraRecambioRoutes);
 app.use("/medellin/inventario", bitacoraInventarioRoutes);
 
+app.get("/", (req, res) => {
+  res.json({ message: "Backend de Quality Technology jalando" });
+});
+
 // 🚀 Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
