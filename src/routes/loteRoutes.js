@@ -11,7 +11,6 @@ router.use(authMiddleware);
    📌 RUTAS DE INSTALACIONES (En contexto de Lotes)
 -------------------------------------------------------- */
 router.get("/instalaciones/:granja", loteController.getInstalaciones);
-router.get("/familia/:instalacion", loteController.getFamilia);
 
 /* --------------------------------------------------------
    📌 RUTAS DE LOTES
