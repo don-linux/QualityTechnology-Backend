@@ -52,6 +52,9 @@ import bitacoraMedicamentoRoutes from './src/routes/bitacoras/bitacoraMedicament
 import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoutes.js';
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
 
+// ruta de Catalogos
+import catalogoEstadoRoutes from "./src/routes/catalogos/estado.js";
+
 dotenv.config();
 
 const app = express();
@@ -107,6 +110,9 @@ app.use("/medellin/parametros", bitacoraParametroRoutes);
 app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
 app.use("/medellin/recambios", bitacoraRecambioRoutes);
 app.use("/medellin/inventario", bitacoraInventarioRoutes);
+
+// Catalogos
+app.use("/estados", catalogoEstadoRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend de Quality Technology jalando" });

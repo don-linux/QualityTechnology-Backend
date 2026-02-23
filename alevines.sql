@@ -1780,6 +1780,7 @@ CREATE VIEW "public"."vw_tesoreria_general" AS  SELECT fc_granja,
   GROUP BY fc_granja, fc_mes, fc_categoria
   ORDER BY fc_granja, fc_mes, fc_categoria;
 
+
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
@@ -2477,3 +2478,50 @@ ALTER TABLE "public"."trazabilidad_engorda" ADD CONSTRAINT "rastreabilidad_engor
 -- Foreign Keys structure for table usuarios
 -- ----------------------------
 ALTER TABLE "public"."usuarios" ADD CONSTRAINT "fi_rol_id" FOREIGN KEY ("fi_rol_id") REFERENCES "public"."roles" ("fi_rol_id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+CREATE SCHEMA IF NOT EXISTS catalogos;
+
+CREATE TABLE catalogos.estados (
+  fi_estado_id SERIAL PRIMARY KEY,
+  fc_nombre VARCHAR(50) UNIQUE
+);
+
+CREATE TABLE catalogos.ciudades (
+  fi_ciudad_id SERIAL PRIMARY KEY,
+  fi_estado_id INT REFERENCES catalogos.estados(fi_estado_id),
+  fc_nombre VARCHAR(50)
+);
+
+INSERT INTO catalogos.estados (fc_nombre) VALUES
+('Aguascalientes'),
+('Baja California'),
+('Baja California Sur'),
+('Campeche'),
+('Chiapas'),
+('Chihuahua'),
+('Ciudad de México'),
+('Coahuila'),
+('Colima'),
+('Durango'),
+('Estado de México'),
+('Guanajuato'),
+('Guerrero'),
+('Hidalgo'),
+('Jalisco'),
+('Michoacán'),
+('Morelos'),
+('Nayarit'),
+('Nuevo León'),
+('Oaxaca'),
+('Puebla'),
+('Querétaro'),
+('Quintana Roo'),
+('San Luis Potosí'),
+('Sinaloa'),
+('Sonora'),
+('Tabasco'),
+('Tamaulipas'),
+('Tlaxcala'),
+('Veracruz'),
+('Yucatán'),
+('Zacatecas');
