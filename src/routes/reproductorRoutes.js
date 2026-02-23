@@ -122,10 +122,16 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const machos = parseInt(fn_machos || 0);
-  const hembras = parseInt(fn_hembras || 0);
+  const machos = Number(fn_machos || 0);
+  const hembras = Number(fn_hembras || 0);
   const cantidad = machos + hembras;
-  const fc_ratio = machos > 0 ? `1:${hembras}` : null;
+
+  let fc_ratio = null;
+  if (machos > 0 && hembras > 0) {
+    const r = hembras / machos;
+    const r2 = Math.round(r * 100) / 100; 
+    fc_ratio = `1:${r2}`;
+  }
 
   const client = await pool.connect();
 
@@ -243,10 +249,16 @@ router.put("/:id", async (req, res) => {
     fi_usuario_id,
   } = req.body;
 
-  const machos = parseInt(fn_machos || 0);
-  const hembras = parseInt(fn_hembras || 0);
+  const machos = Number(fn_machos || 0);
+  const hembras = Number(fn_hembras || 0);
   const cantidad = machos + hembras;
-  const fc_ratio = machos > 0 ? `1:${hembras}` : null;
+
+  let fc_ratio = null;
+  if (machos > 0 && hembras > 0) {
+  const r = hembras / machos;
+  const r2 = Math.round(r * 100) / 100; 
+  fc_ratio = `1:${r2}`;
+  }
 
   const client = await pool.connect();
 
