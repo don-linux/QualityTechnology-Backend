@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import usuarioModel from "../models/usuarioModel.js";
+import pool from "./../db.js";
 
 class UsuarioController {
     static async getAll(req, res) {
@@ -63,11 +64,26 @@ class UsuarioController {
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
-            const passwordMatch = await usuarioModel.verifyPassword(contraseña, usuario.contrasena);
+            const passwordMatch = await usuarioModel.verifyPassword(
+                contraseña, 
+                usuario.contrasena
+            );
+
             if (!passwordMatch) {
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
+            // 🔹 Obtener módulos del rol
+            const modulosResult = await pool.query(
+                `SELECT m.fi_modulo_id, m.fc_nombre
+                FROM seguridad.roles_modulos rm
+                JOIN seguridad.modulos m 
+                ON m.fi_modulo_id = rm.fi_modulo_id
+                WHERE rm.fi_rol_id = $1`,
+                [usuario.rol_id]
+            );
+
+            const modulos = modulosResult.rows;
             const token = jwt.sign(
                 {
                     usuario_id: usuario.usuario_id,
@@ -87,7 +103,9 @@ class UsuarioController {
                     nombre: usuario.nombre,
                     rol: usuario.rol_nombre,
                 },
+                modulos //se manda al frontend
             });
+
         } catch (err) {
             console.error("Error en login:", err.message);
             res.status(500).json({ error: "Error del servidor", detalle: err.message });

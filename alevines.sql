@@ -2486,12 +2486,6 @@ CREATE TABLE catalogos.estados (
   fc_nombre VARCHAR(50) UNIQUE NOT NULL
 );
 
-CREATE TABLE catalogos.ciudades (
-  fi_ciudad_id SERIAL PRIMARY KEY,
-  fi_estado_id INT REFERENCES catalogos.estados(fi_estado_id),
-  fc_nombre VARCHAR(50)
-);
-
 INSERT INTO catalogos.estados (fc_nombre) VALUES
 ('Aguascalientes'),
 ('Baja California'),
@@ -2550,3 +2544,56 @@ INSERT INTO rrhh.departamentos (fc_nombre) VALUES
 ('Calidad'),
 ('Legal'),
 ('Dirección General');
+
+CREATE TABLE rrhh.empleados (
+  fi_empleado_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  fi_usuario_id INT UNIQUE REFERENCES usuarios(fi_usuario_id)
+  fi_departamento_id INT REFERENCES rrhh.departamentos(fi_departamento_id),
+  fi_estado_id INT REFERENCES catalogos.estados(fi_estado_id),
+  fc_ciudad VARCHAR(60) NOT NULL,
+  fc_nombre VARCHAR(60) NOT NULL,
+  fc_apellido_paterno VARCHAR(60) NOT NULL,
+  fc_apellido_materno VARCHAR(60) NOT NULL,
+  fd_fecha_nacimiento DATE NOT NULL,
+  fc_calle VARCHAR(120) NOT NULL,
+  fc_codigo_postal VARCHAR(10) NOT NULL,
+  fc_referencias VARCHAR(255),
+  ft_comentarios_adicionales TEXT,
+  fd_fecha_alta DATE DEFAULT CURRENT_DATE,
+  fb_activo BOOLEAN DEFAULT true
+);
+
+CREATE SCHEMA IF NOT EXISTS seguridad;
+
+CREATE TABLE seguridad.modulos (
+  fi_modulo_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  fc_nombre VARCHAR(50) UNIQUE NOT NULL,
+  fc_ruta VARCHAR(100) UNIQUE NOT NULL,
+  fb_activo BOOLEAN DEFAULT true
+);
+
+INSERT INTO seguridad.modulos (fc_nombre, fc_ruta) VALUES
+('Operaciones', '/operaciones'),
+('Inventarios', '/inventarios'),
+('Ventas', '/ventas'),
+('Finanzas', '/finanzas'),
+('RRHH', '/rrhh'),
+('Catálogos', '/catalogos');
+
+CREATE TABLE seguridad.roles_modulos (
+  fi_rol_id INT REFERENCES public.roles(fi_rol_id),
+  fi_modulo_id INT REFERENCES seguridad.modulos(fi_modulo_id),
+  PRIMARY KEY (fi_rol_id, fi_modulo_id)
+);
+
+-- ADMIN (1)
+INSERT INTO seguridad.roles_modulos VALUES
+(1,1),(1,2),(1,3),(1,4),(1,5),(1,6);
+
+-- Biologa - Ejemplo (2)
+INSERT INTO seguridad.roles_modulos VALUES
+(2,1),(2,2);
+
+-- Jefe Empresa - Ejemplo (3)
+INSERT INTO seguridad.roles_modulos VALUES
+(3,4);
