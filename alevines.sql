@@ -2482,8 +2482,8 @@ ALTER TABLE "public"."usuarios" ADD CONSTRAINT "fi_rol_id" FOREIGN KEY ("fi_rol_
 CREATE SCHEMA IF NOT EXISTS catalogos;
 
 CREATE TABLE catalogos.estados (
-  fi_estado_id SERIAL PRIMARY KEY,
-  fc_nombre VARCHAR(50) UNIQUE
+  fi_estado_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  fc_nombre VARCHAR(50) UNIQUE NOT NULL
 );
 
 CREATE TABLE catalogos.ciudades (
@@ -2525,3 +2525,28 @@ INSERT INTO catalogos.estados (fc_nombre) VALUES
 ('Veracruz'),
 ('Yucatán'),
 ('Zacatecas');
+
+CREATE SCHEMA IF NOT EXISTS rrhh;
+
+CREATE TABLE rrhh.departamentos (
+  fi_departamento_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  fc_nombre VARCHAR(80) UNIQUE NOT NULL,
+  fb_activo BOOLEAN DEFAULT true
+);
+
+INSERT INTO rrhh.departamentos (fc_nombre) VALUES
+('Recursos Humanos'),
+('Finanzas'),
+('Contabilidad'),
+('Sistemas'),
+('Tecnología'),
+('Operaciones'),
+('Logística'),
+('Compras'),
+('Ventas'),
+('Marketing'),
+('Atención al Cliente'),
+('Producción'),
+('Calidad'),
+('Legal'),
+('Dirección General');
