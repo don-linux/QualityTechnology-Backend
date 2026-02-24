@@ -31,7 +31,7 @@ class BitacoraInventarioController {
                 fi_usuario_id
             });
 
-            res.json({ message: "✅ Registro agregado correctamente" });
+            res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error en POST /medellin/inventario:", err.message);
             res.status(500).json({ error: err.message });
@@ -52,7 +52,7 @@ class BitacoraInventarioController {
                 fc_lote, fc_observacion, fd_fecha_siembra, fd_fecha_salida_hormonado
             });
 
-            res.json({ message: "✅ Registro actualizado correctamente" });
+            res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error en PUT /medellin/inventario:", err.message);
             res.status(500).json({ error: err.message });
@@ -62,7 +62,7 @@ class BitacoraInventarioController {
     static async delete(req, res) {
         try {
             await bitacoraInventarioModel.delete(req.params.id);
-            res.json({ message: "🗑️ Registro eliminado correctamente" });
+            res.json({ message: "Registro eliminado correctamente" });
         } catch (err) {
             console.error("Error en DELETE /medellin/inventario:", err.message);
             res.status(500).json({ error: err.message });

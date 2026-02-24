@@ -16,7 +16,7 @@ class BitacoraPlagaController {
         try {
             const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
             await bitacoraPlagaModel.create(data);
-            res.json({ message: "✅ Registro agregado correctamente" });
+            res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error POST /plagas:", err.message);
             res.status(500).json({ error: err.message });
@@ -26,7 +26,7 @@ class BitacoraPlagaController {
     static async update(req, res) {
         try {
             await bitacoraPlagaModel.update(req.params.id, req.body);
-            res.json({ message: "✅ Registro actualizado correctamente" });
+            res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error PUT /plagas:", err.message);
             res.status(500).json({ error: err.message });
@@ -36,7 +36,7 @@ class BitacoraPlagaController {
     static async delete(req, res) {
         try {
             await bitacoraPlagaModel.delete(req.params.id);
-            res.json({ message: "🗑️ Registro eliminado correctamente" });
+            res.json({ message: "Registro eliminado correctamente" });
         } catch (err) {
             console.error("Error DELETE /plagas:", err.message);
             res.status(500).json({ error: err.message });
@@ -48,10 +48,10 @@ class BitacoraPlagaController {
             const { ubicacion } = req.query;
             if (ubicacion) {
                 await bitacoraPlagaModel.deleteByUbicacion(ubicacion);
-                res.json({ message: `✅ Todos los registros de ${ubicacion} eliminados.` });
+                res.json({ message: `Todos los registros de ${ubicacion} eliminados.` });
             } else {
                 await bitacoraPlagaModel.deleteAll();
-                res.json({ message: "✅ Todos los registros eliminados (todas las ubicaciones)." });
+                res.json({ message: "Todos los registros eliminados (todas las ubicaciones)." });
             }
         } catch (err) {
             console.error("Error DELETE /plagas:", err.message);

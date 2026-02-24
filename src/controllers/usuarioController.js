@@ -7,7 +7,7 @@ class UsuarioController {
             const usuarios = await usuarioModel.getAll();
             res.json(usuarios);
         } catch (err) {
-            console.error("❌ Error al obtener usuarios:", err);
+            console.error("Error al obtener usuarios:", err);
             res.status(500).json({ error: "Error al obtener usuarios" });
         }
     }
@@ -21,7 +21,7 @@ class UsuarioController {
             await usuarioModel.create({ nombre, contraseña, rol_id });
             res.status(201).json({ mensaje: "Usuario creado exitosamente" });
         } catch (err) {
-            console.error("❌ Error al crear usuario:", err);
+            console.error("Error al crear usuario:", err);
             res.status(500).json({ error: "Error al crear usuario" });
         }
     }
@@ -33,7 +33,7 @@ class UsuarioController {
             await usuarioModel.update(id, { nombre, contraseña, rol_id });
             res.json({ mensaje: "Usuario actualizado correctamente" });
         } catch (err) {
-            console.error("❌ Error al actualizar usuario:", err);
+            console.error("Error al actualizar usuario:", err);
             res.status(500).json({ error: "Error al actualizar usuario" });
         }
     }
@@ -44,7 +44,7 @@ class UsuarioController {
             await usuarioModel.delete(id);
             res.json({ mensaje: "Usuario eliminado correctamente" });
         } catch (err) {
-            console.error("❌ Error al eliminar usuario:", err);
+            console.error("Error al eliminar usuario:", err);
             res.status(500).json({ error: "Error al eliminar usuario" });
         }
     }
@@ -89,7 +89,7 @@ class UsuarioController {
                 },
             });
         } catch (err) {
-            console.error("❌ Error en login:", err.message);
+            console.error("Error en login:", err.message);
             res.status(500).json({ error: "Error del servidor", detalle: err.message });
         }
     }

@@ -8,7 +8,7 @@ class PiletaController {
             const orígenes = await origenModel.getOrigen(granja);
             res.json(orígenes);
         } catch (err) {
-            console.error("❌ Error origen instalaciones:", err);
+            console.error("Error origen instalaciones:", err);
             res.status(500).json({ error: "Error obteniendo instalaciones" });
         }
     }
@@ -19,7 +19,7 @@ class PiletaController {
             const lotes = await piletaModel.getLotesByGranja(granja);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error lotes:", err);
+            console.error("Error lotes:", err);
             res.status(500).json({ error: "Error cargando lotes" });
         }
     }
@@ -30,7 +30,7 @@ class PiletaController {
             const inventario = await piletaModel.getInventario(granja);
             res.json(inventario);
         } catch (err) {
-            console.error("❌ Error inventario:", err);
+            console.error("Error inventario:", err);
             res.status(500).json({ error: "Error cargando inventario" });
         }
     }
@@ -41,7 +41,7 @@ class PiletaController {
             const lote = await piletaModel.getLotePorInstalacion(req.params.inst, granja);
             res.json(lote);
         } catch (err) {
-            console.error("❌ Error lote según instalación:", err);
+            console.error("Error lote según instalación:", err);
             res.status(500).json({ error: "Error obteniendo lote" });
         }
     }
@@ -78,7 +78,7 @@ class PiletaController {
             res.json({ success: true, message: "Registrado correctamente" });
 
         } catch (err) {
-            console.error("❌ Error siembra:", err);
+            console.error("Error siembra:", err);
             res.status(500).json({ error: "Error registrando siembra" });
         }
     }
@@ -93,7 +93,7 @@ class PiletaController {
             await piletaModel.updateAlevinesLote(prev.fi_lote_id, -prev.cantidad);
             res.json({ success: true });
         } catch (err) {
-            console.error("❌ Error eliminando pileta:", err);
+            console.error("Error eliminando pileta:", err);
             res.status(500).json({ error: "Error eliminando pileta" });
         }
     }
@@ -103,7 +103,7 @@ class PiletaController {
             const movimientos = await piletaModel.getMovimientos(req.params.usuario, req.params.granja);
             res.json(movimientos);
         } catch (err) {
-            console.error("❌ Error obteniendo movimientos:", err);
+            console.error("Error obteniendo movimientos:", err);
             res.status(500).json({ error: "Error obteniendo movimientos" });
         }
     }
@@ -115,7 +115,7 @@ class PiletaController {
             const movimientos = await piletaModel.getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_fin);
             res.json(movimientos);
         } catch (err) {
-            console.error("❌ Error filtrando movimientos:", err);
+            console.error("Error filtrando movimientos:", err);
             res.status(500).json({ error: "Error en filtrado" });
         }
     }
@@ -125,7 +125,7 @@ class PiletaController {
             const movId = await piletaModel.createMovimiento(req.body);
             res.json({ success: true, movimiento_id: movId });
         } catch (err) {
-            console.error("❌ Error registrando movimiento:", err);
+            console.error("Error registrando movimiento:", err);
             res.status(500).json({ error: "Error guardando movimiento" });
         }
     }
@@ -143,7 +143,7 @@ class PiletaController {
             }
             res.status(400).json({ error: "Solicitud inválida" });
         } catch (err) {
-            console.error("❌ Error eliminando movimiento:", err);
+            console.error("Error eliminando movimiento:", err);
             res.status(500).json({ error: "Error eliminando movimiento" });
         }
     }

@@ -40,7 +40,7 @@ class BitacoraParametroController {
                 fc_responsable, fi_usuario_id
             });
 
-            res.json({ message: "✅ Registro agregado correctamente" });
+            res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error en POST /medellin/parametros:", err.message);
             res.status(500).json({ error: err.message });
@@ -65,7 +65,7 @@ class BitacoraParametroController {
                 fc_responsable
             });
 
-            res.json({ message: "✅ Registro actualizado correctamente" });
+            res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error en PUT /medellin/parametros:", err.message);
             res.status(500).json({ error: err.message });
@@ -75,7 +75,7 @@ class BitacoraParametroController {
     static async delete(req, res) {
         try {
             await bitacoraParametroModel.delete(req.params.id);
-            res.json({ message: "🗑️ Registro eliminado" });
+            res.json({ message: "Registro eliminado" });
         } catch (err) {
             console.error("Error en DELETE /medellin/parametros:", err.message);
             res.status(500).json({ error: err.message });

@@ -7,7 +7,7 @@ class LoteController {
             const instalaciones = await loteModel.getInstalacionesByGranja(granja);
             res.json(instalaciones);
         } catch (err) {
-            console.error("❌ Error al obtener instalaciones:", err);
+            console.error("Error al obtener instalaciones:", err);
             res.status(500).send("Error obteniendo instalaciones");
         }
     }
@@ -17,7 +17,7 @@ class LoteController {
             const familia = await loteModel.getFamiliaByInstalacion(req.params.instalacion);
             res.json(familia);
         } catch (err) {
-            console.error("❌ Error al obtener familia:", err);
+            console.error("Error al obtener familia:", err);
             res.status(500).send("Error al obtener familia");
         }
     }
@@ -28,7 +28,7 @@ class LoteController {
             const lotes = await loteModel.getByGranja(granja);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error al obtener lotes por granja:", err);
+            console.error("Error al obtener lotes por granja:", err);
             res.status(500).send("Error al obtener lotes por granja");
         }
     }
@@ -47,7 +47,7 @@ class LoteController {
             });
             res.json({ message: "✓ Lote registrado correctamente." });
         } catch (err) {
-            console.error("❌ Error al registrar lote:", err);
+            console.error("Error al registrar lote:", err);
             res.status(500).send("Error al registrar lote");
         }
     }
@@ -65,9 +65,9 @@ class LoteController {
                 no_lote, fc_granja: granjaFinal,
                 observacion, mortalidad, mortalidad_porcentaje
             });
-            res.json({ message: "📝 Lote actualizado correctamente" });
+            res.json({ message: "Lote actualizado correctamente" });
         } catch (err) {
-            console.error("❌ Error al actualizar lote:", err);
+            console.error("Error al actualizar lote:", err);
             res.status(500).send("Error al actualizar lote");
         }
     }
@@ -75,9 +75,9 @@ class LoteController {
     static async delete(req, res) {
         try {
             await loteModel.delete(req.params.id);
-            res.json({ message: "🗑️ Lote eliminado correctamente" });
+            res.json({ message: "Lote eliminado correctamente" });
         } catch (err) {
-            console.error("❌ Error al eliminar lote:", err);
+            console.error("Error al eliminar lote:", err);
             res.status(500).send("Error al eliminar lote");
         }
     }
@@ -87,7 +87,7 @@ class LoteController {
             const lotes = await loteModel.getByInstalacion(req.params.id);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error al obtener lotes por instalación:", err);
+            console.error("Error al obtener lotes por instalación:", err);
             res.status(500).send("Error al obtener lotes por instalación");
         }
     }
