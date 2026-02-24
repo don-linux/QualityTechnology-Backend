@@ -104,17 +104,18 @@ router.get("/instalaciones/:granja", async (req, res) => {
 ========================================================= */
 router.post("/", async (req, res) => {
   const {
-    fc_instalacion,
-    origen_texto,
-    fn_talla,
-    fi_usuario_id,
-    fc_granja,
-    fn_machos,
-    fn_hembras,
-    fc_linea,
-    fc_familia,
-    fc_observacion,
-  } = req.body;
+      fc_instalacion,
+      origen_texto,
+      origen_tipo,   
+      fn_talla,
+      fi_usuario_id,
+      fc_granja,
+      fn_machos,
+      fn_hembras,
+      fc_linea,
+      fc_familia,
+      fc_observacion,
+    } = req.body;
 
   if (!origen_texto || origen_texto.trim() === "") {
     return res.status(400).json({
@@ -157,12 +158,12 @@ router.post("/", async (req, res) => {
         fd_fecha_registro
       )
       VALUES (
-        $1,$2,$3,
-        CURRENT_DATE,
-        CURRENT_DATE,
-        $4,
-        COALESCE(NULLIF($5,''),'Granja Acuícola Medellin'),
-        $6,$7,$8,$9,$10,$11,
+        $1, $2, $3,
+        $4,                 
+        $5,                 
+        $6,
+        COALESCE(NULLIF($7,''),'Granja Acuícola Medellin'),
+        $8, $9, $10, $11, $12, $13,
         CURRENT_TIMESTAMP
       )
       RETURNING fi_reproductor_id;
@@ -171,6 +172,8 @@ router.post("/", async (req, res) => {
         fc_instalacion,
         cantidad,
         fn_talla,
+        req.body.fd_fecha_siembra,     
+        req.body.fd_fecha_biometria,   
         fi_usuario_id,
         fc_granja,
         machos,
@@ -237,6 +240,7 @@ router.put("/:id", async (req, res) => {
 
   const {
     origen_texto,
+    origen_tipo,
     fc_instalacion,
     fn_talla,
     fn_machos,
