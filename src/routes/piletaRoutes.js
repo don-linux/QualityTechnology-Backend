@@ -20,6 +20,7 @@ router.get("/inventario/:granja", piletaController.getInventario);
 router.get("/origen/:granja", piletaController.getOrigen);
 
 router.post("/siembra", piletaController.siembra);
+router.delete("/siembra/:id", piletaController.delete);
 router.delete("/:id", piletaController.delete);
 
 /* ============================================================
