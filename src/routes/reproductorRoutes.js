@@ -4,9 +4,41 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   📋 GET – Reproductores por granja (con días en pila)
+   🔁 GET – Trazabilidad por granja
 ========================================================= */
-router.get("/:granja", async (req, res) => {
+router.get("/movimientos/:granja", async (req, res) => {
+  const { granja } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        rr.fi_movimiento_id,
+        rr.origen_texto AS origen,
+        r.fc_instalacion AS destino,
+        rr.cantidad_trasladada,
+        rr.fecha_movimiento,
+        rr.observacion
+      FROM trazabilidad_reproductores rr
+      INNER JOIN reproductores r
+        ON r.fi_reproductor_id = rr.fi_repro_destino
+      WHERE LOWER(r.fc_granja) = LOWER($1)
+      ORDER BY rr.fi_movimiento_id DESC;
+      `,
+      [granja]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error trazabilidad:", err);
+    res.status(500).json({ error: "Error al obtener trazabilidad" });
+  }
+});
+
+/* =========================================================
+   📋 GET – Reproductores por granja
+========================================================= */
+router.get("/granja/:granja", async (req, res) => {
   const { granja } = req.params;
 
   try {
@@ -41,65 +73,66 @@ router.get("/:granja", async (req, res) => {
 });
 
 /* =========================================================
-   🔁 GET – Trazabilidad por granja
+   📌 GET – Instalaciones por granja
 ========================================================= */
-router.get("/movimientos/:granja", async (req, res) => {
+router.get("/instalaciones/:granja", async (req, res) => {
   const { granja } = req.params;
 
   try {
     const result = await pool.query(
       `
-      SELECT
-        rr.fi_movimiento_id,
-        rr.origen_texto AS origen,
-        r.fc_instalacion AS destino,
-        rr.cantidad_trasladada,
-        rr.fecha_movimiento,
-        rr.observacion
-      FROM rastreabilidad_reproductores rr
-      INNER JOIN reproductores r
-        ON r.fi_reproductor_id = rr.fi_repro_destino
-      WHERE LOWER(r.fc_granja) = LOWER($1)
-      ORDER BY rr.fi_movimiento_id DESC;
+      SELECT 
+        fi_instalacion_id,
+        nombre_instalacion,
+        fc_granja
+      FROM instalaciones
+      WHERE LOWER(fc_granja) = LOWER($1)
+      ORDER BY nombre_instalacion ASC;
       `,
       [granja]
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error trazabilidad:", err);
-    res.status(500).json({ error: "Error al obtener trazabilidad" });
+    console.error("❌ Error instalaciones:", err);
+    res.status(500).json({ error: "Error obteniendo instalaciones" });
   }
 });
 
 /* =========================================================
-   ✅ POST – Registrar reproductor + trazabilidad inicial
+   ✅ POST – Registrar reproductor + trazabilidad
 ========================================================= */
 router.post("/", async (req, res) => {
   const {
-    fc_instalacion,
-    origen_texto,
-    fn_cantidad,
-    fn_talla,
-    fi_usuario_id,
-    fc_granja,
-    fn_machos,
-    fn_hembras,
-    fc_linea,
-    fc_familia,
-    fc_observacion,
-  } = req.body;
+      fc_instalacion,
+      origen_texto,
+      origen_tipo,   
+      fn_talla,
+      fi_usuario_id,
+      fc_granja,
+      fn_machos,
+      fn_hembras,
+      fc_linea,
+      fc_familia,
+      fc_observacion,
+    } = req.body;
 
   if (!origen_texto || origen_texto.trim() === "") {
-    return res
-      .status(400)
-      .json({ error: "Debe especificar el origen del reproductor" });
+    return res.status(400).json({
+      error: "Debe especificar el origen del reproductor",
+    });
   }
 
-  const machos = parseInt(fn_machos || 0);
-  const hembras = parseInt(fn_hembras || 0);
-  const cantidad = parseInt(fn_cantidad || 0);
-  const fc_ratio = machos > 0 ? `1:${hembras}` : null;
+  const machos = Number(fn_machos || 0);
+  const hembras = Number(fn_hembras || 0);
+  const cantidad = machos + hembras;
+
+  let fc_ratio = null;
+  if (machos > 0 && hembras > 0) {
+    const r = hembras / machos;
+    const r2 = Math.round(r * 100) / 100; 
+    fc_ratio = `1:${r2}`;
+  }
 
   const client = await pool.connect();
 
@@ -125,13 +158,12 @@ router.post("/", async (req, res) => {
         fd_fecha_registro
       )
       VALUES (
-        $1,$2,$3,
-        CURRENT_DATE,
-        CURRENT_DATE,
-        $4,
-        COALESCE(NULLIF($5,''),'Granja Acuícola Medellin'),
-        $6,$7,
-        $8,$9,$10,$11,
+        $1, $2, $3,
+        $4,                 
+        $5,                 
+        $6,
+        COALESCE(NULLIF($7,''),'Granja Acuícola Medellin'),
+        $8, $9, $10, $11, $12, $13,
         CURRENT_TIMESTAMP
       )
       RETURNING fi_reproductor_id;
@@ -140,6 +172,8 @@ router.post("/", async (req, res) => {
         fc_instalacion,
         cantidad,
         fn_talla,
+        req.body.fd_fecha_siembra,     
+        req.body.fd_fecha_biometria,   
         fi_usuario_id,
         fc_granja,
         machos,
@@ -155,7 +189,7 @@ router.post("/", async (req, res) => {
 
     await client.query(
       `
-      INSERT INTO rastreabilidad_reproductores (
+      INSERT INTO trazabilidad_reproductores (
         fi_repro_origen,
         origen_texto,
         fi_repro_destino,
@@ -199,14 +233,15 @@ router.post("/", async (req, res) => {
 });
 
 /* =========================================================
-   ✏️ PUT – Actualizar reproductor + registrar trazabilidad
+   ✏️ PUT – Actualizar reproductor + trazabilidad
 ========================================================= */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
 
   const {
     origen_texto,
-    fc_instalacion,        // destino actualizado
+    origen_tipo,
+    fc_instalacion,
     fn_talla,
     fn_machos,
     fn_hembras,
@@ -215,20 +250,25 @@ router.put("/:id", async (req, res) => {
     fc_observacion,
     fd_fecha_siembra,
     fd_fecha_biometria,
-    fi_usuario_id
+    fi_usuario_id,
   } = req.body;
 
-  const machos = parseInt(fn_machos || 0);
-  const hembras = parseInt(fn_hembras || 0);
+  const machos = Number(fn_machos || 0);
+  const hembras = Number(fn_hembras || 0);
   const cantidad = machos + hembras;
-  const fc_ratio = machos > 0 ? `1:${hembras}` : null;
+
+  let fc_ratio = null;
+  if (machos > 0 && hembras > 0) {
+  const r = hembras / machos;
+  const r2 = Math.round(r * 100) / 100; 
+  fc_ratio = `1:${r2}`;
+  }
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
-    /* ---------- Actualizar reproductor ---------- */
     await client.query(
       `
       UPDATE reproductores
@@ -258,14 +298,13 @@ router.put("/:id", async (req, res) => {
         fc_observacion,
         fd_fecha_siembra,
         fd_fecha_biometria,
-        id
+        id,
       ]
     );
 
-    /* ---------- Insertar trazabilidad ---------- */
     await client.query(
       `
-      INSERT INTO rastreabilidad_reproductores (
+      INSERT INTO trazabilidad_reproductores (
         fi_repro_origen,
         origen_texto,
         fi_repro_destino,
@@ -284,22 +323,15 @@ router.put("/:id", async (req, res) => {
         $5
       );
       `,
-      [
-        origen_texto,
-        id,
-        cantidad,
-        fc_observacion,
-        fi_usuario_id
-      ]
+      [origen_texto, id, cantidad, fc_observacion, fi_usuario_id]
     );
 
     await client.query("COMMIT");
 
     res.json({
       success: true,
-      message: "Reproductor actualizado y trazabilidad registrada"
+      message: "Reproductor actualizado y trazabilidad registrada",
     });
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("❌ Error actualizar reproductor:", err);
@@ -325,34 +357,6 @@ router.delete("/:id", async (req, res) => {
   } catch (err) {
     console.error("❌ Error eliminar:", err);
     res.status(500).json({ error: "Error al eliminar reproductor" });
-  }
-});
-
-/* =========================================================
-   📌 GET – Todas las instalaciones por granja (ruta usada por frontend)
-========================================================= */
-router.get("/:granja", async (req, res) => {
-  const { granja } = req.params;
-
-  try {
-    const result = await pool.query(
-      `
-      SELECT 
-        fi_instalacion_id,
-        nombre_instalacion,
-        fc_granja
-      FROM instalaciones
-      WHERE LOWER(fc_granja) = LOWER($1)
-      ORDER BY nombre_instalacion ASC;
-      `,
-      [granja]
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("❌ Error instalaciones:", err);
-    res.status(500).json({ error: "Error obteniendo instalaciones" });
   }
 });
 
