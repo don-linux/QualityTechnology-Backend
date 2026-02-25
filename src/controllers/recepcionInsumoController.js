@@ -16,7 +16,7 @@ class RecepcionInsumoController {
         try {
             const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
             await recepcionInsumoModel.create(data);
-            res.json({ message: "✅ Registro agregado correctamente" });
+            res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error POST /recepcion_insumos:", err.message);
             res.status(500).json({ error: err.message });
@@ -26,7 +26,7 @@ class RecepcionInsumoController {
     static async update(req, res) {
         try {
             await recepcionInsumoModel.update(req.params.id, req.body);
-            res.json({ message: "✅ Registro actualizado correctamente" });
+            res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error PUT /recepcion_insumos:", err.message);
             res.status(500).json({ error: err.message });
@@ -36,7 +36,7 @@ class RecepcionInsumoController {
     static async delete(req, res) {
         try {
             await recepcionInsumoModel.delete(req.params.id);
-            res.json({ message: "🗑️ Registro eliminado correctamente" });
+            res.json({ message: "Registro eliminado correctamente" });
         } catch (err) {
             console.error("Error DELETE /recepcion_insumos:", err.message);
             res.status(500).json({ error: err.message });
@@ -48,10 +48,10 @@ class RecepcionInsumoController {
             const { ubicacion } = req.query;
             if (ubicacion) {
                 await recepcionInsumoModel.deleteByUbicacion(ubicacion);
-                res.json({ message: `✅ Registros de ${ubicacion} eliminados.` });
+                res.json({ message: `Registros de ${ubicacion} eliminados.` });
             } else {
                 await recepcionInsumoModel.deleteAll();
-                res.json({ message: "✅ Todos los registros eliminados." });
+                res.json({ message: "Todos los registros eliminados." });
             }
         } catch (err) {
             console.error("Error DELETE /recepcion_insumos:", err.message);

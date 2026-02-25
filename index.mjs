@@ -55,6 +55,9 @@ import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioR
 // ruta de Catalogos
 import catalogoEstadoRoutes from "./src/routes/catalogos/estado.js";
 
+// Rutas de Seguridad - Roles y Módulos
+import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
+
 dotenv.config();
 
 const app = express();
@@ -113,6 +116,9 @@ app.use("/medellin/inventario", bitacoraInventarioRoutes);
 
 // Catalogos
 app.use("/estados", catalogoEstadoRoutes);
+
+//Seguridad - Roles y Módulos
+app.use("/roles-modulos", rolesModulosRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend de Quality Technology jalando" });

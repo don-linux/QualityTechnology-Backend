@@ -69,7 +69,7 @@ class AlimentoController {
 
             res.status(201).json(nuevoAlimento);
         } catch (err) {
-            console.error("❌ Error al registrar alimento:", err);
+            console.error("Error al registrar alimento:", err);
             res.status(500).json({ error: "Error al registrar alimento" });
         }
     }
@@ -83,7 +83,7 @@ class AlimentoController {
             const alimentos = await alimentoModel.getAll(isAdmin, usuarioId);
             res.json(alimentos);
         } catch (err) {
-            console.error("❌ Error al obtener alimentos:", err);
+            console.error("Error al obtener alimentos:", err);
             res.status(500).json({ error: "Error al obtener alimentos" });
         }
     }
@@ -91,9 +91,9 @@ class AlimentoController {
     static async delete(req, res) {
         try {
             await alimentoModel.delete(req.params.id);
-            res.json({ message: "Registro eliminado correctamente ✅" });
+            res.json({ message: "Registro eliminado correctamente" });
         } catch (err) {
-            console.error("❌ Error al eliminar alimento:", err);
+            console.error("Error al eliminar alimento:", err);
             res.status(500).json({ error: "Error al eliminar alimento" });
         }
     }

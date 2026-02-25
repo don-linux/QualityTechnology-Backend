@@ -35,7 +35,7 @@ class BitacoraMedicamentoController {
                 fi_usuario_id
             });
 
-            res.json({ message: "✅ Registro agregado correctamente" });
+            res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error en POST /medellin/medicamentos:", err.message);
             res.status(500).json({ error: err.message });
@@ -55,7 +55,7 @@ class BitacoraMedicamentoController {
                 fd_fecha_ultima_dosis, fc_responsable
             });
 
-            res.json({ message: "✅ Registro actualizado correctamente" });
+            res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error en PUT /medellin/medicamentos:", err.message);
             res.status(500).json({ error: err.message });
@@ -65,7 +65,7 @@ class BitacoraMedicamentoController {
     static async delete(req, res) {
         try {
             await bitacoraMedicamentoModel.delete(req.params.id);
-            res.json({ message: "🗑️ Registro eliminado" });
+            res.json({ message: "Registro eliminado" });
         } catch (err) {
             console.error("Error en DELETE /medellin/medicamentos:", err.message);
             res.status(500).json({ error: err.message });

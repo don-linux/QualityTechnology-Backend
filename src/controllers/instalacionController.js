@@ -6,7 +6,7 @@ class InstalacionController {
             const instalaciones = await instalacionModel.getAll();
             res.json(instalaciones);
         } catch (err) {
-            console.error("❌ Error al obtener instalaciones:", err);
+            console.error("Error al obtener instalaciones:", err);
             res.status(500).send("Error al obtener instalaciones");
         }
     }
@@ -18,7 +18,7 @@ class InstalacionController {
             const instalaciones = await instalacionModel.getByGranja(granjaNormalizada);
             res.json(instalaciones);
         } catch (err) {
-            console.error("❌ Error al obtener instalaciones por granja:", err);
+            console.error("Error al obtener instalaciones por granja:", err);
             res.status(500).send("Error al obtener instalaciones");
         }
     }
@@ -32,9 +32,9 @@ class InstalacionController {
                 nombre_instalacion, tipo_instalacion, fc_granja: granjaFinal,
                 estado: estadoFinal, largo, ancho, altura, material
             });
-            res.json({ message: "✅ Instalación registrada correctamente." });
+            res.json({ message: "Instalación registrada correctamente." });
         } catch (err) {
-            console.error("❌ Error al registrar instalación:", err);
+            console.error("Error al registrar instalación:", err);
             res.status(500).send("Error al registrar instalación");
         }
     }
@@ -49,10 +49,10 @@ class InstalacionController {
                 nombre_instalacion, tipo_instalacion, fc_granja: granjaFinal,
                 estado: estadoFinal, largo, ancho, altura, material
             });
-            if (!updated) return res.status(404).json({ message: "❌ Instalación no encontrada." });
-            res.json({ success: true, message: "✅ Instalación actualizada correctamente.", data: updated });
+            if (!updated) return res.status(404).json({ message: "Instalación no encontrada." });
+            res.json({ success: true, message: "Instalación actualizada correctamente.", data: updated });
         } catch (err) {
-            console.error("❌ Error al actualizar instalación:", err);
+            console.error("Error al actualizar instalación:", err);
             res.status(500).send("Error al actualizar instalación");
         }
     }
@@ -60,10 +60,10 @@ class InstalacionController {
     static async delete(req, res) {
         try {
             const deleted = await instalacionModel.delete(req.params.id);
-            if (!deleted) return res.status(404).json({ message: "❌ Instalación no encontrada." });
-            res.json({ message: "🗑️ Instalación eliminada correctamente." });
+            if (!deleted) return res.status(404).json({ message: "Instalación no encontrada." });
+            res.json({ message: "Instalación eliminada correctamente." });
         } catch (err) {
-            console.error("❌ Error al eliminar instalación:", err);
+            console.error("Error al eliminar instalación:", err);
             res.status(500).send("Error al eliminar instalación");
         }
     }
@@ -75,7 +75,7 @@ class InstalacionController {
             const instalaciones = await instalacionModel.getByTipoAndGranja(tipo, granjaNormalizada);
             res.json(instalaciones);
         } catch (err) {
-            console.error("❌ Error al obtener instalaciones por tipo:", err);
+            console.error("Error al obtener instalaciones por tipo:", err);
             res.status(500).json({ error: "Error al obtener instalaciones por tipo" });
         }
     }

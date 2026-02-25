@@ -9,7 +9,7 @@ class BitacoraBiometriaController {
             const result = await bitacoraBiometriaModel.getByGranja(granja);
             res.json(result);
         } catch (err) {
-            console.error("❌ GET /biometrias Error:", err);
+            console.error("GET /biometrias Error:", err);
             res.status(500).json({ error: "Error obteniendo biometrías" });
         }
     }
@@ -40,7 +40,7 @@ class BitacoraBiometriaController {
 
             res.json({ message: "Biometría registrada", id });
         } catch (err) {
-            console.error("❌ POST /biometrias Error:", err);
+            console.error("POST /biometrias Error:", err);
             res.status(500).json({ error: "Error creando biometría" });
         }
     }
@@ -67,7 +67,7 @@ class BitacoraBiometriaController {
 
             res.json({ message: "Biometría actualizada" });
         } catch (err) {
-            console.error("❌ PUT /biometrias Error:", err);
+            console.error("PUT /biometrias Error:", err);
             res.status(500).json({ error: "Error actualizando biometría" });
         }
     }
@@ -79,7 +79,7 @@ class BitacoraBiometriaController {
             if (!info) return res.json({ tipo: null });
             res.json(info);
         } catch (err) {
-            console.error("❌ Error en /info biometrías:", err);
+            console.error("Error en /info biometrías:", err);
             res.status(500).json({ error: "Error obteniendo información automática" });
         }
     }

@@ -12,7 +12,7 @@ class PiletaController {
             const origenes = await origenModel.getOrigen(granja);
             res.json(origenes);
         } catch (err) {
-            console.error("❌ Error origen instalaciones:", err);
+            console.error("Error origen instalaciones:", err);
             res.status(500).json({ error: "Error obteniendo instalaciones" });
         }
     }
@@ -26,7 +26,7 @@ class PiletaController {
             const lotes = await piletaModel.getLotesByGranja(granja);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error lotes:", err);
+            console.error("Error lotes:", err);
             res.status(500).json({ error: "Error cargando lotes" });
         }
     }
@@ -40,7 +40,7 @@ class PiletaController {
             const inventario = await piletaModel.getInventario(granja);
             res.json(inventario);
         } catch (err) {
-            console.error("❌ Error inventario:", err);
+            console.error("Error inventario:", err);
             res.status(500).json({ error: "Error cargando inventario" });
         }
     }
@@ -54,7 +54,7 @@ class PiletaController {
             const lote = await piletaModel.getLotePorInstalacion(req.params.inst, granja);
             res.json(lote);
         } catch (err) {
-            console.error("❌ Error lote según instalación:", err);
+            console.error("Error lote según instalación:", err);
             res.status(500).json({ error: "Error obteniendo lote" });
         }
     }
@@ -118,7 +118,7 @@ class PiletaController {
             });
 
         } catch (err) {
-            console.error("❌ Error siembra:", err);
+            console.error("Error siembra:", err);
             res.status(500).json({ error: "Error registrando siembra" });
         }
     }
@@ -166,7 +166,7 @@ static async delete(req, res) {
 
             res.json(movimientos);
         } catch (err) {
-            console.error("❌ Error obteniendo movimientos:", err);
+            console.error("Error obteniendo movimientos:", err);
             res.status(500).json({ error: "Error obteniendo movimientos" });
         }
     }
@@ -190,7 +190,7 @@ static async delete(req, res) {
             res.json(movimientos);
 
         } catch (err) {
-            console.error("❌ Error filtrando movimientos:", err);
+            console.error("Error filtrando movimientos:", err);
             res.status(500).json({ error: "Error en filtrado" });
         }
     }
@@ -209,7 +209,7 @@ static async delete(req, res) {
             });
 
         } catch (err) {
-            console.error("❌ Error registrando movimiento:", err);
+            console.error("Error registrando movimiento:", err);
             res.status(500).json({ error: "Error guardando movimiento" });
         }
     }
@@ -234,7 +234,7 @@ static async delete(req, res) {
             res.status(400).json({ error: "Solicitud inválida" });
 
         } catch (err) {
-            console.error("❌ Error eliminando movimiento:", err);
+            console.error("Error eliminando movimiento:", err);
             res.status(500).json({ error: "Error eliminando movimiento" });
         }
     }
