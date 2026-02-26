@@ -17,6 +17,20 @@ class LoteController {
     }
 
     /* =====================================================
+   📌 OBTENER INSTALACIONES DESDE REPRODUCTORES
+===================================================== */
+    static async getInstalacionesReproductores(req, res) {
+    try {
+        const granja = loteModel.normalizarGranja(req.params.granja);
+        const data = await loteModel.getInstalacionesFromReproductores(granja);
+        res.json(data);
+    } catch (err) {
+        console.error("❌ Error obteniendo instalaciones de reproductores:", err);
+        res.status(500).json({ error: "Error obteniendo instalaciones de reproductores" });
+    }
+}
+
+    /* =====================================================
        📌 OBTENER LOTES POR GRANJA
     ====================================================== */
     static async getByGranja(req, res) {
@@ -37,13 +51,14 @@ class LoteController {
     try {
         const {
             fecha,
-            familia,          
+            familia,
             fi_instalacion_id,
             huevos_ml,
+            ovadas = 0,     
             no_lote,
             fc_granja,
             observacion,
-            mortalidad = 0
+            mortalidad = 0  
         } = req.body;
 
         const granjaFinal = loteModel.normalizarGranja(fc_granja);
@@ -58,6 +73,7 @@ class LoteController {
             familia,             
             fi_instalacion_id,
             huevos_ml,
+            ovadas,
             alevines_inicial,
             no_lote,
             fc_granja: granjaFinal,
@@ -86,6 +102,7 @@ class LoteController {
                 fecha,
                 fi_instalacion_id,
                 huevos_ml,
+                ovadas = 0,
                 no_lote,
                 fc_granja,
                 observacion,
@@ -103,6 +120,7 @@ class LoteController {
                 fecha,
                 fi_instalacion_id,
                 huevos_ml,
+                ovadas,
                 no_lote,
                 fc_granja: granjaFinal,
                 observacion,

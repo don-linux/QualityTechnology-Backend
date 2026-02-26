@@ -22,69 +22,91 @@ class LoteModel {
         return res.rows;
     }
 
-    // Obtener lotes por granja (mejorado)
-  static async getByGranja(granja) {
-    const result = await pool.query(
-        `
-        SELECT 
-            l.*,
+    
+// Obtener instalaciones en reproductores
+static async getInstalacionesFromReproductores(granja) {
+    const query = `
+        SELECT DISTINCT
+            i.fi_instalacion_id,
             i.nombre_instalacion
-        FROM lotes l
-        LEFT JOIN instalaciones i
-            ON l.fi_instalacion_id = i.nombre_instalacion
-        WHERE l.fc_granja = $1
-        ORDER BY l.fecha DESC
-        `,
-        [granja]
-    );
-    return result.rows;
-}
-    // Crear lote
-    static async create(data) {
-    const {
-        fecha,
-        familia,
-        fi_instalacion_id,
-        huevos_ml,
-        alevines_inicial,
-        no_lote,
-        fc_granja,
-        observacion,
-        mortalidad,
-        mortalidad_porcentaje
-    } = data;
+        FROM instalaciones i
+        INNER JOIN reproductores r
+            ON i.nombre_instalacion = r.fc_instalacion   
+        WHERE i.fc_granja = $1
+        ORDER BY i.nombre_instalacion ASC
+    `;
 
-    const res = await pool.query(`
-        INSERT INTO lotes (
+    const res = await pool.query(query, [granja]);
+    return res.rows;
+}
+    // Obtener lotes por granja (LEFT JOIN corregido)
+    static async getByGranja(granja) {
+        const result = await pool.query(
+            `
+            SELECT 
+                l.*,
+                i.nombre_instalacion
+            FROM lotes l
+            LEFT JOIN instalaciones i
+                ON l.fi_instalacion_id::text = i.fi_instalacion_id::text
+            WHERE l.fc_granja = $1
+            ORDER BY l.fecha DESC
+            `,
+            [granja]
+        );
+        return result.rows;
+    }
+
+    // Crear lote (INSERT con ovadas)
+    static async create(data) {
+        const {
             fecha,
             familia,
             fi_instalacion_id,
             huevos_ml,
+            ovadas,
             alevines_inicial,
             no_lote,
             fc_granja,
             observacion,
             mortalidad,
-            mortalidad_porcentaje,
-            fecha_registro
-        )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,CURRENT_DATE)
-        RETURNING *
-    `, [
-        fecha,
-        familia,
-        fi_instalacion_id,
-        huevos_ml,
-        alevines_inicial,
-        no_lote,
-        fc_granja,
-        observacion,
-        mortalidad,
-        mortalidad_porcentaje
-    ]);
+            mortalidad_porcentaje
+        } = data;
 
-    return res.rows[0];
-}
+        const res = await pool.query(`
+            INSERT INTO lotes (
+                fecha,
+                familia,
+                fi_instalacion_id,
+                huevos_ml,
+                ovadas,
+                alevines_inicial,
+                no_lote,
+                fc_granja,
+                observacion,
+                mortalidad,
+                mortalidad_porcentaje,
+                fecha_registro
+            )
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CURRENT_DATE)
+            RETURNING *
+        `,
+        [
+            fecha,
+            familia,
+            fi_instalacion_id,
+            huevos_ml,
+            ovadas,
+            alevines_inicial,
+            no_lote,
+            fc_granja,
+            observacion,
+            mortalidad,
+            mortalidad_porcentaje
+        ]);
+
+        return res.rows[0];
+    }
 
     // Obtener solo los alevines iniciales
     static async getAlevinesInicial(id) {
@@ -97,12 +119,13 @@ class LoteModel {
         return res.rows[0]?.alevines_inicial || 0;
     }
 
-    // Actualizar lote
+    // Actualizar lote (UPDATE con ovadas)
     static async update(id, data) {
         const {
             fecha,
             fi_instalacion_id,
             huevos_ml,
+            ovadas,
             no_lote,
             fc_granja,
             observacion,
@@ -115,17 +138,20 @@ class LoteModel {
                 fecha = $1,
                 fi_instalacion_id = $2,
                 huevos_ml = $3,
-                no_lote = $4,
-                fc_granja = $5,
-                observacion = $6,
-                mortalidad = $7,
-                mortalidad_porcentaje = $8
-            WHERE fi_lote_id = $9
+                ovadas = $4,
+                no_lote = $5,
+                fc_granja = $6,
+                observacion = $7,
+                mortalidad = $8,
+                mortalidad_porcentaje = $9
+            WHERE fi_lote_id = $10
             RETURNING *
-        `, [
+        `,
+        [
             fecha,
             fi_instalacion_id,
             huevos_ml,
+            ovadas,
             no_lote,
             fc_granja,
             observacion,
@@ -139,18 +165,19 @@ class LoteModel {
 
     // Verificar dependencias antes de borrar
     static async hasDependencies(id) {
-    const checks = [
-        "SELECT 1 FROM trazabilidad_alevinaje WHERE fi_lote_id = $1 LIMIT 1",
-        "SELECT 1 FROM engorda WHERE fi_lote_id = $1 LIMIT 1"
-    ];
+        const checks = [
+            "SELECT 1 FROM trazabilidad_alevinaje WHERE fi_lote_id = $1 LIMIT 1",
+            "SELECT 1 FROM engorda WHERE fi_lote_id = $1 LIMIT 1"
+        ];
 
-    for (let q of checks) {
-        const r = await pool.query(q, [id]);
-        if (r.rowCount > 0) return true;
+        for (let q of checks) {
+            const r = await pool.query(q, [id]);
+            if (r.rowCount > 0) return true;
+        }
+
+        return false;
     }
 
-    return false;
-}
     // Eliminar lote
     static async delete(id) {
         await pool.query("DELETE FROM lotes WHERE fi_lote_id = $1", [id]);
