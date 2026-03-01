@@ -2,7 +2,6 @@ import pool from "../db.js";
 
 class OrigenModel {
 
-    // Normalizar la granja igual que en los demás modelos
     static normalizarGranja(granja) {
         if (!granja) return "Granja Acuícola Medellin";
         const g = granja.toLowerCase();
@@ -12,7 +11,8 @@ class OrigenModel {
     }
 
     /* =====================================================
-       OBTENER INSTALACIONES DISPONIBLES PARA ORIGEN
+       OBTENER PILETAS DISPONIBLES PARA ORIGEN INTERNO
+       (Solo las que tengan cantidad > 0)
     ====================================================== */
     static async getOrigen(granja) {
         const granjaFinal = this.normalizarGranja(granja);
@@ -21,11 +21,17 @@ class OrigenModel {
             const result = await pool.query(
                 `
                 SELECT 
-                    fi_instalacion_id,
-                    nombre_instalacion
-                FROM instalaciones
-                WHERE LOWER(TRIM(fc_granja)) = LOWER(TRIM($1))
-                ORDER BY nombre_instalacion ASC
+                    p.fi_pileta_id,
+                    p.cantidad,
+                    p.fi_lote_id,
+                    l.no_lote,
+                    COALESCE(i.nombre_instalacion, '-') AS nombre_instalacion
+                FROM piletas p
+                LEFT JOIN lotes l ON p.fi_lote_id = l.fi_lote_id
+                LEFT JOIN instalaciones i ON p.fi_instalacion_id = i.fi_instalacion_id
+                WHERE LOWER(TRIM(p.fc_granja)) = LOWER(TRIM($1))
+                AND p.cantidad > 0
+                ORDER BY p.fi_pileta_id ASC
                 `,
                 [granjaFinal]
             );
@@ -34,7 +40,7 @@ class OrigenModel {
 
         } catch (err) {
             console.error("❌ Error en OrigenModel.getOrigen:", err);
-            throw new Error("Error obteniendo instalaciones de origen");
+            throw new Error("Error obteniendo piletas disponibles como origen");
         }
     }
 }
