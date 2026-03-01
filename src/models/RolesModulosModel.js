@@ -6,6 +6,34 @@ class RolesModulosModel {
   // Obtener módulos por rol
   // =============================
   static async getModulosByRol(rolId) {
+
+    //Verificar si es root
+    const rolResult = await pool.query(
+      `SELECT fb_es_root FROM public.roles WHERE fi_rol_id = $1`,
+      [rolId]
+    );
+
+    const esRoot = rolResult.rows[0]?.fb_es_root;
+
+    //Si es root → devolver todos los módulos activos
+    if (esRoot) {
+      const result = await pool.query(
+        `
+        SELECT 
+          fi_modulo_id,
+          fc_nombre,
+          fc_ruta,
+          fb_activo
+        FROM seguridad.modulos
+        WHERE fb_activo = true
+        ORDER BY fc_nombre ASC
+        `
+      );
+
+      return result.rows;
+    }
+
+    //comportamiento normal si no es root
     const result = await pool.query(
       `
       SELECT 
@@ -25,11 +53,19 @@ class RolesModulosModel {
     return result.rows;
   }
 
-
   // =============================
   // Asignar módulo a rol
   // =============================
   static async assignModuloToRol(rolId, moduloId) {
+    const rolResult = await pool.query(
+      `SELECT fb_es_root FROM public.roles WHERE fi_rol_id = $1`,
+      [rolId]
+    );
+
+    if (rolResult.rows[0]?.fb_es_root) {
+      throw new Error("No se pueden modificar módulos del rol ROOT.");
+    }
+
     const result = await pool.query(
       `
       INSERT INTO seguridad.roles_modulos (fi_rol_id, fi_modulo_id)
@@ -48,9 +84,19 @@ class RolesModulosModel {
   // Quitar módulo de rol
   // =============================
   static async removeModuloFromRol(rolId, moduloId) {
+    const rolResult = await pool.query(
+      `SELECT fb_es_root FROM public.roles WHERE fi_rol_id = $1`,
+      [rolId]
+    );
+
+    if (rolResult.rows[0]?.fb_es_root) {
+      throw new Error("No se pueden modificar módulos del rol ROOT.");
+    }
+
+
     const result = await pool.query(
       `
-      DELETE FROM seguridad.roles_modulos
+      DELETE FROM public.roles_modulos
       WHERE fi_rol_id = $1
       AND fi_modulo_id = $2
       RETURNING *
@@ -67,6 +113,14 @@ class RolesModulosModel {
   // (borra todos y vuelve a insertar)
   // =============================
   static async replaceModulosByRol(rolId, modulosIds = []) {
+    const rolResult = await pool.query(
+      `SELECT fb_es_root FROM public.roles WHERE fi_rol_id = $1`,
+      [rolId]
+    );
+
+    if (rolResult.rows[0]?.fb_es_root) {
+      throw new Error("No se pueden modificar módulos del rol ROOT.");
+    }
 
     const client = await pool.connect();
 

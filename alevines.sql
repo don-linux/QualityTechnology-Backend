@@ -2579,6 +2579,7 @@ INSERT INTO seguridad.modulos (fc_nombre, fc_ruta) VALUES
 ('Finanzas', '/finanzas'),
 ('RRHH', '/rrhh'),
 ('Catálogos', '/catalogos');
+('Seguridad', '/seguridad');
 
 CREATE TABLE seguridad.roles_modulos (
   fi_rol_id INT REFERENCES public.roles(fi_rol_id),
@@ -2588,7 +2589,7 @@ CREATE TABLE seguridad.roles_modulos (
 
 -- ADMIN (1)
 INSERT INTO seguridad.roles_modulos VALUES
-(1,1),(1,2),(1,3),(1,4),(1,5),(1,6);
+(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7);
 
 -- Biologa - Ejemplo (2)
 INSERT INTO seguridad.roles_modulos VALUES
@@ -2597,3 +2598,14 @@ INSERT INTO seguridad.roles_modulos VALUES
 -- Jefe Empresa - Ejemplo (3)
 INSERT INTO seguridad.roles_modulos VALUES
 (3,4);
+
+ALTER TABLE public.roles
+ADD COLUMN fb_es_root BOOLEAN DEFAULT FALSE;
+
+UPDATE public.roles
+SET fb_es_root = true
+WHERE fi_rol_id = 1;
+
+CREATE UNIQUE INDEX unico_root
+ON public.roles (fb_es_root)
+WHERE fb_es_root = true;
