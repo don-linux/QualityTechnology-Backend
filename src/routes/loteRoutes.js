@@ -8,10 +8,9 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* --------------------------------------------------------
-   📌 RUTAS DE INSTALACIONES (En contexto de Lotes)
+   📌 RUTAS DE INSTALACIONES (Control Reproductivo)
 -------------------------------------------------------- */
-router.get("/instalaciones/:granja", loteController.getInstalaciones);
-
+router.get("/instalaciones/:granja", loteController.getInstalacionesReproductores);
 /* --------------------------------------------------------
    📌 RUTAS DE LOTES
 -------------------------------------------------------- */
