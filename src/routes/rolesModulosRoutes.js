@@ -1,8 +1,7 @@
-import { Router } from "express";
+import express from "express";
 import RolesModulosController from "./../controllers/rolesModulosController.js";
 
-const router = Router();
-
+const router = express.Router();
 
 // =============================
 // Obtener módulos por rol

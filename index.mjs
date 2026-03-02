@@ -56,6 +56,7 @@ import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioR
 import catalogoEstadoRoutes from "./src/routes/catalogos/estado.js";
 
 // Rutas de Seguridad - Roles y Módulos
+import modulosRoutes from "./src/routes/modulosRoutes.js";
 import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
 
 dotenv.config();
@@ -118,6 +119,7 @@ app.use("/medellin/inventario", bitacoraInventarioRoutes);
 app.use("/estados", catalogoEstadoRoutes);
 
 //Seguridad - Roles y Módulos
+app.use("/modulos", modulosRoutes);
 app.use("/roles-modulos", rolesModulosRoutes);
 
 app.get("/", (req, res) => {

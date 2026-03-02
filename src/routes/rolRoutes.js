@@ -29,8 +29,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-export default router;
-
 // PUT - Actualizar roles
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -59,3 +57,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+export default router;
