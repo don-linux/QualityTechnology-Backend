@@ -2547,7 +2547,7 @@ INSERT INTO rrhh.departamentos (fc_nombre) VALUES
 
 CREATE TABLE rrhh.empleados (
   fi_empleado_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  fi_usuario_id INT UNIQUE REFERENCES usuarios(fi_usuario_id)
+  fi_usuario_id INT UNIQUE REFERENCES usuarios(fi_usuario_id),
   fi_departamento_id INT REFERENCES rrhh.departamentos(fi_departamento_id),
   fi_estado_id INT REFERENCES catalogos.estados(fi_estado_id),
   fc_ciudad VARCHAR(60) NOT NULL,
@@ -2578,7 +2578,7 @@ INSERT INTO seguridad.modulos (fc_nombre, fc_ruta) VALUES
 ('Ventas', '/ventas'),
 ('Finanzas', '/finanzas'),
 ('RRHH', '/rrhh'),
-('Catálogos', '/catalogos');
+('Catálogos', '/catalogos'),
 ('Seguridad', '/seguridad');
 
 CREATE TABLE seguridad.roles_modulos (
