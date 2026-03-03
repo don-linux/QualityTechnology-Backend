@@ -1108,7 +1108,7 @@ CREATE TABLE "public"."lista_espera" (
 -- ----------------------------
 -- Records of lista_espera
 -- ----------------------------
-INSERT INTO "public"."lista_espera" VALUES (4, '2026-02-10', '12', 132.00, 'RICARDO BASURTO ZAPATA', 'Ixtacomitan', 'admin               ', 'Ceiba', '12', '1', 123.00, 'ALEVIN', 'La Ceiba', '2026-02-10 19:36:11.753148', '2026-02-10 19:36:11.753148');
+INSERT INTO "public"."lista_espera" VALUES (4, '2026-02-10', '12', 132.00, 'RICARDO BASURTO ZAPATA', 'Ixtacomitan', 'admin', 'Ceiba', '12', '1', 123.00, 'ALEVIN', 'La Ceiba', '2026-02-10 19:36:11.753148', '2026-02-10 19:36:11.753148');
 
 -- ----------------------------
 -- Table structure for lote_movimientos
@@ -2056,18 +2056,6 @@ SELECT setval('"public"."ventas_fi_venta_id_seq"', 48, true);
 ALTER TABLE "public"."alimentacion" ADD CONSTRAINT "ceiba_alimentacion_pkey" PRIMARY KEY ("fi_id");
 
 -- ----------------------------
--- Auto increment value for alimentos
--- ----------------------------
-SELECT setval('"public"."alimentos_fi_alimento_id_seq"', 29, true);
-
--- ----------------------------
--- Indexes structure for table alimentos
--- ----------------------------
-CREATE UNIQUE INDEX "xpkalimentos" ON "public"."alimentos" USING btree (
-  "fi_alimento_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Primary Key structure for table alimentos
 -- ----------------------------
 ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_pkey" PRIMARY KEY ("fi_alimento_id");
@@ -2128,13 +2116,6 @@ ALTER TABLE "public"."categorias" ADD CONSTRAINT "categorias_pkey" PRIMARY KEY (
 SELECT setval('"public"."clientes_fi_cliente_id_seq"', 17, true);
 
 -- ----------------------------
--- Indexes structure for table clientes
--- ----------------------------
-CREATE UNIQUE INDEX "xpkclientes" ON "public"."clientes" USING btree (
-  "fi_cliente_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Primary Key structure for table clientes
 -- ----------------------------
 ALTER TABLE "public"."clientes" ADD CONSTRAINT "clientes_pkey" PRIMARY KEY ("fi_cliente_id");
@@ -2188,7 +2169,6 @@ ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_ancho_check" 
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_altura_check" CHECK (altura > 0::numeric);
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_largo_check" CHECK (largo > 0::numeric);
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "chk_instalaciones_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
-ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "chk_fc_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 
 -- ----------------------------
 -- Primary Key structure for table instalaciones
@@ -2261,16 +2241,8 @@ ALTER TABLE "public"."parametros" ADD CONSTRAINT "medellin_parametros_pkey" PRIM
 SELECT setval('"public"."piletas_fi_pileta_id_seq"', 102, true);
 
 -- ----------------------------
--- Indexes structure for table piletas
--- ----------------------------
-CREATE UNIQUE INDEX "xpkpiletas" ON "public"."piletas" USING btree (
-  "fi_pileta_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Checks structure for table piletas
 -- ----------------------------
-ALTER TABLE "public"."piletas" ADD CONSTRAINT "chk_fc_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 ALTER TABLE "public"."piletas" ADD CONSTRAINT "chk_piletas_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 
 -- ----------------------------
@@ -2307,13 +2279,6 @@ ALTER TABLE "public"."reproductores" ADD CONSTRAINT "reproductores_pkey" PRIMARY
 -- Auto increment value for roles
 -- ----------------------------
 SELECT setval('"public"."roles_fi_rol_id_seq"', 2, true);
-
--- ----------------------------
--- Indexes structure for table roles
--- ----------------------------
-CREATE UNIQUE INDEX "xpkroles" ON "public"."roles" USING btree (
-  "fi_rol_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
 
 -- ----------------------------
 -- Primary Key structure for table roles
@@ -2356,9 +2321,11 @@ SELECT setval('"public"."usuarios_fi_usuario_id_seq"', 4, true);
 CREATE INDEX "fki_fi_rol_id" ON "public"."usuarios" USING btree (
   "fi_rol_id" "pg_catalog"."int4_ops" ASC NULLS LAST
 );
-CREATE UNIQUE INDEX "xpkusuarios" ON "public"."usuarios" USING btree (
-  "fi_usuario_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
+
+-- ----------------------------
+-- Uniques structure for table usuarios
+-- ----------------------------
+ALTER TABLE "public"."usuarios" ADD CONSTRAINT "usuarios_fc_nombre_key" UNIQUE ("fc_nombre");
 
 -- ----------------------------
 -- Primary Key structure for table usuarios
@@ -2369,13 +2336,6 @@ ALTER TABLE "public"."usuarios" ADD CONSTRAINT "usuarios_pkey" PRIMARY KEY ("fi_
 -- Primary Key structure for table vacaciones
 -- ----------------------------
 ALTER TABLE "public"."vacaciones" ADD CONSTRAINT "vacaciones_pkey" PRIMARY KEY ("fi_vacacion_id");
-
--- ----------------------------
--- Indexes structure for table ventas
--- ----------------------------
-CREATE UNIQUE INDEX "xpkventas" ON "public"."ventas" USING btree (
-  "fi_venta_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
 
 -- ----------------------------
 -- Primary Key structure for table ventas
