@@ -15,33 +15,33 @@ class BitacoraPlagaModel {
 
     static async create(data) {
         const {
-            fd_fecha, fn_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
+            fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
             fc_observaciones, fc_verifico, unidad_produccion, ubicacion, fi_usuario_id
         } = data;
 
         await pool.query(
             `INSERT INTO plagas 
-        (fd_fecha, fn_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno, 
+        (fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno, 
          fc_observaciones, fc_verifico, unidad_produccion, ubicacion, fi_usuario_id, fd_fecha_registro)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
-            [fd_fecha, fn_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
+            [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
                 fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", fi_usuario_id]
         );
     }
 
     static async update(id, data) {
         const {
-            fd_fecha, fn_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
+            fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
             fc_observaciones, fc_verifico, unidad_produccion, ubicacion
         } = data;
 
         await pool.query(
             `UPDATE plagas SET
-        fd_fecha=$1, fn_num_trampa=$2, tipo_trampa=$3, fc_hallazgo=$4,
+        fd_fecha=$1, fc_num_trampa=$2, tipo_trampa=$3, fc_hallazgo=$4,
         fc_malla=$5, fc_veneno=$6, fc_observaciones=$7, fc_verifico=$8,
         unidad_produccion=$9, ubicacion=$10, fd_fecha_modificacion=NOW()
        WHERE fi_id=$11`,
-            [fd_fecha, fn_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
+            [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
                 fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", id]
         );
     }

@@ -52,7 +52,7 @@ class LoteController {
         const {
             fecha,
             familia,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas = 0,     
             no_lote,
@@ -71,7 +71,7 @@ class LoteController {
         await loteModel.create({
             fecha,
             familia,             
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             alevines_inicial,
@@ -100,7 +100,7 @@ class LoteController {
             const { id } = req.params;
             const {
                 fecha,
-                fi_instalacion_id,
+                fc_instalacion_id,
                 huevos_ml,
                 ovadas = 0,
                 no_lote,
@@ -118,7 +118,7 @@ class LoteController {
 
             await loteModel.update(id, {
                 fecha,
-                fi_instalacion_id,
+                fc_instalacion_id,
                 huevos_ml,
                 ovadas,
                 no_lote,

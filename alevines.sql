@@ -17,17 +17,6 @@
 
 
 -- ----------------------------
--- Sequence structure for alimentos_fi_alimento_id
--- ----------------------------
-DROP SEQUENCE IF EXISTS "public"."alimentos_fi_alimento_id";
-CREATE SEQUENCE "public"."alimentos_fi_alimento_id" 
-INCREMENT 1
-MINVALUE  1
-MAXVALUE 2147483647
-START 1
-CACHE 1;
-
--- ----------------------------
 -- Sequence structure for alimentos_fi_alimento_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."alimentos_fi_alimento_id_seq";
@@ -780,8 +769,8 @@ START 1
 CACHE 1
 ),
   "fc_nombre" varchar(100) COLLATE "pg_catalog"."default",
-  "fc_telefono" char(10) COLLATE "pg_catalog"."default",
-  "fc_correo" char(30) COLLATE "pg_catalog"."default",
+  "fc_telefono" varchar(20) COLLATE "pg_catalog"."default",
+  "fc_correo" varchar(255) COLLATE "pg_catalog"."default",
   "fi_usuario_id" int4 NOT NULL,
   "fd_fecha_registro" date NOT NULL,
   "fd_fecha_modificacion" date NOT NULL,
@@ -1119,7 +1108,7 @@ CREATE TABLE "public"."lista_espera" (
 -- ----------------------------
 -- Records of lista_espera
 -- ----------------------------
-INSERT INTO "public"."lista_espera" VALUES (4, '2026-02-10', '12', 132.00, 'RICARDO BASURTO ZAPATA', 'Ixtacomitan', 'admin               ', 'Ceiba', '12', '1', 123.00, 'ALEVIN', 'La Ceiba', '2026-02-10 19:36:11.753148', '2026-02-10 19:36:11.753148');
+INSERT INTO "public"."lista_espera" VALUES (4, '2026-02-10', '12', 132.00, 'RICARDO BASURTO ZAPATA', 'Ixtacomitan', 'admin', 'Ceiba', '12', '1', 123.00, 'ALEVIN', 'La Ceiba', '2026-02-10 19:36:11.753148', '2026-02-10 19:36:11.753148');
 
 -- ----------------------------
 -- Table structure for lote_movimientos
@@ -1150,7 +1139,7 @@ CREATE TABLE "public"."lotes" (
   "fi_lote_id" int4 NOT NULL DEFAULT nextval('lotes_fi_lote_id_seq'::regclass),
   "fecha" date NOT NULL,
   "familia" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-  "fi_instalacion_id" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
+  "fc_instalacion_id" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
   "huevos_ml" numeric(10,2),
   "alevines_inicial" int4 NOT NULL,
   "no_lote" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
@@ -1305,7 +1294,7 @@ DROP TABLE IF EXISTS "public"."plagas";
 CREATE TABLE "public"."plagas" (
   "fi_id" int4 NOT NULL DEFAULT nextval('medellin_plagas_fi_id_seq'::regclass),
   "fd_fecha" date NOT NULL,
-  "fn_num_trampa" varchar(100) COLLATE "pg_catalog"."default",
+  "fc_num_trampa" varchar(100) COLLATE "pg_catalog"."default",
   "fc_hallazgo" text COLLATE "pg_catalog"."default",
   "fc_malla" varchar(200) COLLATE "pg_catalog"."default",
   "fc_observaciones" text COLLATE "pg_catalog"."default",
@@ -1398,7 +1387,7 @@ CREATE TABLE "public"."recepcion_insumos" (
   "fi_id" int4 NOT NULL DEFAULT nextval('medellin_recepcion_insumos_fi_id_seq'::regclass),
   "fc_mes" varchar(20) COLLATE "pg_catalog"."default",
   "fd_fecha" date NOT NULL,
-  "fn_cantidad" varchar(100) COLLATE "pg_catalog"."default",
+  "fc_cantidad" varchar(100) COLLATE "pg_catalog"."default",
   "fc_lote" varchar(100) COLLATE "pg_catalog"."default",
   "fc_descripcion" varchar(300) COLLATE "pg_catalog"."default",
   "fc_encargado_entrega" varchar(100) COLLATE "pg_catalog"."default",
@@ -1464,16 +1453,16 @@ MAXVALUE 2147483647
 START 1
 CACHE 1
 ),
-  "fc_nombre" char(20) COLLATE "pg_catalog"."default" NOT NULL
+  "fc_nombre" varchar(50) COLLATE "pg_catalog"."default" NOT NULL
 )
 ;
 
 -- ----------------------------
 -- Records of roles
 -- ----------------------------
-INSERT INTO "public"."roles" VALUES (2, 'Bióloga             ');
-INSERT INTO "public"."roles" VALUES (3, 'Jefe de Empresa     ');
-INSERT INTO "public"."roles" VALUES (1, 'Administrador       ');
+INSERT INTO "public"."roles" VALUES (2, 'Bióloga');
+INSERT INTO "public"."roles" VALUES (3, 'Jefe de Empresa');
+INSERT INTO "public"."roles" VALUES (1, 'Administrador');
 
 -- ----------------------------
 -- Table structure for trazabilidad_alevinaje
@@ -1553,8 +1542,8 @@ MAXVALUE 2147483647
 START 1
 CACHE 1
 ),
-  "fc_nombre" char(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "fc_contraseña" char(20) COLLATE "pg_catalog"."default" NOT NULL,
+  "fc_nombre" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
+  "fc_contraseña" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
   "fi_rol_id" int4 NOT NULL,
   "fi_empresa_id" int4
 )
@@ -1563,10 +1552,10 @@ CACHE 1
 -- ----------------------------
 -- Records of usuarios
 -- ----------------------------
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin               ', '1234                ', 1, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa             ', '4321                ', 2, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam             ', '2345                ', 3, 1);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac             ', '3456                ', 3, 2);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin', '$2b$10$jaFu4Rk2.OC.VlKMn9sk5eZkhUHJervY806TO.Xawqi/4EPeEsT2O', 1, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa', '$2b$10$8/hDsHZ6u2r.Pa2GupqW8eGcksyrJIcr8F1qzKCZ8WHs8Icji5jh6', 2, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam', '$2b$10$MaZ6c3EDw/VogC1KtONo4.1lZJjVgYQ4Zr.RDKuFCC1a599G3Io/K', 3, 1);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac', '$2b$10$Z9SJnP2gIGT57LLCAMbUr.y61rDx/YyEV9qx5KP6tEMBLBJ1Zn4kS', 3, 2);
 
 -- ----------------------------
 -- Table structure for vacaciones
@@ -1672,7 +1661,7 @@ BEGIN
     -- Inicia la transacción manualmente
     PERFORM pg_advisory_xact_lock(99999);
 
-    -- 🔹 Eliminar dependencias de alimentos
+    -- Eliminar dependencias de alimentos
     DELETE FROM alimentos
     WHERE fi_pileta_id IN (
         SELECT fi_pileta_id
@@ -1681,10 +1670,10 @@ BEGIN
     );
 
     GET DIAGNOSTICS v_contador_alimentos = ROW_COUNT;
-    RAISE NOTICE '🧾 Se eliminaron % registros en la tabla alimentos.', v_contador_alimentos;
+    RAISE NOTICE 'Se eliminaron % registros en la tabla alimentos.', v_contador_alimentos;
 
-    -- 🔹 Eliminar dependencias en rastreabilidad
-    DELETE FROM rastreabilidad
+    -- Eliminar dependencias en trazabilidad_alevinaje
+    DELETE FROM trazabilidad_alevinaje
     WHERE fi_pileta_origen IN (
         SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id IS NULL
     )
@@ -1693,19 +1682,19 @@ BEGIN
     );
 
     GET DIAGNOSTICS v_contador_rastreabilidad = ROW_COUNT;
-    RAISE NOTICE '🔁 Se eliminaron % registros en rastreabilidad.', v_contador_rastreabilidad;
+    RAISE NOTICE 'Se eliminaron % registros en trazabilidad_alevinaje.', v_contador_rastreabilidad;
 
-    -- 🔹 Finalmente eliminar las piletas huérfanas
+    -- Finalmente eliminar las piletas huerfanas
     DELETE FROM piletas
     WHERE fi_instalacion_id IS NULL;
 
     GET DIAGNOSTICS v_contador_piletas = ROW_COUNT;
-    RAISE NOTICE '✅ Se eliminaron % piletas sin instalación.', v_contador_piletas;
+    RAISE NOTICE 'Se eliminaron % piletas sin instalacion.', v_contador_piletas;
 
-    RAISE NOTICE '🧹 Limpieza completada correctamente.';
+    RAISE NOTICE 'Limpieza completada correctamente.';
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE EXCEPTION '❌ Error al limpiar piletas sin instalación: %', SQLERRM;
+        RAISE EXCEPTION 'Error al limpiar piletas sin instalacion: %', SQLERRM;
 END;
 $BODY$
   LANGUAGE plpgsql;
@@ -1780,13 +1769,6 @@ CREATE VIEW "public"."vw_tesoreria_general" AS  SELECT fc_granja,
   GROUP BY fc_granja, fc_mes, fc_categoria
   ORDER BY fc_granja, fc_mes, fc_categoria;
 
-
--- ----------------------------
--- Alter sequences owned by
--- ----------------------------
-ALTER SEQUENCE "public"."alimentos_fi_alimento_id"
-OWNED BY "public"."alimentos"."fi_alimento_id";
-SELECT setval('"public"."alimentos_fi_alimento_id"', 1, false);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -2074,18 +2056,6 @@ SELECT setval('"public"."ventas_fi_venta_id_seq"', 48, true);
 ALTER TABLE "public"."alimentacion" ADD CONSTRAINT "ceiba_alimentacion_pkey" PRIMARY KEY ("fi_id");
 
 -- ----------------------------
--- Auto increment value for alimentos
--- ----------------------------
-SELECT setval('"public"."alimentos_fi_alimento_id_seq"', 29, true);
-
--- ----------------------------
--- Indexes structure for table alimentos
--- ----------------------------
-CREATE UNIQUE INDEX "xpkalimentos" ON "public"."alimentos" USING btree (
-  "fi_alimento_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Primary Key structure for table alimentos
 -- ----------------------------
 ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_pkey" PRIMARY KEY ("fi_alimento_id");
@@ -2146,13 +2116,6 @@ ALTER TABLE "public"."categorias" ADD CONSTRAINT "categorias_pkey" PRIMARY KEY (
 SELECT setval('"public"."clientes_fi_cliente_id_seq"', 17, true);
 
 -- ----------------------------
--- Indexes structure for table clientes
--- ----------------------------
-CREATE UNIQUE INDEX "xpkclientes" ON "public"."clientes" USING btree (
-  "fi_cliente_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Primary Key structure for table clientes
 -- ----------------------------
 ALTER TABLE "public"."clientes" ADD CONSTRAINT "clientes_pkey" PRIMARY KEY ("fi_cliente_id");
@@ -2206,7 +2169,6 @@ ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_ancho_check" 
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_altura_check" CHECK (altura > 0::numeric);
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "instalaciones_largo_check" CHECK (largo > 0::numeric);
 ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "chk_instalaciones_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
-ALTER TABLE "public"."instalaciones" ADD CONSTRAINT "chk_fc_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 
 -- ----------------------------
 -- Primary Key structure for table instalaciones
@@ -2279,16 +2241,8 @@ ALTER TABLE "public"."parametros" ADD CONSTRAINT "medellin_parametros_pkey" PRIM
 SELECT setval('"public"."piletas_fi_pileta_id_seq"', 102, true);
 
 -- ----------------------------
--- Indexes structure for table piletas
--- ----------------------------
-CREATE UNIQUE INDEX "xpkpiletas" ON "public"."piletas" USING btree (
-  "fi_pileta_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
-
--- ----------------------------
 -- Checks structure for table piletas
 -- ----------------------------
-ALTER TABLE "public"."piletas" ADD CONSTRAINT "chk_fc_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 ALTER TABLE "public"."piletas" ADD CONSTRAINT "chk_piletas_granja" CHECK (fc_granja::text = ANY (ARRAY['Granja Acuícola Medellin'::character varying, 'Granja Acuícola La Ceiba'::character varying]::text[]));
 
 -- ----------------------------
@@ -2325,13 +2279,6 @@ ALTER TABLE "public"."reproductores" ADD CONSTRAINT "reproductores_pkey" PRIMARY
 -- Auto increment value for roles
 -- ----------------------------
 SELECT setval('"public"."roles_fi_rol_id_seq"', 2, true);
-
--- ----------------------------
--- Indexes structure for table roles
--- ----------------------------
-CREATE UNIQUE INDEX "xpkroles" ON "public"."roles" USING btree (
-  "fi_rol_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
 
 -- ----------------------------
 -- Primary Key structure for table roles
@@ -2374,9 +2321,11 @@ SELECT setval('"public"."usuarios_fi_usuario_id_seq"', 4, true);
 CREATE INDEX "fki_fi_rol_id" ON "public"."usuarios" USING btree (
   "fi_rol_id" "pg_catalog"."int4_ops" ASC NULLS LAST
 );
-CREATE UNIQUE INDEX "xpkusuarios" ON "public"."usuarios" USING btree (
-  "fi_usuario_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
+
+-- ----------------------------
+-- Uniques structure for table usuarios
+-- ----------------------------
+ALTER TABLE "public"."usuarios" ADD CONSTRAINT "usuarios_fc_nombre_key" UNIQUE ("fc_nombre");
 
 -- ----------------------------
 -- Primary Key structure for table usuarios
@@ -2387,13 +2336,6 @@ ALTER TABLE "public"."usuarios" ADD CONSTRAINT "usuarios_pkey" PRIMARY KEY ("fi_
 -- Primary Key structure for table vacaciones
 -- ----------------------------
 ALTER TABLE "public"."vacaciones" ADD CONSTRAINT "vacaciones_pkey" PRIMARY KEY ("fi_vacacion_id");
-
--- ----------------------------
--- Indexes structure for table ventas
--- ----------------------------
-CREATE UNIQUE INDEX "xpkventas" ON "public"."ventas" USING btree (
-  "fi_venta_id" "pg_catalog"."int4_ops" ASC NULLS LAST
-);
 
 -- ----------------------------
 -- Primary Key structure for table ventas
