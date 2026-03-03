@@ -58,10 +58,7 @@ class UsuarioModel {
 
     static async verifyPassword(rawPassword, hashedPassword) {
         if (!hashedPassword) return false;
-        if (!hashedPassword.trim().startsWith("$2b$")) {
-            return rawPassword.trim() === hashedPassword.trim();
-        }
-        return await bcrypt.compare(rawPassword, hashedPassword.trim());
+        return await bcrypt.compare(rawPassword, hashedPassword);
     }
 }
 
