@@ -1552,10 +1552,10 @@ CACHE 1
 -- ----------------------------
 -- Records of usuarios
 -- ----------------------------
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin', '1234', 1, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa', '4321', 2, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam', '2345', 3, 1);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac', '3456', 3, 2);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin', '$2b$10$jaFu4Rk2.OC.VlKMn9sk5eZkhUHJervY806TO.Xawqi/4EPeEsT2O', 1, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa', '$2b$10$8/hDsHZ6u2r.Pa2GupqW8eGcksyrJIcr8F1qzKCZ8WHs8Icji5jh6', 2, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam', '$2b$10$MaZ6c3EDw/VogC1KtONo4.1lZJjVgYQ4Zr.RDKuFCC1a599G3Io/K', 3, 1);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac', '$2b$10$Z9SJnP2gIGT57LLCAMbUr.y61rDx/YyEV9qx5KP6tEMBLBJ1Zn4kS', 3, 2);
 
 -- ----------------------------
 -- Table structure for vacaciones
