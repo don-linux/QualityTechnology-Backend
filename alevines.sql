@@ -17,17 +17,6 @@
 
 
 -- ----------------------------
--- Sequence structure for alimentos_fi_alimento_id
--- ----------------------------
-DROP SEQUENCE IF EXISTS "public"."alimentos_fi_alimento_id";
-CREATE SEQUENCE "public"."alimentos_fi_alimento_id" 
-INCREMENT 1
-MINVALUE  1
-MAXVALUE 2147483647
-START 1
-CACHE 1;
-
--- ----------------------------
 -- Sequence structure for alimentos_fi_alimento_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."alimentos_fi_alimento_id_seq";
@@ -780,8 +769,8 @@ START 1
 CACHE 1
 ),
   "fc_nombre" varchar(100) COLLATE "pg_catalog"."default",
-  "fc_telefono" char(10) COLLATE "pg_catalog"."default",
-  "fc_correo" char(30) COLLATE "pg_catalog"."default",
+  "fc_telefono" varchar(20) COLLATE "pg_catalog"."default",
+  "fc_correo" varchar(255) COLLATE "pg_catalog"."default",
   "fi_usuario_id" int4 NOT NULL,
   "fd_fecha_registro" date NOT NULL,
   "fd_fecha_modificacion" date NOT NULL,
@@ -1464,16 +1453,16 @@ MAXVALUE 2147483647
 START 1
 CACHE 1
 ),
-  "fc_nombre" char(20) COLLATE "pg_catalog"."default" NOT NULL
+  "fc_nombre" varchar(50) COLLATE "pg_catalog"."default" NOT NULL
 )
 ;
 
 -- ----------------------------
 -- Records of roles
 -- ----------------------------
-INSERT INTO "public"."roles" VALUES (2, 'Bióloga             ');
-INSERT INTO "public"."roles" VALUES (3, 'Jefe de Empresa     ');
-INSERT INTO "public"."roles" VALUES (1, 'Administrador       ');
+INSERT INTO "public"."roles" VALUES (2, 'Bióloga');
+INSERT INTO "public"."roles" VALUES (3, 'Jefe de Empresa');
+INSERT INTO "public"."roles" VALUES (1, 'Administrador');
 
 -- ----------------------------
 -- Table structure for trazabilidad_alevinaje
@@ -1553,8 +1542,8 @@ MAXVALUE 2147483647
 START 1
 CACHE 1
 ),
-  "fc_nombre" char(20) COLLATE "pg_catalog"."default" NOT NULL,
-  "fc_contraseña" char(20) COLLATE "pg_catalog"."default" NOT NULL,
+  "fc_nombre" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
+  "fc_contraseña" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
   "fi_rol_id" int4 NOT NULL,
   "fi_empresa_id" int4
 )
@@ -1563,10 +1552,10 @@ CACHE 1
 -- ----------------------------
 -- Records of usuarios
 -- ----------------------------
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin               ', '1234                ', 1, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa             ', '4321                ', 2, NULL);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam             ', '2345                ', 3, 1);
-INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac             ', '3456                ', 3, 2);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (1, 'admin', '1234', 1, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (2, 'biologa', '4321', 2, NULL);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (3, 'jefegam', '2345', 3, 1);
+INSERT INTO "public"."usuarios" OVERRIDING SYSTEM VALUE VALUES (4, 'jefegac', '3456', 3, 2);
 
 -- ----------------------------
 -- Table structure for vacaciones
@@ -1672,7 +1661,7 @@ BEGIN
     -- Inicia la transacción manualmente
     PERFORM pg_advisory_xact_lock(99999);
 
-    -- 🔹 Eliminar dependencias de alimentos
+    -- Eliminar dependencias de alimentos
     DELETE FROM alimentos
     WHERE fi_pileta_id IN (
         SELECT fi_pileta_id
@@ -1681,10 +1670,10 @@ BEGIN
     );
 
     GET DIAGNOSTICS v_contador_alimentos = ROW_COUNT;
-    RAISE NOTICE '🧾 Se eliminaron % registros en la tabla alimentos.', v_contador_alimentos;
+    RAISE NOTICE 'Se eliminaron % registros en la tabla alimentos.', v_contador_alimentos;
 
-    -- 🔹 Eliminar dependencias en rastreabilidad
-    DELETE FROM rastreabilidad
+    -- Eliminar dependencias en trazabilidad_alevinaje
+    DELETE FROM trazabilidad_alevinaje
     WHERE fi_pileta_origen IN (
         SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id IS NULL
     )
@@ -1693,19 +1682,19 @@ BEGIN
     );
 
     GET DIAGNOSTICS v_contador_rastreabilidad = ROW_COUNT;
-    RAISE NOTICE '🔁 Se eliminaron % registros en rastreabilidad.', v_contador_rastreabilidad;
+    RAISE NOTICE 'Se eliminaron % registros en trazabilidad_alevinaje.', v_contador_rastreabilidad;
 
-    -- 🔹 Finalmente eliminar las piletas huérfanas
+    -- Finalmente eliminar las piletas huerfanas
     DELETE FROM piletas
     WHERE fi_instalacion_id IS NULL;
 
     GET DIAGNOSTICS v_contador_piletas = ROW_COUNT;
-    RAISE NOTICE '✅ Se eliminaron % piletas sin instalación.', v_contador_piletas;
+    RAISE NOTICE 'Se eliminaron % piletas sin instalacion.', v_contador_piletas;
 
-    RAISE NOTICE '🧹 Limpieza completada correctamente.';
+    RAISE NOTICE 'Limpieza completada correctamente.';
 EXCEPTION
     WHEN OTHERS THEN
-        RAISE EXCEPTION '❌ Error al limpiar piletas sin instalación: %', SQLERRM;
+        RAISE EXCEPTION 'Error al limpiar piletas sin instalacion: %', SQLERRM;
 END;
 $BODY$
   LANGUAGE plpgsql;
@@ -1780,13 +1769,6 @@ CREATE VIEW "public"."vw_tesoreria_general" AS  SELECT fc_granja,
   GROUP BY fc_granja, fc_mes, fc_categoria
   ORDER BY fc_granja, fc_mes, fc_categoria;
 
-
--- ----------------------------
--- Alter sequences owned by
--- ----------------------------
-ALTER SEQUENCE "public"."alimentos_fi_alimento_id"
-OWNED BY "public"."alimentos"."fi_alimento_id";
-SELECT setval('"public"."alimentos_fi_alimento_id"', 1, false);
 
 -- ----------------------------
 -- Alter sequences owned by
