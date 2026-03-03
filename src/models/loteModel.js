@@ -48,7 +48,7 @@ static async getInstalacionesFromReproductores(granja) {
                 i.nombre_instalacion
             FROM lotes l
             LEFT JOIN instalaciones i
-                ON l.fi_instalacion_id::text = i.fi_instalacion_id::text
+                ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
             WHERE l.fc_granja = $1
             ORDER BY l.fecha DESC
             `,
@@ -62,7 +62,7 @@ static async getInstalacionesFromReproductores(granja) {
         const {
             fecha,
             familia,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             alevines_inicial,
@@ -77,7 +77,7 @@ static async getInstalacionesFromReproductores(granja) {
             INSERT INTO lotes (
                 fecha,
                 familia,
-                fi_instalacion_id,
+                fc_instalacion_id,
                 huevos_ml,
                 ovadas,
                 alevines_inicial,
@@ -94,7 +94,7 @@ static async getInstalacionesFromReproductores(granja) {
         [
             fecha,
             familia,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             alevines_inicial,
@@ -123,7 +123,7 @@ static async getInstalacionesFromReproductores(granja) {
     static async update(id, data) {
         const {
             fecha,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             no_lote,
@@ -136,7 +136,7 @@ static async getInstalacionesFromReproductores(granja) {
         const res = await pool.query(`
             UPDATE lotes SET
                 fecha = $1,
-                fi_instalacion_id = $2,
+                fc_instalacion_id = $2,
                 huevos_ml = $3,
                 ovadas = $4,
                 no_lote = $5,
@@ -149,7 +149,7 @@ static async getInstalacionesFromReproductores(granja) {
         `,
         [
             fecha,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             no_lote,
@@ -189,7 +189,7 @@ static async getInstalacionesFromReproductores(granja) {
         const res = await pool.query(`
             SELECT fi_lote_id, no_lote
             FROM lotes
-            WHERE fi_instalacion_id = $1
+            WHERE fc_instalacion_id = $1
             ORDER BY fi_lote_id DESC
         `, [id]);
         return res.rows;
