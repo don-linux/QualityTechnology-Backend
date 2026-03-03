@@ -20,8 +20,6 @@ alwaysApply: true
 - 🔥 Remove deprecated code and dependencies
 - ♻️ Refactor code for better readability and maintainability
 
-
-
 ## Bad examples
 
 - Added new feature to improve performance (no gitmoji, not imperative)
