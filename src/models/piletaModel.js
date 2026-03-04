@@ -10,27 +10,28 @@ class PiletaModel {
         return "Granja Acuícola Medellin";
     }
 
-    static async getLotesByGranja(granja) {
-        const result = await pool.query(
-            `
-            SELECT 
-                l.fi_lote_id,
-                l.no_lote,
-                l.alevines_inicial,
-                l.fecha::date AS fecha,
-                l.fi_instalacion_id,
-                i.nombre_instalacion AS origen_instalacion,
-                (CURRENT_DATE - l.fecha::date) AS dias_en_lote
-            FROM lotes l
-            LEFT JOIN instalaciones i 
-                ON l.fi_instalacion_id = i.fi_instalacion_id
-            WHERE LOWER(i.fc_granja) = LOWER($1)
-            ORDER BY l.no_lote ASC
-            `,
-            [granja]
-        );
-        return result.rows;
-    }
+   static async getLotesByGranja(granja) {
+    const result = await pool.query(
+        `
+        SELECT 
+            l.fi_lote_id,
+            l.no_lote,
+            l.alevines_inicial,
+            l.fecha::date AS fecha,
+            l.fi_instalacion_id,
+            i.nombre_instalacion AS origen_instalacion,
+            (CURRENT_DATE - l.fecha::date) AS dias_en_lote
+        FROM lotes l
+        INNER JOIN instalaciones i 
+            ON l.fi_instalacion_id::integer = i.fi_instalacion_id
+        WHERE LOWER(i.fc_granja) = LOWER($1)
+        ORDER BY l.no_lote ASC
+        `,
+        [granja]
+    );
+
+    return result.rows;
+}
 
     static async getInventario(granja) {
         const result = await pool.query(
@@ -71,6 +72,63 @@ class PiletaModel {
         );
         return result.rows[0];
     }
+
+        /* =====================================================
+   OBTENER MOVIMIENTOS
+===================================================== */
+static async getMovimientos(usuario, granja) {
+    const result = await pool.query(
+        `
+        SELECT 
+            m.fi_movimiento_id,
+            COALESCE(po.fi_pileta_id::text, m.origen_externo) AS origen_nombre,
+            pd.fi_pileta_id::text AS destino_nombre,
+            m.cantidad,
+            m.fecha_movimiento,
+            m.observacion
+        FROM trazabilidad_alevinaje m
+        LEFT JOIN piletas po ON po.fi_pileta_id = m.fi_pileta_origen
+        LEFT JOIN piletas pd ON pd.fi_pileta_id = m.fi_pileta_destino
+        WHERE LOWER(m.fc_granja) = LOWER($1)
+        AND m.fi_usuario_id = $2
+        ORDER BY m.fecha_movimiento DESC, m.fi_movimiento_id DESC
+        `,
+        [granja, usuario]
+    );
+    return result.rows;
+}
+
+/* =====================================================
+   FILTRO MOVIMIENTOS
+===================================================== */
+static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_fin) {
+    const result = await pool.query(
+        `
+        SELECT 
+            m.fi_movimiento_id,
+            COALESCE(po.fi_pileta_id::text, m.origen_externo) AS origen_nombre,
+            pd.fi_pileta_id::text AS destino_nombre,
+            m.cantidad,
+            m.fecha_movimiento,
+            m.observacion
+        FROM trazabilidad_alevinaje m
+        LEFT JOIN piletas po ON po.fi_pileta_id = m.fi_pileta_origen
+        LEFT JOIN piletas pd ON pd.fi_pileta_id = m.fi_pileta_destino
+        WHERE LOWER(m.fc_granja) = LOWER($1)
+        AND m.fi_usuario_id = $2
+        AND (
+            COALESCE(po.fi_pileta_id::text, m.origen_externo) LIKE $3
+            OR pd.fi_pileta_id::text LIKE $3
+            OR CAST(m.cantidad AS TEXT) LIKE $3
+        )
+        AND ($4 = '' OR m.fecha_movimiento >= $4)
+        AND ($5 = '' OR m.fecha_movimiento <= $5)
+        ORDER BY m.fecha_movimiento DESC
+        `,
+        [granja, usuario, `%${buscar}%`, fecha_inicio, fecha_fin]
+    );
+    return result.rows;
+}
 
     static async devolverAlevinesAlLote(loteId, cantidad) {
         await pool.query(
