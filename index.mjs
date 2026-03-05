@@ -25,7 +25,6 @@ import alimentoRoutes from "./src/routes/alimentoRoutes.js";
 import loteRoutes from "./src/routes/loteRoutes.js";
 import reproductorRoutes from "./src/routes/reproductorRoutes.js";
 import engordaRoutes from "./src/routes/engordaRoutes.js";
-import empleadoRoutes from "./src/routes/empleadoRoutes.js";
 import clienteRoutes from "./src/routes/clienteRoutes.js";
 import ventaRoutes from "./src/routes/ventaRoutes.js";
 import listaEsperaRoutes from "./src/routes/listaEsperaRoutes.js";
@@ -52,8 +51,10 @@ import bitacoraMedicamentoRoutes from './src/routes/bitacoras/bitacoraMedicament
 import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoutes.js';
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
 
-// ruta de Catalogos
+// rrhh
 import catalogoEstadoRoutes from "./src/routes/catalogos/estado.js";
+import departamentoRoutes from "./src/routes/departamentoRoutes.js";
+import empleadoRoutes from "./src/routes/empleadoRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -86,7 +87,6 @@ app.use("/instalaciones", instalacionRoutes);
 app.use("/lotes", loteRoutes);
 app.use("/reproductores", reproductorRoutes);
 app.use("/engorda", engordaRoutes);
-app.use("/empleados", empleadoRoutes);
 app.use("/clientes", clienteRoutes);
 app.use("/ventas", ventaRoutes);
 app.use("/alimentos", alimentoRoutes);
@@ -115,8 +115,10 @@ app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
 app.use("/medellin/recambios", bitacoraRecambioRoutes);
 app.use("/medellin/inventario", bitacoraInventarioRoutes);
 
-// Catalogos
+// rrhh
 app.use("/estados", catalogoEstadoRoutes);
+app.use("/empleados", empleadoRoutes);
+app.use("/departamentos", departamentoRoutes);
 
 //Seguridad - Roles y Módulos
 app.use("/modulos", modulosRoutes);
