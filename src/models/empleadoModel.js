@@ -16,7 +16,6 @@ class EmpleadoModel {
                 e.fc_calle,
                 e.fc_codigo_postal,
                 e.fd_fecha_alta,
-                e.fb_activo,
                 d.fc_nombre AS departamento,
                 es.fc_nombre AS estado
             FROM rrhh.empleados e
@@ -107,8 +106,7 @@ class EmpleadoModel {
             fc_calle,
             fc_codigo_postal,
             fc_referencias,
-            ft_comentarios_adicionales,
-            fb_activo
+            ft_comentarios_adicionales
         } = data;
 
         const result = await pool.query(`
@@ -125,9 +123,8 @@ class EmpleadoModel {
                 fc_calle = $9,
                 fc_codigo_postal = $10,
                 fc_referencias = $11,
-                ft_comentarios_adicionales = $12,
-                fb_activo = $13
-            WHERE fi_empleado_id = $14
+                ft_comentarios_adicionales = $12
+            WHERE fi_empleado_id = $13
             RETURNING *;
         `, [
             fi_usuario_id || null,
@@ -142,7 +139,6 @@ class EmpleadoModel {
             fc_codigo_postal,
             fc_referencias || null,
             ft_comentarios_adicionales || null,
-            fb_activo,
             id
         ]);
 
@@ -159,17 +155,22 @@ class EmpleadoModel {
         return true;
     }
 
-    // Baja lógica (más profesional)
+    // Baja lógica
     static async deactivate(id) {
         const result = await pool.query(`
             UPDATE rrhh.empleados
-            SET fb_activo = false
+            SET fi_estado_id = (
+                SELECT fi_estado_id
+                FROM catalogos.estados
+                WHERE fc_nombre = 'Baja Definitiva'
+            )
             WHERE fi_empleado_id = $1
             RETURNING *;
         `, [id]);
 
         return result.rows[0];
     }
+    
 }
 
 export default EmpleadoModel;

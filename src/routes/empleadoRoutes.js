@@ -1,5 +1,5 @@
 import express from "express";
-import EmpleadoController from "../controllers/EmpleadoController.js";
+import EmpleadoController from "../controllers/empleadoController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();

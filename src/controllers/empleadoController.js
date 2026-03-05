@@ -1,4 +1,4 @@
-import EmpleadoModel from "../models/EmpleadoModel.js";
+import EmpleadoModel from "../models/empleadoModel.js";
 
 class EmpleadoController {
 

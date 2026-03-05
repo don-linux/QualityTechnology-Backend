@@ -1,5 +1,5 @@
 import express from "express";
-import DepartamentoController from "../controllers/DepartamentoController.js";
+import DepartamentoController from "../controllers/departamentoController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
