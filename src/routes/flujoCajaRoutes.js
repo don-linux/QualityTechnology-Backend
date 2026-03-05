@@ -7,14 +7,14 @@ import fs from "fs";
 const router = express.Router();
 
 /* =========================================================
-   ⚙️ Configuración de subida de archivos (facturas)
+    Configuración de subida de archivos (facturas)
 ========================================================= */
 
-// 📁 Carpeta donde se guardarán las facturas
+// Carpeta donde se guardarán las facturas
 const uploadDir = "./uploads/facturas";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// ⚙️ Configurar Multer
+// Configurar Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -25,10 +25,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* =========================================================
-   🔗 Integración: obtener lista de clientes y proveedores
+    Integración: obtener lista de clientes y proveedores
 ========================================================= */
 router.get("/clientes", async (req, res) => {
-  console.log("📡 Ruta /flujo-caja/clientes recibida");
+  console.log("Ruta /flujo-caja/clientes recibida");
   try {
     const result = await pool.query(`
       SELECT fc_nombre AS nombre
@@ -37,13 +37,13 @@ router.get("/clientes", async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener clientes:", err);
+    console.error("Error al obtener clientes:", err);
     res.status(500).send("Error al obtener clientes");
   }
 });
 
 router.get("/proveedores", async (req, res) => {
-  console.log("📡 Ruta /flujo-caja/proveedores recibida");
+  console.log("Ruta /flujo-caja/proveedores recibida");
   try {
     const result = await pool.query(`
       SELECT nombre
@@ -52,13 +52,13 @@ router.get("/proveedores", async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener proveedores:", err);
+    console.error("Error al obtener proveedores:", err);
     res.status(500).send("Error al obtener proveedores");
   }
 });
 
 /* =========================================================
-   📊 GET - Tesorería por granja
+    GET - Tesorería por granja
 ========================================================= */
 router.get("/tesoreria/:granja", async (req, res) => {
   const { granja } = req.params;
@@ -77,13 +77,13 @@ router.get("/tesoreria/:granja", async (req, res) => {
     const result = await pool.query(query, [granja]);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener tesorería:", err);
+    console.error("Error al obtener tesorería:", err);
     res.status(500).send("Error al obtener datos de tesorería");
   }
 });
 
 /* =========================================================
-   ✅ GET - Movimientos por granja
+    GET - Movimientos por granja
 ========================================================= */
 router.get("/:granja", async (req, res) => {
   const { granja } = req.params;
@@ -101,13 +101,13 @@ router.get("/:granja", async (req, res) => {
     const result = await pool.query(query, [granja]);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener movimientos:", err);
+    console.error("Error al obtener movimientos:", err);
     res.status(500).send("Error del servidor al obtener movimientos");
   }
 });
 
 /* =========================================================
-   ✅ POST - Registrar nuevo movimiento con control de cuentas
+    POST - Registrar nuevo movimiento con control de cuentas
       + Soporte de factura (imagen opcional)
 ========================================================= */
 router.post("/", upload.single("facturaFile"), async (req, res) => {
@@ -132,7 +132,7 @@ router.post("/", upload.single("facturaFile"), async (req, res) => {
     const ingresoFinal = ingreso > 0 ? ingreso : 0;
     const egresoFinal = egreso > 0 ? egreso : 0;
 
-    // 🔹 Verificar existencia de la cuenta
+    // Verificar existencia de la cuenta
     const cuentaQuery = await pool.query(
       "SELECT * FROM cuentas WHERE nombre = $1",
       [fc_cuenta]
@@ -145,7 +145,7 @@ router.post("/", upload.single("facturaFile"), async (req, res) => {
     const cuenta = cuentaQuery.rows[0];
     let saldoActual = parseFloat(cuenta.saldo);
 
-    // 🔹 Validar saldo suficiente si es egreso
+    // Validar saldo suficiente si es egreso
     if (egresoFinal > 0) {
       if (egresoFinal > saldoActual) {
         return res.status(400).json({
@@ -155,15 +155,15 @@ router.post("/", upload.single("facturaFile"), async (req, res) => {
       saldoActual -= egresoFinal;
     }
 
-    // 🔹 Aumentar saldo si es ingreso
+    // Aumentar saldo si es ingreso
     if (ingresoFinal > 0) {
       saldoActual += ingresoFinal;
     }
 
-    // ✅ Si se sube archivo, guarda la ruta; si no, queda null
+    // Si se sube archivo, guarda la ruta; si no, queda null
     const fc_factura = req.file ? `/uploads/facturas/${req.file.filename}` : null;
 
-    // 🔹 Registrar movimiento en flujo_caja
+    // Registrar movimiento en flujo_caja
     const result = await pool.query(
       `INSERT INTO flujo_caja (
         fc_granja, fd_fecha, fn_ingreso, fn_egreso, fc_descripcion,
@@ -189,27 +189,27 @@ router.post("/", upload.single("facturaFile"), async (req, res) => {
       ]
     );
 
-    // 🔹 Actualizar saldo de la cuenta
+    // Actualizar saldo de la cuenta
     await pool.query("UPDATE cuentas SET saldo = $1 WHERE id = $2", [
       saldoActual,
       cuenta.id,
     ]);
 
-    console.log(`💰 Saldo actualizado para ${fc_cuenta}: $${saldoActual.toFixed(2)}`);
+    console.log(`Saldo actualizado para ${fc_cuenta}: $${saldoActual.toFixed(2)}`);
 
     res.json({
-      message: "Movimiento registrado correctamente ✅",
+      message: "Movimiento registrado correctamente",
       movimiento: result.rows[0],
       nuevoSaldo: saldoActual,
     });
   } catch (err) {
-    console.error("❌ Error al registrar movimiento:", err);
+    console.error("Error al registrar movimiento:", err);
     res.status(500).json({ error: "Error al registrar movimiento" });
   }
 });
 
 /* =========================================================
-   🔄 PUT - Actualizar movimiento
+    PUT - Actualizar movimiento
 ========================================================= */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -262,13 +262,13 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar movimiento:", err);
+    console.error("Error al actualizar movimiento:", err);
     res.status(500).send("Error al actualizar movimiento");
   }
 });
 
 /* =========================================================
-   ❌ DELETE - Eliminar movimiento
+    DELETE - Eliminar movimiento
 ========================================================= */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
@@ -276,13 +276,13 @@ router.delete("/:id", async (req, res) => {
     await pool.query("DELETE FROM flujo_caja WHERE fi_movimiento_id=$1", [id]);
     res.sendStatus(204);
   } catch (err) {
-    console.error("❌ Error al eliminar movimiento:", err);
+    console.error("Error al eliminar movimiento:", err);
     res.status(500).send("Error al eliminar movimiento");
   }
 });
 
 /* =========================================================
-   🖼️ Servir archivos estáticos de facturas
+    Servir archivos estáticos de facturas
 ========================================================= */
 router.use("/uploads/facturas", express.static("uploads/facturas"));
 

@@ -5,12 +5,12 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 /* ======================================================
-   🔹 RUTAS PÚBLICAS
+    RUTAS PÚBLICAS
    ====================================================== */
 router.post("/login", usuarioController.login);
 
 /* ======================================================
-   🔹 RUTAS PROTEGIDAS (Requieren Token)
+    RUTAS PROTEGIDAS (Requieren Token)
    ====================================================== */
 router.use(authMiddleware);
 

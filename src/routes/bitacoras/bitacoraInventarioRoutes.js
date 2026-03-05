@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE INVENTARIO
+    RUTAS DE BITÁCORA DE INVENTARIO
 ========================================================= */
 router.get("/", bitacoraInventarioController.getAll);
 router.post("/", bitacoraInventarioController.create);

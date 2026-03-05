@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* ============================================================
-   📦 GET: Obtener todos los proveedores
+    GET: Obtener todos los proveedores
 ============================================================ */
 router.get("/", async (req, res) => {
   try {
@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 });
 
 /* ============================================================
-   📦 POST: Crear proveedor nuevo
+    POST: Crear proveedor nuevo
 ============================================================ */
 router.post("/", async (req, res) => {
   const {
@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
 });
 
 /* ============================================================
-   ✏️ PUT: Actualizar proveedor
+    PUT: Actualizar proveedor
 ============================================================ */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -113,7 +113,7 @@ router.put("/:id", async (req, res) => {
 });
 
 /* ============================================================
-   🗑️ DELETE: Eliminar proveedor
+    DELETE: Eliminar proveedor
 ============================================================ */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;

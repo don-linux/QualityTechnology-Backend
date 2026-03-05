@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   🟢 OBTENER TODOS LOS EQUIPOS (por usuario)
+    OBTENER TODOS LOS EQUIPOS (por usuario)
    ========================================================= */
 router.get("/:usuario_id", async (req, res) => {
   try {
@@ -20,13 +20,13 @@ router.get("/:usuario_id", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener equipos:", err);
+    console.error("Error al obtener equipos:", err);
     res.status(500).send("Error al obtener equipos");
   }
 });
 
 /* =========================================================
-   🟢 REGISTRAR NUEVO EQUIPO
+    REGISTRAR NUEVO EQUIPO
    ========================================================= */
 router.post("/", async (req, res) => {
   try {
@@ -74,13 +74,13 @@ router.post("/", async (req, res) => {
 
     res.json(insert.rows[0]);
   } catch (err) {
-    console.error("❌ Error al registrar equipo:", err);
+    console.error("Error al registrar equipo:", err);
     res.status(500).send("Error al registrar equipo");
   }
 });
 
 /* =========================================================
-   🟡 ACTUALIZAR EQUIPO
+    ACTUALIZAR EQUIPO
    ========================================================= */
 router.put("/:id", async (req, res) => {
   try {
@@ -127,27 +127,27 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar equipo:", err);
+    console.error("Error al actualizar equipo:", err);
     res.status(500).send("Error al actualizar equipo");
   }
 });
 
 /* =========================================================
-   🔴 ELIMINAR EQUIPO
+    ELIMINAR EQUIPO
    ========================================================= */
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query(`DELETE FROM equipos WHERE fi_equipo_id = $1`, [id]);
-    res.send("✅ Equipo eliminado correctamente");
+    res.send("Equipo eliminado correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar equipo:", err);
+    console.error("Error al eliminar equipo:", err);
     res.status(500).send("Error al eliminar equipo");
   }
 });
 
 /* =========================================================
-   🧰 REGISTRAR MANTENIMIENTO
+    REGISTRAR MANTENIMIENTO
    ========================================================= */
 router.post("/:equipo_id/mantenimientos", async (req, res) => {
   try {
@@ -185,13 +185,13 @@ router.post("/:equipo_id/mantenimientos", async (req, res) => {
 
     res.json(insert.rows[0]);
   } catch (err) {
-    console.error("❌ Error al registrar mantenimiento:", err);
+    console.error("Error al registrar mantenimiento:", err);
     res.status(500).send("Error al registrar mantenimiento");
   }
 });
 
 /* =========================================================
-   ✏️ ACTUALIZAR MANTENIMIENTO
+    ACTUALIZAR MANTENIMIENTO
    ========================================================= */
 router.put("/mantenimientos/:mantenimiento_id", async (req, res) => {
   try {
@@ -229,13 +229,13 @@ router.put("/mantenimientos/:mantenimiento_id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar mantenimiento:", err);
+    console.error("Error al actualizar mantenimiento:", err);
     res.status(500).send("Error al actualizar mantenimiento");
   }
 });
 
 /* =========================================================
-   🗑️ ELIMINAR MANTENIMIENTO
+    ELIMINAR MANTENIMIENTO
    ========================================================= */
 router.delete("/mantenimientos/:mantenimiento_id", async (req, res) => {
   try {
@@ -243,15 +243,15 @@ router.delete("/mantenimientos/:mantenimiento_id", async (req, res) => {
     await pool.query(`DELETE FROM mantenimientos WHERE fi_mantenimiento_id = $1`, [
       mantenimiento_id,
     ]);
-    res.send("✅ Mantenimiento eliminado correctamente");
+    res.send("Mantenimiento eliminado correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar mantenimiento:", err);
+    console.error("Error al eliminar mantenimiento:", err);
     res.status(500).send("Error al eliminar mantenimiento");
   }
 });
 
 /* =========================================================
-   📋 OBTENER MANTENIMIENTOS POR EQUIPO
+    OBTENER MANTENIMIENTOS POR EQUIPO
    ========================================================= */
 router.get("/:equipo_id/mantenimientos", async (req, res) => {
   try {
@@ -266,7 +266,7 @@ router.get("/:equipo_id/mantenimientos", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener mantenimientos:", err);
+    console.error("Error al obtener mantenimientos:", err);
     res.status(500).send("Error al obtener mantenimientos");
   }
 });

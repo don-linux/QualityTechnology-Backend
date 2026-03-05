@@ -42,7 +42,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("❌ Error al insertar movimiento:", error);
+    console.error("Error al insertar movimiento:", error);
     res.status(500).json({ error: "Error al insertar movimiento" });
   }
 });
@@ -55,7 +55,7 @@ router.get("/", async (req, res) => {
     );
     res.json(result.rows);
   } catch (error) {
-    console.error("❌ Error al obtener movimientos:", error);
+    console.error("Error al obtener movimientos:", error);
     res.status(500).json({ error: "Error al obtener movimientos" });
   }
 });
@@ -104,7 +104,7 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("❌ Error al actualizar movimiento:", error);
+    console.error("Error al actualizar movimiento:", error);
     res.status(500).json({ error: "Error al actualizar movimiento" });
   }
 });
@@ -125,7 +125,7 @@ router.delete("/:id", async (req, res) => {
 
     res.sendStatus(204);
   } catch (error) {
-    console.error("❌ Error al eliminar movimiento:", error);
+    console.error("Error al eliminar movimiento:", error);
     res.status(500).json({ error: "Error al eliminar movimiento" });
   }
 });

@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE BAÑOS
+    RUTAS DE BITÁCORA DE BAÑOS
 ========================================================= */
 router.get("/", bitacoraBanoController.getAll);
 router.post("/", bitacoraBanoController.create);

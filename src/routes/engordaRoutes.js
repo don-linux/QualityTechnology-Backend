@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-    🔍 FUNCIONES DE APOYO
+     FUNCIONES DE APOYO
 ========================================================= */
 
 // Verifica si un ID pertenece a un lote
@@ -17,7 +17,7 @@ async function esLote(id) {
 }
 
 /* =========================================================
-    📋 GET - Inventario Engorda
+     GET - Inventario Engorda
 ========================================================= */
 router.get("/granja/:granja", async (req, res) => {
     try {
@@ -51,13 +51,13 @@ router.get("/granja/:granja", async (req, res) => {
 
         res.json(result.rows);
     } catch (err) {
-        console.error("❌ Error:", err);
+        console.error("Error:", err);
         res.status(500).send("Error al obtener inventario de Engorda");
     }
 });
 
 /* =========================================================
-    🟦 POST - Registrar Engorda (nueva o actualización)
+     POST - Registrar Engorda (nueva o actualización)
 ========================================================= */
 router.post("/", async (req, res) => {
     const {
@@ -102,7 +102,7 @@ router.post("/", async (req, res) => {
             );
 
             await client.query("COMMIT");
-            return res.json({ message: "📝 Engorda actualizada correctamente." });
+            return res.json({ message: "Engorda actualizada correctamente." });
         }
 
         /* =============== INSERT ===================== */
@@ -204,11 +204,11 @@ router.post("/", async (req, res) => {
 
         await client.query("COMMIT");
 
-        res.json({ message: "🐟 Engorda registrada con éxito" });
+        res.json({ message: "Engorda registrada con éxito" });
 
     } catch (err) {
         await client.query("ROLLBACK");
-        console.error("❌ Error:", err);
+        console.error("Error:", err);
         res.status(400).json({ error: err.message });
     } finally {
         client.release();
@@ -216,7 +216,7 @@ router.post("/", async (req, res) => {
 });
 
 /* =========================================================
-    🗑 DELETE - Eliminar Engorda (sin restaurar inventario)
+     DELETE - Eliminar Engorda (sin restaurar inventario)
 ========================================================= */
 router.delete("/:id", async (req, res) => {
     try {
@@ -233,12 +233,12 @@ router.delete("/:id", async (req, res) => {
         );
 
         if (result.rowCount === 0)
-            return res.status(404).json({ message: "❌ Registro no encontrado." });
+            return res.status(404).json({ message: "Registro no encontrado." });
 
-        res.json({ message: "🗑️ Registro eliminado correctamente." });
+        res.json({ message: "Registro eliminado correctamente." });
 
     } catch (err) {
-        console.error("❌ Error al eliminar:", err);
+        console.error("Error al eliminar:", err);
         res.status(500).send("Error eliminando registro de Engorda");
     }
 });

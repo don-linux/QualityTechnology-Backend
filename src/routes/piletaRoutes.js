@@ -8,13 +8,13 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* ============================================================
-   📌 RUTAS DE LOTES (En contexto de Piletas)
+    RUTAS DE LOTES (En contexto de Piletas)
 ============================================================ */
 router.get("/lotes/:granja", piletaController.getLotes);
 router.get("/lote-por-inst/:inst/:granja", piletaController.getLotePorInst);
 
 /* ============================================================
-   📌 RUTAS DE INVENTARIO Y SIEMBRA
+    RUTAS DE INVENTARIO Y SIEMBRA
 =========================================================== */
 router.get("/inventario/:granja", piletaController.getInventario);
 router.get("/origen/:granja", piletaController.getOrigen);
@@ -24,7 +24,7 @@ router.delete("/siembra/:id", piletaController.delete);
 router.delete("/:id", piletaController.delete);
 
 /* ============================================================
-   📌 RUTAS DE TRAZABILIDAD — MOVIMIENTOS ALEVINAJE
+    RUTAS DE TRAZABILIDAD — MOVIMIENTOS ALEVINAJE
 ============================================================ */
 router.get("/movimientos/:usuario/:granja", piletaController.getMovimientos);
 router.get("/movimientos/filtro/:usuario/:granja", piletaController.getMovimientosFiltro);

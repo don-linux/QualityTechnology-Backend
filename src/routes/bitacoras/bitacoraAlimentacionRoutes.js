@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE ALIMENTACIÓN
+    RUTAS DE BITÁCORA DE ALIMENTACIÓN
 ========================================================= */
 router.get("/", bitacoraAlimentacionController.getAll);
 router.post("/", bitacoraAlimentacionController.create);

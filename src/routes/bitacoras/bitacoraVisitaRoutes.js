@@ -22,7 +22,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE VISITAS
+    RUTAS DE BITÁCORA DE VISITAS
 ========================================================= */
 router.get("/", bitacoraVisitaController.getAll);
 router.post("/", upload.single('fc_foto_identificacion'), bitacoraVisitaController.create);

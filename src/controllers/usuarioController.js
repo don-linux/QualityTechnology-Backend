@@ -73,7 +73,7 @@ class UsuarioController {
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
-            // 🔹 Obtener módulos del rol
+            // Obtener módulos del rol
             const modulosResult = await pool.query(
                 `SELECT m.fi_modulo_id, m.fc_nombre
                 FROM seguridad.roles_modulos rm

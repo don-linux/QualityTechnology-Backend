@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE BIOMETRÍA
+    RUTAS DE BITÁCORA DE BIOMETRÍA
 ========================================================= */
 router.get("/:granja", bitacoraBiometriaController.getByGranja);
 router.get("/info/:granja/:instalacion", bitacoraBiometriaController.getInfo);

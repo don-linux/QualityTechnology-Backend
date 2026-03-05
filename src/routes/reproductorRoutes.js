@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   🔁 GET – Trazabilidad por granja
+    GET – Trazabilidad por granja
 ========================================================= */
 router.get("/movimientos/:granja", async (req, res) => {
   const { granja } = req.params;
@@ -30,13 +30,13 @@ router.get("/movimientos/:granja", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error trazabilidad:", err);
+    console.error("Error trazabilidad:", err);
     res.status(500).json({ error: "Error al obtener trazabilidad" });
   }
 });
 
 /* =========================================================
-   📋 GET – Reproductores por granja
+    GET – Reproductores por granja
 ========================================================= */
 router.get("/granja/:granja", async (req, res) => {
   const { granja } = req.params;
@@ -67,13 +67,13 @@ router.get("/granja/:granja", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error reproductores:", err);
+    console.error("Error reproductores:", err);
     res.status(500).json({ error: "Error al obtener reproductores" });
   }
 });
 
 /* =========================================================
-   📌 GET – Instalaciones por granja
+    GET – Instalaciones por granja
 ========================================================= */
 router.get("/instalaciones/:granja", async (req, res) => {
   const { granja } = req.params;
@@ -94,13 +94,13 @@ router.get("/instalaciones/:granja", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error instalaciones:", err);
+    console.error("Error instalaciones:", err);
     res.status(500).json({ error: "Error obteniendo instalaciones" });
   }
 });
 
 /* =========================================================
-   ✅ POST – Registrar reproductor + trazabilidad
+    POST – Registrar reproductor + trazabilidad
 ========================================================= */
 router.post("/", async (req, res) => {
   const {
@@ -221,11 +221,11 @@ router.post("/", async (req, res) => {
 
     res.json({
       success: true,
-      message: "✅ Reproductor y trazabilidad registrados correctamente",
+      message: "Reproductor y trazabilidad registrados correctamente",
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("❌ Error registrar reproductor:", err);
+    console.error("Error registrar reproductor:", err);
     res.status(500).json({ error: "Error al registrar reproductor" });
   } finally {
     client.release();
@@ -233,7 +233,7 @@ router.post("/", async (req, res) => {
 });
 
 /* =========================================================
-   ✏️ PUT – Actualizar reproductor + trazabilidad
+    PUT – Actualizar reproductor + trazabilidad
 ========================================================= */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -334,7 +334,7 @@ router.put("/:id", async (req, res) => {
     });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("❌ Error actualizar reproductor:", err);
+    console.error("Error actualizar reproductor:", err);
     res.status(500).json({ error: "Error al actualizar reproductor" });
   } finally {
     client.release();
@@ -342,7 +342,7 @@ router.put("/:id", async (req, res) => {
 });
 
 /* =========================================================
-   🗑 DELETE – Eliminar reproductor
+    DELETE – Eliminar reproductor
 ========================================================= */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
@@ -353,9 +353,9 @@ router.delete("/:id", async (req, res) => {
       [id]
     );
 
-    res.json({ success: true, message: "✅ Reproductor eliminado" });
+    res.json({ success: true, message: "Reproductor eliminado" });
   } catch (err) {
-    console.error("❌ Error eliminar:", err);
+    console.error("Error eliminar:", err);
     res.status(500).json({ error: "Error al eliminar reproductor" });
   }
 });

@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE MEDICAMENTOS
+    RUTAS DE BITÁCORA DE MEDICAMENTOS
 ========================================================= */
 router.get("/", bitacoraMedicamentoController.getAll);
 router.post("/", bitacoraMedicamentoController.create);

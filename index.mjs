@@ -7,7 +7,7 @@ import { parse } from "yaml";
 
 // Importar rutas
 
-// 📄 Swagger setup
+// Swagger setup
 let swaggerDocument;
 try {
   const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
@@ -64,10 +64,10 @@ dotenv.config();
 
 const app = express();
 
-// 📄 Documentación Swagger
+// Documentación Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// 🛡️ Configurar CORS correctamente
+// Configurar CORS correctamente
 app.use(
   cors({
     origin: "http://localhost:3000", // tu frontend React
@@ -76,10 +76,10 @@ app.use(
   })
 );
 
-// 🧩 Para leer JSON en las peticiones
+// Para leer JSON en las peticiones
 app.use(express.json());
 
-// 🔗 Registrar rutas
+// Registrar rutas
 app.use("/roles", rolRoutes);
 app.use("/usuarios", usuarioRoutes);
 app.use("/piletas", piletaRoutes);
@@ -128,8 +128,8 @@ app.get("/", (req, res) => {
   res.json({ message: "Backend de Quality Technology jalando" });
 });
 
-// 🚀 Iniciar servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

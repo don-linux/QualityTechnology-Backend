@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =====================================================
-   🔹 Obtener todos los clientes
+    Obtener todos los clientes
 ===================================================== */
 router.get("/", async (req, res) => {
   try {
@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
 });
 
 /* =====================================================
-   🔹 Registrar nuevo cliente
+    Registrar nuevo cliente
 ===================================================== */
 router.post("/", async (req, res) => {
   const { fc_nombre, fc_telefono, fc_correo, fc_localidad, fc_cp, fi_usuario_id } = req.body;
@@ -42,7 +42,7 @@ router.post("/", async (req, res) => {
 });
 
 /* =====================================================
-   🔹 Actualizar cliente
+    Actualizar cliente
 ===================================================== */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -68,7 +68,7 @@ router.put("/:id", async (req, res) => {
 });
 
 /* =====================================================
-   🔹 Eliminar cliente
+    Eliminar cliente
 ===================================================== */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;

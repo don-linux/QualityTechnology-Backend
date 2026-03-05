@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   🟢 Obtener todos los registros
+    Obtener todos los registros
    ========================================================= */
 router.get("/", async (req, res) => {
   try {
@@ -13,13 +13,13 @@ router.get("/", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener vacaciones:", err);
+    console.error("Error al obtener vacaciones:", err);
     res.status(500).send("Error al obtener vacaciones");
   }
 });
 
 /* =========================================================
-   🟢 Crear nuevo registro manual
+    Crear nuevo registro manual
    ========================================================= */
 router.post("/", async (req, res) => {
   try {
@@ -48,13 +48,13 @@ router.post("/", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al crear registro:", err);
+    console.error("Error al crear registro:", err);
     res.status(500).send("Error al crear registro");
   }
 });
 
 /* =========================================================
-   🟡 Actualizar registro
+    Actualizar registro
    ========================================================= */
 router.put("/:id", async (req, res) => {
   try {
@@ -76,35 +76,35 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar vacaciones:", err);
+    console.error("Error al actualizar vacaciones:", err);
     res.status(500).send("Error al actualizar registro");
   }
 });
 
 /* =========================================================
-   🔴 Eliminar registro individual
+    Eliminar registro individual
    ========================================================= */
 router.delete("/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM vacaciones WHERE fi_vacacion_id=$1", [
       req.params.id,
     ]);
-    res.send("✅ Registro eliminado correctamente");
+    res.send("Registro eliminado correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar registro:", err);
+    console.error("Error al eliminar registro:", err);
     res.status(500).send("Error al eliminar registro");
   }
 });
 
 /* =========================================================
-   ⚠️ Eliminar TODOS los registros
+    Eliminar TODOS los registros
    ========================================================= */
 router.delete("/", async (req, res) => {
   try {
     await pool.query("DELETE FROM vacaciones");
-    res.send("⚠️ Todos los registros de vacaciones fueron eliminados.");
+    res.send("Todos los registros de vacaciones fueron eliminados.");
   } catch (err) {
-    console.error("❌ Error al eliminar todos los registros:", err);
+    console.error("Error al eliminar todos los registros:", err);
     res.status(500).send("Error al eliminar todos los registros");
   }
 });
