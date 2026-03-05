@@ -2462,9 +2462,9 @@ INSERT INTO rrhh.departamentos (fc_nombre) VALUES
 
 CREATE TABLE rrhh.empleados (
   fi_empleado_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  fi_usuario_id INT UNIQUE REFERENCES usuarios(fi_usuario_id),
-  fi_departamento_id INT REFERENCES rrhh.departamentos(fi_departamento_id),
-  fi_estado_id INT REFERENCES catalogos.estados(fi_estado_id),
+  fi_usuario_id INT UNIQUE REFERENCES usuarios(fi_usuario_id) ON DELETE SET NULL,
+  fi_departamento_id INT NOT NULL REFERENCES rrhh.departamentos(fi_departamento_id) ON DELETE RESTRICT,
+  fi_estado_id INT NOT NULL REFERENCES catalogos.estados(fi_estado_id) ON DELETE RESTRICT,
   fc_ciudad VARCHAR(60) NOT NULL,
   fc_nombre VARCHAR(60) NOT NULL,
   fc_apellido_paterno VARCHAR(60) NOT NULL,
@@ -2474,8 +2474,36 @@ CREATE TABLE rrhh.empleados (
   fc_codigo_postal VARCHAR(10) NOT NULL,
   fc_referencias VARCHAR(255),
   ft_comentarios_adicionales TEXT,
-  fd_fecha_alta DATE DEFAULT CURRENT_DATE,
-  fb_activo BOOLEAN DEFAULT true
+  fd_fecha_alta DATE DEFAULT CURRENT_DATE
+);
+
+INSERT INTO rrhh.empleados (
+  fi_usuario_id,
+  fi_departamento_id,
+  fi_estado_id,
+  fc_ciudad,
+  fc_nombre,
+  fc_apellido_paterno,
+  fc_apellido_materno,
+  fd_fecha_nacimiento,
+  fc_calle,
+  fc_codigo_postal,
+  fc_referencias,
+  ft_comentarios_adicionales
+)
+VALUES (
+  NULL,
+  4,
+  1,
+  'Villahermosa',
+  'Carlos',
+  'Ramírez',
+  'López',
+  '1995-08-15',
+  'Av. Universidad 123',
+  '86000',
+  'Casa color azul frente a parque',
+  'Empleado operativo sin acceso al sistema'
 );
 
 CREATE SCHEMA IF NOT EXISTS seguridad;
