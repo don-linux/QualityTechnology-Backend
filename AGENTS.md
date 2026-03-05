@@ -32,8 +32,8 @@ npx jest --testPathPattern=lote     # Pattern match
 
 ## API Documentation
 
-Swagger UI: `http://localhost:5000/api-docs`  
-Schema: `swagger.yaml` (OpenAPI 3.0, 3477 lines) — keep in sync when adding routes.
+Swagger UI: `http://localhost:5000/api-docs`
+Schema: `swagger.yaml` (OpenAPI 3.0, 3477 lines) -- keep in sync when adding routes.
 
 ## Technology Stack
 
@@ -41,7 +41,7 @@ Schema: `swagger.yaml` (OpenAPI 3.0, 3477 lines) — keep in sync when adding ro
 - **Framework:** Express.js v5.x
 - **Database:** PostgreSQL via `pg` Pool (`src/db.js`)
 - **Auth:** JWT (`jsonwebtoken`, 8h expiry) + bcrypt (10 rounds)
-- **File uploads:** multer (installed, `uploads/` served as static)
+- **File uploads:** multer (`uploads/` served as static)
 - **CORS:** `http://localhost:3000`, methods GET/POST/PUT/DELETE, credentials: true
 
 ## Environment Variables
@@ -62,19 +62,75 @@ JWT_SECRET=your_secret_key
 
 ```
 src/
-  controllers/       # Class-based, static async methods
-  models/            # Class-based, raw SQL via pg pool
+  controllers/       # 21 files — class-based, static async methods
+  models/            # 22 files — class-based, raw SQL via pg pool
   middleware/        # authMiddleware.js (JWT Bearer validation)
   routes/
-    bitacoras/       # Log/registry routes (11 files)
-    catalogos/       # Catalog routes
-    *.routes.js      # Domain routes
+    bitacoras/       # 11 bitacora/log routes (all with controllers + auth)
+    catalogos/       # 1 file: estado.js (catalog routes)
+    *.routes.js      # 26 domain route files
   db.js              # pg Pool singleton
 index.mjs            # App entry: loads env, swagger, mounts all routes
-swagger.yaml         # OpenAPI 3.0 spec
-docker/dev|prod/     # Docker Compose + Dockerfile per environment
-uploads/             # Static file storage
+swagger.yaml         # OpenAPI 3.0 spec (3477 lines)
+docker/
+  dev/               # compose.yaml + Dockerfile + .env
+  prod/              # compose.yaml + Dockerfile + .env.example
+uploads/             # Static file storage (served at /uploads)
 ```
+
+## Registered Routes (index.mjs)
+
+### Core domain
+| Mount path         | Route file                  |
+|--------------------|-----------------------------|
+| `/roles`           | `rolRoutes.js`              |
+| `/usuarios`        | `usuarioRoutes.js`          |
+| `/piletas`         | `piletaRoutes.js`           |
+| `/instalaciones`   | `instalacionRoutes.js`      |
+| `/lotes`           | `loteRoutes.js`             |
+| `/reproductores`   | `reproductorRoutes.js`      |
+| `/engorda`         | `engordaRoutes.js`          |
+| `/clientes`        | `clienteRoutes.js`          |
+| `/ventas`          | `ventaRoutes.js`            |
+| `/alimentos`       | `alimentoRoutes.js`         |
+| `/lista-espera`    | `listaEsperaRoutes.js`      |
+| `/equipos`         | `equipoRoutes.js`           |
+| `/expedientes`     | `expedienteRoutes.js`       |
+| `/nomina`          | `nominaRoutes.js`           |
+| `/vacaciones`      | `vacacionRoutes.js`         |
+| `/caja-ahorro`     | `cajaAhorroRoutes.js`       |
+| `/proveedores`     | `proveedorRoutes.js`        |
+| `/flujo-caja`      | `flujoCajaRoutes.js`        |
+| `/tesoreria`       | `tesoreriaRoutes.js`        |
+| `/cuentas`         | `cuentaRoutes.js`           |
+
+### Bitacoras
+| Mount path                  | Route file                          |
+|-----------------------------|-------------------------------------|
+| `/biometrias`               | `bitacoraBiometriaRoutes.js`        |
+| `/plagas`                   | `bitacoraPlagaRoutes.js`            |
+| `/ceiba/alimentacion`       | `bitacoraAlimentacionRoutes.js`     |
+| `/ceiba/insumos`            | `bitacoraInsumoRoutes.js`           |
+| `/recepcion_insumos`        | `recepcionInsumoRoutes.js`          |
+| `/visitas`                  | `bitacoraVisitaRoutes.js`           |
+| `/medellin/banos`           | `bitacoraBanoRoutes.js`             |
+| `/medellin/parametros`      | `bitacoraParametroRoutes.js`        |
+| `/medellin/medicamentos`    | `bitacoraMedicamentoRoutes.js`      |
+| `/medellin/recambios`       | `bitacoraRecambioRoutes.js`         |
+| `/medellin/inventario`      | `bitacoraInventarioRoutes.js`       |
+
+### RRHH
+| Mount path         | Route file                  |
+|--------------------|-----------------------------|
+| `/estados`         | `catalogos/estado.js`       |
+| `/empleados`       | `empleadoRoutes.js`         |
+| `/departamentos`   | `departamentoRoutes.js`     |
+
+### Seguridad
+| Mount path         | Route file                  |
+|--------------------|-----------------------------|
+| `/modulos`         | `modulosRoutes.js`          |
+| `/roles-modulos`   | `rolesModulosRoutes.js`     |
 
 ## Code Style
 
@@ -87,23 +143,29 @@ uploads/             # Static file storage
 ### Formatting
 - 2-space indentation; semicolons required
 - Trailing commas in multi-line objects/arrays
-- No eslint or prettier config — style is prose-enforced only
+- No eslint or prettier config -- style is prose-enforced only
+- No emojis in code, comments, or user-facing messages
 
 ### Naming
 - **Files:** `camelCaseRoutes.js`, `camelCaseController.js`, `camelCaseModel.js`
 - **Variables/functions:** camelCase; **Classes:** PascalCase
-- **Route paths:** plural nouns (`/usuarios`, `/lotes`, `/pietas`)
-- **DB fields:** Hungarian notation — `fc_` (text), `fi_` (integer/ID), `fd_` (date), `fn_` (numeric)
+- **Route paths:** plural nouns (`/usuarios`, `/lotes`, `/piletas`)
+- **DB fields:** Hungarian notation -- `fc_` (text), `fi_` (integer/ID), `fd_` (date), `fn_` (numeric), `fb_` (boolean)
 - **Comments:** Spanish for all comments and user-facing messages
 
 ### Section Headers
-Use emoji-prefixed block comments: `/* ===== 🔹 Title ===== */`  
-Common emojis: `🔹` sections · `🛡️` CORS/config · `🔗` routes · `🚀` server · `❌` errors · `🔐` auth
+Use block comments for section headers:
+
+```javascript
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+```
 
 ## Architecture Patterns
 
 ### Route Files
-Thin — delegate to a controller. Apply `router.use(authMiddleware)` at the top for protected resources (before any route declarations). Register in `index.mjs` with `app.use("/lotes", loteRoutes)`. For mixed public/protected routes (e.g., `usuarioRoutes.js`), place public routes before `router.use(authMiddleware)`.
+Thin -- delegate to a controller. Apply `router.use(authMiddleware)` at the top for protected resources (before any route declarations). Register in `index.mjs` with `app.use("/path", routeModule)`. For mixed public/protected routes (e.g., `usuarioRoutes.js`), place public routes before `router.use(authMiddleware)`.
 
 ### Controller Pattern
 ```javascript
@@ -116,7 +178,7 @@ class LoteController {
             const lote = await loteModel.create({ fi_granja_id, fc_nombre });
             res.status(201).json({ mensaje: "Lote creado exitosamente", lote });
         } catch (err) {
-            console.error("❌ Error al crear lote:", err);
+            console.error("Error al crear lote:", err);
             res.status(500).json({ error: "Error al crear lote" });
         }
     }
@@ -149,20 +211,31 @@ JWT is extracted from `Authorization: Bearer <token>`. The verified payload (`{ 
 ## Error Handling
 
 - Always `try/catch` async operations
-- Log: `console.error("❌ Context description:", err)`
+- Log: `console.error("Error al [accion]:", err)`
 - Error response: `res.status(500).json({ error: "Message in Spanish" })`
 - Extended error: `{ error: "Message", detalle: err.message }`
 - Input validation: `res.status(400).json({ error: "Faltan datos obligatorios" })`
-- **Use `{ mensaje: "..." }` (Spanish) for success messages** — avoid mixing with `message`
+- **Use `{ mensaje: "..." }` (Spanish) for success messages** -- avoid mixing with `message`
 
 ## Known Inconsistencies (normalize when touching these files)
 
-- `src/models/RolesModulosModel.js` — PascalCase filename; should be `rolesModulosModel.js`
-- `src/routes/catalogos/estado.js` — missing `Routes` suffix; should be `estadoRoutes.js`
-- `rolRoutes.js`, `catalogos/estado.js` — inline `pool.query` handlers, no controller layer
-- `alevinRoutes.js`, `movimientoARoutes.js` — exist in `src/routes/` but not registered in `index.mjs`
-- Some controllers use `{ message: "..." }` (English); the standard is `{ mensaje: "..." }` (Spanish)
-- `modulosRoutes.js`, `rolesModulosRoutes.js`, `rolRoutes.js` — no auth middleware applied
+### Naming
+- `src/models/RolesModulosModel.js` -- PascalCase filename; should be `rolesModulosModel.js`
+- `src/routes/catalogos/estado.js` -- missing `Routes` suffix; should be `estadoRoutes.js`
+
+### Unregistered routes
+- `alevinRoutes.js`, `movimientoARoutes.js` -- exist in `src/routes/` but are NOT registered in `index.mjs`
+
+### Missing controller layer (inline `pool.query` in route files)
+- `rolRoutes.js`, `catalogos/estado.js`, `cajaAhorroRoutes.js`, `clienteRoutes.js`, `cuentaRoutes.js`, `engordaRoutes.js`, `equipoRoutes.js`, `expedienteRoutes.js`, `flujoCajaRoutes.js`, `listaEsperaRoutes.js`, `nominaRoutes.js`, `proveedorRoutes.js`, `reproductorRoutes.js`, `tesoreriaRoutes.js`, `vacacionRoutes.js`, `ventaRoutes.js`, `alevinRoutes.js`, `movimientoARoutes.js`
+- Note: `catalogoEstadoController.js` exists but is NOT used by `catalogos/estado.js`
+
+### Missing auth middleware
+- `rolRoutes.js`, `modulosRoutes.js`, `rolesModulosRoutes.js`, `catalogos/estado.js`
+- All inline `pool.query` route files listed above also lack auth middleware
+
+### Response key inconsistency
+- 18 controllers use English `{ message: "..." }`; only 3 (`usuarioController`, `departamentoController`, `empleadoController`) use the correct Spanish `{ mensaje: "..." }`
 
 ## Security Checklist
 
