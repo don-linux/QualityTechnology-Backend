@@ -4,21 +4,53 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// APLICAR PROTECCIÓN GLOBAL A ESTE MÓDULO
+/* =====================================================
+   PROTECCIÓN GLOBAL
+===================================================== */
+
 router.use(authMiddleware);
 
-/* --------------------------------------------------------
-    RUTAS DE INSTALACIONES (Control Reproductivo)
--------------------------------------------------------- */
-router.get("/instalaciones/:granja", loteController.getInstalacionesReproductores);
-/* --------------------------------------------------------
-    RUTAS DE LOTES
--------------------------------------------------------- */
-router.get("/granja/:granja", loteController.getByGranja);
-router.get("/instalacion/:id", loteController.getByInstalacion);
+/* =====================================================
+   INSTALACIONES (CONTROL REPRODUCTIVO)
+===================================================== */
 
-router.post("/", loteController.create);
-router.put("/:id", loteController.update);
-router.delete("/:id", loteController.delete);
+router.get(
+    "/instalaciones/:granja",
+    loteController.getInstalacionesReproductores
+);
+
+router.get(
+    "/familia-por-instalacion/:instalacionId",
+    loteController.getFamiliaPorInstalacion
+);
+
+/* =====================================================
+   LOTES
+===================================================== */
+
+router.get(
+    "/granja/:granja",
+    loteController.getByGranja
+);
+
+router.get(
+    "/instalacion/:id",
+    loteController.getByInstalacion
+);
+
+router.post(
+    "/",
+    loteController.create
+);
+
+router.put(
+    "/:id",
+    loteController.update
+);
+
+router.delete(
+    "/:id",
+    loteController.delete
+);
 
 export default router;
