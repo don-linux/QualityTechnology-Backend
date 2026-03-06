@@ -11,7 +11,7 @@ class AlimentoController {
             let porcion = 0;
             let gasto_alimento = 0;
 
-            // 🐟 Caso 1: PILETA (Alevinaje)
+            // Caso 1: PILETA (Alevinaje)
             if (fi_pileta_id && !fi_reproductor_id && !fi_engorda_id) {
                 const p = await alimentoModel.getContextData("pileta", fi_pileta_id);
                 if (p) {
@@ -29,7 +29,7 @@ class AlimentoController {
                 }
             }
 
-            // 🧬 Caso 2: REPRODUCTOR
+            // Caso 2: REPRODUCTOR
             else if (fi_reproductor_id && !fi_pileta_id && !fi_engorda_id) {
                 const r = await alimentoModel.getContextData("reproductor", fi_reproductor_id);
                 if (r) {
@@ -41,7 +41,7 @@ class AlimentoController {
                 }
             }
 
-            // 🧫 Caso 3: ENGORDA
+            // Caso 3: ENGORDA
             else if (fi_engorda_id && !fi_pileta_id && !fi_reproductor_id) {
                 const e = await alimentoModel.getContextData("engorda", fi_engorda_id);
                 if (e) {

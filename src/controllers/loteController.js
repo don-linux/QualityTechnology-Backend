@@ -3,7 +3,7 @@ import loteModel from "../models/loteModel.js";
 class LoteController {
 
     /* =====================================================
-       📌 OBTENER INSTALACIONES POR GRANJA
+        OBTENER INSTALACIONES POR GRANJA
     ====================================================== */
     static async getInstalaciones(req, res) {
         try {
@@ -11,13 +11,13 @@ class LoteController {
             const instalaciones = await loteModel.getInstalacionesByGranja(granja);
             res.json(instalaciones);
         } catch (err) {
-            console.error("❌ Error al obtener instalaciones:", err);
+            console.error("Error al obtener instalaciones:", err);
             res.status(500).json({ error: "Error obteniendo instalaciones" });
         }
     }
 
     /* =====================================================
-   📌 OBTENER INSTALACIONES DESDE REPRODUCTORES
+    OBTENER INSTALACIONES DESDE REPRODUCTORES
 ===================================================== */
     static async getInstalacionesReproductores(req, res) {
     try {
@@ -25,13 +25,13 @@ class LoteController {
         const data = await loteModel.getInstalacionesFromReproductores(granja);
         res.json(data);
     } catch (err) {
-        console.error("❌ Error obteniendo instalaciones de reproductores:", err);
+        console.error("Error obteniendo instalaciones de reproductores:", err);
         res.status(500).json({ error: "Error obteniendo instalaciones de reproductores" });
     }
 }
 
     /* =====================================================
-       📌 OBTENER LOTES POR GRANJA
+        OBTENER LOTES POR GRANJA
     ====================================================== */
     static async getByGranja(req, res) {
         try {
@@ -39,20 +39,20 @@ class LoteController {
             const lotes = await loteModel.getByGranja(granja);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error al obtener lotes por granja:", err);
+            console.error("Error al obtener lotes por granja:", err);
             res.status(500).json({ error: "Error obteniendo lotes por granja" });
         }
     }
 
     /* =====================================================
-       📌 CREAR NUEVO LOTE
+        CREAR NUEVO LOTE
     ====================================================== */
     static async create(req, res) {
     try {
         const {
             fecha,
             familia,
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas = 0,     
             no_lote,
@@ -71,7 +71,7 @@ class LoteController {
         await loteModel.create({
             fecha,
             familia,             
-            fi_instalacion_id,
+            fc_instalacion_id,
             huevos_ml,
             ovadas,
             alevines_inicial,
@@ -84,23 +84,23 @@ class LoteController {
 
         res.json({
             success: true,
-            message: "✓ Lote registrado correctamente."
+            message: "Lote registrado correctamente."
         });
 
     } catch (err) {
-        console.error("❌ Error al registrar lote:", err);
+        console.error("Error al registrar lote:", err);
         res.status(500).json({ error: "Error al registrar lote" });
     }
 }
     /* =====================================================
-       📌 ACTUALIZAR LOTE
+        ACTUALIZAR LOTE
     ====================================================== */
     static async update(req, res) {
         try {
             const { id } = req.params;
             const {
                 fecha,
-                fi_instalacion_id,
+                fc_instalacion_id,
                 huevos_ml,
                 ovadas = 0,
                 no_lote,
@@ -118,7 +118,7 @@ class LoteController {
 
             await loteModel.update(id, {
                 fecha,
-                fi_instalacion_id,
+                fc_instalacion_id,
                 huevos_ml,
                 ovadas,
                 no_lote,
@@ -130,17 +130,17 @@ class LoteController {
 
             res.json({
                 success: true,
-                message: "📝 Lote actualizado correctamente"
+                message: "Lote actualizado correctamente"
             });
 
         } catch (err) {
-            console.error("❌ Error al actualizar lote:", err);
+            console.error("Error al actualizar lote:", err);
             res.status(500).json({ error: "Error al actualizar lote" });
         }
     }
 
     /* =====================================================
-       📌 ELIMINAR LOTE (CON VALIDACIÓN DE DEPENDENCIAS)
+        ELIMINAR LOTE (CON VALIDACIÓN DE DEPENDENCIAS)
     ====================================================== */
     static async delete(req, res) {
         try {
@@ -152,7 +152,7 @@ class LoteController {
             if (hasRelations) {
                 return res.status(400).json({
                     success: false,
-                    message: "⚠️ No se puede eliminar: el lote está relacionado con otros módulos."
+                    message: "No se puede eliminar: el lote está relacionado con otros módulos."
                 });
             }
 
@@ -160,17 +160,17 @@ class LoteController {
 
             res.json({
                 success: true,
-                message: "🗑️ Lote eliminado correctamente"
+                message: "Lote eliminado correctamente"
             });
 
         } catch (err) {
-            console.error("❌ Error al eliminar lote:", err);
+            console.error("Error al eliminar lote:", err);
             res.status(500).json({ error: "Error al eliminar lote" });
         }
     }
 
     /* =====================================================
-       📌 OBTENER LOTES POR INSTALACIÓN
+        OBTENER LOTES POR INSTALACIÓN
     ====================================================== */
     static async getByInstalacion(req, res) {
         try {
@@ -178,7 +178,7 @@ class LoteController {
             const lotes = await loteModel.getByInstalacion(id);
             res.json(lotes);
         } catch (err) {
-            console.error("❌ Error al obtener lotes por instalación:", err);
+            console.error("Error al obtener lotes por instalación:", err);
             res.status(500).json({ error: "Error al obtener lotes por instalación" });
         }
     }

@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE INSUMOS
+    RUTAS DE BITÁCORA DE INSUMOS
 ========================================================= */
 router.get("/", bitacoraInsumoController.getAll);
 router.post("/", bitacoraInsumoController.create);

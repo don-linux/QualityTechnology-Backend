@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE INSTALACIONES
+    RUTAS DE INSTALACIONES
 ========================================================= */
 router.get("/", instalacionController.getAll);
 router.get("/granja/:granja", instalacionController.getByGranja);

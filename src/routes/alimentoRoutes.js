@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE ALIMENTOS
+    RUTAS DE ALIMENTOS
 ========================================================= */
 router.get("/", alimentoController.getAll); // Ahora usa el token para saber el usuario y rol
 router.post("/", alimentoController.create);

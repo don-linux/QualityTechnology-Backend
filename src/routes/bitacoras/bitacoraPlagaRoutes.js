@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE PLAGAS
+    RUTAS DE BITÁCORA DE PLAGAS
 ========================================================= */
 router.get("/", bitacoraPlagaController.getAll);
 router.post("/", bitacoraPlagaController.create);

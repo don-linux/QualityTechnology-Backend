@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   🟢 OBTENER NÓMINAS (filtrado opcional)
+    OBTENER NÓMINAS (filtrado opcional)
    ========================================================= */
 router.get("/", async (req, res) => {
   try {
@@ -27,13 +27,13 @@ router.get("/", async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener nóminas:", err);
+    console.error("Error al obtener nóminas:", err);
     res.status(500).send("Error al obtener nóminas");
   }
 });
 
 /* =========================================================
-   🟢 REGISTRAR PAGO DE NÓMINA
+    REGISTRAR PAGO DE NÓMINA
    ========================================================= */
 router.post("/", async (req, res) => {
   try {
@@ -73,13 +73,13 @@ router.post("/", async (req, res) => {
 
     res.json(insert.rows[0]);
   } catch (err) {
-    console.error("❌ Error al registrar nómina:", err);
+    console.error("Error al registrar nómina:", err);
     res.status(500).send("Error al registrar nómina");
   }
 });
 
 /* =========================================================
-   🟡 ACTUALIZAR NÓMINA
+    ACTUALIZAR NÓMINA
    ========================================================= */
 router.put("/:id", async (req, res) => {
   try {
@@ -102,20 +102,20 @@ router.put("/:id", async (req, res) => {
     const result = await pool.query(query, [...values, id]);
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar nómina:", err);
+    console.error("Error al actualizar nómina:", err);
     res.status(500).send("Error al actualizar nómina");
   }
 });
 
 /* =========================================================
-   🔴 ELIMINAR NÓMINA
+    ELIMINAR NÓMINA
    ========================================================= */
 router.delete("/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM nomina WHERE fi_nomina_id=$1", [req.params.id]);
-    res.send("✅ Registro eliminado correctamente");
+    res.send("Registro eliminado correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar nómina:", err);
+    console.error("Error al eliminar nómina:", err);
     res.status(500).send("Error al eliminar nómina");
   }
 });

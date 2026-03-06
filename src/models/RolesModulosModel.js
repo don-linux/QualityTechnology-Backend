@@ -127,7 +127,7 @@ class RolesModulosModel {
     try {
       await client.query("BEGIN");
 
-      // 1️⃣ Borrar actuales
+      // 1 Borrar actuales
       await client.query(
         `
         DELETE FROM seguridad.roles_modulos
@@ -136,7 +136,7 @@ class RolesModulosModel {
         [rolId]
       );
 
-      // 2️⃣ Insertar nuevos
+      // 2 Insertar nuevos
       for (const moduloId of modulosIds) {
         await client.query(
           `

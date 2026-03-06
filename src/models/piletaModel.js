@@ -21,12 +21,12 @@ class PiletaModel {
                 l.no_lote,
                 l.alevines_inicial,
                 l.fecha::date AS fecha,
-                l.fi_instalacion_id,
+                l.fc_instalacion_id,
                 i.nombre_instalacion AS origen_instalacion,
                 (CURRENT_DATE - l.fecha::date) AS dias_en_lote
             FROM lotes l
-            INNER JOIN instalaciones i 
-                ON l.fi_instalacion_id::integer = i.fi_instalacion_id
+            LEFT JOIN instalaciones i 
+                ON l.fi_instalacion_id = i.fi_instalacion_id
             WHERE LOWER(i.fc_granja) = LOWER($1)
             ORDER BY l.no_lote ASC
             `,

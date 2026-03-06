@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /**
- * 🟢 Obtener registros por granja
+ * Obtener registros por granja
  */
 router.get("/:granja", async (req, res) => {
   try {
@@ -21,7 +21,7 @@ router.get("/:granja", async (req, res) => {
 });
 
 /**
- * 🟡 Crear nueva categoría
+ * Crear nueva categoría
  */
 router.post("/", async (req, res) => {
   const { categoria, granja = "Ceiba" } = req.body;
@@ -38,7 +38,7 @@ router.post("/", async (req, res) => {
 });
 
 /**
- * 🔵 Actualizar valores de una categoría
+ * Actualizar valores de una categoría
  */
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
@@ -59,7 +59,7 @@ router.put("/:id", async (req, res) => {
 });
 
 /**
- * 🔴 Eliminar una categoría por ID
+ * Eliminar una categoría por ID
  */
 router.delete("/:id", async (req, res) => {
   try {
@@ -72,7 +72,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 /**
- * ⚫ Eliminar todas las categorías de una granja
+ * Eliminar todas las categorías de una granja
  */
 router.delete("/", async (req, res) => {
   const { granja } = req.query;

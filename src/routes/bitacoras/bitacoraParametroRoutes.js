@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =========================================================
-   📌 RUTAS DE BITÁCORA DE PARÁMETROS
+    RUTAS DE BITÁCORA DE PARÁMETROS
 ========================================================= */
 router.get("/", bitacoraParametroController.getAll);
 router.post("/", bitacoraParametroController.create);

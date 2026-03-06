@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   💰 TESORERIA GENERAL (usa la vista vw_tesoreria_overview)
+    TESORERIA GENERAL (usa la vista vw_tesoreria_overview)
    ========================================================= */
 router.get("/", async (req, res) => {
   try {
@@ -59,10 +59,10 @@ router.get("/", async (req, res) => {
     `;
 
     const result = await pool.query(query, params);
-    res.json(result.rows); // ✅ Devuelve JSON al frontend
+    res.json(result.rows); // Devuelve JSON al frontend
 
   } catch (err) {
-    console.error("❌ Error al obtener datos de tesoreria:", err);
+    console.error("Error al obtener datos de tesoreria:", err);
     res.status(500).send("Error del servidor al obtener datos de tesoreria");
   }
 });

@@ -32,28 +32,14 @@ class OrigenModel {
         [granjaFinal]
     );
 
-    return result.rows;
-}
-    static async getDestino(granja) {
+            return result.rows;
 
-    const granjaFinal = this.normalizarGranja(granja);
+        } catch (err) {
+            console.error("❌ Error en OrigenModel.getOrigen:", err);
+            throw new Error("Error obteniendo piletas disponibles como origen");
+        }
+    }
 
-    const result = await pool.query(
-        `
-        SELECT 
-            fi_instalacion_id,
-            nombre_instalacion
-        FROM instalaciones
-        WHERE LOWER(fc_granja) = LOWER($1)
-        AND LOWER(estado) = 'vacia'
-        ORDER BY nombre_instalacion ASC
-        `,
-        [granjaFinal]
-    );
-
-    return result.rows;
-}
-}
 
 
 export default OrigenModel;

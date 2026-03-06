@@ -8,11 +8,11 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* --------------------------------------------------------
-   📌 RUTAS DE INSTALACIONES (Control Reproductivo)
+    RUTAS DE INSTALACIONES (Control Reproductivo)
 -------------------------------------------------------- */
 router.get("/instalaciones/:granja", loteController.getInstalacionesReproductores);
 /* --------------------------------------------------------
-   📌 RUTAS DE LOTES
+    RUTAS DE LOTES
 -------------------------------------------------------- */
 router.get("/granja/:granja", loteController.getByGranja);
 router.get("/instalacion/:id", loteController.getByInstalacion);

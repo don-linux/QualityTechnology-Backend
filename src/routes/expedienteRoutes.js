@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* =========================================================
-   🟢 OBTENER TODOS LOS EXPEDIENTES O BUSCAR POR NOMBRE
+    OBTENER TODOS LOS EXPEDIENTES O BUSCAR POR NOMBRE
    ========================================================= */
 router.get("/", async (req, res) => {
   try {
@@ -24,13 +24,13 @@ router.get("/", async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error al obtener expedientes:", err);
+    console.error("Error al obtener expedientes:", err);
     res.status(500).send("Error al obtener expedientes");
   }
 });
 
 /* =========================================================
-   🟢 CREAR NUEVO EXPEDIENTE
+    CREAR NUEVO EXPEDIENTE
    ========================================================= */
 router.post("/", async (req, res) => {
   try {
@@ -49,19 +49,19 @@ router.post("/", async (req, res) => {
     const result = await pool.query(query, values);
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al crear expediente:", err);
+    console.error("Error al crear expediente:", err);
     res.status(500).send("Error al crear expediente");
   }
 });
 
 /* =========================================================
-   🟡 ACTUALIZAR EXPEDIENTE
+    ACTUALIZAR EXPEDIENTE
    ========================================================= */
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 🔹 Clonamos y eliminamos campos que no deben actualizarse manualmente
+    // Clonamos y eliminamos campos que no deben actualizarse manualmente
     const data = { ...req.body };
     delete data.fd_fecha_actualizacion; // Evita colisión con NOW()
 
@@ -71,7 +71,7 @@ router.put("/:id", async (req, res) => {
     if (keys.length === 0)
       return res.status(400).send("No se enviaron campos para actualizar.");
 
-    // 🔹 Construimos el SET dinámico
+    // Construimos el SET dinámico
     const sets = keys.map((k, i) => `${k}=$${i + 1}`).join(", ");
 
     const query = `
@@ -85,34 +85,34 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ Error al actualizar expediente:", err);
+    console.error("Error al actualizar expediente:", err);
     res.status(500).send("Error al actualizar expediente");
   }
 });
 
 /* =========================================================
-   🔴 ELIMINAR UN EXPEDIENTE
+    ELIMINAR UN EXPEDIENTE
    ========================================================= */
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query("DELETE FROM expedientes WHERE fi_expediente_id=$1", [id]);
-    res.send("✅ Expediente eliminado correctamente");
+    res.send("Expediente eliminado correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar expediente:", err);
+    console.error("Error al eliminar expediente:", err);
     res.status(500).send("Error al eliminar expediente");
   }
 });
 
 /* =========================================================
-   🔴 ELIMINAR TODOS LOS EXPEDIENTES
+    ELIMINAR TODOS LOS EXPEDIENTES
    ========================================================= */
 router.delete("/", async (req, res) => {
   try {
     await pool.query("DELETE FROM expedientes");
-    res.send("🗑️ Todos los expedientes eliminados correctamente");
+    res.send("Todos los expedientes eliminados correctamente");
   } catch (err) {
-    console.error("❌ Error al eliminar todos:", err);
+    console.error("Error al eliminar todos:", err);
     res.status(500).send("Error al eliminar todos los expedientes");
   }
 });

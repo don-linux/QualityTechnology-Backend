@@ -4,7 +4,7 @@ import pool from "../db.js";
 const router = express.Router();
 
 /* ======================================================
-   🟢 Crear registro en lista de espera
+    Crear registro en lista de espera
    ====================================================== */
 router.post("/", async (req, res) => {
   try {
@@ -66,7 +66,7 @@ router.post("/", async (req, res) => {
 });
 
 /* ======================================================
-   🔍 Obtener lista de espera
+    Obtener lista de espera
    ====================================================== */
 router.get("/", async (req, res) => {
   try {
@@ -81,7 +81,7 @@ router.get("/", async (req, res) => {
 });
 
 /* ======================================================
-   🟡 Actualizar un registro
+    Actualizar un registro
    ====================================================== */
 router.put("/:id", async (req, res) => {
   try {
@@ -122,7 +122,7 @@ router.put("/:id", async (req, res) => {
 });
 
 /* ======================================================
-   🔴 Eliminar un registro
+    Eliminar un registro
    ====================================================== */
 router.delete("/:id", async (req, res) => {
   try {
@@ -138,7 +138,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 /* ======================================================
-   🔄 Convertir registro de Lista de Espera → Venta real
+    Convertir registro de Lista de Espera → Venta real
    ====================================================== */
 router.post("/convertir/:id", async (req, res) => {
   const { id } = req.params;
@@ -158,7 +158,7 @@ router.post("/convertir/:id", async (req, res) => {
     const usuario_id = req.headers["usuario_id"] || 1;
     const now = new Date();
 
-    // 🔥 Convertir correctamente los tipos
+    // Convertir correctamente los tipos
     const cantidad = parseInt(d.fn_cantidad);   // <--- aquí el fix
     const precio = parseFloat(d.fn_precio_venta);
     const total = cantidad * precio;
@@ -222,7 +222,7 @@ router.post("/convertir/:id", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error al convertir:", err);
+    console.error("Error al convertir:", err);
     res.status(500).json({ error: err.message });
   }
 });

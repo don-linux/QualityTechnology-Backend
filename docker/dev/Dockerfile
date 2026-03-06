@@ -1,7 +1,7 @@
 FROM node:24.11.1-alpine3.22
 
 # Useful toolchain for projects with node-gyp
-RUN apk add --no-cache git openssh-client bash
+RUN apk add --no-cache git openssh-client bash postgresql-client
 
 WORKDIR /app
 
