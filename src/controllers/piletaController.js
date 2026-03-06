@@ -13,6 +13,26 @@ class PiletaController {
             res.status(500).json({ error: "Error obteniendo instalaciones" });
         }
     }
+    
+static async getDestino(req, res) {
+    try {
+
+        const granja = piletaModel.normalizarGranja(req.params.granja);
+
+        const destino = await origenModel.getDestino(granja);
+
+        res.json(destino);
+
+    } catch (err) {
+
+        console.error("Error destino instalaciones:", err);
+
+        res.status(500).json({
+            error: "Error obteniendo destino"
+        });
+
+    }
+}
 
     static async getLotes(req, res) {
         try {
@@ -63,6 +83,7 @@ class PiletaController {
             }
 
             await piletaModel.createSiembra(data);
+            await piletaModel.ocuparInstalacion(data.fi_instalacion_id);
 
             res.json({
                 success: true,
@@ -87,6 +108,7 @@ class PiletaController {
 
             await piletaModel.devolverAlevinesAlLote(fi_lote_id, cantidad);
             await piletaModel.delete(id);
+            await piletaModel.verificarInstalacionVacia(prev.fi_instalacion_id);
 
             res.json({
                 success: true,
