@@ -2552,3 +2552,7 @@ WHERE fi_rol_id = 1;
 CREATE UNIQUE INDEX unico_root
 ON public.roles (fb_es_root)
 WHERE fb_es_root = true;
+
+-- Campo agregado para registrar ovadas en lotes
+ALTER TABLE public.lotes
+ADD COLUMN IF NOT EXISTS ovadas INTEGER DEFAULT 0;

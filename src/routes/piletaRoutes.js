@@ -18,6 +18,7 @@ router.get("/lote-por-inst/:inst/:granja", piletaController.getLotePorInst);
 =========================================================== */
 router.get("/inventario/:granja", piletaController.getInventario);
 router.get("/origen/:granja", piletaController.getOrigen);
+router.get("/destino/:granja", piletaController.getDestino);
 
 router.post("/siembra", piletaController.siembra);
 router.delete("/siembra/:id", piletaController.delete);

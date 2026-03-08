@@ -10,39 +10,36 @@ class OrigenModel {
         return "Granja Acuícola Medellin";
     }
 
-    /* =====================================================
-       OBTENER PILETAS DISPONIBLES PARA ORIGEN INTERNO
-       (Solo las que tengan cantidad > 0)
-    ====================================================== */
-    static async getOrigen(granja) {
-        const granjaFinal = this.normalizarGranja(granja);
+   static async getOrigen(granja) {
 
-        try {
-            const result = await pool.query(
-                `
-                SELECT 
-                    p.fi_pileta_id,
-                    p.cantidad,
-                    p.fi_lote_id,
-                    l.no_lote,
-                    COALESCE(i.nombre_instalacion, '-') AS nombre_instalacion
-                FROM piletas p
-                LEFT JOIN lotes l ON p.fi_lote_id = l.fi_lote_id
-                LEFT JOIN instalaciones i ON p.fi_instalacion_id = i.fi_instalacion_id
-                WHERE LOWER(TRIM(p.fc_granja)) = LOWER(TRIM($1))
-                AND p.cantidad > 0
-                ORDER BY p.fi_pileta_id ASC
-                `,
-                [granjaFinal]
-            );
+    const granjaFinal = this.normalizarGranja(granja);
+
+    const result = await pool.query(
+        `
+        SELECT 
+            l.fi_instalacion_id,
+            i.nombre_instalacion,
+            l.fi_lote_id,
+            l.no_lote,
+            l.alevines_inicial
+        FROM lotes l
+        INNER JOIN instalaciones i
+            ON l.fi_instalacion_id = i.fi_instalacion_id
+        WHERE LOWER(i.fc_granja) = LOWER($1)
+        AND l.alevines_inicial > 0
+        ORDER BY i.nombre_instalacion ASC
+        `,
+        [granjaFinal]
+    );
 
             return result.rows;
 
         } catch (err) {
-            console.error("Error en OrigenModel.getOrigen:", err);
+            console.error("❌ Error en OrigenModel.getOrigen:", err);
             throw new Error("Error obteniendo piletas disponibles como origen");
         }
     }
-}
+
+
 
 export default OrigenModel;
