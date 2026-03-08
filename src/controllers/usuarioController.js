@@ -61,6 +61,7 @@ class UsuarioController {
         try {
             const usuario = await usuarioModel.getByNombre(nombre);
             if (!usuario) {
+                console.log("Usuario no encontrado:", nombre);
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
