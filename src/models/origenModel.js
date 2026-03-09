@@ -21,19 +21,15 @@ static async getOrigen(granja){
 
 try{
 
-const granjaFinal = this.normalizarGranja(granja)
-
 const result = await pool.query(`
 SELECT DISTINCT
 i.fi_instalacion_id,
 i.nombre_instalacion
 FROM instalaciones i
 JOIN lotes l
-ON i.fi_instalacion_id = l.fc_instalacion_id
-WHERE LOWER(i.fc_granja) LIKE LOWER('%' || $1 || '%')
-AND l.alevines_inicial > 0
+ON l.fc_instalacion_id::integer = i.fi_instalacion_id
 ORDER BY i.nombre_instalacion
-`,[granjaFinal])
+`)
 
 return result.rows
 
