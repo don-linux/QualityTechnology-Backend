@@ -87,7 +87,8 @@ class LoteController {
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad = 0
+                mortalidad = 0,
+                alevines_inicial = 0
             } = req.body;
 
             // Validación básica
@@ -102,7 +103,6 @@ class LoteController {
 
             const huevosFinal = huevos_ml ?? huevos ?? 0;
 
-            const alevines_inicial = 0;
 
             const mortalidad_porcentaje =
                 alevines_inicial > 0
@@ -151,18 +151,19 @@ class LoteController {
 
             const {
                 fecha,
+                familia,
                 fc_instalacion_id,
                 huevos_ml,
                 ovadas = 0,
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad
+                mortalidad = 0,
+                alevines_inicial = 0
             } = req.body;
 
             const granjaFinal = loteModel.normalizarGranja(fc_granja);
 
-            const alevines_inicial = await loteModel.getAlevinesInicial(id);
 
             const mortalidad_porcentaje =
                 alevines_inicial > 0
@@ -172,9 +173,11 @@ class LoteController {
             await loteModel.update(id, {
 
                 fecha,
+                familia,
                 fc_instalacion_id,
                 huevos_ml,
                 ovadas,
+                alevines_inicial,
                 no_lote,
                 fc_granja: granjaFinal,
                 observacion,
