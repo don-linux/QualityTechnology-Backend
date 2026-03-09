@@ -32,25 +32,9 @@ class PiletaModel {
             `,
             [granja]
         );
+        return result.rows;
+    }
 
-const result = await pool.query(`
-SELECT 
-l.fi_lote_id,
-l.no_lote,
-l.alevines_inicial,
-l.fecha::date,
-l.fc_instalacion_id,
-i.nombre_instalacion,
-(CURRENT_DATE - l.fecha::date) AS dias_en_lote
-FROM lotes l
-LEFT JOIN instalaciones i
-ON i.fi_instalacion_id = l.fc_instalacion_id
-WHERE LOWER(l.fc_granja)=LOWER($1)
-ORDER BY l.no_lote
-`,[granja])
-
-return result.rows
-}
     /* =====================================================
        INVENTARIO
     ===================================================== */
