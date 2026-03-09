@@ -150,6 +150,7 @@ class LoteModel {
 
         const {
             fecha,
+            familia,
             fc_instalacion_id,
             huevos_ml,
             ovadas,
@@ -157,26 +158,30 @@ class LoteModel {
             fc_granja,
             observacion,
             mortalidad,
-            mortalidad_porcentaje
+            mortalidad_porcentaje,
+            alevines_inicial
         } = data;
 
         const res = await pool.query(
             `
             UPDATE lotes SET
                 fecha = $1,
-                fc_instalacion_id = $2,
-                huevos_ml = $3,
-                ovadas = $4,
-                no_lote = $5,
-                fc_granja = $6,
-                observacion = $7,
-                mortalidad = $8,
-                mortalidad_porcentaje = $9
-            WHERE fi_lote_id = $10
+                familia = $2,
+                fc_instalacion_id = $3,
+                huevos_ml = $4,
+                ovadas = $5,
+                no_lote = $6,
+                fc_granja = $7,
+                observacion = $8,
+                mortalidad = $9,
+                mortalidad_porcentaje = $10,
+                alevines_inicial = $11
+            WHERE fi_lote_id = $12
             RETURNING *
             `,
             [
                 fecha,
+                familia,
                 String(fc_instalacion_id),
                 huevos_ml,
                 ovadas,
@@ -185,6 +190,7 @@ class LoteModel {
                 observacion,
                 mortalidad,
                 mortalidad_porcentaje,
+                alevines_inicial,
                 id
             ]
         );
