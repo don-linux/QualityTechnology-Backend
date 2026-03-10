@@ -1,0 +1,17 @@
+meta {
+  name: GET lista-espera
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/lista-espera
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

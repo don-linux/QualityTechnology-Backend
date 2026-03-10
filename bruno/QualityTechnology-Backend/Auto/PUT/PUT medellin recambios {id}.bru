@@ -1,0 +1,19 @@
+meta {
+  name: PUT medellin recambios {id}
+  type: http
+  seq: 22
+}
+
+put {
+  url: {{baseUrl}}/medellin/recambios/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

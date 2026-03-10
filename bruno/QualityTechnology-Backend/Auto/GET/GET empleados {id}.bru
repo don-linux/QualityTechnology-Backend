@@ -1,0 +1,17 @@
+meta {
+  name: GET empleados {id}
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/empleados/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

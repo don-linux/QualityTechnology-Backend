@@ -1,0 +1,19 @@
+meta {
+  name: PUT alevines {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/alevines/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

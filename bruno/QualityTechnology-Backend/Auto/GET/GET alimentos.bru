@@ -1,0 +1,17 @@
+meta {
+  name: GET alimentos
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/alimentos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

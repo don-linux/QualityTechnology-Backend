@@ -1,0 +1,19 @@
+meta {
+  name: POST plagas
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/plagas
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

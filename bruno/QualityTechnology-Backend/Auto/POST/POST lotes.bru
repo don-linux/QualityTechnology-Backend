@@ -1,0 +1,19 @@
+meta {
+  name: POST lotes
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/lotes
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

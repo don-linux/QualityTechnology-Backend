@@ -1,0 +1,17 @@
+meta {
+  name: DELETE equipos mantenimientos {mantenimiento_id}
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/equipos/mantenimientos/{{mantenimiento_id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

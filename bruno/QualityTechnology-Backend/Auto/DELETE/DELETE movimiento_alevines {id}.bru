@@ -1,0 +1,17 @@
+meta {
+  name: DELETE movimiento_alevines {id}
+  type: http
+  seq: 32
+}
+
+delete {
+  url: {{baseUrl}}/movimiento_alevines/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

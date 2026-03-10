@@ -1,0 +1,17 @@
+meta {
+  name: GET roles-modulos {rolId} modulos
+  type: http
+  seq: 53
+}
+
+get {
+  url: {{baseUrl}}/roles-modulos/{{rolId}}/modulos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

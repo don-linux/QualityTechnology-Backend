@@ -1,0 +1,19 @@
+meta {
+  name: POST equipos {equipo_id} mantenimientos
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/equipos/{{equipo_id}}/mantenimientos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

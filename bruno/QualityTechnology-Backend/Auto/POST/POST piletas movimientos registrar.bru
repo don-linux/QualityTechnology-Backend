@@ -1,0 +1,19 @@
+meta {
+  name: POST piletas movimientos registrar
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{baseUrl}}/piletas/movimientos/registrar
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

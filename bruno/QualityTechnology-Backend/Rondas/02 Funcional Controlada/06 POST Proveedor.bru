@@ -1,0 +1,32 @@
+meta {
+  name: 06 POST Proveedor
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/proveedores
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "{{runTag}} Proveedor",
+    "empresa": "{{runTag}} S.A.",
+    "rfc": "XAXX010101000",
+    "categoria": "INSUMOS",
+    "contacto": "Contacto {{runTag}}",
+    "telefono": "5552003000",
+    "correo": "{{runTag}}_proveedor@test.local",
+    "direccion": "Calle 1",
+    "forma_pago": "TRANSFERENCIA",
+    "plazo_credito": "15",
+    "monto_promedio": 1000,
+    "activo": true
+  }
+}

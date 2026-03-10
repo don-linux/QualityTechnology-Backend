@@ -1,0 +1,17 @@
+meta {
+  name: DELETE medellin medicamentos {id}
+  type: http
+  seq: 27
+}
+
+delete {
+  url: {{baseUrl}}/medellin/medicamentos/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

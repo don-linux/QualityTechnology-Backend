@@ -1,0 +1,14 @@
+meta {
+  name: Convertir Lista Espera
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/lista-espera/convertir/{{listaId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

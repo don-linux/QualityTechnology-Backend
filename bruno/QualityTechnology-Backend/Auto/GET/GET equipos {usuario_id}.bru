@@ -1,0 +1,17 @@
+meta {
+  name: GET equipos {usuario_id}
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/equipos/{{usuario_id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

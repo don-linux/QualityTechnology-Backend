@@ -1,0 +1,17 @@
+meta {
+  name: GET instalaciones tipo {tipo} {granja}
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/instalaciones/tipo/{{tipo}}/{{granja}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

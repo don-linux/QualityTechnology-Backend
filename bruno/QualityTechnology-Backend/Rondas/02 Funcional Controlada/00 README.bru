@@ -1,0 +1,31 @@
+meta {
+  name: 00 README
+  type: http
+  seq: 0
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+}
+
+notes {
+  Ronda 02 - Funcional Controlada
+
+  Objetivo:
+  - Ejecutar CRUD real con cleanup en clientes y proveedores.
+
+  Antes de iniciar:
+  1) Ejecuta 01 Login.
+  2) Copia token al env var {{token}}.
+
+  Flujo clientes:
+  - Ejecuta 02, 03.
+  - Toma fi_cliente_id de respuesta de 02 y colócalo en {{clienteId}}.
+  - Ejecuta 04 y 05.
+
+  Flujo proveedores:
+  - Ejecuta 06, 07.
+  - Toma id de respuesta de 06 y colócalo en {{proveedorId}}.
+  - Ejecuta 08 y 09.
+}

@@ -1,0 +1,14 @@
+meta {
+  name: 04 GET Roles token valido
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/roles
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

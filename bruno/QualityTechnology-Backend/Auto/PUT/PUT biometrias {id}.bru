@@ -1,0 +1,19 @@
+meta {
+  name: PUT biometrias {id}
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/biometrias/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

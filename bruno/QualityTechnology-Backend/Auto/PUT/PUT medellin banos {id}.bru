@@ -1,0 +1,19 @@
+meta {
+  name: PUT medellin banos {id}
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{baseUrl}}/medellin/banos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: DELETE piletas movimientos eliminar
+  type: http
+  seq: 35
+}
+
+delete {
+  url: {{baseUrl}}/piletas/movimientos/eliminar
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

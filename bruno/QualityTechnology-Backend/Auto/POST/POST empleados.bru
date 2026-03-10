@@ -1,0 +1,19 @@
+meta {
+  name: POST empleados
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/empleados
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

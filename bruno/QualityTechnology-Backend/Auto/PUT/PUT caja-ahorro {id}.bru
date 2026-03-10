@@ -1,0 +1,19 @@
+meta {
+  name: PUT caja-ahorro {id}
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/caja-ahorro/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

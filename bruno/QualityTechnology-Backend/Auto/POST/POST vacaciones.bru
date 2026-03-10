@@ -1,0 +1,19 @@
+meta {
+  name: POST vacaciones
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{baseUrl}}/vacaciones
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}
