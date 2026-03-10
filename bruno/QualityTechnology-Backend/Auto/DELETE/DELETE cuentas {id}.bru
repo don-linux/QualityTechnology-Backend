@@ -1,0 +1,17 @@
+meta {
+  name: DELETE cuentas {id}
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/cuentas/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

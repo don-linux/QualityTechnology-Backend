@@ -1,0 +1,19 @@
+meta {
+  name: PUT medellin medicamentos {id}
+  type: http
+  seq: 20
+}
+
+put {
+  url: {{baseUrl}}/medellin/medicamentos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

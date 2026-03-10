@@ -1,0 +1,17 @@
+meta {
+  name: GET piletas lote-por-inst {inst} {granja}
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{baseUrl}}/piletas/lote-por-inst/{{inst}}/{{granja}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

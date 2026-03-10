@@ -1,0 +1,17 @@
+meta {
+  name: GET reproductores movimientos {granja}
+  type: http
+  seq: 51
+}
+
+get {
+  url: {{baseUrl}}/reproductores/movimientos/{{granja}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

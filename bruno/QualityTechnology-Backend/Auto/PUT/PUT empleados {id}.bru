@@ -1,0 +1,19 @@
+meta {
+  name: PUT empleados {id}
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/empleados/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

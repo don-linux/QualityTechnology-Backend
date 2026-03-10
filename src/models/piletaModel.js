@@ -26,7 +26,7 @@ class PiletaModel {
                 (CURRENT_DATE - l.fecha::date) AS dias_en_lote
             FROM lotes l
             LEFT JOIN instalaciones i 
-                ON l.fc_instalacion_id = i.nombre_instalacion
+                ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
             WHERE LOWER(i.fc_granja) = LOWER($1)
             ORDER BY l.no_lote ASC
             `,
@@ -109,17 +109,30 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             `
             SELECT 
                 m.fi_movimiento_id,
-                COALESCE(i_o.nombre_instalacion, m.origen_externo) AS origen_nombre,
-                i_d.nombre_instalacion AS destino_nombre,
+                COALESCE(
+                    i_o.nombre_instalacion, 
+                    i_o_m.nombre_instalacion, 
+                    i_l_o.nombre_instalacion,
+                    m.origen_externo
+                ) AS origen_nombre,
+                COALESCE(
+                    i_d.nombre_instalacion, 
+                    i_d_m.nombre_instalacion
+                ) AS destino_nombre,
                 m.cantidad,
                 m.fecha_movimiento,
                 m.observacion,
                 m.tipo_movimiento
             FROM trazabilidad_alevinaje m
             LEFT JOIN piletas p_o ON p_o.fi_pileta_id = m.fi_pileta_origen
-            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id = p_o.fi_instalacion_id
+            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id::text = p_o.fi_instalacion_id::text
             LEFT JOIN piletas p_d ON p_d.fi_pileta_id = m.fi_pileta_destino
-            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id = p_d.fi_instalacion_id
+            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id::text = p_d.fi_instalacion_id::text
+            LEFT JOIN instalaciones i_o_m ON i_o_m.fi_instalacion_id::text = m.fi_instalacion_origen::text
+            LEFT JOIN instalaciones i_d_m ON i_d_m.fi_instalacion_id::text = m.fi_instalacion_destino::text
+            -- Respaldo extra: buscar por el lote asociado al movimiento
+            LEFT JOIN lotes l_o ON l_o.fi_lote_id = m.fi_lote_id
+            LEFT JOIN instalaciones i_l_o ON i_l_o.fi_instalacion_id::text = l_o.fc_instalacion_id::text
             WHERE LOWER(m.fc_granja) = LOWER($1)
             AND m.fi_usuario_id = $2
             ORDER BY m.fecha_movimiento DESC
@@ -134,17 +147,30 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         let sql = `
             SELECT 
                 m.fi_movimiento_id,
-                COALESCE(i_o.nombre_instalacion, m.origen_externo) AS origen_nombre,
-                i_d.nombre_instalacion AS destino_nombre,
+                COALESCE(
+                    i_o.nombre_instalacion, 
+                    i_o_m.nombre_instalacion, 
+                    i_l_o.nombre_instalacion,
+                    m.origen_externo
+                ) AS origen_nombre,
+                COALESCE(
+                    i_d.nombre_instalacion, 
+                    i_d_m.nombre_instalacion
+                ) AS destino_nombre,
                 m.cantidad,
                 m.fecha_movimiento,
                 m.observacion,
                 m.tipo_movimiento
             FROM trazabilidad_alevinaje m
             LEFT JOIN piletas p_o ON p_o.fi_pileta_id = m.fi_pileta_origen
-            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id = p_o.fi_instalacion_id
+            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id::text = p_o.fi_instalacion_id::text
             LEFT JOIN piletas p_d ON p_d.fi_pileta_id = m.fi_pileta_destino
-            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id = p_d.fi_instalacion_id
+            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id::text = p_d.fi_instalacion_id::text
+            LEFT JOIN instalaciones i_o_m ON i_o_m.fi_instalacion_id::text = m.fi_instalacion_origen::text
+            LEFT JOIN instalaciones i_d_m ON i_d_m.fi_instalacion_id::text = m.fi_instalacion_destino::text
+            -- Respaldo extra
+            LEFT JOIN lotes l_o ON l_o.fi_lote_id = m.fi_lote_id
+            LEFT JOIN instalaciones i_l_o ON i_l_o.fi_instalacion_id::text = l_o.fc_instalacion_id::text
             WHERE LOWER(m.fc_granja) = LOWER($1)
             AND m.fi_usuario_id = $2
         `;
@@ -205,57 +231,87 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         let piletaDestinoId = null;
 
         /* ==============================
-           BUSCAR PILETA ORIGEN
+           1. BUSCAR PILETA ORIGEN (SI EXISTE)
         ============================== */
-
         if (origen_instalacion) {
-
             const origen = await pool.query(
-                `
-                SELECT fi_pileta_id
-                FROM piletas
-                WHERE fi_instalacion_id = $1
-                LIMIT 1
-                `,
+                `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
                 [origen_instalacion]
             );
-
             if (origen.rows.length > 0) {
                 piletaOrigenId = origen.rows[0].fi_pileta_id;
             }
         }
 
         /* ==============================
-           BUSCAR PILETA DESTINO
+           2. BUSCAR O CREAR PILETA DESTINO
         ============================== */
-
         if (destino) {
-
-            const destinoPileta = await pool.query(
-                `
-                SELECT fi_pileta_id
-                FROM piletas
-                WHERE fi_instalacion_id = $1
-                LIMIT 1
-                `,
+            const destinoRes = await pool.query(
+                `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
                 [destino]
             );
 
-            if (destinoPileta.rows.length > 0) {
-                piletaDestinoId = destinoPileta.rows[0].fi_pileta_id;
+            if (destinoRes.rows.length > 0) {
+                piletaDestinoId = destinoRes.rows[0].fi_pileta_id;
+
+                // Si es un traslado, sumamos al destino
+                if (tipo_movimiento === "TRASLADO") {
+                    await pool.query(
+                        `UPDATE piletas SET cantidad = cantidad + $1 WHERE fi_pileta_id = $2`,
+                        [cantidad, piletaDestinoId]
+                    );
+                }
+            } else if (tipo_movimiento === "TRASLADO") {
+                // Si no existe y es traslado, creamos la pileta nueva
+                const nuevaPileta = await pool.query(
+                    `
+                    INSERT INTO piletas
+                    (fi_instalacion_id, fi_lote_id, cantidad, talla_gr, observacion,
+                    fecha_siembra, fecha_ultima_biometria, fc_granja)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    RETURNING fi_pileta_id
+                    `,
+                    [
+                        destino,
+                        fi_lote_id,
+                        cantidad,
+                        data.talla_gr || 0,
+                        observacion || null,
+                        data.fecha_siembra || new Date(),
+                        data.fecha_ultima_biometria || new Date(),
+                        fc_granja
+                    ]
+                );
+                piletaDestinoId = nuevaPileta.rows[0].fi_pileta_id;
+            }
+
+            // Marcamos la instalación como ocupada
+            if (tipo_movimiento === "TRASLADO") {
+                await this.ocuparInstalacion(destino);
             }
         }
 
         /* ==============================
-           INSERTAR TRAZABILIDAD
+           3. RESTAR DEL ORIGEN
         ============================== */
+        if (piletaOrigenId) {
+            await pool.query(
+                `UPDATE piletas SET cantidad = cantidad - $1 WHERE fi_pileta_id = $2`,
+                [cantidad, piletaOrigenId]
+            );
+        }
 
-        const insert = await pool.query(
+        /* ==============================
+           4. GUARDAR TRAZABILIDAD
+        ============================== */
+        const trace = await pool.query(
             `
             INSERT INTO trazabilidad_alevinaje
             (fi_pileta_origen, origen_externo, fi_pileta_destino, cantidad,
-            fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento, fc_granja)
-            VALUES ($1,$2,$3,$4,CURRENT_DATE,$5,$6,$7,$8,$9)
+            fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento, fc_granja,
+            fi_instalacion_origen, fi_instalacion_destino)
+            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8, $9, $10, $11)
             RETURNING fi_movimiento_id
             `,
             [
@@ -267,76 +323,13 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 fi_usuario_id || null,
                 fi_lote_id || null,
                 tipo_movimiento,
-                fc_granja
+                fc_granja,
+                origen_instalacion || null,
+                destino || null
             ]
         );
 
-        /* ==============================
-           RESTAR ORIGEN
-        ============================== */
-
-        if (piletaOrigenId) {
-
-            await pool.query(
-                `
-                UPDATE piletas
-                SET cantidad = cantidad - $1
-                WHERE fi_pileta_id = $2
-                `,
-                [cantidad, piletaOrigenId]
-            );
-        }
-
-        /* ==============================
-           SUMAR DESTINO
-        ============================== */
-
-        if (tipo_movimiento === "TRASLADO" && destino) {
-
-    /* SI YA EXISTE PILETA → SUMAR */
-
-    if (piletaDestinoId) {
-
-        await pool.query(
-            `
-            UPDATE piletas
-            SET cantidad = cantidad + $1
-            WHERE fi_pileta_id = $2
-            `,
-            [cantidad, piletaDestinoId]
-        );
-
-    } else {
-
-        /* SI NO EXISTE → CREAR NUEVA PILETA */
-
-            const nuevaPileta = await pool.query(
-        `
-        INSERT INTO piletas
-        (fi_instalacion_id, fi_lote_id, cantidad, talla_gr, observacion,
-        fecha_siembra, fecha_ultima_biometria, fc_granja)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-        RETURNING fi_pileta_id
-        `,
-        [
-            destino,
-            fi_lote_id,
-            cantidad,
-            data.talla_gr || 0,
-            observacion || null,
-            data.fecha_siembra || new Date(),
-            data.fecha_ultima_biometria || new Date(),
-            fc_granja
-        ]
-        );
-
-        piletaDestinoId = nuevaPileta.rows[0].fi_pileta_id;
-    }
-
-    await this.ocuparInstalacion(destino);
-}
-
-        return insert.rows[0].fi_movimiento_id;
+        return trace.rows[0].fi_movimiento_id;
     }
 
     /* =====================================================
@@ -452,7 +445,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 l.no_lote,
                 l.alevines_inicial
             FROM lotes l
-            JOIN instalaciones i ON l.fc_instalacion_id = i.nombre_instalacion
+            JOIN instalaciones i ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
             WHERE i.fi_instalacion_id = $1
             LIMIT 1
             `,

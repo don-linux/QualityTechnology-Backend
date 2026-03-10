@@ -1,0 +1,19 @@
+meta {
+  name: POST recepcion_insumos
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/recepcion_insumos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

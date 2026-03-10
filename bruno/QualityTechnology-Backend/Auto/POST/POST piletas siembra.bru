@@ -1,0 +1,19 @@
+meta {
+  name: POST piletas siembra
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{baseUrl}}/piletas/siembra
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

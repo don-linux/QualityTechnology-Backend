@@ -1,0 +1,19 @@
+meta {
+  name: 05 POST Alevines invalid json
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/alevines
+  body: text
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:text {
+  {
+}

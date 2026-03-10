@@ -1,0 +1,17 @@
+meta {
+  name: GET flujo-caja clientes
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/flujo-caja/clientes
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

@@ -1,0 +1,19 @@
+meta {
+  name: POST reproductores
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/reproductores
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

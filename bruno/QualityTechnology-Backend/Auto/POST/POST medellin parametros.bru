@@ -1,0 +1,19 @@
+meta {
+  name: POST medellin parametros
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/medellin/parametros
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

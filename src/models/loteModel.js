@@ -76,7 +76,6 @@ class LoteModel {
     ====================================================== */
 
     static async create(data) {
-
         const {
             fecha,
             familia,
@@ -88,8 +87,15 @@ class LoteModel {
             fc_granja,
             observacion,
             mortalidad,
-            mortalidad_porcentaje
         } = data;
+
+        // Si la fecha viene vacía, usamos la fecha actual
+        const fechaValida = (fecha && fecha.trim() !== "") ? fecha : new Date().toISOString().split("T")[0];
+        
+        // Calcular porcentaje de mortalidad si hay datos
+        const inicial = Number(alevines_inicial || 0);
+        const mort = Number(mortalidad || 0);
+        const mortalidad_porcentaje = inicial > 0 ? (mort / inicial) * 100 : 0;
 
         const result = await pool.query(
             `
@@ -106,20 +112,20 @@ class LoteModel {
                 mortalidad,
                 mortalidad_porcentaje
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
             `,
             [
-                fecha,
+                fechaValida,
                 familia,
                 fc_instalacion_id,
                 huevos_ml,
-                ovadas,
-                alevines_inicial,
+                ovadas || 0,
+                inicial,
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad,
+                mort,
                 mortalidad_porcentaje
             ]
         );
@@ -147,7 +153,6 @@ class LoteModel {
     ====================================================== */
 
     static async update(id, data) {
-
         const {
             fecha,
             familia,
@@ -158,9 +163,13 @@ class LoteModel {
             fc_granja,
             observacion,
             mortalidad,
-            mortalidad_porcentaje,
             alevines_inicial
         } = data;
+
+        const fechaValida = (fecha && fecha.trim() !== "") ? fecha : new Date().toISOString().split("T")[0];
+        const inicial = Number(alevines_inicial || 0);
+        const mort = Number(mortalidad || 0);
+        const mortalidad_porcentaje = inicial > 0 ? (mort / inicial) * 100 : 0;
 
         const res = await pool.query(
             `
@@ -180,17 +189,17 @@ class LoteModel {
             RETURNING *
             `,
             [
-                fecha,
+                fechaValida,
                 familia,
                 String(fc_instalacion_id),
                 huevos_ml,
-                ovadas,
+                ovadas || 0,
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad,
+                mort,
                 mortalidad_porcentaje,
-                alevines_inicial,
+                inicial,
                 id
             ]
         );

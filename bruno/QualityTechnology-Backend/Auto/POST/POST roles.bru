@@ -1,0 +1,19 @@
+meta {
+  name: POST roles
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/roles
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

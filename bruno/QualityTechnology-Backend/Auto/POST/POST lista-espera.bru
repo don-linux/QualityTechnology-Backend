@@ -1,0 +1,19 @@
+meta {
+  name: POST lista-espera
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/lista-espera
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

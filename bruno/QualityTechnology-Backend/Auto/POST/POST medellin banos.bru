@@ -1,0 +1,19 @@
+meta {
+  name: POST medellin banos
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/medellin/banos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: DELETE medellin banos {id}
+  type: http
+  seq: 23
+}
+
+delete {
+  url: {{baseUrl}}/medellin/banos/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

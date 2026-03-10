@@ -1,0 +1,17 @@
+meta {
+  name: DELETE ventas {id}
+  type: http
+  seq: 48
+}
+
+delete {
+  url: {{baseUrl}}/ventas/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

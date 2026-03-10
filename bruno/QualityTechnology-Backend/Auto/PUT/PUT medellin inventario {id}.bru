@@ -1,0 +1,19 @@
+meta {
+  name: PUT medellin inventario {id}
+  type: http
+  seq: 19
+}
+
+put {
+  url: {{baseUrl}}/medellin/inventario/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

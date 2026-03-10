@@ -1,0 +1,17 @@
+meta {
+  name: GET piletas movimientos {usuario} {granja}
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/piletas/movimientos/{{usuario}}/{{granja}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

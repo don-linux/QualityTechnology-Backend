@@ -1,0 +1,17 @@
+meta {
+  name: DELETE equipos {id}
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/equipos/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

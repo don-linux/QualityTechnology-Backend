@@ -1,0 +1,19 @@
+meta {
+  name: POST departamentos
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/departamentos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

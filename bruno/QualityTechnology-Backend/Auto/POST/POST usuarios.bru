@@ -1,0 +1,19 @@
+meta {
+  name: POST usuarios
+  type: http
+  seq: 36
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}
