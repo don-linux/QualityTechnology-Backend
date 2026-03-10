@@ -2556,3 +2556,10 @@ WHERE fb_es_root = true;
 -- Campo agregado para registrar ovadas en lotes
 ALTER TABLE public.lotes
 ADD COLUMN IF NOT EXISTS ovadas INTEGER DEFAULT 0;
+
+-- Cambios de Carlos CRIP
+ALTER TABLE trazabilidad_alevinaje
+ADD COLUMN IF NOT EXISTS fi_instalacion_origen INTEGER;
+
+ALTER TABLE trazabilidad_alevinaje
+ADD COLUMN IF NOT EXISTS fi_instalacion_destino INTEGER;
