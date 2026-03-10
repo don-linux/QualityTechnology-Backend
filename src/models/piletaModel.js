@@ -329,6 +329,16 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             ]
         );
 
+        /* ==============================
+           5. ACTUALIZAR CANTIDAD DEL LOTE
+        ============================== */
+        if (fi_lote_id) {
+            await pool.query(
+                `UPDATE lotes SET alevines_inicial = $1 WHERE fi_lote_id = $2`,
+                [cantidad, fi_lote_id]
+            );
+        }
+
         return trace.rows[0].fi_movimiento_id;
     }
 

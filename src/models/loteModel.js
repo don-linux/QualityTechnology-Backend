@@ -229,17 +229,44 @@ class LoteModel {
     }
 
     /* =====================================================
-        ELIMINAR LOTE
+        ELIMINAR LOTE (EN CASCADA)
     ====================================================== */
 
     static async delete(id) {
+        const client = await pool.connect();
 
-        await pool.query(
-            "DELETE FROM lotes WHERE fi_lote_id = $1",
-            [id]
-        );
+        try {
+            await client.query("BEGIN");
 
-        return true;
+            // 1. Quitar referencia de piletas
+            await client.query("UPDATE piletas SET fi_lote_id = NULL WHERE fi_lote_id = $1", [id]);
+
+            // 2. Eliminar lote_movimientos
+            await client.query("DELETE FROM lote_movimientos WHERE fi_lote_id = $1", [id]);
+
+            // 3. Eliminar trazabilidad
+            await client.query("DELETE FROM trazabilidad_alevinaje WHERE fi_lote_id = $1", [id]);
+
+            // 4. Eliminar trazabilidad de engorda
+            await client.query("DELETE FROM trazabilidad_engorda WHERE fi_engorda_origen IN (SELECT fi_engorda_id FROM engorda WHERE fi_lote_id = $1) OR fi_engorda_destino IN (SELECT fi_engorda_id FROM engorda WHERE fi_lote_id = $1)", [id]);
+
+            // 5. Eliminar alimentos asociados a la engorda de este lote
+            await client.query("DELETE FROM alimentos WHERE fi_engorda_id IN (SELECT fi_engorda_id FROM engorda WHERE fi_lote_id = $1)", [id]);
+
+            // 6. Eliminar engorda
+            await client.query("DELETE FROM engorda WHERE fi_lote_id = $1", [id]);
+
+            // 7. Finalmente, eliminar el lote
+            await client.query("DELETE FROM lotes WHERE fi_lote_id = $1", [id]);
+
+            await client.query("COMMIT");
+            return true;
+        } catch (error) {
+            await client.query("ROLLBACK");
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     /* =====================================================

@@ -26,7 +26,6 @@ class OrigenModel {
                 INNER JOIN instalaciones i
                     ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
                 WHERE LOWER(i.fc_granja) = LOWER($1)
-                AND l.alevines_inicial > 0
                 ORDER BY i.nombre_instalacion ASC
                 `,
                 [granjaFinal]
