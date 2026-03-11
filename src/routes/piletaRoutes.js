@@ -27,7 +27,7 @@ router.get("/destino/:granja", piletaController.getDestino);
 ============================================================ */
 
 router.post("/siembra", piletaController.siembra);
-router.delete("/siembra/:id", piletaController.delete);
+router.delete("/:id", piletaController.delete);
 
 /* ============================================================
     TRAZABILIDAD
