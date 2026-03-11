@@ -28,7 +28,7 @@ services:
     image: postgres:18-alpine
     volumes:
       - postgres_db_data:/var/lib/postgresql/data/
-      - ../../alevines.sql:/docker-entrypoint-initdb.d/init.sql 
+      - ../../alevines.sql:/docker-entrypoint-initdb.d/alevines.sql
     environment:
       - POSTGRES_DB=${DOCKER_DEV_POSTGRES_DB_NAME}
       - POSTGRES_USER=${DOCKER_DEV_POSTGRES_DB_USER}
