@@ -51,20 +51,16 @@ class UsuarioController {
     }
 
     static async login(req, res) {
-        console.log("Intento de login:", req.body);
         const nombre = req.body.nombre;
         const contraseña = req.body.contraseña || req.body.contrasena;
 
         if (!nombre || !contraseña) {
-            console.log("Faltan datos en login");
             return res.status(400).json({ error: "Faltan datos obligatorios (nombre, contraseña)" });
         }
 
         try {
             const usuario = await usuarioModel.getByNombre(nombre);
-            console.log("Usuario encontrado en DB:", usuario);
             if (!usuario) {
-                console.log("Usuario no encontrado:", nombre);
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
