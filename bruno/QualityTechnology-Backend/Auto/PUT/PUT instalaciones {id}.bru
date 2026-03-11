@@ -1,0 +1,19 @@
+meta {
+  name: PUT instalaciones {id}
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/instalaciones/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

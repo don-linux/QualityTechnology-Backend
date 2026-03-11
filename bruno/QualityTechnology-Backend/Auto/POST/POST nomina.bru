@@ -1,0 +1,19 @@
+meta {
+  name: POST nomina
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/nomina
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -87,7 +87,8 @@ class LoteController {
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad = 0
+                mortalidad = 0,
+                alevines_inicial = 0
             } = req.body;
 
             // Validación básica
@@ -102,7 +103,6 @@ class LoteController {
 
             const huevosFinal = huevos_ml ?? huevos ?? 0;
 
-            const alevines_inicial = 0;
 
             const mortalidad_porcentaje =
                 alevines_inicial > 0
@@ -134,6 +134,10 @@ class LoteController {
 
             console.error("Error al registrar lote:", err);
 
+            if (err.code === '23505') {
+                return res.status(400).json({ error: "Ya existe un lote registrado con ese número ('no_lote')." });
+            }
+
             res.status(500).json({
                 error: "Error al registrar lote"
             });
@@ -151,18 +155,19 @@ class LoteController {
 
             const {
                 fecha,
+                familia,
                 fc_instalacion_id,
                 huevos_ml,
                 ovadas = 0,
                 no_lote,
                 fc_granja,
                 observacion,
-                mortalidad
+                mortalidad = 0,
+                alevines_inicial = 0
             } = req.body;
 
             const granjaFinal = loteModel.normalizarGranja(fc_granja);
 
-            const alevines_inicial = await loteModel.getAlevinesInicial(id);
 
             const mortalidad_porcentaje =
                 alevines_inicial > 0
@@ -172,9 +177,11 @@ class LoteController {
             await loteModel.update(id, {
 
                 fecha,
+                familia,
                 fc_instalacion_id,
                 huevos_ml,
                 ovadas,
+                alevines_inicial,
                 no_lote,
                 fc_granja: granjaFinal,
                 observacion,
@@ -192,6 +199,10 @@ class LoteController {
 
             console.error("Error al actualizar lote:", err);
 
+            if (err.code === '23505') {
+                return res.status(400).json({ error: "Ya existe un lote registrado con ese número ('no_lote')." });
+            }
+
             res.status(500).json({
                 error: "Error al actualizar lote"
             });
@@ -207,26 +218,16 @@ class LoteController {
 
             const { id } = req.params;
 
-            const hasRelations = await loteModel.hasDependencies(id);
-
-            if (hasRelations) {
-
-                return res.status(400).json({
-                    success: false,
-                    message: "No se puede eliminar: el lote está relacionado con otros módulos."
-                });
-            }
-
             await loteModel.delete(id);
 
             res.json({
                 success: true,
-                message: "Lote eliminado correctamente"
+                message: "Lote eliminado correctamente y sus módulos en cascada"
             });
 
         } catch (err) {
 
-            console.error("Error al eliminar lote:", err);
+            console.error("Error al eliminar lote en cascada:", err);
 
             res.status(500).json({
                 error: "Error al eliminar lote"

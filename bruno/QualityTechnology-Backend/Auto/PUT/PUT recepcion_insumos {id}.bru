@@ -1,0 +1,19 @@
+meta {
+  name: PUT recepcion_insumos {id}
+  type: http
+  seq: 27
+}
+
+put {
+  url: {{baseUrl}}/recepcion_insumos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: GET lotes instalacion {id}
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{baseUrl}}/lotes/instalacion/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

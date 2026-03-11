@@ -1,0 +1,17 @@
+meta {
+  name: DELETE flujo-caja {id}
+  type: http
+  seq: 18
+}
+
+delete {
+  url: {{baseUrl}}/flujo-caja/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

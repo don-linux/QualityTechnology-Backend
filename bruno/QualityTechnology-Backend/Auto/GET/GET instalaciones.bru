@@ -1,0 +1,17 @@
+meta {
+  name: GET instalaciones
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{baseUrl}}/instalaciones
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

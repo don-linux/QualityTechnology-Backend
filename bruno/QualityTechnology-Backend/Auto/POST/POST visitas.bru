@@ -1,0 +1,19 @@
+meta {
+  name: POST visitas
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{baseUrl}}/visitas
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

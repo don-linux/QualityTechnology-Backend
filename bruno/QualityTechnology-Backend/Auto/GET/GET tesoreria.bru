@@ -1,0 +1,17 @@
+meta {
+  name: GET tesoreria
+  type: http
+  seq: 54
+}
+
+get {
+  url: {{baseUrl}}/tesoreria
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

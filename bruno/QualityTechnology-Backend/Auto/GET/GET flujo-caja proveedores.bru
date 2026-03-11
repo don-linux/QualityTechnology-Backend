@@ -1,0 +1,17 @@
+meta {
+  name: GET flujo-caja proveedores
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/flujo-caja/proveedores
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

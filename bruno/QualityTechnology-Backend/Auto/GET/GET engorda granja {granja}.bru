@@ -1,0 +1,17 @@
+meta {
+  name: GET engorda granja {granja}
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/engorda/granja/{{granja}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

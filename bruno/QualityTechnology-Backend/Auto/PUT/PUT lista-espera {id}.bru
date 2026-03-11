@@ -1,0 +1,19 @@
+meta {
+  name: PUT lista-espera {id}
+  type: http
+  seq: 16
+}
+
+put {
+  url: {{baseUrl}}/lista-espera/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

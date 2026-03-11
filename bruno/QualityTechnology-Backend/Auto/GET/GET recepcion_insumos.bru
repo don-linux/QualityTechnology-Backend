@@ -1,0 +1,17 @@
+meta {
+  name: GET recepcion_insumos
+  type: http
+  seq: 48
+}
+
+get {
+  url: {{baseUrl}}/recepcion_insumos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

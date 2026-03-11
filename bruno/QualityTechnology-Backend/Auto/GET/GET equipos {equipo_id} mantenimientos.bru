@@ -1,0 +1,17 @@
+meta {
+  name: GET equipos {equipo_id} mantenimientos
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/equipos/{{equipo_id}}/mantenimientos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

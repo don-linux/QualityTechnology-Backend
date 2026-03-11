@@ -1,0 +1,19 @@
+meta {
+  name: POST engorda
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/engorda
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

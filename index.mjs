@@ -70,7 +70,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Configurar CORS correctamente
 app.use(
   cors({
-    origin: "http://localhost:3000", // tu frontend React
+    origin: "*", // permitir cualquier origen en desarrollo
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

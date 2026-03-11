@@ -1,0 +1,17 @@
+meta {
+  name: DELETE alevines {id}
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/alevines/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

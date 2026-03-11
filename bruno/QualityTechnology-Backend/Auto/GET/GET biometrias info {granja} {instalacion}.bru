@@ -1,0 +1,17 @@
+meta {
+  name: GET biometrias info {granja} {instalacion}
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/biometrias/info/{{granja}}/{{instalacion}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

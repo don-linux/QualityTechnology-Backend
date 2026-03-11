@@ -1,0 +1,17 @@
+meta {
+  name: GET cuentas
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/cuentas
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "QualityTechnology-Backend",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

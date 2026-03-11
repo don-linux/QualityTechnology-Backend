@@ -1,0 +1,17 @@
+meta {
+  name: GET departamentos activos
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/departamentos/activos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

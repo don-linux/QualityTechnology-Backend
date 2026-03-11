@@ -1,0 +1,19 @@
+meta {
+  name: POST ceiba alimentacion
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/ceiba/alimentacion
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

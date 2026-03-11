@@ -1,0 +1,19 @@
+meta {
+  name: PUT clientes {id}
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/clientes/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

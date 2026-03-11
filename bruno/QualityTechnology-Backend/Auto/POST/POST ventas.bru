@@ -1,0 +1,19 @@
+meta {
+  name: POST ventas
+  type: http
+  seq: 39
+}
+
+post {
+  url: {{baseUrl}}/ventas
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

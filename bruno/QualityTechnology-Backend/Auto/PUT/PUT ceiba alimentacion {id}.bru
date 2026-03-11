@@ -1,0 +1,19 @@
+meta {
+  name: PUT ceiba alimentacion {id}
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/ceiba/alimentacion/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

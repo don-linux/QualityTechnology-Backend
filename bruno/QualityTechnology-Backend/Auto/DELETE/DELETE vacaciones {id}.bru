@@ -1,0 +1,17 @@
+meta {
+  name: DELETE vacaciones {id}
+  type: http
+  seq: 47
+}
+
+delete {
+  url: {{baseUrl}}/vacaciones/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

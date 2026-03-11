@@ -1,0 +1,19 @@
+meta {
+  name: POST cuentas
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/cuentas
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,14 @@
+meta {
+  name: 05 DELETE Cliente
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/clientes/{{clienteId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

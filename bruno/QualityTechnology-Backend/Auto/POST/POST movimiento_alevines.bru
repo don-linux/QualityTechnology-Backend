@@ -1,0 +1,19 @@
+meta {
+  name: POST movimiento_alevines
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/movimiento_alevines
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

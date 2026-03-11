@@ -1,0 +1,17 @@
+meta {
+  name: GET proveedores
+  type: http
+  seq: 47
+}
+
+get {
+  url: {{baseUrl}}/proveedores
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none
