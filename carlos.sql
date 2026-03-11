@@ -2770,4 +2770,11 @@ ALTER TABLE ONLY seguridad.roles_modulos
     ADD CONSTRAINT roles_modulos_fi_rol_id_fkey FOREIGN KEY (fi_rol_id) REFERENCES public.roles(fi_rol_id);
 
 --
+-- Data for initial setup
+--
+
+INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE VALUES (1, 'Administrador', true);
+INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id) VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1);
+
+--
 -- PostgreSQL database dump complete

@@ -5,6 +5,7 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
 
     if (!token) {
+        console.log(`Bloqueado por falta de token: ${req.method} ${req.originalUrl}`);
         return res.status(401).json({ error: "Acceso denegado. No se proporcionó un token." });
     }
 
