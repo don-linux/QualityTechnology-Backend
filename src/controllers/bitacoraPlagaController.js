@@ -14,9 +14,16 @@ class BitacoraPlagaController {
 
     static async create(req, res) {
         try {
-            const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
+            const usuarioId = req.user?.usuario_id;
+            if (!usuarioId) {
+                return res.status(401).json({ error: "Token inválido o sin usuario asociado" });
+            }
+
+            // Evitar suplantación: fi_usuario_id siempre viene del token.
+            const { fi_usuario_id, ...payload } = req.body;
+            const data = { ...payload, fi_usuario_id: usuarioId };
             await bitacoraPlagaModel.create(data);
-            res.json({ message: "Registro agregado correctamente" });
+            res.json({ mensaje: "Registro agregado correctamente" });
         } catch (err) {
             console.error("Error POST /plagas:", err.message);
             res.status(500).json({ error: err.message });
