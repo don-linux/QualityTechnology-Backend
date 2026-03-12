@@ -1,18 +1,16 @@
 import express from "express";
 import ModulosController from "./../controllers/modulosController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// =============================
-// Obtener todos los módulos
-// GET /api/modulos
-// =============================
-router.get("/", ModulosController.getAll);
+// APLICAR PROTECCION GLOBAL A ESTE MODULO
+router.use(authMiddleware);
 
-// =============================
-// Obtener módulo por ID
-// GET /api/modulos/:id
-// =============================
+/* =========================================================
+   RUTAS DE MODULOS
+========================================================= */
+router.get("/", ModulosController.getAll);
 router.get("/:id", ModulosController.getById);
 
 export default router;

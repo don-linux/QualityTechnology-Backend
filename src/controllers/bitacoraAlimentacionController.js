@@ -13,7 +13,8 @@ class BitacoraAlimentacionController {
 
     static async create(req, res) {
         try {
-            const id = await bitacoraAlimentacionModel.create(req.body);
+            const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
+            const id = await bitacoraAlimentacionModel.create(data);
             res.json({ message: "Registro creado", id });
         } catch (err) {
             console.error("POST ERROR:", err);

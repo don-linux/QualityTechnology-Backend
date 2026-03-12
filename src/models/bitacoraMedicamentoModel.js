@@ -2,7 +2,7 @@ import pool from "../db.js";
 
 class BitacoraMedicamentoModel {
     static async getAll() {
-        const result = await pool.query("SELECT * FROM medellin_medicamentos ORDER BY fi_id DESC");
+        const result = await pool.query("SELECT * FROM medicamentos ORDER BY fi_id DESC");
         return result.rows;
     }
 
@@ -14,7 +14,7 @@ class BitacoraMedicamentoModel {
         } = data;
 
         await pool.query(
-            `INSERT INTO medellin_medicamentos
+            `INSERT INTO medicamentos
       (fd_fecha_hora, fn_num_estanque, fc_diagnosis, fc_tratamiento,
        fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis,
        fc_responsable, fi_usuario_id, fd_fecha_registro)
@@ -33,7 +33,7 @@ class BitacoraMedicamentoModel {
         } = data;
 
         await pool.query(
-            `UPDATE medellin_medicamentos SET
+            `UPDATE medicamentos SET
       fd_fecha_hora=$1, fn_num_estanque=$2, fc_diagnosis=$3, fc_tratamiento=$4,
       fc_dosis=$5, fc_forma_aplicacion=$6, fd_fecha_ultima_dosis=$7,
       fc_responsable=$8, fd_fecha_modificacion=NOW()
@@ -45,11 +45,11 @@ class BitacoraMedicamentoModel {
     }
 
     static async delete(id) {
-        await pool.query("DELETE FROM medellin_medicamentos WHERE fi_id=$1", [id]);
+        await pool.query("DELETE FROM medicamentos WHERE fi_id=$1", [id]);
     }
 
     static async deleteAll() {
-        await pool.query("DELETE FROM medellin_medicamentos");
+        await pool.query("DELETE FROM medicamentos");
     }
 }
 

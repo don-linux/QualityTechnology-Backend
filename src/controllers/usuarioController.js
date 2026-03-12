@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import usuarioModel from "../models/usuarioModel.js";
-import pool from "./../db.js";
+import RolesModulosModel from "../models/RolesModulosModel.js";
 
 class UsuarioController {
     static async getAll(req, res) {
@@ -74,16 +74,7 @@ class UsuarioController {
             }
 
             // Obtener módulos del rol
-            const modulosResult = await pool.query(
-                `SELECT m.fi_modulo_id, m.fc_nombre
-                FROM seguridad.roles_modulos rm
-                JOIN seguridad.modulos m 
-                ON m.fi_modulo_id = rm.fi_modulo_id
-                WHERE rm.fi_rol_id = $1`,
-                [usuario.rol_id]
-            );
-
-            const modulos = modulosResult.rows;
+            const modulos = await RolesModulosModel.getModulosByRol(usuario.rol_id);
             const token = jwt.sign(
                 {
                     usuario_id: usuario.usuario_id,
