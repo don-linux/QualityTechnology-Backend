@@ -21,7 +21,7 @@ class EngordaModel {
         e.fi_usuario_id, e.fc_granja
       FROM engorda e
       LEFT JOIN instalaciones i ON i.fi_instalacion_id = e.fi_instalacion_id
-      LEFT JOIN lotes l ON l.fi_lote_id = e.fi_lote_id
+      LEFT JOIN lotes l ON l.fi_lote_id::text = e.fi_lote_id::text
       WHERE LOWER(e.fc_granja) = LOWER($1)
       ORDER BY e.fi_engorda_id DESC`,
       [granja]

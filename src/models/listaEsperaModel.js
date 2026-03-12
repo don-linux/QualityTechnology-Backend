@@ -71,24 +71,40 @@ class ListaEsperaModel {
     const cantidad = parseInt(d.fn_cantidad);
     const precio = parseFloat(d.fn_precio_venta);
     const total = cantidad * precio;
+    const empresa = d.fc_granja_asignada?.toLowerCase().includes("ceiba")
+      ? "CEIBA"
+      : d.fc_granja_asignada?.toLowerCase().includes("med")
+      ? "MEDELLIN"
+      : "QUALITY";
+
+    const tipoVenta = d.fc_uap_asignada === "ALEVIN" ? "ALEVINES" : d.fc_uap_asignada;
 
     const ventaNueva = await pool.query(
       `INSERT INTO ventas (
-        fd_fecha_venta, fn_talla, fn_cantidad_vendida, fc_cliente,
-        fn_precio_venta, fn_monto_total, fc_lugar_entrega, fc_estado,
-        fc_encargado_venta, fc_estanque_cosecha, fc_estado_pago,
-        fc_metodo_pago, fc_observaciones, fc_unidad_produccion,
-        fc_granja, fd_fecha_registro, fd_fecha_modificacion, fi_usuario_id
+        fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
+        fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
+        fn_abonado, fn_adeudo, fc_estado_pago,
+        fc_encargado_venta, fc_observaciones, fc_empresa,
+        fd_fecha_registro
       ) VALUES (
-        $1, $2, $3, $4, $5, $6,
-        $7, 'PENDIENTE', $8, '',
-        'PENDIENTE', 'EFECTIVO', '',
-        $9, $10, $11, $11, $12
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12, $13, $14
       ) RETURNING *`,
       [
-        d.fd_fecha_entrega, d.fc_talla, cantidad, d.fc_cliente,
-        precio, total, d.fc_lugar_entrega, d.fc_encargado_venta,
-        d.fc_unidad_produccion, d.fc_granja_asignada, now, usuarioId,
+        `LE-${id}`,
+        d.fd_fecha_entrega,
+        d.fc_cliente,
+        tipoVenta,
+        cantidad,
+        precio,
+        total,
+        0,
+        total,
+        "ADEUDO",
+        d.fc_encargado_venta,
+        "",
+        empresa,
+        now,
       ]
     );
 

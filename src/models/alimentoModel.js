@@ -67,12 +67,13 @@ class AlimentoModel {
           a.gasto_alimento,
           r.fc_instalacion AS reproductor_instalacion,
           p.nombre_instalacion AS pileta_nombre,
-          e.instalacion AS engorda_instalacion,
+                    i.nombre_instalacion AS engorda_instalacion,
           u.fc_nombre AS usuario_nombre
         FROM alimentos a
         LEFT JOIN reproductores r ON r.fi_reproductor_id = a.fi_reproductor_id
         LEFT JOIN piletas p ON p.fi_pileta_id = a.fi_pileta_id
-        LEFT JOIN engorda e ON e.fi_engorda_id = a.fi_engorda_id
+                LEFT JOIN engorda e ON e.fi_engorda_id = a.fi_engorda_id
+                LEFT JOIN instalaciones i ON i.fi_instalacion_id = e.fi_instalacion_id
         LEFT JOIN usuarios u ON u.fi_usuario_id = a.fi_usuario_id
         ORDER BY a.fi_alimento_id DESC
       `;
@@ -89,11 +90,12 @@ class AlimentoModel {
           a.gasto_alimento,
           r.fc_instalacion AS reproductor_instalacion,
           p.nombre_instalacion AS pileta_nombre,
-          e.instalacion AS engorda_instalacion
+                    i.nombre_instalacion AS engorda_instalacion
         FROM alimentos a
         LEFT JOIN reproductores r ON r.fi_reproductor_id = a.fi_reproductor_id
         LEFT JOIN piletas p ON p.fi_pileta_id = a.fi_pileta_id
-        LEFT JOIN engorda e ON e.fi_engorda_id = a.fi_engorda_id
+                LEFT JOIN engorda e ON e.fi_engorda_id = a.fi_engorda_id
+                LEFT JOIN instalaciones i ON i.fi_instalacion_id = e.fi_instalacion_id
         WHERE a.fi_usuario_id = $1
         ORDER BY a.fi_alimento_id DESC
       `;
