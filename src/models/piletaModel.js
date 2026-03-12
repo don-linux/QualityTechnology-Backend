@@ -32,7 +32,6 @@ class PiletaModel {
             `,
             [granja]
         );
-
         return result.rows;
     }
 
@@ -54,15 +53,15 @@ class PiletaModel {
                 (CURRENT_DATE - p.fecha_ultima_biometria) AS dias_transcurridos,
                 COALESCE(i.nombre_instalacion, '-') AS nombre_instalacion,
                 CASE 
-                    WHEN (CURRENT_DATE - l.fecha::date) BETWEEN 0 AND 10 THEN 'Hormonado etapa 1'
-                    WHEN (CURRENT_DATE - l.fecha::date) BETWEEN 11 AND 28 THEN 'Hormonado etapa 2'
-                    ELSE p.observacion
-                END AS etapa_hormonal
+                WHEN (CURRENT_DATE - p.fecha_siembra) BETWEEN 1 AND 10 THEN 'Hormonado etapa 1'
+                WHEN (CURRENT_DATE - p.fecha_siembra) BETWEEN 11 AND 20 THEN 'Hormonado etapa 2'
+                ELSE p.observacion
+            END AS etapa_hormonal
             FROM piletas p
             LEFT JOIN instalaciones i 
-                ON p.fi_instalacion_id = i.fi_instalacion_id   
+                ON p.fi_instalacion_id = i.fi_instalacion_id
             LEFT JOIN lotes l 
-                ON p.fi_lote_id = l.fi_lote_id   
+                ON p.fi_lote_id = l.fi_lote_id
             WHERE LOWER(p.fc_granja) = LOWER($1)
             ORDER BY p.fi_pileta_id DESC
             `,
@@ -105,44 +104,38 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
        MOVIMIENTOS
     ===================================================== */
     static async getMovimientos(usuario, granja) {
-        const result = await pool.query(
-            `
-            SELECT 
-                m.fi_movimiento_id,
-                COALESCE(
-                    i_o.nombre_instalacion, 
-                    i_o_m.nombre_instalacion, 
-                    i_l_o.nombre_instalacion,
-                    m.origen_externo
-                ) AS origen_nombre,
-                COALESCE(
-                    i_d.nombre_instalacion, 
-                    i_d_m.nombre_instalacion
-                ) AS destino_nombre,
-                m.cantidad,
-                m.fecha_movimiento,
-                m.observacion,
-                m.tipo_movimiento
-            FROM trazabilidad_alevinaje m
-            LEFT JOIN piletas p_o ON p_o.fi_pileta_id = m.fi_pileta_origen
-            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id::text = p_o.fi_instalacion_id::text
-            LEFT JOIN piletas p_d ON p_d.fi_pileta_id = m.fi_pileta_destino
-            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id::text = p_d.fi_instalacion_id::text
-            LEFT JOIN instalaciones i_o_m ON i_o_m.fi_instalacion_id::text = m.fi_instalacion_origen::text
-            LEFT JOIN instalaciones i_d_m ON i_d_m.fi_instalacion_id::text = m.fi_instalacion_destino::text
-            -- Respaldo extra: buscar por el lote asociado al movimiento
-            LEFT JOIN lotes l_o ON l_o.fi_lote_id = m.fi_lote_id
-            LEFT JOIN instalaciones i_l_o ON i_l_o.fi_instalacion_id::text = l_o.fc_instalacion_id::text
-            WHERE LOWER(m.fc_granja) = LOWER($1)
-            AND m.fi_usuario_id = $2
-            ORDER BY m.fecha_movimiento DESC
-            `,
-            [granja, usuario]
-        );
+    const result = await pool.query(
+        `
+        SELECT 
+            m.fi_movimiento_id,
+            COALESCE(i_origen.nombre_instalacion, m.origen_externo) AS origen_nombre,
+            i_destino.nombre_instalacion AS destino_nombre,
+            m.cantidad,
+            m.fecha_movimiento,
+            m.observacion,
+            m.tipo_movimiento
 
-        return result.rows;
-    }
+        FROM trazabilidad_alevinaje m
 
+        LEFT JOIN instalaciones i_origen
+            ON i_origen.fi_instalacion_id = m.fi_instalacion_origen
+
+        LEFT JOIN instalaciones i_destino
+            ON i_destino.fi_instalacion_id = m.fi_instalacion_destino
+
+        LEFT JOIN lotes l
+            ON l.fi_lote_id = m.fi_lote_id
+
+        WHERE LOWER(l.fc_granja) = LOWER($1)
+        AND m.fi_usuario_id = $2
+
+        ORDER BY m.fecha_movimiento DESC
+        `,
+        [granja, usuario]
+    );
+
+    return result.rows;
+}
     static async getMovimientosFiltro(usuario, granja, buscar, inicio, fin) {
         let sql = `
             SELECT 
@@ -162,9 +155,9 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 m.observacion,
                 m.tipo_movimiento
             FROM trazabilidad_alevinaje m
-            LEFT JOIN piletas p_o ON p_o.fi_pileta_id = m.fi_pileta_origen
+            LEFT JOIN instalaciones po ON po.fi_instalacion_id = m.fi_instalacion_origen
             LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id::text = p_o.fi_instalacion_id::text
-            LEFT JOIN piletas p_d ON p_d.fi_pileta_id = m.fi_pileta_destino
+            LEFT JOIN instalaciones pd ON pd.fi_instalacion_id = m.fi_instalacion_destino
             LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id::text = p_d.fi_instalacion_id::text
             LEFT JOIN instalaciones i_o_m ON i_o_m.fi_instalacion_id::text = m.fi_instalacion_origen::text
             LEFT JOIN instalaciones i_d_m ON i_d_m.fi_instalacion_id::text = m.fi_instalacion_destino::text
@@ -203,21 +196,25 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
     ===================================================== */
     static async createMovimiento(data) {
 
-        const {
-            origen_instalacion,
-            origen_externo,
-            fi_instalacion_id: destino,
-            fi_lote_id,
-            cantidad,
-            observacion,
-            tipo_movimiento,
-            fi_usuario_id,
-            fc_granja
-        } = data;
+    const {
+        origen_instalacion,
+        origen_externo,
+        fi_instalacion_id: destino,
+        fi_lote_id,
+        cantidad,
+        observacion,
+        tipo_movimiento,
+        fi_usuario_id,
+        fc_granja
+    } = data;
 
-        if (origen_instalacion && origen_externo) {
-            throw new Error("No puede existir origen interno y externo al mismo tiempo.");
-        }
+    /* ==============================
+       VALIDACIONES
+    ============================== */
+
+    if (origen_instalacion && origen_externo) {
+        throw new Error("No puede existir origen interno y externo al mismo tiempo.");
+    }
 
         if (!origen_instalacion && !origen_externo && tipo_movimiento !== "MORTALIDAD") {
             throw new Error("Debe existir un origen válido.");
@@ -262,7 +259,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                         [cantidad, piletaDestinoId]
                     );
                 }
-            } else if (tipo_movimiento === "TRASLADO") {
+            } else if (tipo_movimiento === "TRASLADO" || tipo_movimiento === "SIEMBRA") {
                 // Si no existe y es traslado, creamos la pileta nueva
                 const nuevaPileta = await pool.query(
                     `
@@ -302,31 +299,27 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             );
         }
 
-        /* ==============================
-           4. GUARDAR TRAZABILIDAD
+      /* ==============================
+        4. GUARDAR TRAZABILIDAD
         ============================== */
         const trace = await pool.query(
-            `
-            INSERT INTO trazabilidad_alevinaje
-            (fi_pileta_origen, origen_externo, fi_pileta_destino, cantidad,
-            fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento, fc_granja,
-            fi_instalacion_origen, fi_instalacion_destino)
-            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING fi_movimiento_id
-            `,
-            [
-                piletaOrigenId,
-                origen_externo || null,
-                piletaDestinoId,
-                cantidad,
-                observacion,
-                fi_usuario_id || null,
-                fi_lote_id || null,
-                tipo_movimiento,
-                fc_granja,
-                origen_instalacion || null,
-                destino || null
-            ]
+        `
+        INSERT INTO trazabilidad_alevinaje
+        (fi_instalacion_origen, origen_externo, fi_instalacion_destino, cantidad,
+        fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento)
+        VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8)
+        RETURNING fi_movimiento_id
+        `,
+        [
+            origen_instalacion || null,
+            origen_externo || null,
+            destino || null,
+            cantidad,
+            observacion,
+            fi_usuario_id || null,
+            fi_lote_id || null,
+            tipo_movimiento
+        ]
         );
 
         /* ==============================
@@ -342,6 +335,48 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         return trace.rows[0].fi_movimiento_id;
     }
 
+        /* =====================================================
+            ACTUALIZAR SIEMBRA
+        ===================================================== */
+
+        static async updateSiembra(id, data) {
+
+            const {
+                fi_instalacion_id,
+                fi_lote_id,
+                cantidad,
+                talla_gr,
+                observacion,
+                fecha_siembra,
+                fecha_ultima_biometria
+            } = data;
+
+            await pool.query(
+                `
+                UPDATE piletas
+                SET 
+                    fi_instalacion_id = $1,
+                    fi_lote_id = $2,
+                    cantidad = $3,
+                    talla_gr = $4,
+                    observacion = $5,
+                    fecha_siembra = $6,
+                    fecha_ultima_biometria = $7
+                WHERE fi_pileta_id = $8
+                `,
+                [
+                    fi_instalacion_id,
+                    fi_lote_id,
+                    cantidad,
+                    talla_gr,
+                    observacion,
+                    fecha_siembra,
+                    fecha_ultima_biometria,
+                    id
+                ]
+            );
+
+        }
     /* =====================================================
        ELIMINAR PILETA
     ===================================================== */
@@ -352,8 +387,8 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
     await pool.query(
         `
         DELETE FROM trazabilidad_alevinaje
-        WHERE fi_pileta_origen = $1
-        OR fi_pileta_destino = $1
+        WHERE fi_instalacion_origen = $1
+        OR fi_instalacion_destino = $1
         `,
         [id]
     );
@@ -367,6 +402,42 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         `,
         [id]
     );
+}
+
+/* =====================================================
+   FILTRAR MOVIMIENTOS
+===================================================== */
+static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_fin) {
+
+    const result = await pool.query(
+        `
+        SELECT 
+            m.fi_movimiento_id,
+            COALESCE(po.fi_pileta_id::text, m.origen_externo) AS origen_nombre,
+            pd.fi_pileta_id::text AS destino_nombre,
+            m.cantidad,
+            m.fecha_movimiento,
+            m.observacion
+        FROM trazabilidad_alevinaje m
+        LEFT JOIN piletas po 
+            ON po.fi_pileta_id = m.fi_pileta_origen
+        LEFT JOIN piletas pd 
+            ON pd.fi_pileta_id = m.fi_pileta_destino
+        WHERE LOWER(m.fc_granja) = LOWER($1)
+        AND m.fi_usuario_id = $2
+        AND (
+            po.fi_pileta_id::text ILIKE '%' || $3 || '%'
+            OR pd.fi_pileta_id::text ILIKE '%' || $3 || '%'
+        )
+        AND ($4 = '' OR m.fecha_movimiento >= $4)
+        AND ($5 = '' OR m.fecha_movimiento <= $5)
+        ORDER BY m.fecha_movimiento DESC
+        `,
+        [granja, usuario, buscar, fecha_inicio, fecha_fin]
+    );
+
+    return result.rows;
+
 }
     /* =====================================================
        ELIMINAR UN MOVIMIENTO
@@ -462,9 +533,9 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             [instalacion_id]
         );
 
-        return result.rows[0] || null;
-    }
+return result.rows[0] || null
 
+}
 }
 
 export default PiletaModel;

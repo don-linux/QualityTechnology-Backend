@@ -4,31 +4,40 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// APLICAR PROTECCIÓN GLOBAL A ESTE MÓDULO
+// PROTEGER TODO EL MODULO
 router.use(authMiddleware);
 
 /* ============================================================
-    RUTAS DE LOTES (En contexto de Piletas)
+    RUTAS DE LOTES
 ============================================================ */
+
 router.get("/lotes/:granja", piletaController.getLotes);
 router.get("/lote-por-inst/:inst/:granja", piletaController.getLotePorInst);
 
 /* ============================================================
-    RUTAS DE INVENTARIO Y SIEMBRA
-=========================================================== */
+    INVENTARIO
+============================================================ */
+
 router.get("/inventario/:granja", piletaController.getInventario);
 router.get("/origen/:granja", piletaController.getOrigen);
 router.get("/destino/:granja", piletaController.getDestino);
 
+/* ============================================================
+    SIEMBRA
+============================================================ */
+
 router.post("/siembra", piletaController.siembra);
-router.delete("/siembra/:id", piletaController.delete);
 router.delete("/:id", piletaController.delete);
 
 /* ============================================================
-    RUTAS DE TRAZABILIDAD — MOVIMIENTOS ALEVINAJE
+    TRAZABILIDAD
 ============================================================ */
-router.get("/movimientos/:usuario/:granja", piletaController.getMovimientos);
+
+// FILTRO PRIMERO (más específico)
 router.get("/movimientos/filtro/:usuario/:granja", piletaController.getMovimientosFiltro);
+
+// GENERAL DESPUÉS
+router.get("/movimientos/:usuario/:granja", piletaController.getMovimientos);
 
 router.post("/movimientos/registrar", piletaController.registrarMovimiento);
 router.delete("/movimientos/eliminar", piletaController.eliminarMovimientos);
