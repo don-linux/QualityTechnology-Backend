@@ -2776,5 +2776,50 @@ ALTER TABLE ONLY seguridad.roles_modulos
 INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE VALUES (1, 'Administrador', true);
 INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id) VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1);
 
+-- Modulos base del menu
+INSERT INTO seguridad.modulos (fi_modulo_id, fc_nombre, fc_ruta, fb_activo) OVERRIDING SYSTEM VALUE VALUES
+    (1, 'Roles', '/roles', true),
+    (2, 'Usuarios', '/usuarios', true),
+    (3, 'Piletas', '/piletas', true),
+    (4, 'Instalaciones', '/instalaciones', true),
+    (5, 'Lotes', '/lotes', true),
+    (6, 'Reproductores', '/reproductores', true),
+    (7, 'Engorda', '/engorda', true),
+    (8, 'Clientes', '/clientes', true),
+    (9, 'Ventas', '/ventas', true),
+    (10, 'Alimentos', '/alimentos', true),
+    (11, 'Lista de Espera', '/lista-espera', true),
+    (12, 'Equipos', '/equipos', true),
+    (13, 'Expedientes', '/expedientes', true),
+    (14, 'Nomina', '/nomina', true),
+    (15, 'Vacaciones', '/vacaciones', true),
+    (16, 'Caja de Ahorro', '/caja-ahorro', true),
+    (17, 'Proveedores', '/proveedores', true),
+    (18, 'Flujo de Caja', '/flujo-caja', true),
+    (19, 'Tesoreria', '/tesoreria', true),
+    (20, 'Cuentas', '/cuentas', true),
+    (21, 'Biometrias', '/biometrias', true),
+    (22, 'Plagas', '/plagas', true),
+    (23, 'Alimentacion Ceiba', '/ceiba/alimentacion', true),
+    (24, 'Insumos Ceiba', '/ceiba/insumos', true),
+    (25, 'Recepcion Insumos', '/recepcion_insumos', true),
+    (26, 'Visitas', '/visitas', true),
+    (27, 'Banos Medellin', '/medellin/banos', true),
+    (28, 'Parametros Medellin', '/medellin/parametros', true),
+    (29, 'Medicamentos Medellin', '/medellin/medicamentos', true),
+    (30, 'Recambios Medellin', '/medellin/recambios', true),
+    (31, 'Inventario Medellin', '/medellin/inventario', true),
+    (32, 'Catalogo Estados', '/estados', true),
+    (33, 'Empleados', '/empleados', true),
+    (34, 'Departamentos', '/departamentos', true),
+    (35, 'Modulos', '/modulos', true),
+    (36, 'Roles Modulos', '/roles-modulos', true);
+
+-- Asignacion inicial de modulos al rol administrador
+INSERT INTO seguridad.roles_modulos (fi_rol_id, fi_modulo_id)
+SELECT 1, fi_modulo_id
+FROM seguridad.modulos
+ON CONFLICT (fi_rol_id, fi_modulo_id) DO NOTHING;
+
 --
 -- PostgreSQL database dump complete
