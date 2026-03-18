@@ -2787,6 +2787,11 @@ ON CONFLICT (fc_nombre) DO NOTHING;
 WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
   VALUES
     ('Dashboard', '/', true),
+    ('Operaciones', '/operaciones', true),
+    ('Inventarios', '/inventarios', true),
+    ('Finanzas', '/finanzas', true),
+    ('RRHH', '/rrhh', true),
+    ('Catálogos', '/catalogos', true),
     ('Seguridad', '/seguridad', true),
     ('Roles', '/roles', true),
     ('Usuarios', '/usuarios', true),
