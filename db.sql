@@ -2773,8 +2773,77 @@ ALTER TABLE ONLY seguridad.roles_modulos
 -- Data for initial setup
 --
 
-INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE VALUES (1, 'Administrador', true);
-INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id) VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1);
+INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE
+VALUES (1, 'Administrador', true)
+ON CONFLICT (fi_rol_id) DO UPDATE
+SET fc_nombre = EXCLUDED.fc_nombre,
+    fb_es_root = EXCLUDED.fb_es_root;
+
+INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id)
+VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1)
+ON CONFLICT (fc_nombre) DO NOTHING;
+
+-- Modulos base del menu (idempotente)
+WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
+  VALUES
+    ('Dashboard', '/', true),
+    ('Operaciones', '/operaciones', true),
+    ('Inventarios', '/inventarios', true),
+    ('Finanzas', '/finanzas', true),
+    ('RRHH', '/rrhh', true),
+    ('Catálogos', '/catalogos', true),
+    ('Seguridad', '/seguridad', true),
+    ('Roles', '/roles', true),
+    ('Usuarios', '/usuarios', true),
+    ('Piletas', '/piletas', true),
+    ('Instalaciones', '/instalaciones', true),
+    ('Lotes', '/lotes', true),
+    ('Reproductores', '/reproductores', true),
+    ('Engorda', '/engorda', true),
+    ('Clientes', '/clientes', true),
+    ('Ventas', '/ventas', true),
+    ('Alimentos', '/alimentos', true),
+    ('Lista de Espera', '/lista-espera', true),
+    ('Equipos', '/equipos', true),
+    ('Expedientes', '/expedientes', true),
+    ('Nomina', '/nomina', true),
+    ('Vacaciones', '/vacaciones', true),
+    ('Caja de Ahorro', '/caja-ahorro', true),
+    ('Proveedores', '/proveedores', true),
+    ('Flujo de Caja', '/flujo-caja', true),
+    ('Tesoreria', '/tesoreria', true),
+    ('Cuentas', '/cuentas', true),
+    ('Biometrias', '/biometrias', true),
+    ('Plagas', '/plagas', true),
+    ('Alimentacion Ceiba', '/ceiba/alimentacion', true),
+    ('Insumos Ceiba', '/ceiba/insumos', true),
+    ('Recepcion Insumos', '/recepcion_insumos', true),
+    ('Visitas', '/visitas', true),
+    ('Banos Medellin', '/medellin/banos', true),
+    ('Parametros Medellin', '/medellin/parametros', true),
+    ('Medicamentos Medellin', '/medellin/medicamentos', true),
+    ('Recambios Medellin', '/medellin/recambios', true),
+    ('Inventario Medellin', '/medellin/inventario', true),
+    ('Catalogo Estados', '/estados', true),
+    ('Empleados', '/empleados', true),
+    ('Departamentos', '/departamentos', true),
+    ('Modulos', '/modulos', true),
+    ('Roles Modulos', '/roles-modulos', true)
+)
+INSERT INTO seguridad.modulos (fc_nombre, fc_ruta, fb_activo)
+SELECT mb.fc_nombre, mb.fc_ruta, mb.fb_activo
+FROM modulos_base mb
+ON CONFLICT (fc_ruta) DO UPDATE
+SET fc_nombre = EXCLUDED.fc_nombre,
+    fb_activo = EXCLUDED.fb_activo;
+
+-- Asignacion inicial de modulos a roles root
+INSERT INTO seguridad.roles_modulos (fi_rol_id, fi_modulo_id)
+SELECT r.fi_rol_id, m.fi_modulo_id
+FROM public.roles r
+CROSS JOIN seguridad.modulos m
+WHERE r.fb_es_root = true
+ON CONFLICT (fi_rol_id, fi_modulo_id) DO NOTHING;
 
 --
 -- PostgreSQL database dump complete

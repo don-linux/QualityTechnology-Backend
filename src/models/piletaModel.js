@@ -61,7 +61,7 @@ class PiletaModel {
             LEFT JOIN instalaciones i 
                 ON p.fi_instalacion_id = i.fi_instalacion_id
             LEFT JOIN lotes l 
-                ON p.fi_lote_id = l.fi_lote_id
+                ON p.fi_lote_id::text = l.fi_lote_id::text
             WHERE LOWER(p.fc_granja) = LOWER($1)
             ORDER BY p.fi_pileta_id DESC
             `,
@@ -208,19 +208,23 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         fc_granja
     } = data;
 
+    const origenInstalacionId = origen_instalacion ? Number(origen_instalacion) : null;
+    const destinoId = destino ? Number(destino) : null;
+    const loteId = fi_lote_id ? Number(fi_lote_id) : null;
+
     /* ==============================
        VALIDACIONES
     ============================== */
 
-    if (origen_instalacion && origen_externo) {
+    if (origenInstalacionId && origen_externo) {
         throw new Error("No puede existir origen interno y externo al mismo tiempo.");
     }
 
-        if (!origen_instalacion && !origen_externo && tipo_movimiento !== "MORTALIDAD") {
+        if (!origenInstalacionId && !origen_externo && tipo_movimiento !== "MORTALIDAD") {
             throw new Error("Debe existir un origen válido.");
         }
 
-        if (origen_instalacion && destino && origen_instalacion === destino) {
+        if (origenInstalacionId && destinoId && origenInstalacionId === destinoId) {
             throw new Error("Origen y destino no pueden ser la misma instalación.");
         }
 
@@ -230,10 +234,10 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         /* ==============================
            1. BUSCAR PILETA ORIGEN (SI EXISTE)
         ============================== */
-        if (origen_instalacion) {
+        if (origenInstalacionId) {
             const origen = await pool.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
-                [origen_instalacion]
+                [origenInstalacionId]
             );
             if (origen.rows.length > 0) {
                 piletaOrigenId = origen.rows[0].fi_pileta_id;
@@ -243,10 +247,10 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         /* ==============================
            2. BUSCAR O CREAR PILETA DESTINO
         ============================== */
-        if (destino) {
+        if (destinoId) {
             const destinoRes = await pool.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
-                [destino]
+                [destinoId]
             );
 
             if (destinoRes.rows.length > 0) {
@@ -270,8 +274,8 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                     RETURNING fi_pileta_id
                     `,
                     [
-                        destino,
-                        fi_lote_id,
+                        destinoId,
+                        loteId,
                         cantidad,
                         data.talla_gr || 0,
                         observacion || null,
@@ -285,7 +289,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
 
             // Marcamos la instalación como ocupada
             if (tipo_movimiento === "TRASLADO") {
-                await this.ocuparInstalacion(destino);
+                await this.ocuparInstalacion(destinoId);
             }
         }
 
@@ -311,13 +315,13 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         RETURNING fi_movimiento_id
         `,
         [
-            origen_instalacion || null,
+            origenInstalacionId || null,
             origen_externo || null,
-            destino || null,
+            destinoId || null,
             cantidad,
             observacion,
             fi_usuario_id || null,
-            fi_lote_id || null,
+            loteId || null,
             tipo_movimiento
         ]
         );
@@ -325,10 +329,10 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         /* ==============================
            5. ACTUALIZAR CANTIDAD DEL LOTE
         ============================== */
-        if (fi_lote_id) {
+        if (loteId) {
             await pool.query(
                 `UPDATE lotes SET alevines_inicial = $1 WHERE fi_lote_id = $2`,
-                [cantidad, fi_lote_id]
+                [cantidad, loteId]
             );
         }
 

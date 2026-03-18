@@ -2,7 +2,7 @@ import pool from "../db.js";
 
 class BitacoraParametroModel {
     static async getAll() {
-        const result = await pool.query("SELECT * FROM medellin_parametros ORDER BY fi_id DESC");
+        const result = await pool.query("SELECT * FROM parametros ORDER BY fi_id DESC");
         return result.rows;
     }
 
@@ -13,7 +13,7 @@ class BitacoraParametroModel {
         } = data;
 
         await pool.query(
-            `INSERT INTO medellin_parametros
+            `INSERT INTO parametros
       (fd_fecha, fn_num_estanque, fn_oxigeno, fn_temperatura, fn_ph,
        fn_amonio, fn_nitritos, fn_nitratos, fc_responsable,
        fi_usuario_id, fd_fecha_registro)
@@ -30,7 +30,7 @@ class BitacoraParametroModel {
         } = data;
 
         await pool.query(
-            `UPDATE medellin_parametros SET
+            `UPDATE parametros SET
       fd_fecha=$1, fn_num_estanque=$2, fn_oxigeno=$3, fn_temperatura=$4,
       fn_ph=$5, fn_amonio=$6, fn_nitritos=$7, fn_nitratos=$8,
       fc_responsable=$9, fd_fecha_modificacion=NOW()
@@ -41,11 +41,11 @@ class BitacoraParametroModel {
     }
 
     static async delete(id) {
-        await pool.query("DELETE FROM medellin_parametros WHERE fi_id=$1", [id]);
+        await pool.query("DELETE FROM parametros WHERE fi_id=$1", [id]);
     }
 
     static async deleteAll() {
-        await pool.query("DELETE FROM medellin_parametros");
+        await pool.query("DELETE FROM parametros");
     }
 }
 

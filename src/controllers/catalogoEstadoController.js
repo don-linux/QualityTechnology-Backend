@@ -1,4 +1,4 @@
-import EstadoModel from "../models/EstadoModel.js";
+import EstadoModel from "../models/catalogoEstadoModel.js";
 
 class EstadoController {
 

@@ -36,7 +36,9 @@ class BitacoraBiometriaController {
                 fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id, fc_granja: granjaFinal
             });
 
-            await bitacoraBiometriaModel.actualizarFechaBiometria(fi_instalacion_id, fd_fecha);
+            if (fi_instalacion_id) {
+                await bitacoraBiometriaModel.actualizarFechaBiometria(fi_instalacion_id, fd_fecha);
+            }
 
             res.json({ message: "Biometría registrada", id });
         } catch (err) {
@@ -63,7 +65,9 @@ class BitacoraBiometriaController {
                 fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id
             });
 
-            await bitacoraBiometriaModel.actualizarFechaBiometria(fi_instalacion_id, fd_fecha);
+            if (fi_instalacion_id) {
+                await bitacoraBiometriaModel.actualizarFechaBiometria(fi_instalacion_id, fd_fecha);
+            }
 
             res.json({ message: "Biometría actualizada" });
         } catch (err) {
