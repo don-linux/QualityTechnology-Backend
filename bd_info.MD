@@ -33,3 +33,5 @@ Evitar Conflictos de Nombres: Si intentas correr el script sobre una base que ya
 Limpiar Restricciones: El archivo anterior creó relaciones (Foreign Keys) que podrían impedirte borrar tablas individuales. Al borrar el esquema con CASCADE, Postgres corta todas esas relaciones de raíz.
 Resetear ID's: Al borrar todo, te aseguras de que todos los contadores de ID (autoincrementales) vuelvan a empezar desde 1.
 Advertencia: Asegúrate de que no tienes datos importantes en la base actual antes de ejecutar esto, ya que la eliminación es irreversible.
+
+docker exec backend-dev-express-1 node seed.js
