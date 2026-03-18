@@ -2773,52 +2773,71 @@ ALTER TABLE ONLY seguridad.roles_modulos
 -- Data for initial setup
 --
 
-INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE VALUES (1, 'Administrador', true);
-INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id) VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1);
+INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE
+VALUES (1, 'Administrador', true)
+ON CONFLICT (fi_rol_id) DO UPDATE
+SET fc_nombre = EXCLUDED.fc_nombre,
+    fb_es_root = EXCLUDED.fb_es_root;
 
--- Modulos base del menu
-INSERT INTO seguridad.modulos (fi_modulo_id, fc_nombre, fc_ruta, fb_activo) OVERRIDING SYSTEM VALUE VALUES
-    (1, 'Roles', '/roles', true),
-    (2, 'Usuarios', '/usuarios', true),
-    (3, 'Piletas', '/piletas', true),
-    (4, 'Instalaciones', '/instalaciones', true),
-    (5, 'Lotes', '/lotes', true),
-    (6, 'Reproductores', '/reproductores', true),
-    (7, 'Engorda', '/engorda', true),
-    (8, 'Clientes', '/clientes', true),
-    (9, 'Ventas', '/ventas', true),
-    (10, 'Alimentos', '/alimentos', true),
-    (11, 'Lista de Espera', '/lista-espera', true),
-    (12, 'Equipos', '/equipos', true),
-    (13, 'Expedientes', '/expedientes', true),
-    (14, 'Nomina', '/nomina', true),
-    (15, 'Vacaciones', '/vacaciones', true),
-    (16, 'Caja de Ahorro', '/caja-ahorro', true),
-    (17, 'Proveedores', '/proveedores', true),
-    (18, 'Flujo de Caja', '/flujo-caja', true),
-    (19, 'Tesoreria', '/tesoreria', true),
-    (20, 'Cuentas', '/cuentas', true),
-    (21, 'Biometrias', '/biometrias', true),
-    (22, 'Plagas', '/plagas', true),
-    (23, 'Alimentacion Ceiba', '/ceiba/alimentacion', true),
-    (24, 'Insumos Ceiba', '/ceiba/insumos', true),
-    (25, 'Recepcion Insumos', '/recepcion_insumos', true),
-    (26, 'Visitas', '/visitas', true),
-    (27, 'Banos Medellin', '/medellin/banos', true),
-    (28, 'Parametros Medellin', '/medellin/parametros', true),
-    (29, 'Medicamentos Medellin', '/medellin/medicamentos', true),
-    (30, 'Recambios Medellin', '/medellin/recambios', true),
-    (31, 'Inventario Medellin', '/medellin/inventario', true),
-    (32, 'Catalogo Estados', '/estados', true),
-    (33, 'Empleados', '/empleados', true),
-    (34, 'Departamentos', '/departamentos', true),
-    (35, 'Modulos', '/modulos', true),
-    (36, 'Roles Modulos', '/roles-modulos', true);
+INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id)
+VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1)
+ON CONFLICT (fc_nombre) DO NOTHING;
 
--- Asignacion inicial de modulos al rol administrador
+-- Modulos base del menu (idempotente)
+WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
+  VALUES
+    ('Dashboard', '/', true),
+    ('Seguridad', '/seguridad', true),
+    ('Roles', '/roles', true),
+    ('Usuarios', '/usuarios', true),
+    ('Piletas', '/piletas', true),
+    ('Instalaciones', '/instalaciones', true),
+    ('Lotes', '/lotes', true),
+    ('Reproductores', '/reproductores', true),
+    ('Engorda', '/engorda', true),
+    ('Clientes', '/clientes', true),
+    ('Ventas', '/ventas', true),
+    ('Alimentos', '/alimentos', true),
+    ('Lista de Espera', '/lista-espera', true),
+    ('Equipos', '/equipos', true),
+    ('Expedientes', '/expedientes', true),
+    ('Nomina', '/nomina', true),
+    ('Vacaciones', '/vacaciones', true),
+    ('Caja de Ahorro', '/caja-ahorro', true),
+    ('Proveedores', '/proveedores', true),
+    ('Flujo de Caja', '/flujo-caja', true),
+    ('Tesoreria', '/tesoreria', true),
+    ('Cuentas', '/cuentas', true),
+    ('Biometrias', '/biometrias', true),
+    ('Plagas', '/plagas', true),
+    ('Alimentacion Ceiba', '/ceiba/alimentacion', true),
+    ('Insumos Ceiba', '/ceiba/insumos', true),
+    ('Recepcion Insumos', '/recepcion_insumos', true),
+    ('Visitas', '/visitas', true),
+    ('Banos Medellin', '/medellin/banos', true),
+    ('Parametros Medellin', '/medellin/parametros', true),
+    ('Medicamentos Medellin', '/medellin/medicamentos', true),
+    ('Recambios Medellin', '/medellin/recambios', true),
+    ('Inventario Medellin', '/medellin/inventario', true),
+    ('Catalogo Estados', '/estados', true),
+    ('Empleados', '/empleados', true),
+    ('Departamentos', '/departamentos', true),
+    ('Modulos', '/modulos', true),
+    ('Roles Modulos', '/roles-modulos', true)
+)
+INSERT INTO seguridad.modulos (fc_nombre, fc_ruta, fb_activo)
+SELECT mb.fc_nombre, mb.fc_ruta, mb.fb_activo
+FROM modulos_base mb
+ON CONFLICT (fc_ruta) DO UPDATE
+SET fc_nombre = EXCLUDED.fc_nombre,
+    fb_activo = EXCLUDED.fb_activo;
+
+-- Asignacion inicial de modulos a roles root
 INSERT INTO seguridad.roles_modulos (fi_rol_id, fi_modulo_id)
-SELECT 1, fi_modulo_id
-FROM seguridad.modulos
+SELECT r.fi_rol_id, m.fi_modulo_id
+FROM public.roles r
+CROSS JOIN seguridad.modulos m
+WHERE r.fb_es_root = true
 ON CONFLICT (fi_rol_id, fi_modulo_id) DO NOTHING;
 
 --
