@@ -1,8 +1,5 @@
 // seed.js — Inicializa modulos y asignacion a roles root
 import pg from "pg";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const { Pool } = pg;
 

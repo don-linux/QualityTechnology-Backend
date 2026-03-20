@@ -20,8 +20,7 @@
         "EditorConfig.EditorConfig",
         "ms-azuretools.vscode-docker",
         "ms-vscode-remote.remote-containers",
-        "ms-azuretools.vscode-containers",
-        "christian-kohler.npm-intellisense"
+        "ms-azuretools.vscode-containers"
       ]
     }
   }

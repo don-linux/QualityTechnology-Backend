@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+
 import fs from "node:fs";
 import swaggerUi from "swagger-ui-express";
 import { parse } from "yaml";
@@ -59,8 +59,6 @@ import empleadoRoutes from "./src/routes/empleadoRoutes.js";
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
 import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
-
-dotenv.config();
 
 const app = express();
 
