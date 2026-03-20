@@ -6,8 +6,8 @@
   "remoteUser": "root",
   "overrideCommand": false,
   "forwardPorts": [5000],
-  "postCreateCommand": "npm ci || npm install",
-  "postStartCommand": "npm run dev",
+  "postCreateCommand": "bun install --frozen-lockfile || bun install",
+  "postStartCommand": "bun run dev",
   "customizations": {
     "vscode": {
       "extensions": [
