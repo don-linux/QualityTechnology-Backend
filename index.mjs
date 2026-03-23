@@ -65,10 +65,14 @@ const app = express();
 // Documentación Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Configurar CORS correctamente
+// Configurar CORS
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: "*", // permitir cualquier origen en desarrollo
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

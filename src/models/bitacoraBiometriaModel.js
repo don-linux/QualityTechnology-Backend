@@ -10,9 +10,8 @@ class BitacoraBiometriaModel {
     }
 
     static async actualizarFechaBiometria(instalacionId, fecha) {
-        // Obtener tipo desde instalaciones
         const inst = await pool.query(
-            `SELECT tipo_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
+            `SELECT tipo_instalacion, nombre_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
             [instalacionId]
         );
 
@@ -116,7 +115,7 @@ class BitacoraBiometriaModel {
 
     static async getInfoByInstalacion(instalacionId) {
         const inst = await pool.query(
-            `SELECT tipo_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
+            `SELECT tipo_instalacion, nombre_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
             [instalacionId]
         );
 

@@ -3,12 +3,17 @@ import bcrypt from "bcryptjs";
 
 class UsuarioModel {
     static async getAll() {
-        const result = await pool.query("SELECT * FROM usuarios");
+        const result = await pool.query(
+            `SELECT fi_usuario_id, fc_nombre, fi_rol_id FROM usuarios`
+        );
         return result.rows;
     }
 
     static async getById(id) {
-        const result = await pool.query("SELECT * FROM usuarios WHERE fi_usuario_id = $1", [id]);
+        const result = await pool.query(
+            `SELECT fi_usuario_id, fc_nombre, fi_rol_id FROM usuarios WHERE fi_usuario_id = $1`,
+            [id]
+        );
         return result.rows[0];
     }
 
