@@ -21,27 +21,23 @@ class RefreshTokenModel {
     return token;
   }
 
-  static async findValid(token) {
+  static async findValidAndRevoke(token) {
     const result = await pool.query(
-      `SELECT rt.fi_token_id, rt.fi_usuario_id, rt.fd_expiracion,
-              u.fc_nombre AS nombre, u.fi_rol_id AS rol_id,
-              r.fc_nombre AS rol_nombre
+      `UPDATE seguridad.refresh_tokens rt_upd
+       SET fb_revocado = true
        FROM seguridad.refresh_tokens rt
        JOIN public.usuarios u ON u.fi_usuario_id = rt.fi_usuario_id
        JOIN public.roles r ON r.fi_rol_id = u.fi_rol_id
-       WHERE rt.fc_token = $1
+       WHERE rt_upd.fi_token_id = rt.fi_token_id
+         AND rt.fc_token = $1
          AND rt.fb_revocado = false
-         AND rt.fd_expiracion > NOW()`,
+         AND rt.fd_expiracion > NOW()
+       RETURNING rt.fi_token_id, rt.fi_usuario_id, rt.fd_expiracion,
+                 u.fc_nombre AS nombre, u.fi_rol_id AS rol_id,
+                 r.fc_nombre AS rol_nombre`,
       [token]
     );
     return result.rows[0] || null;
-  }
-
-  static async revoke(token) {
-    await pool.query(
-      `UPDATE seguridad.refresh_tokens SET fb_revocado = true WHERE fc_token = $1`,
-      [token]
-    );
   }
 
   static async revokeAllByUser(usuarioId) {

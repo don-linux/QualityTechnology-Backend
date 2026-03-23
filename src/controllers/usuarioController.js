@@ -116,13 +116,10 @@ class UsuarioController {
         }
 
         try {
-            const tokenData = await RefreshTokenModel.findValid(refreshToken);
+            const tokenData = await RefreshTokenModel.findValidAndRevoke(refreshToken);
             if (!tokenData) {
                 return res.status(401).json({ error: "Refresh token inválido o expirado." });
             }
-
-            // Revocar el token usado (rotación)
-            await RefreshTokenModel.revoke(refreshToken);
 
             const modulos = await RolesModulosModel.getModulosByRol(tokenData.rol_id);
 

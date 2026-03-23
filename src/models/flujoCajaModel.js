@@ -78,6 +78,42 @@ class FlujoCajaModel {
     return result.rows[0];
   }
 
+  static async createConSaldo(data, cuentaId, nuevoSaldo) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const result = await client.query(
+        `INSERT INTO flujo_caja (
+          fc_granja, fd_fecha, fn_ingreso, fn_egreso, fc_descripcion,
+          fc_cuenta, fc_categoria, fc_subcategoria,
+          fc_beneficiario, fc_noproyecto,
+          fc_factura, fc_estatus, fc_mes, fd_fecha_registro
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+        RETURNING *`,
+        [
+          data.fc_granja, data.fd_fecha, data.fn_ingreso, data.fn_egreso,
+          data.fc_descripcion, data.fc_cuenta, data.fc_categoria,
+          data.fc_subcategoria, data.fc_beneficiario, data.fc_noproyecto,
+          data.fc_factura, data.fc_estatus, data.fc_mes,
+        ]
+      );
+
+      await client.query(
+        "UPDATE cuentas SET saldo = $1 WHERE id = $2",
+        [nuevoSaldo, cuentaId]
+      );
+
+      await client.query("COMMIT");
+      return result.rows[0];
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   static async update(id, data) {
     const result = await pool.query(
       `UPDATE flujo_caja
