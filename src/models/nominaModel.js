@@ -1,5 +1,19 @@
 import pool from "../db.js";
 
+const ALLOWED_COLUMNS = new Set([
+  "fc_nombre_empleado", "fi_empleado_id", "fd_fecha_pago",
+  "fn_total", "fn_bono", "fn_deuda", "fn_descuento", "fn_anticipo",
+  "fi_usuario_id",
+]);
+
+function sanitize(data) {
+  const clean = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (ALLOWED_COLUMNS.has(key)) clean[key] = value;
+  }
+  return clean;
+}
+
 class NominaModel {
   static async getAll(filters) {
     let query = "SELECT * FROM nomina WHERE 1=1";
@@ -36,8 +50,8 @@ class NominaModel {
     return result.rows[0];
   }
 
-  static async update(id, data) {
-    delete data.fd_fecha_actualizacion;
+  static async update(id, rawData) {
+    const data = sanitize(rawData);
     const keys = Object.keys(data);
     const values = Object.values(data);
 

@@ -82,7 +82,7 @@ class UsuarioController {
                     rol: usuario.rol_nombre,
                     nombre: usuario.nombre,
                 },
-                process.env.JWT_SECRET || "clave_secreta_dev",
+                process.env.JWT_SECRET,
                 { expiresIn: "8h" }
             );
 

@@ -1,6 +1,7 @@
 import express from "express";
 import usuarioController from "../controllers/usuarioController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -10,9 +11,10 @@ const router = express.Router();
 router.post("/login", usuarioController.login);
 
 /* ======================================================
-    RUTAS PROTEGIDAS (Requieren Token)
+    RUTAS PROTEGIDAS (Requieren Token + Módulo "Usuarios")
    ====================================================== */
 router.use(authMiddleware);
+router.use(rbacMiddleware("/usuarios"));
 
 router.get("/", usuarioController.getAll);
 router.post("/", usuarioController.create);
