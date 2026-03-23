@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 
 import fs from "node:fs";
 import swaggerUi from "swagger-ui-express";
@@ -62,8 +63,13 @@ import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
 
 const app = express();
 
-// Documentación Swagger
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Headers de seguridad HTTP
+app.use(helmet());
+
+// Documentación Swagger (solo en desarrollo)
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 // Configurar CORS
 const allowedOrigins = process.env.FRONTEND_URL
@@ -102,7 +108,8 @@ app.use("/proveedores", proveedorRoutes);
 app.use("/flujo-caja", flujoCajaRoutes);
 app.use("/tesoreria", tesoreriaRoutes);
 app.use("/cuentas", cuentaRoutes);
-app.use("/uploads", express.static("uploads"));
+import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
+app.use("/uploads", authStaticMiddleware, express.static("uploads"));
 
 // Bitácoras
 app.use("/biometrias", bitacoraBiometriaRoutes);

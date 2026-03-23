@@ -46,12 +46,8 @@ components:
           type: integer
         fc_nombre:
           type: string
-        fc_contraseña:
-          type: string
         fi_rol_id:
           type: integer
-        rol_nombre:
-          type: string
 
     UsuarioCreate:
       type: object
@@ -80,6 +76,10 @@ components:
           type: string
         token:
           type: string
+          description: "Access token JWT (expira en 8h)"
+        refreshToken:
+          type: string
+          description: "Refresh token (expira en 7 días, usar en POST /usuarios/refresh)"
         usuario:
           type: object
           properties:
@@ -89,6 +89,56 @@ components:
               type: string
             rol:
               type: string
+        modulos:
+          type: array
+          description: "Módulos disponibles para el rol del usuario"
+          items:
+            type: object
+            properties:
+              fi_modulo_id:
+                type: integer
+              fc_nombre:
+                type: string
+              fc_ruta:
+                type: string
+              fb_activo:
+                type: boolean
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required: [refreshToken]
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+        token:
+          type: string
+        refreshToken:
+          type: string
+        modulos:
+          type: array
+          items:
+            type: object
+            properties:
+              fi_modulo_id:
+                type: integer
+              fc_nombre:
+                type: string
+              fc_ruta:
+                type: string
+              fb_activo:
+                type: boolean
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
 
     Instalacion:
       type: object
@@ -718,7 +768,9 @@ paths:
   /roles:
     get:
       summary: "Obtener todos los roles"
-      description: "Devuelve una lista con todos los roles registrados."
+      description: "Requiere token JWT + módulo /roles."
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: "Listado de roles"
@@ -736,7 +788,9 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: "Crear un nuevo rol"
-      description: "Registrar un nuevo rol en la base de datos."
+      description: "Requiere token JWT + módulo /roles."
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -831,7 +885,9 @@ paths:
   /usuarios/login:
     post:
       summary: "Inicio de sesión"
-      description: "Autentica al usuario y devuelve un token JWT."
+      description: |
+        Autentica al usuario y devuelve un access token JWT junto con un refresh token.
+        Rate limit: máximo 10 intentos cada 15 minutos por IP.
       requestBody:
         required: true
         content:
@@ -857,8 +913,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: "Demasiados intentos de inicio de sesión"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/refresh:
+    post:
+      summary: "Renovar access token"
+      description: |
+        Usa un refresh token válido para obtener un nuevo access token y un nuevo refresh token.
+        El refresh token usado se revoca automáticamente (rotación).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: "Token renovado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: "Falta refreshToken"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Refresh token inválido o expirado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Error del servidor"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/logout:
+    post:
+      summary: "Cerrar sesión"
+      description: "Revoca el refresh token proporcionado. Requiere access token JWT."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: "Sesión cerrada"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+        '401':
+          description: "No autorizado"
           content:
             application/json:
               schema:
@@ -867,7 +996,7 @@ paths:
   /usuarios:
     get:
       summary: "Obtener todos los usuarios"
-      description: "Requiere token JWT. Devuelve lista de usuarios."
+      description: "Requiere token JWT + módulo /usuarios. No expone contraseñas."
       security:
         - bearerAuth: []
       responses:
@@ -893,7 +1022,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: "Crear usuario"
-      description: "Requiere token JWT. Crea un nuevo usuario."
+      description: "Requiere token JWT + módulo /usuarios."
       security:
         - bearerAuth: []
       requestBody:
@@ -934,7 +1063,7 @@ paths:
   /usuarios/{id}:
     put:
       summary: "Actualizar usuario"
-      description: "Requiere token JWT. Actualiza un usuario por su ID."
+      description: "Requiere token JWT + módulo /usuarios."
       security:
         - bearerAuth: []
       parameters:
@@ -967,7 +1096,7 @@ paths:
           description: "Error del servidor"
     delete:
       summary: "Eliminar usuario"
-      description: "Requiere token JWT. Elimina un usuario por su ID."
+      description: "Requiere token JWT + módulo /usuarios."
       security:
         - bearerAuth: []
       parameters:

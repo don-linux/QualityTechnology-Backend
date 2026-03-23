@@ -18,11 +18,18 @@ const router = express.Router();
     RUTAS PÚBLICAS
    ====================================================== */
 router.post("/login", loginLimiter, usuarioController.login);
+router.post("/refresh", usuarioController.refresh);
+
+/* ======================================================
+    RUTAS PROTEGIDAS (Requieren Token)
+   ====================================================== */
+router.use(authMiddleware);
+
+router.post("/logout", usuarioController.logout);
 
 /* ======================================================
     RUTAS PROTEGIDAS (Requieren Token + Módulo "Usuarios")
    ====================================================== */
-router.use(authMiddleware);
 router.use(rbacMiddleware("/usuarios"));
 
 router.get("/", usuarioController.getAll);

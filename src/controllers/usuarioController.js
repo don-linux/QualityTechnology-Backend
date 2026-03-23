@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import usuarioModel from "../models/usuarioModel.js";
 import RolesModulosModel from "../models/RolesModulosModel.js";
+import RefreshTokenModel from "../models/refreshTokenModel.js";
 
 class UsuarioController {
     static async getAll(req, res) {
@@ -61,6 +62,7 @@ class UsuarioController {
         try {
             const usuario = await usuarioModel.getByNombre(nombre);
             if (!usuario) {
+                console.warn(`[LOGIN] Usuario no encontrado: "${nombre}" — IP: ${req.ip}`);
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
@@ -70,11 +72,12 @@ class UsuarioController {
             );
 
             if (!passwordMatch) {
+                console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
                 return res.status(401).json({ error: "Credenciales inválidas" });
             }
 
-            // Obtener módulos del rol
             const modulos = await RolesModulosModel.getModulosByRol(usuario.rol_id);
+
             const token = jwt.sign(
                 {
                     usuario_id: usuario.usuario_id,
@@ -86,20 +89,79 @@ class UsuarioController {
                 { expiresIn: "8h" }
             );
 
+            const refreshToken = await RefreshTokenModel.create(usuario.usuario_id);
+
             res.json({
                 mensaje: "Inicio de sesión exitoso",
                 token,
+                refreshToken,
                 usuario: {
                     id: usuario.usuario_id,
                     nombre: usuario.nombre,
                     rol: usuario.rol_nombre,
                 },
-                modulos //se manda al frontend
+                modulos,
             });
 
         } catch (err) {
             console.error("Error en login:", err.message);
             res.status(500).json({ error: "Error del servidor", detalle: err.message });
+        }
+    }
+
+    static async refresh(req, res) {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ error: "Se requiere el refreshToken." });
+        }
+
+        try {
+            const tokenData = await RefreshTokenModel.findValid(refreshToken);
+            if (!tokenData) {
+                return res.status(401).json({ error: "Refresh token inválido o expirado." });
+            }
+
+            // Revocar el token usado (rotación)
+            await RefreshTokenModel.revoke(refreshToken);
+
+            const modulos = await RolesModulosModel.getModulosByRol(tokenData.rol_id);
+
+            const newAccessToken = jwt.sign(
+                {
+                    usuario_id: tokenData.fi_usuario_id,
+                    rol_id: tokenData.rol_id,
+                    rol: tokenData.rol_nombre,
+                    nombre: tokenData.nombre,
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: "8h" }
+            );
+
+            const newRefreshToken = await RefreshTokenModel.create(tokenData.fi_usuario_id);
+
+            res.json({
+                mensaje: "Token renovado exitosamente",
+                token: newAccessToken,
+                refreshToken: newRefreshToken,
+                modulos,
+            });
+        } catch (err) {
+            console.error("Error en refresh:", err.message);
+            res.status(500).json({ error: "Error al renovar token." });
+        }
+    }
+
+    static async logout(req, res) {
+        const { refreshToken } = req.body;
+
+        try {
+            if (refreshToken) {
+                await RefreshTokenModel.revoke(refreshToken);
+            }
+            res.json({ mensaje: "Sesión cerrada correctamente." });
+        } catch (err) {
+            console.error("Error en logout:", err.message);
+            res.status(500).json({ error: "Error al cerrar sesión." });
         }
     }
 }

@@ -2845,5 +2845,18 @@ CROSS JOIN seguridad.modulos m
 WHERE r.fb_es_root = true
 ON CONFLICT (fi_rol_id, fi_modulo_id) DO NOTHING;
 
+-- Refresh tokens para rotación de sesiones
+CREATE TABLE IF NOT EXISTS seguridad.refresh_tokens (
+    fi_token_id SERIAL PRIMARY KEY,
+    fi_usuario_id INTEGER NOT NULL REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE,
+    fc_token CHARACTER VARYING(255) NOT NULL UNIQUE,
+    fd_expiracion TIMESTAMP NOT NULL,
+    fb_revocado BOOLEAN DEFAULT FALSE,
+    fd_creacion TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON seguridad.refresh_tokens (fc_token) WHERE fb_revocado = false;
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_usuario ON seguridad.refresh_tokens (fi_usuario_id);
+
 --
 -- PostgreSQL database dump complete
