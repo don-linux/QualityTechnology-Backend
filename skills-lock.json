@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "4c6bf8fbd9a13d61e326ddeb210af5854fea3b253922a7981bd7718f3b765c08"
     },
+    "nodejs-express-server": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "computedHash": "94af4eda308df6d27b94cc866de0d3d857755c91da01808d3d8130d91ebaf231"
+    },
     "postgresql-best-practices": {
       "source": "mindrally/skills",
       "sourceType": "github",
