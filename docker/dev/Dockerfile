@@ -1,4 +1,4 @@
-FROM node:24.11.1-alpine3.22
+FROM oven/bun:1.3.11-alpine
 
 # Useful toolchain for projects with node-gyp
 RUN apk add --no-cache git openssh-client bash postgresql-client

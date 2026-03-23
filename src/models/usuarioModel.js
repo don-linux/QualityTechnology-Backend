@@ -1,5 +1,5 @@
 import pool from "../db.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 class UsuarioModel {
     static async getAll() {

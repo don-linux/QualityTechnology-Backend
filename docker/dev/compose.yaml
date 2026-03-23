@@ -8,9 +8,7 @@ services:
     volumes:
       - ../../:/app
     environment:
-      CHOKIDAR_USEPOLLING: 'true'
       WATCHPACK_POLLING: 'true'
-      # PostgreSQL Connection Variables
       PGUSER: ${DOCKER_DEV_POSTGRES_DB_USER}
       PGPASSWORD: ${DOCKER_DEV_POSTGRES_DB_PASSWORD}
       PGHOST: postgres_db
@@ -18,7 +16,7 @@ services:
       PGDATABASE: ${DOCKER_DEV_POSTGRES_DB_NAME}
     ports:
       - '${DOCKER_DEV_EXPRESS_PORT}:5000'
-    command: bash -c "npm install && npm start"
+    command: bash -c "bun install && bun run dev"
     init: true
     depends_on:
       postgres_db:

@@ -6,8 +6,8 @@
   "remoteUser": "root",
   "overrideCommand": false,
   "forwardPorts": [5000],
-  "postCreateCommand": "npm ci || npm install",
-  "postStartCommand": "npm run dev",
+  "postCreateCommand": "bun install --frozen-lockfile || bun install",
+  "postStartCommand": "bun run dev",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -20,8 +20,7 @@
         "EditorConfig.EditorConfig",
         "ms-azuretools.vscode-docker",
         "ms-vscode-remote.remote-containers",
-        "ms-azuretools.vscode-containers",
-        "christian-kohler.npm-intellisense"
+        "ms-azuretools.vscode-containers"
       ]
     }
   }
