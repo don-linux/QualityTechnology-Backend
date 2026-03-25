@@ -160,10 +160,24 @@ class ReproductorModel {
   }
 
   static async delete(id) {
-    await pool.query(
-      "DELETE FROM reproductores WHERE fi_reproductor_id = $1",
-      [id]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "DELETE FROM trazabilidad_reproductores WHERE fi_repro_destino = $1 OR fi_repro_origen = $1",
+        [id]
+      );
+      await client.query(
+        "DELETE FROM reproductores WHERE fi_reproductor_id = $1",
+        [id]
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }
 

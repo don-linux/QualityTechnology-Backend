@@ -1,6 +1,14 @@
 import pool from "../db.js";
 
 class EngordaModel {
+  static normalizarGranja(valor) {
+    if (!valor) return "Granja Acu\u00EDcola Medellin";
+    const texto = valor.toLowerCase();
+    if (texto.includes("medell")) return "Granja Acu\u00EDcola Medellin";
+    if (texto.includes("ceiba")) return "Granja Acu\u00EDcola La Ceiba";
+    return "Granja Acu\u00EDcola Medellin";
+  }
+
   static async esLote(id) {
     const r = await pool.query(
       "SELECT 1 FROM lotes WHERE fi_lote_id = $1",

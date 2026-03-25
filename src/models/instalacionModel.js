@@ -118,6 +118,14 @@ class InstalacionModel {
     }
 
     static async delete(id) {
+        const ref = await pool.query(
+            `SELECT COUNT(*) AS total FROM piletas WHERE fi_instalacion_id = $1`,
+            [id]
+        );
+        if (Number(ref.rows[0].total) > 0) {
+            throw new Error("No se puede eliminar: la instalación tiene piletas activas asociadas.");
+        }
+
         const result = await pool.query(
             `DELETE FROM instalaciones WHERE fi_instalacion_id = $1 RETURNING *`,
             [id]

@@ -3,7 +3,8 @@ import engordaModel from "../models/engordaModel.js";
 class EngordaController {
   static async getByGranja(req, res) {
     try {
-      const inventario = await engordaModel.getByGranja(req.params.granja);
+      const granja = engordaModel.normalizarGranja(req.params.granja);
+      const inventario = await engordaModel.getByGranja(granja);
       res.json(inventario);
     } catch (err) {
       console.error("Error al obtener inventario de Engorda:", err);
@@ -13,7 +14,11 @@ class EngordaController {
 
   static async create(req, res) {
     try {
-      const result = await engordaModel.createOrUpdate(req.body);
+      const body = {
+        ...req.body,
+        fc_granja: engordaModel.normalizarGranja(req.body.fc_granja),
+      };
+      const result = await engordaModel.createOrUpdate(body);
 
       if (result.updated) {
         return res.json({ mensaje: "Engorda actualizada correctamente." });
