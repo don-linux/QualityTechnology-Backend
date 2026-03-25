@@ -127,15 +127,25 @@ class EngordaModel {
   }
 
   static async delete(id) {
-    await pool.query(
-      "DELETE FROM trazabilidad_engorda WHERE fi_engorda_origen = $1 OR fi_engorda_destino = $1",
-      [id]
-    );
-    const result = await pool.query(
-      "DELETE FROM engorda WHERE fi_engorda_id = $1 RETURNING *",
-      [id]
-    );
-    return result.rowCount;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "DELETE FROM trazabilidad_engorda WHERE fi_engorda_origen = $1 OR fi_engorda_destino = $1",
+        [id]
+      );
+      const result = await client.query(
+        "DELETE FROM engorda WHERE fi_engorda_id = $1 RETURNING *",
+        [id]
+      );
+      await client.query("COMMIT");
+      return result.rowCount;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   static async getMovimientos(usuarioId) {

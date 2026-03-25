@@ -79,14 +79,12 @@ class FlujoCajaController {
 
       const fc_factura = req.file ? `/uploads/facturas/${req.file.filename}` : null;
 
-      const movimiento = await flujoCajaModel.create({
+      const movimiento = await flujoCajaModel.createConSaldo({
         fc_granja, fd_fecha, fn_ingreso: ingresoFinal,
         fn_egreso: egresoFinal, fc_descripcion, fc_cuenta,
         fc_categoria, fc_subcategoria, fc_beneficiario,
         fc_noproyecto, fc_factura, fc_estatus, fc_mes,
-      });
-
-      await flujoCajaModel.updateCuentaSaldo(cuenta.id, saldoActual);
+      }, cuenta.id, saldoActual);
 
       res.json({
         mensaje: "Movimiento registrado correctamente",

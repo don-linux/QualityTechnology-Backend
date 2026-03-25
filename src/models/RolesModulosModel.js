@@ -96,7 +96,7 @@ class RolesModulosModel {
 
     const result = await pool.query(
       `
-      DELETE FROM public.roles_modulos
+      DELETE FROM seguridad.roles_modulos
       WHERE fi_rol_id = $1
       AND fi_modulo_id = $2
       RETURNING *

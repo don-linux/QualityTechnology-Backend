@@ -212,30 +212,28 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
     const destinoId = destino ? Number(destino) : null;
     const loteId = fi_lote_id ? Number(fi_lote_id) : null;
 
-    /* ==============================
-       VALIDACIONES
-    ============================== */
-
     if (origenInstalacionId && origen_externo) {
         throw new Error("No puede existir origen interno y externo al mismo tiempo.");
     }
 
-        if (!origenInstalacionId && !origen_externo && tipo_movimiento !== "MORTALIDAD") {
-            throw new Error("Debe existir un origen válido.");
-        }
+    if (!origenInstalacionId && !origen_externo && tipo_movimiento !== "MORTALIDAD") {
+        throw new Error("Debe existir un origen válido.");
+    }
 
-        if (origenInstalacionId && destinoId && origenInstalacionId === destinoId) {
-            throw new Error("Origen y destino no pueden ser la misma instalación.");
-        }
+    if (origenInstalacionId && destinoId && origenInstalacionId === destinoId) {
+        throw new Error("Origen y destino no pueden ser la misma instalación.");
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
         let piletaOrigenId = null;
         let piletaDestinoId = null;
 
-        /* ==============================
-           1. BUSCAR PILETA ORIGEN (SI EXISTE)
-        ============================== */
+        /* 1. BUSCAR PILETA ORIGEN */
         if (origenInstalacionId) {
-            const origen = await pool.query(
+            const origen = await client.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
                 [origenInstalacionId]
             );
@@ -244,11 +242,9 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             }
         }
 
-        /* ==============================
-           2. BUSCAR O CREAR PILETA DESTINO
-        ============================== */
+        /* 2. BUSCAR O CREAR PILETA DESTINO */
         if (destinoId) {
-            const destinoRes = await pool.query(
+            const destinoRes = await client.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
                 [destinoId]
             );
@@ -256,23 +252,19 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             if (destinoRes.rows.length > 0) {
                 piletaDestinoId = destinoRes.rows[0].fi_pileta_id;
 
-                // Si es un traslado, sumamos al destino
                 if (tipo_movimiento === "TRASLADO") {
-                    await pool.query(
+                    await client.query(
                         `UPDATE piletas SET cantidad = cantidad + $1 WHERE fi_pileta_id = $2`,
                         [cantidad, piletaDestinoId]
                     );
                 }
             } else if (tipo_movimiento === "TRASLADO" || tipo_movimiento === "SIEMBRA") {
-                // Si no existe y es traslado, creamos la pileta nueva
-                const nuevaPileta = await pool.query(
-                    `
-                    INSERT INTO piletas
+                const nuevaPileta = await client.query(
+                    `INSERT INTO piletas
                     (fi_instalacion_id, fi_lote_id, cantidad, talla_gr, observacion,
                     fecha_siembra, fecha_ultima_biometria, fc_granja)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    RETURNING fi_pileta_id
-                    `,
+                    RETURNING fi_pileta_id`,
                     [
                         destinoId,
                         loteId,
@@ -287,56 +279,57 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 piletaDestinoId = nuevaPileta.rows[0].fi_pileta_id;
             }
 
-            // Marcamos la instalación como ocupada
             if (tipo_movimiento === "TRASLADO") {
-                await this.ocuparInstalacion(destinoId);
+                await client.query(
+                    `UPDATE instalaciones SET estado = 'Ocupada' WHERE fi_instalacion_id = $1`,
+                    [destinoId]
+                );
             }
         }
 
-        /* ==============================
-           3. RESTAR DEL ORIGEN
-        ============================== */
+        /* 3. RESTAR DEL ORIGEN */
         if (piletaOrigenId) {
-            await pool.query(
+            await client.query(
                 `UPDATE piletas SET cantidad = cantidad - $1 WHERE fi_pileta_id = $2`,
                 [cantidad, piletaOrigenId]
             );
         }
 
-      /* ==============================
-        4. GUARDAR TRAZABILIDAD
-        ============================== */
-        const trace = await pool.query(
-        `
-        INSERT INTO trazabilidad_alevinaje
-        (fi_instalacion_origen, origen_externo, fi_instalacion_destino, cantidad,
-        fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento)
-        VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8)
-        RETURNING fi_movimiento_id
-        `,
-        [
-            origenInstalacionId || null,
-            origen_externo || null,
-            destinoId || null,
-            cantidad,
-            observacion,
-            fi_usuario_id || null,
-            loteId || null,
-            tipo_movimiento
-        ]
+        /* 4. GUARDAR TRAZABILIDAD */
+        const trace = await client.query(
+            `INSERT INTO trazabilidad_alevinaje
+            (fi_instalacion_origen, origen_externo, fi_instalacion_destino, cantidad,
+            fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento)
+            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8)
+            RETURNING fi_movimiento_id`,
+            [
+                origenInstalacionId || null,
+                origen_externo || null,
+                destinoId || null,
+                cantidad,
+                observacion,
+                fi_usuario_id || null,
+                loteId || null,
+                tipo_movimiento
+            ]
         );
 
-        /* ==============================
-           5. ACTUALIZAR CANTIDAD DEL LOTE
-        ============================== */
+        /* 5. ACTUALIZAR CANTIDAD DEL LOTE */
         if (loteId) {
-            await pool.query(
+            await client.query(
                 `UPDATE lotes SET alevines_inicial = $1 WHERE fi_lote_id = $2`,
                 [cantidad, loteId]
             );
         }
 
+        await client.query("COMMIT");
         return trace.rows[0].fi_movimiento_id;
+    } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+    } finally {
+        client.release();
+    }
     }
 
         /* =====================================================
@@ -385,27 +378,25 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
        ELIMINAR PILETA
     ===================================================== */
    static async delete(id) {
-
-    /* ELIMINAR TRAZABILIDAD RELACIONADA */
-
-    await pool.query(
-        `
-        DELETE FROM trazabilidad_alevinaje
-        WHERE fi_instalacion_origen = $1
-        OR fi_instalacion_destino = $1
-        `,
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `DELETE FROM trazabilidad_alevinaje
+         WHERE fi_instalacion_origen = $1 OR fi_instalacion_destino = $1`,
         [id]
-    );
-
-    /* ELIMINAR PILETA */
-
-    await pool.query(
-        `
-        DELETE FROM piletas
-        WHERE fi_pileta_id = $1
-        `,
+      );
+      await client.query(
+        `DELETE FROM piletas WHERE fi_pileta_id = $1`,
         [id]
-    );
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
 }
 
 /* =====================================================

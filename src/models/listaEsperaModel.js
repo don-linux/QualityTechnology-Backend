@@ -59,58 +59,72 @@ class ListaEsperaModel {
   }
 
   static async convertirAVenta(id, usuarioId) {
-    const dato = await pool.query(
-      "SELECT * FROM lista_espera WHERE fi_lista_id = $1",
-      [id]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (dato.rows.length === 0) return null;
+      const dato = await client.query(
+        "SELECT * FROM lista_espera WHERE fi_lista_id = $1 FOR UPDATE",
+        [id]
+      );
 
-    const d = dato.rows[0];
-    const now = new Date();
-    const cantidad = parseInt(d.fn_cantidad);
-    const precio = parseFloat(d.fn_precio_venta);
-    const total = cantidad * precio;
-    const empresa = d.fc_granja_asignada?.toLowerCase().includes("ceiba")
-      ? "CEIBA"
-      : d.fc_granja_asignada?.toLowerCase().includes("med")
-      ? "MEDELLIN"
-      : "QUALITY";
+      if (dato.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
 
-    const tipoVenta = d.fc_uap_asignada === "ALEVIN" ? "ALEVINES" : d.fc_uap_asignada;
+      const d = dato.rows[0];
+      const now = new Date();
+      const cantidad = parseInt(d.fn_cantidad);
+      const precio = parseFloat(d.fn_precio_venta);
+      const total = cantidad * precio;
+      const empresa = d.fc_granja_asignada?.toLowerCase().includes("ceiba")
+        ? "CEIBA"
+        : d.fc_granja_asignada?.toLowerCase().includes("med")
+        ? "MEDELLIN"
+        : "QUALITY";
 
-    const ventaNueva = await pool.query(
-      `INSERT INTO ventas (
-        fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
-        fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
-        fn_abonado, fn_adeudo, fc_estado_pago,
-        fc_encargado_venta, fc_observaciones, fc_empresa,
-        fd_fecha_registro
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13, $14
-      ) RETURNING *`,
-      [
-        `LE-${id}`,
-        d.fd_fecha_entrega,
-        d.fc_cliente,
-        tipoVenta,
-        cantidad,
-        precio,
-        total,
-        0,
-        total,
-        "ADEUDO",
-        d.fc_encargado_venta,
-        "",
-        empresa,
-        now,
-      ]
-    );
+      const tipoVenta = d.fc_uap_asignada === "ALEVIN" ? "ALEVINES" : d.fc_uap_asignada;
 
-    await pool.query("DELETE FROM lista_espera WHERE fi_lista_id = $1", [id]);
+      const ventaNueva = await client.query(
+        `INSERT INTO ventas (
+          fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
+          fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
+          fn_abonado, fn_adeudo, fc_estado_pago,
+          fc_encargado_venta, fc_observaciones, fc_empresa,
+          fd_fecha_registro
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12, $13, $14
+        ) RETURNING *`,
+        [
+          `LE-${id}`,
+          d.fd_fecha_entrega,
+          d.fc_cliente,
+          tipoVenta,
+          cantidad,
+          precio,
+          total,
+          0,
+          total,
+          "ADEUDO",
+          d.fc_encargado_venta,
+          "",
+          empresa,
+          now,
+        ]
+      );
 
-    return ventaNueva.rows[0];
+      await client.query("DELETE FROM lista_espera WHERE fi_lista_id = $1", [id]);
+
+      await client.query("COMMIT");
+      return ventaNueva.rows[0];
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }
 

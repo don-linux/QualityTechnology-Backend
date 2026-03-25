@@ -1,4 +1,5 @@
 import RolesModulosModel from "../models/RolesModulosModel.js";
+import { invalidarCacheRbac } from "../middleware/rbacMiddleware.js";
 
 class RolesModulosController {
 
@@ -10,15 +11,12 @@ class RolesModulosController {
 
     try {
       const modulos = await RolesModulosModel.getModulosByRol(rolId);
-
       res.json(modulos);
-
     } catch (err) {
       console.error("Error al obtener módulos del rol:", err);
-      res.status(500).send("Error al obtener módulos del rol");
+      res.status(500).json({ error: "Error al obtener módulos del rol" });
     }
   }
-
 
   // =============================
   // Asignar módulo a rol
@@ -28,23 +26,22 @@ class RolesModulosController {
     const { moduloId } = req.body;
 
     if (!moduloId)
-      return res.status(400).json({ message: "El módulo es obligatorio." });
+      return res.status(400).json({ error: "El módulo es obligatorio." });
 
     try {
       const result = await RolesModulosModel.assignModuloToRol(rolId, moduloId);
+      invalidarCacheRbac(rolId);
 
       res.json({
         success: true,
-        message: "Módulo asignado correctamente.",
-        data: result
+        mensaje: "Módulo asignado correctamente.",
+        data: result,
       });
-
     } catch (err) {
       console.error("Error al asignar módulo:", err);
-      res.status(500).send("Error al asignar módulo");
+      res.status(500).json({ error: "Error al asignar módulo" });
     }
   }
-
 
   // =============================
   // Quitar módulo de rol
@@ -56,19 +53,19 @@ class RolesModulosController {
       const deleted = await RolesModulosModel.removeModuloFromRol(rolId, moduloId);
 
       if (!deleted)
-        return res.status(404).json({ message: "Relación no encontrada." });
+        return res.status(404).json({ error: "Relación no encontrada." });
+
+      invalidarCacheRbac(rolId);
 
       res.json({
         success: true,
-        message: "Módulo removido correctamente."
+        mensaje: "Módulo removido correctamente.",
       });
-
     } catch (err) {
       console.error("Error al remover módulo:", err);
-      res.status(500).send("Error al remover módulo");
+      res.status(500).json({ error: "Error al remover módulo" });
     }
   }
-
 
   // =============================
   // Reemplazar todos los módulos del rol
@@ -78,19 +75,19 @@ class RolesModulosController {
     const { modulosIds } = req.body;
 
     if (!Array.isArray(modulosIds))
-      return res.status(400).json({ message: "Debe enviar un arreglo de módulos." });
+      return res.status(400).json({ error: "Debe enviar un arreglo de módulos." });
 
     try {
       await RolesModulosModel.replaceModulosByRol(rolId, modulosIds);
+      invalidarCacheRbac(rolId);
 
       res.json({
         success: true,
-        message: "Módulos actualizados correctamente."
+        mensaje: "Módulos actualizados correctamente.",
       });
-
     } catch (err) {
       console.error("Error al actualizar módulos del rol:", err);
-      res.status(500).send("Error al actualizar módulos del rol");
+      res.status(500).json({ error: "Error al actualizar módulos del rol" });
     }
   }
 

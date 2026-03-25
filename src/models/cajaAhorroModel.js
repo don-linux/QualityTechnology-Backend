@@ -1,5 +1,19 @@
 import pool from "../db.js";
 
+const ALLOWED_COLUMNS = new Set([
+  "categoria", "granja",
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]);
+
+function sanitize(data) {
+  const clean = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (ALLOWED_COLUMNS.has(key)) clean[key] = value;
+  }
+  return clean;
+}
+
 class CajaAhorroModel {
   static async getByGranja(granja) {
     const result = await pool.query(
@@ -17,9 +31,13 @@ class CajaAhorroModel {
     return result.rows[0];
   }
 
-  static async update(id, campos) {
+  static async update(id, rawCampos) {
+    const campos = sanitize(rawCampos);
     const columnas = Object.keys(campos);
     const valores = Object.values(campos);
+
+    if (columnas.length === 0) return;
+
     const set = columnas.map((col, i) => `${col} = $${i + 1}`).join(", ");
     await pool.query(
       `UPDATE caja_ahorro_resumen SET ${set} WHERE id = $${columnas.length + 1}`,
