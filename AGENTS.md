@@ -8,22 +8,6 @@ Guidance for agentic coding tools operating in this repository.
 - Database access uses `pg` through `src/db.js`.
 - API docs are served from `swagger.yaml` at `/api-docs`.
 
-## Cursor / Copilot rule files
-- `.cursorrules`: not found.
-- `.cursor/rules/`: not found.
-- `.github/copilot-instructions.md`: not found.
-- This `AGENTS.md` is the active instruction source for coding agents.
-
-## Build and run commands
-```bash
-npm install
-npm run dev
-npm start
-```
-- `npm run dev` uses nodemon for hot reload.
-- `npm start` runs `node index.mjs`.
-- There is no dedicated build/transpile step.
-
 ## Docker commands
 ```bash
 docker compose -f docker/dev/compose.yaml up --build
@@ -31,30 +15,6 @@ docker compose -f docker/prod/compose.yaml up --build
 ```
 - Dev compose includes Postgres and mounts local source.
 - Container startup command installs deps then starts app.
-
-## Lint, format, and test status
-- No ESLint config or `lint` script exists.
-- No Prettier/Biome config exists.
-- `npm test` is currently a placeholder that exits with error.
-- No committed `*.test.*` or `*.spec.*` files were found.
-
-## Test commands (especially single test)
-Current repo state:
-```bash
-npm test
-```
-Future-ready patterns (use once a framework is added):
-```bash
-# Node built-in test runner
-node --test path/to/file.test.mjs
-node --test --test-name-pattern="case name" path/to/file.test.mjs
-
-# Jest with ESM
-node --experimental-vm-modules node_modules/jest/bin/jest.js path/to/file.test.js
-node --experimental-vm-modules node_modules/jest/bin/jest.js path/to/file.test.js -t "case name"
-```
-- Prefer running a single file/test name during iteration.
-- Run full suite before PR merge when tests exist.
 
 ## Environment variables
 Expected values from `.env.example` and runtime usage:
