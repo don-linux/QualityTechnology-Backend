@@ -1,12 +1,9 @@
-# COMMIT STYLE.md
-
 ---
 description: "Generate git commits using gitmoji, in English, max 50 characters"
-
 alwaysApply: true
 ---
 
-- When writting commits, ALWAYS write them in English
+- When writing commits, ALWAYS write them in English
 - Use gitmoji nomenclature following the examples from https://gitmoji.dev/
 - Limit the commit message to 50 characters max, including the emoji
 - Use the format <gitmoji> <short imperative message>

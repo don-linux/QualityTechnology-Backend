@@ -1,8 +1,5 @@
-# CODING STYLE.md
-
 ---
 description: "Coding style guidelines for the project."
-
 alwaysApply: true
 ---
 
