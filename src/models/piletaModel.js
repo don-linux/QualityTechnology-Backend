@@ -281,7 +281,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
 
             if (tipo_movimiento === "TRASLADO") {
                 await client.query(
-                    `UPDATE instalaciones SET estado = 'Ocupada' WHERE fi_instalacion_id = $1`,
+                    `UPDATE instalaciones SET estado = 'ocupada' WHERE fi_instalacion_id = $1`,
                     [destinoId]
                 );
             }
@@ -472,7 +472,7 @@ static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_f
         await pool.query(
             `
             UPDATE instalaciones
-            SET estado = 'Ocupada'
+            SET estado = 'ocupada'
             WHERE fi_instalacion_id = $1
             `,
             [instalacion_id]
@@ -501,7 +501,7 @@ static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_f
             await pool.query(
                 `
                 UPDATE instalaciones
-                SET estado = 'Vacia'
+                SET estado = 'vacia'
                 WHERE fi_instalacion_id = $1
                 `,
                 [instalacion_id]
