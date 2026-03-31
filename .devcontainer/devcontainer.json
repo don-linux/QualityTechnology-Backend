@@ -9,8 +9,22 @@
   "forwardPorts": [5000],
   "postCreateCommand": "bun install --frozen-lockfile || bun install",
   "postStartCommand": "bun run dev",
+  "remoteEnv": {
+    "SHELL": "/bin/bash"
+  },
   "customizations": {
     "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash"
+          }
+        },
+        "terminal.integrated.automationProfile.linux": {
+          "path": "/bin/bash"
+        }
+      },
       "extensions": [
         "esbenp.prettier-vscode",
         "christian-kohler.path-intellisense",
