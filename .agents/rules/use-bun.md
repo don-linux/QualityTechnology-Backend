@@ -1,27 +1,31 @@
 ---
-description: "This container does NOT have Node or npm installed. Always use bun and bunx to run scripts, install dependencies, and execute commands."
+description: "Use bun and bunx to run scripts, install dependencies, and execute commands"
 alwaysApply: true
 ---
 
-# Bun Environment
+# Use Bun
 
-This project runs in a container where **only Bun is installed**. The `node`, `npm`, `npx`, and `yarn` binaries **do not exist** and any command using them will fail.
+This project needs the bun runtime to run the project, install dependencies, and execute commands
+
+You may find yourself in a local folder or inside a container, but you always need to use bun to run scripts, install dependencies, and execute commands.
 
 ## Main rule
 
-NEVER run `npm`, `npx`, `node`, or `yarn` in the terminal. Always use the Bun equivalent.
+NEVER run `npm`, `npx`, `node`, or `yarn` in the terminal, this commands **are prohibited**. because they are not compatible with the bun runtime
+
+Always use the Bun equivalent.
 
 ## Substitution table
 
-| Forbidden                | Use instead                |
-|--------------------------|----------------------------|
-| `npm install`            | `bun install`              |
-| `npm ci`                 | `bun install --frozen-lockfile` |
-| `npm run <script>`       | `bun run <script>`         |
-| `npm test`               | `bun test`                 |
-| `npx <package>`          | `bunx <package>`           |
-| `node <file>`            | `bun <file>`               |
-| `yarn add <package>`     | `bun add <package>`        |
+| Forbidden            | Use instead                       |
+|----------------------|-----------------------------------|
+| `npm install`        | `bun install`                     |
+| `npm ci`             | `bun install --frozen-lockfile`   |
+| `npm run <script>`   | `bun run <script>`                |
+| `npm test`           | `bun test`                        |
+| `npx <package>`      | `bunx <package>`                  |
+| `node <file>`        | `bun <file>`                      |
+| `yarn add <package>` | `bun add <package>`               |
 
 ## Notes
 
@@ -29,3 +33,5 @@ NEVER run `npm`, `npx`, `node`, or `yarn` in the terminal. Always use the Bun eq
 - To add dependencies: `bun add <package>` (dev: `bun add -d <package>`).
 - To remove dependencies: `bun remove <package>`.
 - The project lockfile is `bun.lock`; do not generate `package-lock.json` or `yarn.lock`.
+
+If you find a package-lock.json or yarn.lock file, you should ask to remove them (for double check and security reasons) and generate by using bun install the bun.lock file

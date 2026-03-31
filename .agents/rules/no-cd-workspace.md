@@ -1,9 +1,9 @@
 ---
-description: Avoid unnecessary cd to workspace root before shell commands
+description: Avoid unnecessary cd to workspace root before shell commands inside containers
 alwaysApply: true
 ---
 
-# No redundant cd to workspace root
+# No cd to workspace root
 
 The shell already starts in the workspace root (`/workspaces/QualityTechnology-Frontend`). Do NOT prepend `cd /workspaces/QualityTechnology-Frontend &&` before commands.
 

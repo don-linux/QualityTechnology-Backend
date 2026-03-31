@@ -1,12 +1,14 @@
 ---
-description: "Generate git commits using gitmoji, in English, max 50 characters"
+description: "Generate descriptive commits using gitmoji, in English, max 50 characters"
 alwaysApply: true
 ---
 
+# Commit Style
+
 - When writing commits, ALWAYS write them in English
-- Use gitmoji nomenclature following the examples from https://gitmoji.dev/
+- Use gitmoji nomenclature following the examples from [gitmoji.dev](https://gitmoji.dev/)
 - Limit the commit message to 50 characters max, including the emoji
-- Use the format <gitmoji> <short imperative message>
+- Use the format "gitmoji" + "short imperative message"
 - If you need to provide more context, use the commit description (body) for that, but keep the title concise and focused on the main change
 
 ## Good examples
@@ -19,5 +21,11 @@ alwaysApply: true
 
 ## Bad examples
 
+- Adding new feature to X module
+- Fixing X file to Y module
+- Fixed
+- Fix
+- Commit message
 - Added new feature to improve performance (no gitmoji, not imperative)
-- Fixed bug causing crash on startup (not imperative)
+
+These are not good commit messages, because they are not descriptive enough, and don't follow the gitmoji nomenclature
