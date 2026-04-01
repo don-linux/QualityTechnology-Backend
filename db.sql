@@ -2914,4 +2914,12 @@ INSERT INTO rrhh.tipos_documento (fc_nombre, fb_obligatorio) VALUES
 ON CONFLICT DO NOTHING;
 
 --
+-- Synchronize identity sequences with seed data
+--
+
+SELECT setval('public.roles_fi_rol_id_seq1',
+              COALESCE((SELECT MAX(fi_rol_id) FROM public.roles), 0) + 1,
+              false);
+
+--
 -- PostgreSQL database dump complete
