@@ -41,6 +41,15 @@ class RefreshTokenModel {
     return result.rows[0] || null;
   }
 
+  static async revoke(token) {
+    await pool.query(
+      `UPDATE seguridad.refresh_tokens
+       SET fb_revocado = true
+       WHERE fc_token = $1`,
+      [token]
+    );
+  }
+
   static async revokeAllByUser(usuarioId) {
     await pool.query(
       `UPDATE seguridad.refresh_tokens SET fb_revocado = true WHERE fi_usuario_id = $1`,
