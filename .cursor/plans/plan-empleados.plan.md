@@ -1,9 +1,9 @@
 ---
 name: Empleados unificado definitivo
-overview: "Plan unificado desde cero: al crear un usuario se auto-crea su perfil de empleado. El empleado completa sus datos via Mi Perfil. Documentos reales reemplazan el checklist de expedientes. Vista admin para gestion, vista self-service para autocompletado. RBAC en rutas admin.\""
+overview: "Plan unificado desde cero: al crear un usuario se auto-crea su perfil de empleado. El empleado completa sus datos via Mi Perfil. Documentos reales reemplazan el checklist de expedientes. Vista admin para gestion, vista self-service para autocompletado. RBAC en rutas admin. Estado geografico como texto libre (sin catalogo). Empleados con fb_activo para activar/desactivar."
 todos:
   - id: fase1-db
-    content: "Fase 1: DB - eliminar expedientes, crear tablas nuevas, modificar empleados (nullable + columnas nuevas), seeds"
+    content: "Fase 1: DB - eliminar expedientes y catalogos.estados, crear tablas nuevas, modificar empleados (nullable + columnas nuevas incl. fb_activo y fc_estado), seeds"
     status: pending
   - id: fase2-catalogos
     content: "Fase 2: Backend - CRUD puestos y tipos_documento"
@@ -12,25 +12,25 @@ todos:
     content: "Fase 3: Backend - POST /usuarios auto-crea empleado (transaccion, check root)"
     status: pending
   - id: fase4-empleados-backend
-    content: "Fase 4: Backend - Empleados model/controller/routes + Mi Perfil + RBAC"
+    content: "Fase 4: Backend - Empleados model/controller/routes + Mi Perfil + RBAC + activate/deactivate"
     status: pending
   - id: fase5-documentos
     content: "Fase 5: Backend - Documentos upload/download con multer"
     status: pending
   - id: fase6-rutas-menu
-    content: "Fase 6: Frontend - App.jsx rutas + CorporateLayout menu"
+    content: "Fase 6: Frontend - App.jsx rutas + CorporateLayout menu (sin Estados)"
     status: pending
   - id: fase7-usuarios-form
     content: "Fase 7: Frontend - Expandir Usuarios.jsx con campos de empleado"
     status: pending
   - id: fase8-empleados-admin
-    content: "Fase 8: Frontend - Empleados.jsx solo gestion admin (sin crear)"
+    content: "Fase 8: Frontend - Empleados.jsx solo gestion admin (sin crear) + estado texto libre + toggle activo"
     status: pending
   - id: fase9-miperfil
-    content: "Fase 9: Frontend - MiPerfil.jsx + DocumentosEmpleado.jsx compartido"
+    content: "Fase 9: Frontend - MiPerfil.jsx + DocumentosEmpleado.jsx compartido (estado texto libre)"
     status: pending
   - id: fase10-limpieza
-    content: "Fase 10: Limpieza - eliminar expedientes backend/frontend + usuarios-disponibles"
+    content: "Fase 10: Limpieza - eliminar expedientes + estados backend/frontend + usuarios-disponibles + Bruno"
     status: pending
   - id: fase11-verificacion
     content: "Fase 11: Verificacion modulos, CORS, roles root"
@@ -67,6 +67,7 @@ flowchart LR
 - El empleado entra al sistema y completa su perfil: datos personales, direccion, documentos
 - El admin tiene una vista RRHH > Empleados para gestionar/editar, pero ya no crea empleados desde ahi
 - `public.expedientes` se elimina; los documentos se suben como archivos reales a `rrhh.documentos_empleado`
+- `catalogos.estados` se elimina; el estado geografico pasa a texto libre (`fc_estado`)
 - Rutas admin protegidas con `rbacMiddleware("/empleados")`
 
 ## Modelo de datos
@@ -99,9 +100,11 @@ flowchart LR
 ## Decisiones de diseno
 
 - `**fi_edad**`: NO almacenar. Se calcula desde `fd_fecha_nacimiento`.
+- `**fc_estado**`: texto libre (VARCHAR), no catalogo. Misma logica que `fc_ciudad`. Reemplaza `fi_estado_id`.
 - `**fc_ciudad**`: texto libre (VARCHAR), no catalogo.
 - `**fn_uniformes**`: entero en `rrhh.empleados`. Frontend: "Entregado" (1) / "Sin uniforme" (0).
-- **Campos nullable**: los campos que el empleado rellena (estado, ciudad, fecha nacimiento, direccion, CP) son nullable en la BD para permitir el auto-create con datos minimos.
+- `**fb_activo**`: booleano en `rrhh.empleados`, default `true`. Permite al admin desactivar empleados sin eliminarlos.
+- **Campos nullable**: los campos que el empleado rellena (fc_estado, ciudad, fecha nacimiento, direccion, CP) son nullable en la BD para permitir el auto-create con datos minimos.
 - **Archivos**: en `./uploads/expedientes/{empleado_id}/` via multer.
 - **No hay `db.sql` como migracion**: es dump de referencia. Todos los cambios se reflejan directamente ahi.
 
@@ -114,6 +117,8 @@ Todas las rutas de empleados y documentos usan `authMiddleware` (JWT obligatorio
 - `GET /documentos-empleado/mis-documentos` -- solo authMiddleware -- cualquier usuario logueado
 - `POST /documentos-empleado/mis-documentos/upload` -- solo authMiddleware -- cualquier usuario logueado
 - `GET/POST/PUT/DELETE /empleados/`* (admin) -- authMiddleware + `rbacMiddleware("/empleados")` -- solo roles con modulo Empleados
+- `PATCH /empleados/:id/deactivate` (admin) -- authMiddleware + `rbacMiddleware("/empleados")`
+- `PATCH /empleados/:id/activate` (admin) -- authMiddleware + `rbacMiddleware("/empleados")`
 - `GET/POST/DELETE /documentos-empleado/:id/`* (admin) -- authMiddleware + `rbacMiddleware("/empleados")` -- solo roles con modulo Empleados
 
 Esto se implementa en las fases 4 y 5 (rutas de empleados y documentos respectivamente).
@@ -167,11 +172,13 @@ CREATE TABLE rrhh.documentos_empleado (
 
 ### 1.3 Modificar `rrhh.empleados`
 
-Columnas nuevas: `fi_puesto_id`, `fc_genero`, `fd_fecha_contratacion`, `fn_uniformes`.
+Columnas nuevas: `fi_puesto_id`, `fc_genero`, `fd_fecha_contratacion`, `fn_uniformes`, `fb_activo BOOLEAN DEFAULT true`.
+
+Reemplazar `fi_estado_id` por `fc_estado VARCHAR(50)` (nullable, texto libre).
 
 Campos que pasan a **nullable** (el empleado los rellena via Mi Perfil):
 
-- `fi_estado_id` -- era NOT NULL
+- `fc_estado` -- reemplaza fi_estado_id, texto libre
 - `fc_ciudad` -- era NOT NULL
 - `fd_fecha_nacimiento` -- era NOT NULL
 - `fc_calle` -- era NOT NULL
@@ -182,9 +189,15 @@ Campos que se mantienen NOT NULL (admin los proporciona al crear):
 - `fc_nombre`, `fc_apellido_paterno`, `fc_apellido_materno`
 - `fi_departamento_id`
 
-FK constraint de `fi_estado_id` debe permitir NULL (ya lo permite con la FK, solo se quita el NOT NULL del campo).
+### 1.4 Eliminar `catalogos.estados`
 
-### 1.4 Seeds
+Borrar de db.sql:
+
+- `CREATE TABLE catalogos.estados`, secuencia, PK constraint, UNIQUE constraint
+- FK `empleados_fi_estado_id_fkey`
+- En seed de `seguridad.modulos`: cambiar "Catalogo Estados" a `fb_activo = false`
+
+### 1.5 Seeds
 
 - Puestos (semilla inicial, el admin puede agregar mas desde el sistema):
   - Director General
@@ -215,6 +228,7 @@ FK constraint de `fi_estado_id` debe permitir NULL (ya lo permite con la FK, sol
   - Codigo de Conducta (obligatorio)
   - Solicitud de Empleo (obligatorio)
 - Modulo "Expedientes" -> `fb_activo = false`
+- Modulo "Catalogo Estados" -> `fb_activo = false`
 - Agregar modulo "Puestos" con `fc_ruta = '/puestos'` al seed de `seguridad.modulos`
 
 ---
@@ -261,19 +275,24 @@ El metodo `create` ya retorna `RETURNING *` con `fi_usuario_id`. No cambia.
 
 ### 4.1 [empleadoModel.js](QualityTechnology-Backend/src/models/empleadoModel.js)
 
-- `getAll()`: JOINs a puestos, departamentos, estados, usuarios. Incluir todas las columnas nuevas.
-- `getById()`: igual con JOINs
+- `getAll()`: JOINs a puestos, departamentos, usuarios. Sin JOIN a catalogos.estados. Incluir `fc_estado` como texto y todas las columnas nuevas incluyendo `fb_activo`.
+- `getActivos()`: igual que getAll pero con `WHERE e.fb_activo = true`.
+- `getById()`: igual con JOINs (sin estados)
 - `getByUsuarioId()`: para Mi Perfil (busca por `fi_usuario_id`)
 - `create()`: solo `fc_nombre`, `fc_apellido_paterno`, `fc_apellido_materno`, `fi_departamento_id`, `fi_puesto_id`, `fi_usuario_id`. Resto nullable.
-- `update()`: admin puede cambiar todo (puesto, depto, uniformes, etc.)
-- `updatePersonalData()`: self-service, solo campos personales (nombre, apellidos, genero, fecha nacimiento, direccion, estado, ciudad, CP, referencias, comentarios)
-- `delete()`, `deactivate()`: sin cambios
+- `update()`: admin puede cambiar todo (puesto, depto, uniformes, fc_estado, etc.)
+- `updatePersonalData()`: self-service, solo campos personales (nombre, apellidos, genero, fecha nacimiento, direccion, fc_estado, ciudad, CP, referencias, comentarios)
+- `delete()`: sin cambios
+- `deactivate()`: `SET fb_activo = false` (patron de departamentoModel.js)
+- `activate()`: `SET fb_activo = true`
 
 ### 4.2 [empleadoController.js](QualityTechnology-Backend/src/controllers/empleadoController.js)
 
 - `create` validacion relajada: solo `fc_nombre`, `fc_apellido_paterno`, `fc_apellido_materno`, `fi_departamento_id` obligatorios
 - `getMiPerfil`: busca por `req.user.usuario_id`
 - `updateMiPerfil`: actualiza solo datos personales, validacion flexible (no exige campos que el empleado podria no haber llenado aun, solo nombre/apellidos obligatorios)
+- `deactivate`: handler para `PATCH /:id/deactivate`
+- `activate`: handler para `PATCH /:id/activate`
 
 ### 4.3 [empleadoRoutes.js](QualityTechnology-Backend/src/routes/empleadoRoutes.js)
 
@@ -289,6 +308,7 @@ Admin (auth + rbacMiddleware("/empleados")):
   PUT    /:id
   DELETE /:id
   PATCH  /:id/deactivate
+  PATCH  /:id/activate
 ```
 
 NO hay endpoint `GET /usuarios-disponibles` (vinculacion automatica).
@@ -323,28 +343,27 @@ Montar en `index.mjs`: `/documentos-empleado`
 
 ### [App.jsx](QualityTechnology-Frontend/src/App.jsx)
 
-- Imports: `Empleados`, `MiPerfil`, `Puestos` (lazy). Quitar `Expedientes`.
+- Imports: `Empleados`, `MiPerfil`, `Puestos` (lazy). Quitar `Expedientes` y `Estado`.
 - Ruta `/mi-perfil` en bloque protegido sin modulo (cualquier usuario autenticado)
 - Ruta `/empleados` en bloque `<PrivateRoute modulo="RRHH">`
 - Ruta `/puestos` en bloque `<PrivateRoute modulo="Catálogos">`
-- Quitar ruta `/expedientes`
+- Quitar rutas `/expedientes` y `/estados`
 
 ### [CorporateLayout.jsx](QualityTechnology-Frontend/src/layout/CorporateLayout.jsx)
 
 - "Mi Perfil" en zona general del menu (junto a Dashboard, visible para todos)
 - "Empleados" en seccion RRHH
-- "Puestos" en seccion CATALOGOS (junto a Usuarios, Roles, Estados)
-- Quitar "Expedientes"
+- "Puestos" en seccion CATALOGOS (junto a Usuarios, Roles)
+- Quitar "Expedientes" y "Estados"
 
 ### Nuevo componente: `Puestos.jsx`
 
-Pantalla CRUD para el catalogo de puestos, en la seccion Catalogos. Seguir el patron de [Estado.jsx](QualityTechnology-Frontend/src/components/Estado.jsx) (formulario + tabla):
+Pantalla CRUD para el catalogo de puestos, en la seccion Catalogos. Seguir el patron de un componente CRUD existente (formulario + tabla):
 
 - Formulario: nombre del puesto
 - Tabla: lista de puestos con nombre y estado (activo/inactivo)
 - Acciones: crear, editar, desactivar
 - Usa `GET /puestos`, `GET /puestos/activos`, `POST /puestos` del backend (ya existentes en Fase 2)
-- Agregar modulo "Puestos" con ruta `/puestos` al seed de `seguridad.modulos` en `db.sql`
 
 ---
 
@@ -374,7 +393,9 @@ Al crear, el formulario muestra campos adicionales si el rol seleccionado NO es 
 
 - **Sin boton de crear** -- los empleados se crean desde Usuarios
 - Tabla de empleados con indicador de "perfil incompleto" (si faltan fecha nacimiento, direccion, etc.)
-- Al seleccionar un empleado: formulario de edicion (admin puede cambiar puesto, departamento, uniformes, datos personales)
+- Indicador visual de activo/inactivo en la tabla
+- Boton/toggle para activar/desactivar empleado desde la vista admin (`PATCH /:id/deactivate`, `PATCH /:id/activate`)
+- Al seleccionar un empleado: formulario de edicion (admin puede cambiar puesto, departamento, uniformes, fc_estado como texto libre, datos personales)
 - Seccion de documentos del empleado seleccionado (componente `DocumentosEmpleado.jsx`)
 - Sin campo "vincular usuario" (vinculacion automatica)
 
@@ -386,7 +407,7 @@ Al crear, el formulario muestra campos adicionales si el rol seleccionado NO es 
 
 - Si no tiene perfil vinculado: alerta "Contacta al administrador"
 - Si tiene campos vacios: banner "Completa tu perfil"
-- **Datos Personales (editable)**: nombre, apellidos, genero, fecha nacimiento, calle, ciudad, **estado (select, editable)**, CP, referencias, comentarios
+- **Datos Personales (editable)**: nombre, apellidos, genero, fecha nacimiento, calle, ciudad, estado (texto libre), CP, referencias, comentarios
 - **Datos Laborales (solo lectura)**: puesto, departamento, fecha contratacion, uniformes
 - **Documentos (editable)**: componente `DocumentosEmpleado` en modo self-service
 
@@ -402,13 +423,23 @@ Componente compartido `DocumentosEmpleado.jsx` con props: `empleadoId` o `selfSe
 - Quitar import y `app.use("/expedientes")` de `index.mjs`
 - Quitar endpoint `GET /empleados/usuarios-disponibles` y su handler
 
-**Frontend** -- eliminar `Expedientes.jsx`
+**Backend** -- eliminar archivos de estados:
+
+- `src/models/catalogoEstadoModel.js`, `src/controllers/catalogoEstadoController.js`, `src/routes/catalogos/estado.js`
+- Quitar import y `app.use("/estados")` de `index.mjs`
+
+**Frontend** -- eliminar:
+
+- `Expedientes.jsx`
+- `Estado.jsx`
+
+**Bruno** -- eliminar coleccion de endpoints `/estados`
 
 ---
 
 ## Fase 11: Verificacion
 
-- `seguridad.modulos`: "Empleados" activo, "Expedientes" inactivo
+- `seguridad.modulos`: "Empleados" activo, "Expedientes" inactivo, "Catalogo Estados" inactivo
 - CORS incluye `PATCH`
 - Roles root NO generan empleado al crear usuario
 - `GET /roles` devuelve `fb_es_root` para que el frontend sepa cuando mostrar campos de empleado
