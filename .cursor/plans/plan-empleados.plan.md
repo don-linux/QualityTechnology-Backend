@@ -4,37 +4,37 @@ overview: "Plan unificado desde cero: al crear un usuario se auto-crea su perfil
 todos:
   - id: fase1-db
     content: "Fase 1: DB - eliminar expedientes y catalogos.estados, crear tablas nuevas, modificar empleados (nullable + columnas nuevas incl. fb_activo y fc_estado), seeds"
-    status: pending
+    status: completed
   - id: fase2-catalogos
     content: "Fase 2: Backend - Completar CRUD departamentos + CRUD puestos y tipos_documento"
-    status: pending
+    status: completed
   - id: fase3-autocreate
     content: "Fase 3: Backend - POST /usuarios auto-crea empleado (transaccion, check root)"
-    status: pending
+    status: completed
   - id: fase4-empleados-backend
     content: "Fase 4: Backend - Empleados model/controller/routes + Mi Perfil + RBAC + activate/deactivate"
-    status: pending
+    status: completed
   - id: fase5-documentos
     content: "Fase 5: Backend - Documentos upload/download con multer"
-    status: pending
+    status: completed
   - id: fase6-rutas-menu
     content: "Fase 6: Frontend - App.jsx rutas + CorporateLayout menu (sin Estados)"
-    status: pending
+    status: completed
   - id: fase7-usuarios-form
     content: "Fase 7: Frontend - Expandir Usuarios.jsx con campos de empleado"
-    status: pending
+    status: completed
   - id: fase8-empleados-admin
     content: "Fase 8: Frontend - Empleados.jsx solo gestion admin (sin crear) + estado texto libre + toggle activo"
-    status: pending
+    status: completed
   - id: fase9-miperfil
     content: "Fase 9: Frontend - MiPerfil.jsx + DocumentosEmpleado.jsx compartido (estado texto libre)"
-    status: pending
+    status: completed
   - id: fase10-limpieza
     content: "Fase 10: Limpieza - eliminar expedientes + estados backend/frontend + usuarios-disponibles + Bruno"
-    status: pending
+    status: completed
   - id: fase11-verificacion
     content: "Fase 11: Verificacion modulos, CORS, roles root"
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -63,7 +63,8 @@ flowchart LR
 
 
 
-- Al crear un usuario (que no sea rol root), el backend crea automaticamente un empleado vinculado con los datos basicos que el admin proporciona (nombre, apellidos, departamento, puesto)
+-   
+Al crear un usuario (que no sea rol root), el backend crea automaticamente un empleado vinculado con los datos basicos que el admin proporciona (nombre, apellidos, departamento, puesto)
 - El empleado entra al sistema y completa su perfil: datos personales, direccion, documentos
 - El admin tiene una vista RRHH > Empleados para gestionar/editar, pero ya no crea empleados desde ahi
 - `public.expedientes` se elimina; los documentos se suben como archivos reales a `rrhh.documentos_empleado`

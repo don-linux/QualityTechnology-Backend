@@ -6,13 +6,10 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-// Lista completa
 router.get("/", DepartamentoController.getAll);
-
-// Solo activos (para selects)
 router.get("/activos", DepartamentoController.getActivos);
-
-// Crear
 router.post("/", DepartamentoController.create);
+router.put("/:id", DepartamentoController.update);
+router.patch("/:id/deactivate", DepartamentoController.deactivate);
 
 export default router;

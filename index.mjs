@@ -30,7 +30,6 @@ import clienteRoutes from "./src/routes/clienteRoutes.js";
 import ventaRoutes from "./src/routes/ventaRoutes.js";
 import listaEsperaRoutes from "./src/routes/listaEsperaRoutes.js";
 import equipoRoutes from "./src/routes/equipoRoutes.js";
-import expedienteRoutes from "./src/routes/expedienteRoutes.js";
 import nominaRoutes from "./src/routes/nominaRoutes.js";
 import vacacionRoutes from "./src/routes/vacacionRoutes.js";
 import cajaAhorroRoutes from "./src/routes/cajaAhorroRoutes.js";
@@ -53,9 +52,11 @@ import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoute
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
 
 // rrhh
-import catalogoEstadoRoutes from "./src/routes/catalogos/estado.js";
 import departamentoRoutes from "./src/routes/departamentoRoutes.js";
+import puestoRoutes from "./src/routes/puestoRoutes.js";
 import empleadoRoutes from "./src/routes/empleadoRoutes.js";
+import tipoDocumentoRoutes from "./src/routes/tipoDocumentoRoutes.js";
+import documentoEmpleadoRoutes from "./src/routes/documentoEmpleadoRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -79,7 +80,7 @@ const allowedOrigins = process.env.FRONTEND_URL
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
 );
@@ -100,7 +101,6 @@ app.use("/ventas", ventaRoutes);
 app.use("/alimentos", alimentoRoutes);
 app.use("/lista-espera", listaEsperaRoutes);
 app.use("/equipos", equipoRoutes);
-app.use("/expedientes", expedienteRoutes);
 app.use("/nomina", nominaRoutes);
 app.use("/vacaciones", vacacionRoutes);
 app.use("/caja-ahorro", cajaAhorroRoutes);
@@ -125,9 +125,11 @@ app.use("/medellin/recambios", bitacoraRecambioRoutes);
 app.use("/medellin/inventario", bitacoraInventarioRoutes);
 
 // rrhh
-app.use("/estados", catalogoEstadoRoutes);
 app.use("/empleados", empleadoRoutes);
 app.use("/departamentos", departamentoRoutes);
+app.use("/puestos", puestoRoutes);
+app.use("/tipos-documento", tipoDocumentoRoutes);
+app.use("/documentos-empleado", documentoEmpleadoRoutes);
 
 //Seguridad - Roles y Módulos
 app.use("/modulos", modulosRoutes);
