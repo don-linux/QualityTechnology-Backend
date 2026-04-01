@@ -6,7 +6,7 @@ todos:
     content: "Fase 1: DB - eliminar expedientes y catalogos.estados, crear tablas nuevas, modificar empleados (nullable + columnas nuevas incl. fb_activo y fc_estado), seeds"
     status: pending
   - id: fase2-catalogos
-    content: "Fase 2: Backend - CRUD puestos y tipos_documento"
+    content: "Fase 2: Backend - Completar CRUD departamentos + CRUD puestos y tipos_documento"
     status: pending
   - id: fase3-autocreate
     content: "Fase 3: Backend - POST /usuarios auto-crea empleado (transaccion, check root)"
@@ -105,6 +105,7 @@ flowchart LR
 - `**fn_uniformes**`: entero en `rrhh.empleados`. Frontend: "Entregado" (1) / "Sin uniforme" (0).
 - `**fb_activo**`: booleano en `rrhh.empleados`, default `true`. Permite al admin desactivar empleados sin eliminarlos.
 - **Campos nullable**: los campos que el empleado rellena (fc_estado, ciudad, fecha nacimiento, direccion, CP) son nullable en la BD para permitir el auto-create con datos minimos.
+- `**fi_departamento_id`**: NOT NULL. El admin selecciona del catalogo via dropdown al crear usuario. Departamentos se administra como catalogo CRUD (igual que puestos).
 - **Archivos**: en `./uploads/expedientes/{empleado_id}/` via multer.
 - **No hay `db.sql` como migracion**: es dump de referencia. Todos los cambios se reflejan directamente ahi.
 
@@ -211,6 +212,15 @@ Borrar de db.sql:
   - Encargado de Taller
   - Auxiliar de Taller
   - Becario
+- Departamentos (semilla inicial, el admin puede agregar mas desde el sistema):
+  - Direccion General
+  - Administracion, Finanzas y RRHH
+  - Marketing
+  - Contabilidad
+  - Legal
+  - Laboratorio
+  - Bienestar Animal y Control de Patologias
+  - Taller
 - Tipos de documento (seed fijo, no administrable desde el sistema, solo modificable directamente en BD):
   - Credencial (obligatorio)
   - Fotografia (obligatorio)
@@ -233,7 +243,16 @@ Borrar de db.sql:
 
 ---
 
-## Fase 2: Backend - Catalogos (puestos + tipos_documento)
+## Fase 2: Backend - Catalogos (departamentos + puestos + tipos_documento)
+
+### Completar CRUD de departamentos
+
+El modelo [departamentoModel.js](QualityTechnology-Backend/src/models/departamentoModel.js) ya tiene todos los metodos (`getAll`, `getActivos`, `getById`, `create`, `update`, `deactivate`). Falta exponer `update` y `deactivate` en controller y rutas:
+
+- [departamentoController.js](QualityTechnology-Backend/src/controllers/departamentoController.js): agregar handlers `update` y `deactivate` (mismo patron que los existentes)
+- [departamentoRoutes.js](QualityTechnology-Backend/src/routes/departamentoRoutes.js): agregar `PUT /:id` -> `update` y `PATCH /:id/deactivate` -> `deactivate`
+
+### Crear puestos y tipos_documento
 
 Crear siguiendo patron de [departamentoModel.js](QualityTechnology-Backend/src/models/departamentoModel.js):
 
@@ -343,18 +362,29 @@ Montar en `index.mjs`: `/documentos-empleado`
 
 ### [App.jsx](QualityTechnology-Frontend/src/App.jsx)
 
-- Imports: `Empleados`, `MiPerfil`, `Puestos` (lazy). Quitar `Expedientes` y `Estado`.
+- Imports: `Empleados`, `MiPerfil`, `Puestos`, `Departamentos` (lazy). Quitar `Expedientes` y `Estado`.
 - Ruta `/mi-perfil` en bloque protegido sin modulo (cualquier usuario autenticado)
 - Ruta `/empleados` en bloque `<PrivateRoute modulo="RRHH">`
 - Ruta `/puestos` en bloque `<PrivateRoute modulo="Catálogos">`
+- Ruta `/departamentos` en bloque `<PrivateRoute modulo="Catálogos">`
 - Quitar rutas `/expedientes` y `/estados`
 
 ### [CorporateLayout.jsx](QualityTechnology-Frontend/src/layout/CorporateLayout.jsx)
 
 - "Mi Perfil" en zona general del menu (junto a Dashboard, visible para todos)
 - "Empleados" en seccion RRHH
-- "Puestos" en seccion CATALOGOS (junto a Usuarios, Roles)
+- "Departamentos" en seccion CATALOGOS (junto a Puestos, Usuarios, Roles)
+- "Puestos" en seccion CATALOGOS (junto a Departamentos, Usuarios, Roles)
 - Quitar "Expedientes" y "Estados"
+
+### Nuevo componente: `Departamentos.jsx`
+
+Pantalla CRUD para el catalogo de departamentos, en la seccion Catalogos. Mismo patron que `Puestos.jsx`:
+
+- Formulario: nombre del departamento
+- Tabla: lista de departamentos con nombre y estado (activo/inactivo)
+- Acciones: crear, editar, desactivar
+- Usa `GET /departamentos`, `GET /departamentos/activos`, `POST /departamentos`, `PUT /departamentos/:id`, `PATCH /departamentos/:id/deactivate`
 
 ### Nuevo componente: `Puestos.jsx`
 
@@ -363,7 +393,7 @@ Pantalla CRUD para el catalogo de puestos, en la seccion Catalogos. Seguir el pa
 - Formulario: nombre del puesto
 - Tabla: lista de puestos con nombre y estado (activo/inactivo)
 - Acciones: crear, editar, desactivar
-- Usa `GET /puestos`, `GET /puestos/activos`, `POST /puestos` del backend (ya existentes en Fase 2)
+- Usa `GET /puestos`, `GET /puestos/activos`, `POST /puestos`, `PUT /puestos/:id`, `PATCH /puestos/:id/deactivate`
 
 ---
 
