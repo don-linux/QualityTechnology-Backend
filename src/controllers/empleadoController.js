@@ -1,4 +1,6 @@
 import EmpleadoModel from "../models/empleadoModel.js";
+import UsuarioModel from "../models/usuarioModel.js";
+import RefreshTokenModel from "../models/refreshTokenModel.js";
 
 class EmpleadoController {
 
@@ -81,6 +83,12 @@ class EmpleadoController {
             if (!empleado) {
                 return res.status(404).json({ error: "Empleado no encontrado" });
             }
+
+            if (empleado.fi_usuario_id) {
+                await UsuarioModel.deactivate(empleado.fi_usuario_id);
+                await RefreshTokenModel.revokeAllByUser(empleado.fi_usuario_id);
+            }
+
             res.json({ mensaje: "Empleado desactivado correctamente", empleado });
         } catch (err) {
             console.error("Error al desactivar empleado:", err);
@@ -95,6 +103,11 @@ class EmpleadoController {
             if (!empleado) {
                 return res.status(404).json({ error: "Empleado no encontrado" });
             }
+
+            if (empleado.fi_usuario_id) {
+                await UsuarioModel.activate(empleado.fi_usuario_id);
+            }
+
             res.json({ mensaje: "Empleado activado correctamente", empleado });
         } catch (err) {
             console.error("Error al activar empleado:", err);

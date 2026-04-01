@@ -84,14 +84,32 @@ class UsuarioController {
         }
     }
 
-    static async delete(req, res) {
+    static async deactivate(req, res) {
         const { id } = req.params;
         try {
-            await usuarioModel.delete(id);
-            res.json({ mensaje: "Usuario eliminado correctamente" });
+            const usuario = await usuarioModel.deactivate(id);
+            if (!usuario) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+            await RefreshTokenModel.revokeAllByUser(id);
+            res.json({ mensaje: "Usuario desactivado correctamente", usuario });
         } catch (err) {
-            console.error("Error al eliminar usuario:", err);
-            res.status(500).json({ error: "Error al eliminar usuario" });
+            console.error("Error al desactivar usuario:", err);
+            res.status(500).json({ error: "Error al desactivar usuario" });
+        }
+    }
+
+    static async activate(req, res) {
+        const { id } = req.params;
+        try {
+            const usuario = await usuarioModel.activate(id);
+            if (!usuario) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+            res.json({ mensaje: "Usuario activado correctamente", usuario });
+        } catch (err) {
+            console.error("Error al activar usuario:", err);
+            res.status(500).json({ error: "Error al activar usuario" });
         }
     }
 
@@ -118,6 +136,11 @@ class UsuarioController {
             if (!passwordMatch) {
                 console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
                 return res.status(401).json({ error: "Credenciales inválidas" });
+            }
+
+            if (!usuario.fb_activo) {
+                console.warn(`[LOGIN] Cuenta deshabilitada: "${nombre}" — IP: ${req.ip}`);
+                return res.status(403).json({ error: "Cuenta deshabilitada. Contacte al administrador." });
             }
 
             const modulos = await RolesModulosModel.getModulosByRol(usuario.rol_id);

@@ -1641,7 +1641,8 @@ CREATE TABLE public.usuarios (
     fc_nombre character varying(100) NOT NULL,
     "fc_contraseña" character varying(255) NOT NULL,
     fi_rol_id integer NOT NULL,
-    fi_empresa_id integer
+    fi_empresa_id integer,
+    fb_activo boolean NOT NULL DEFAULT true
 );
 
 ALTER TABLE public.usuarios OWNER TO postgres;
@@ -2585,7 +2586,7 @@ ALTER TABLE ONLY public.caja_ahorro_movimientos
 --
 
 ALTER TABLE ONLY public.engorda
-    ADD CONSTRAINT engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE SET NULL;
+    ADD CONSTRAINT engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: equipos equipos_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
@@ -2655,14 +2656,14 @@ ALTER TABLE ONLY public.alimentos
 --
 
 ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_usuario_alimentos FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_usuario_alimentos FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: instalaciones instalaciones_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.instalaciones
-    ADD CONSTRAINT instalaciones_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE;
+    ADD CONSTRAINT instalaciones_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: lote_movimientos lote_movimientos_fi_lote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
@@ -2746,7 +2747,7 @@ ALTER TABLE ONLY rrhh.empleados
 --
 
 ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE SET NULL;
+    ADD CONSTRAINT empleados_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: documentos_empleado documentos_empleado_fi_empleado_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres

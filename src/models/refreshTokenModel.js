@@ -32,6 +32,7 @@ class RefreshTokenModel {
          AND rt.fc_token = $1
          AND rt.fb_revocado = false
          AND rt.fd_expiracion > NOW()
+         AND u.fb_activo = true
        RETURNING rt.fi_token_id, rt.fi_usuario_id, rt.fd_expiracion,
                  u.fc_nombre AS nombre, u.fi_rol_id AS rol_id,
                  r.fc_nombre AS rol_nombre`,
