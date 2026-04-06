@@ -15,7 +15,7 @@ class BitacoraBanoModel {
         await pool.query(
             `INSERT INTO banos
         (fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, fd_fecha_registro)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
+        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
             [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id]
         );
     }
