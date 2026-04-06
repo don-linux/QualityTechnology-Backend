@@ -1,6 +1,18 @@
 import pool from "../db.js";
 
 class BitacoraBanoModel {
+    static async getEmpleadosActivos() {
+        const result = await pool.query(`
+            SELECT
+                e.fi_empleado_id,
+                CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+            FROM rrhh.empleados e
+            WHERE e.fb_activo = true
+            ORDER BY fc_nombre_completo;
+        `);
+        return result.rows;
+    }
+
     static async getAll() {
         const result = await pool.query("SELECT * FROM banos ORDER BY fi_id DESC");
         return result.rows;
@@ -8,31 +20,31 @@ class BitacoraBanoModel {
 
     static async create(data) {
         const {
-            fc_mes, fc_dia, fc_banio_hombres, fc_banio_mujeres, fc_regadera,
-            fc_realizo, fc_firma, fc_observaciones, fi_usuario_id
+            fc_mes, fc_dia, fc_tipo_banio, fc_regadera,
+            fc_realizo, fc_observaciones, fi_usuario_id
         } = data;
 
         await pool.query(
             `INSERT INTO banos
-        (fc_mes, fc_dia, fc_banio_hombres, fc_banio_mujeres, fc_regadera, fc_realizo, fc_firma, fc_observaciones, fi_usuario_id, fd_fecha_registro)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())`,
-            [fc_mes, fc_dia, fc_banio_hombres, fc_banio_mujeres, fc_regadera, fc_realizo, fc_firma, fc_observaciones, fi_usuario_id]
+        (fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, fd_fecha_registro)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
+            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id]
         );
     }
 
     static async update(id, data) {
         const {
-            fc_mes, fc_dia, fc_banio_hombres, fc_banio_mujeres, fc_regadera,
-            fc_realizo, fc_firma, fc_observaciones
+            fc_mes, fc_dia, fc_tipo_banio, fc_regadera,
+            fc_realizo, fc_observaciones
         } = data;
 
         await pool.query(
             `UPDATE banos SET
-      fc_mes=$1, fc_dia=$2, fc_banio_hombres=$3, fc_banio_mujeres=$4,
-      fc_regadera=$5, fc_realizo=$6, fc_firma=$7, fc_observaciones=$8,
+      fc_mes=$1, fc_dia=$2, fc_tipo_banio=$3,
+      fc_regadera=$4, fc_realizo=$5, fc_observaciones=$6,
       fd_fecha_modificacion=NOW()
-      WHERE fi_id=$9`,
-            [fc_mes, fc_dia, fc_banio_hombres, fc_banio_mujeres, fc_regadera, fc_realizo, fc_firma, fc_observaciones, id]
+      WHERE fi_id=$7`,
+            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, id]
         );
     }
 

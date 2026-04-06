@@ -22,4 +22,4 @@ Guidance for coding agents working in this repository.
 - Architecture and module boundaries: `docs/ARCHITECTURE.md`
 - Coding, SQL, and API conventions: `docs/CONVENTIONS.md`
 - Verified local and Docker commands: `docs/COMMANDS.md`
-- Legacy database reset notes: `docs/bd_info.MD`
+- Legacy database reset notes: `docs/bd_restoration.md`

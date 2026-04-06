@@ -3395,6 +3395,15 @@ paths:
         '201':
           description: "Creado"
 
+  /medellin/banos/empleados:
+    get:
+      summary: "Listar empleados activos para bitácora de baños"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+
   /medellin/parametros:
     get:
       summary: "Listar parámetros (Medellín)"

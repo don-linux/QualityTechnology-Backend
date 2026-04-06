@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE BAÑOS
 ========================================================= */
+router.get("/empleados", bitacoraBanoController.getEmpleados);
 router.get("/", bitacoraBanoController.getAll);
 router.post("/", bitacoraBanoController.create);
 router.put("/:id", bitacoraBanoController.update);

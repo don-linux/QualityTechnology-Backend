@@ -2,12 +2,12 @@
 
 ### Comandos para arrancar el proyecto
 
-- `npm install`
+- `bun install`
 	- **Sirve para:** instalar dependencias (primera vez o cuando cambie `package.json`).
-- `npm run dev`
-	- **Sirve para:** desarrollo local con recarga automática (`nodemon`).
-- `npm start`
-	- **Sirve para:** ejecución tipo producción (sin recarga automática, con `node`).
+- `bun run dev`
+	- **Sirve para:** desarrollo local con recarga automática.
+- `bun run start`
+	- **Sirve para:** ejecución tipo producción (sin recarga automática).
 
 ### Puertos esperados
 
