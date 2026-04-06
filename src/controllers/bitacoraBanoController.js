@@ -10,6 +10,15 @@ const normalizarTipoBanio = (value = "") => {
 };
 
 class BitacoraBanoController {
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraBanoModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const result = await bitacoraBanoModel.getAll();
