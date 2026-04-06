@@ -34,7 +34,7 @@ class OrigenModel {
             return result.rows;
 
         } catch (err) {
-            console.error("❌ Error en OrigenModel.getOrigen:", err);
+            console.error("Error en OrigenModel.getOrigen:", err);
             throw new Error("Error obteniendo piletas disponibles como origen");
         }
     }
@@ -56,7 +56,7 @@ class OrigenModel {
 
             return result.rows;
         } catch (err) {
-            console.error("❌ Error en OrigenModel.getDestino:", err);
+            console.error("Error en OrigenModel.getDestino:", err);
             throw new Error("Error obteniendo instalaciones disponibles para destino");
         }
     }

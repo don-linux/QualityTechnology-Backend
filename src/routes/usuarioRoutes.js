@@ -35,6 +35,7 @@ router.use(rbacMiddleware("/usuarios"));
 router.get("/", usuarioController.getAll);
 router.post("/", usuarioController.create);
 router.put("/:id", usuarioController.update);
-router.delete("/:id", usuarioController.delete);
+router.patch("/:id/deactivate", usuarioController.deactivate);
+router.patch("/:id/activate", usuarioController.activate);
 
 export default router;

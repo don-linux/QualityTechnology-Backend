@@ -1,37 +1,23 @@
 import express from "express";
 import EmpleadoController from "../controllers/empleadoController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import rbacMiddleware from "../middleware/rbacMiddleware.js";
 
 const router = express.Router();
 
-/* ======================================================
-   RUTAS PÚBLICAS
-   ====================================================== */
-/* (Por ahora ninguna pública, todo RRHH debería ser protegido) */
-
-
-/* ======================================================
-   RUTAS PROTEGIDAS (Requieren Token)
-   ====================================================== */
-
 router.use(authMiddleware);
 
-// Obtener todos
-router.get("/", EmpleadoController.getAll);
+// Self-service (cualquier usuario logueado)
+router.get("/mi-perfil", EmpleadoController.getMiPerfil);
+router.put("/mi-perfil", EmpleadoController.updateMiPerfil);
 
-// Obtener por ID
-router.get("/:id", EmpleadoController.getById);
-
-// Crear empleado
-router.post("/", EmpleadoController.create);
-
-// Actualizar empleado
-router.put("/:id", EmpleadoController.update);
-
-// Eliminar físico
-router.delete("/:id", EmpleadoController.delete);
-
-// Baja lógica
-router.patch("/:id/deactivate", EmpleadoController.deactivate);
+// Admin (requiere modulo Empleados)
+router.get("/", rbacMiddleware("/empleados"), EmpleadoController.getAll);
+router.get("/:id", rbacMiddleware("/empleados"), EmpleadoController.getById);
+router.post("/", rbacMiddleware("/empleados"), EmpleadoController.create);
+router.put("/:id", rbacMiddleware("/empleados"), EmpleadoController.update);
+router.delete("/:id", rbacMiddleware("/empleados"), EmpleadoController.delete);
+router.patch("/:id/deactivate", rbacMiddleware("/empleados"), EmpleadoController.deactivate);
+router.patch("/:id/activate", rbacMiddleware("/empleados"), EmpleadoController.activate);
 
 export default router;

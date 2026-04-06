@@ -140,30 +140,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: estados; Type: TABLE; Schema: catalogos; Owner: postgres
---
-
-CREATE TABLE catalogos.estados (
-    fi_estado_id integer NOT NULL,
-    fc_nombre character varying(50) NOT NULL
-);
-
-ALTER TABLE catalogos.estados OWNER TO postgres;
-
---
--- Name: estados_fi_estado_id_seq; Type: SEQUENCE; Schema: catalogos; Owner: postgres
---
-
-ALTER TABLE catalogos.estados ALTER COLUMN fi_estado_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME catalogos.estados_fi_estado_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
---
 -- Name: alimentacion; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -745,56 +721,6 @@ ALTER SEQUENCE public.equipos_fi_equipo_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.equipos_fi_equipo_id_seq OWNED BY public.equipos.fi_equipo_id;
-
---
--- Name: expedientes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.expedientes (
-    fi_expediente_id integer NOT NULL,
-    fc_nombre character varying(255) NOT NULL,
-    fc_id_empleado character varying(50),
-    fn_uniformes integer DEFAULT 0,
-    fc_credencial character varying(15) DEFAULT 'NO'::character varying,
-    fc_fotografia character varying(15) DEFAULT 'NO'::character varying,
-    fc_acta_nacimiento character varying(15) DEFAULT 'NO'::character varying,
-    fc_ine character varying(15) DEFAULT 'NO'::character varying,
-    fc_licencia_conducir character varying(15) DEFAULT 'NO'::character varying,
-    fc_comprobante_domicilio character varying(15) DEFAULT 'NO'::character varying,
-    fc_rfc character varying(15) DEFAULT 'NO'::character varying,
-    fc_curp character varying(15) DEFAULT 'NO'::character varying,
-    fc_comprobante_estudios character varying(15) DEFAULT 'NO'::character varying,
-    fc_cv character varying(15) DEFAULT 'NO'::character varying,
-    fc_carta_recomendacion character varying(15) DEFAULT 'NO'::character varying,
-    fc_acuerdo_confidencialidad character varying(15) DEFAULT 'NO'::character varying,
-    fc_codigo_etica character varying(15) DEFAULT 'NO'::character varying,
-    fc_codigo_conducta character varying(15) DEFAULT 'NO'::character varying,
-    fc_solicitud_empleo character varying(15) DEFAULT 'NO'::character varying,
-    fd_fecha_actualizacion date DEFAULT CURRENT_DATE,
-    fi_usuario_id integer,
-    fc_puesto character varying(50)
-);
-
-ALTER TABLE public.expedientes OWNER TO postgres;
-
---
--- Name: expedientes_fi_expediente_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.expedientes_fi_expediente_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.expedientes_fi_expediente_id_seq OWNER TO postgres;
-
---
--- Name: expedientes_fi_expediente_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.expedientes_fi_expediente_id_seq OWNED BY public.expedientes.fi_expediente_id;
 
 --
 -- Name: flujo_caja; Type: TABLE; Schema: public; Owner: postgres
@@ -1715,7 +1641,8 @@ CREATE TABLE public.usuarios (
     fc_nombre character varying(100) NOT NULL,
     "fc_contraseña" character varying(255) NOT NULL,
     fi_rol_id integer NOT NULL,
-    fi_empresa_id integer
+    fi_empresa_id integer,
+    fb_activo boolean NOT NULL DEFAULT true
 );
 
 ALTER TABLE public.usuarios OWNER TO postgres;
@@ -1884,6 +1811,49 @@ CREATE VIEW public.vw_tesoreria_overview AS
 ALTER VIEW public.vw_tesoreria_overview OWNER TO postgres;
 
 --
+-- Name: puestos; Type: TABLE; Schema: rrhh; Owner: postgres
+--
+
+CREATE TABLE rrhh.puestos (
+    fi_puesto_id integer NOT NULL,
+    fc_nombre character varying(120) NOT NULL,
+    fb_activo boolean DEFAULT true
+);
+
+ALTER TABLE rrhh.puestos OWNER TO postgres;
+
+ALTER TABLE rrhh.puestos ALTER COLUMN fi_puesto_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME rrhh.puestos_fi_puesto_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+--
+-- Name: tipos_documento; Type: TABLE; Schema: rrhh; Owner: postgres
+--
+
+CREATE TABLE rrhh.tipos_documento (
+    fi_tipo_documento_id integer NOT NULL,
+    fc_nombre character varying(80) NOT NULL,
+    fb_obligatorio boolean DEFAULT false,
+    fb_activo boolean DEFAULT true
+);
+
+ALTER TABLE rrhh.tipos_documento OWNER TO postgres;
+
+ALTER TABLE rrhh.tipos_documento ALTER COLUMN fi_tipo_documento_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME rrhh.tipos_documento_fi_tipo_documento_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+--
 -- Name: departamentos; Type: TABLE; Schema: rrhh; Owner: postgres
 --
 
@@ -1916,16 +1886,21 @@ CREATE TABLE rrhh.empleados (
     fi_empleado_id integer NOT NULL,
     fi_usuario_id integer,
     fi_departamento_id integer NOT NULL,
-    fi_estado_id integer NOT NULL,
-    fc_ciudad character varying(60) NOT NULL,
+    fi_puesto_id integer,
     fc_nombre character varying(60) NOT NULL,
     fc_apellido_paterno character varying(60) NOT NULL,
     fc_apellido_materno character varying(60) NOT NULL,
-    fd_fecha_nacimiento date NOT NULL,
-    fc_calle character varying(120) NOT NULL,
-    fc_codigo_postal character varying(10) NOT NULL,
+    fc_genero character varying(20),
+    fd_fecha_nacimiento date,
+    fc_estado character varying(50),
+    fc_ciudad character varying(60),
+    fc_calle character varying(120),
+    fc_codigo_postal character varying(10),
     fc_referencias character varying(255),
     ft_comentarios_adicionales text,
+    fd_fecha_contratacion date,
+    fn_uniformes integer DEFAULT 0,
+    fb_activo boolean DEFAULT true,
     fd_fecha_alta date DEFAULT CURRENT_DATE
 );
 
@@ -1937,6 +1912,30 @@ ALTER TABLE rrhh.empleados OWNER TO postgres;
 
 ALTER TABLE rrhh.empleados ALTER COLUMN fi_empleado_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME rrhh.empleados_fi_empleado_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+--
+-- Name: documentos_empleado; Type: TABLE; Schema: rrhh; Owner: postgres
+--
+
+CREATE TABLE rrhh.documentos_empleado (
+    fi_documento_id integer NOT NULL,
+    fi_empleado_id integer NOT NULL,
+    fi_tipo_documento_id integer NOT NULL,
+    fc_ruta_archivo character varying(500) NOT NULL,
+    fc_nombre_original character varying(255) NOT NULL,
+    fd_fecha_carga date DEFAULT CURRENT_DATE
+);
+
+ALTER TABLE rrhh.documentos_empleado OWNER TO postgres;
+
+ALTER TABLE rrhh.documentos_empleado ALTER COLUMN fi_documento_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME rrhh.documentos_empleado_fi_documento_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -2046,12 +2045,6 @@ ALTER TABLE ONLY public.engorda ALTER COLUMN fi_engorda_id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.equipos ALTER COLUMN fi_equipo_id SET DEFAULT nextval('public.equipos_fi_equipo_id_seq'::regclass);
-
---
--- Name: expedientes fi_expediente_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.expedientes ALTER COLUMN fi_expediente_id SET DEFAULT nextval('public.expedientes_fi_expediente_id_seq'::regclass);
 
 --
 -- Name: flujo_caja fi_movimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
@@ -2192,20 +2185,6 @@ ALTER TABLE ONLY public.ventas ALTER COLUMN fi_venta_id SET DEFAULT nextval('pub
 ALTER TABLE ONLY public.visitas ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_visitas_fi_id_seq'::regclass);
 
 --
--- Name: estados estados_fc_nombre_key; Type: CONSTRAINT; Schema: catalogos; Owner: postgres
---
-
-ALTER TABLE ONLY catalogos.estados
-    ADD CONSTRAINT estados_fc_nombre_key UNIQUE (fc_nombre);
-
---
--- Name: estados estados_pkey; Type: CONSTRAINT; Schema: catalogos; Owner: postgres
---
-
-ALTER TABLE ONLY catalogos.estados
-    ADD CONSTRAINT estados_pkey PRIMARY KEY (fi_estado_id);
-
---
 -- Name: alimentos alimentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2302,13 +2281,6 @@ ALTER TABLE ONLY public.engorda
 
 ALTER TABLE ONLY public.equipos
     ADD CONSTRAINT equipos_pkey PRIMARY KEY (fi_equipo_id);
-
---
--- Name: expedientes expedientes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.expedientes
-    ADD CONSTRAINT expedientes_pkey PRIMARY KEY (fi_expediente_id);
 
 --
 -- Name: flujo_caja flujo_caja_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -2507,6 +2479,34 @@ ALTER TABLE ONLY public.ventas
     ADD CONSTRAINT ventas_pkey PRIMARY KEY (fi_venta_id);
 
 --
+-- Name: puestos puestos_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.puestos
+    ADD CONSTRAINT puestos_pkey PRIMARY KEY (fi_puesto_id);
+
+--
+-- Name: tipos_documento tipos_documento_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.tipos_documento
+    ADD CONSTRAINT tipos_documento_pkey PRIMARY KEY (fi_tipo_documento_id);
+
+--
+-- Name: documentos_empleado documentos_empleado_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.documentos_empleado
+    ADD CONSTRAINT documentos_empleado_pkey PRIMARY KEY (fi_documento_id);
+
+--
+-- Name: documentos_empleado documentos_empleado_unique; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.documentos_empleado
+    ADD CONSTRAINT documentos_empleado_unique UNIQUE (fi_empleado_id, fi_tipo_documento_id);
+
+--
 -- Name: departamentos departamentos_fc_nombre_key; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
 --
 
@@ -2569,12 +2569,6 @@ ALTER TABLE ONLY seguridad.roles_modulos
 CREATE INDEX fki_fi_rol_id ON public.usuarios USING btree (fi_rol_id);
 
 --
--- Name: idx_expedientes_nombre; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_expedientes_nombre ON public.expedientes USING btree (fc_nombre);
-
---
 -- Name: unico_root; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2592,7 +2586,7 @@ ALTER TABLE ONLY public.caja_ahorro_movimientos
 --
 
 ALTER TABLE ONLY public.engorda
-    ADD CONSTRAINT engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE SET NULL;
+    ADD CONSTRAINT engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: equipos equipos_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
@@ -2662,14 +2656,14 @@ ALTER TABLE ONLY public.alimentos
 --
 
 ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_usuario_alimentos FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_usuario_alimentos FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: instalaciones instalaciones_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.instalaciones
-    ADD CONSTRAINT instalaciones_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE;
+    ADD CONSTRAINT instalaciones_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
 
 --
 -- Name: lote_movimientos lote_movimientos_fi_lote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
@@ -2742,18 +2736,32 @@ ALTER TABLE ONLY rrhh.empleados
     ADD CONSTRAINT empleados_fi_departamento_id_fkey FOREIGN KEY (fi_departamento_id) REFERENCES rrhh.departamentos(fi_departamento_id) ON DELETE RESTRICT;
 
 --
--- Name: empleados empleados_fi_estado_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
+-- Name: empleados empleados_fi_puesto_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
 --
 
 ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_estado_id_fkey FOREIGN KEY (fi_estado_id) REFERENCES catalogos.estados(fi_estado_id) ON DELETE RESTRICT;
+    ADD CONSTRAINT empleados_fi_puesto_id_fkey FOREIGN KEY (fi_puesto_id) REFERENCES rrhh.puestos(fi_puesto_id) ON DELETE RESTRICT;
 
 --
 -- Name: empleados empleados_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
 --
 
 ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE SET NULL;
+    ADD CONSTRAINT empleados_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
+
+--
+-- Name: documentos_empleado documentos_empleado_fi_empleado_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.documentos_empleado
+    ADD CONSTRAINT documentos_empleado_fi_empleado_id_fkey FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados(fi_empleado_id) ON DELETE CASCADE;
+
+--
+-- Name: documentos_empleado documentos_empleado_fi_tipo_documento_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
+--
+
+ALTER TABLE ONLY rrhh.documentos_empleado
+    ADD CONSTRAINT documentos_empleado_fi_tipo_documento_id_fkey FOREIGN KEY (fi_tipo_documento_id) REFERENCES rrhh.tipos_documento(fi_tipo_documento_id);
 
 --
 -- Name: roles_modulos roles_modulos_fi_modulo_id_fkey; Type: FK CONSTRAINT; Schema: seguridad; Owner: postgres
@@ -2805,7 +2813,6 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
     ('Alimentos', '/alimentos', true),
     ('Lista de Espera', '/lista-espera', true),
     ('Equipos', '/equipos', true),
-    ('Expedientes', '/expedientes', true),
     ('Nomina', '/nomina', true),
     ('Vacaciones', '/vacaciones', true),
     ('Caja de Ahorro', '/caja-ahorro', true),
@@ -2824,7 +2831,9 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
     ('Medicamentos Medellin', '/medellin/medicamentos', true),
     ('Recambios Medellin', '/medellin/recambios', true),
     ('Inventario Medellin', '/medellin/inventario', true),
-    ('Catalogo Estados', '/estados', true),
+    ('Catalogo Estados', '/estados', false),
+    ('Expedientes', '/expedientes', false),
+    ('Puestos', '/puestos', true),
     ('Empleados', '/empleados', true),
     ('Departamentos', '/departamentos', true),
     ('Modulos', '/modulos', true),
@@ -2857,6 +2866,60 @@ CREATE TABLE IF NOT EXISTS seguridad.refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON seguridad.refresh_tokens (fc_token) WHERE fb_revocado = false;
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_usuario ON seguridad.refresh_tokens (fi_usuario_id);
+
+-- Seed: puestos
+INSERT INTO rrhh.puestos (fc_nombre) VALUES
+    ('Director General'),
+    ('Director de Administracion, Finanzas y RRHH'),
+    ('Encargado de Marketing'),
+    ('Encargado de Contabilidad'),
+    ('Encargado Legal'),
+    ('Encargado de Laboratorio'),
+    ('Encargado de Bienestar Animal y Control de Patologias'),
+    ('Auxiliar de Laboratorio'),
+    ('Encargado de Taller'),
+    ('Auxiliar de Taller'),
+    ('Becario')
+ON CONFLICT DO NOTHING;
+
+-- Seed: departamentos
+INSERT INTO rrhh.departamentos (fc_nombre) VALUES
+    ('Direccion General'),
+    ('Administracion, Finanzas y RRHH'),
+    ('Marketing'),
+    ('Contabilidad'),
+    ('Legal'),
+    ('Laboratorio'),
+    ('Bienestar Animal y Control de Patologias'),
+    ('Taller')
+ON CONFLICT (fc_nombre) DO NOTHING;
+
+-- Seed: tipos_documento
+INSERT INTO rrhh.tipos_documento (fc_nombre, fb_obligatorio) VALUES
+    ('Credencial', true),
+    ('Fotografia', true),
+    ('Acta de Nacimiento', true),
+    ('INE', true),
+    ('Licencia de Conducir', false),
+    ('Comprobante de Domicilio', true),
+    ('RFC', true),
+    ('CURP', true),
+    ('Comprobante de Estudios', false),
+    ('CV', false),
+    ('Carta de Recomendacion', false),
+    ('Acuerdo de Confidencialidad', true),
+    ('Codigo de Etica', true),
+    ('Codigo de Conducta', true),
+    ('Solicitud de Empleo', true)
+ON CONFLICT DO NOTHING;
+
+--
+-- Synchronize identity sequences with seed data
+--
+
+SELECT setval('public.roles_fi_rol_id_seq1',
+              COALESCE((SELECT MAX(fi_rol_id) FROM public.roles), 0) + 1,
+              false);
 
 --
 -- PostgreSQL database dump complete

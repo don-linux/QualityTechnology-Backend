@@ -4,14 +4,14 @@ import bcrypt from "bcryptjs";
 class UsuarioModel {
     static async getAll() {
         const result = await pool.query(
-            `SELECT fi_usuario_id, fc_nombre, fi_rol_id FROM usuarios`
+            `SELECT fi_usuario_id, fc_nombre, fi_rol_id, fb_activo FROM usuarios`
         );
         return result.rows;
     }
 
     static async getById(id) {
         const result = await pool.query(
-            `SELECT fi_usuario_id, fc_nombre, fi_rol_id FROM usuarios WHERE fi_usuario_id = $1`,
+            `SELECT fi_usuario_id, fc_nombre, fi_rol_id, fb_activo FROM usuarios WHERE fi_usuario_id = $1`,
             [id]
         );
         return result.rows[0];
@@ -25,6 +25,7 @@ class UsuarioModel {
         u.fc_nombre AS nombre,
         u."fc_contraseña" AS contrasena,
         u.fi_rol_id AS rol_id,
+        u.fb_activo,
         r.fc_nombre AS rol_nombre
       FROM usuarios u
       JOIN roles r ON u.fi_rol_id = r.fi_rol_id
@@ -56,9 +57,20 @@ class UsuarioModel {
         return result.rows[0];
     }
 
-    static async delete(id) {
-        await pool.query("DELETE FROM usuarios WHERE fi_usuario_id = $1", [id]);
-        return true;
+    static async deactivate(id) {
+        const result = await pool.query(
+            `UPDATE usuarios SET fb_activo = false WHERE fi_usuario_id = $1 RETURNING *`,
+            [id]
+        );
+        return result.rows[0];
+    }
+
+    static async activate(id) {
+        const result = await pool.query(
+            `UPDATE usuarios SET fb_activo = true WHERE fi_usuario_id = $1 RETURNING *`,
+            [id]
+        );
+        return result.rows[0];
     }
 
     static async verifyPassword(rawPassword, hashedPassword) {

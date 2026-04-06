@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import usuarioModel from "../models/usuarioModel.js";
 import RolesModulosModel from "../models/RolesModulosModel.js";
 import RefreshTokenModel from "../models/refreshTokenModel.js";
+import pool from "../db.js";
+import bcrypt from "bcryptjs";
 
 class UsuarioController {
     static async getAll(req, res) {
@@ -15,16 +17,58 @@ class UsuarioController {
     }
 
     static async create(req, res) {
-        const { nombre, contraseña, rol_id } = req.body;
+        const {
+            nombre, contraseña, rol_id,
+            fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno,
+            fi_departamento_id, fi_puesto_id
+        } = req.body;
+
         if (!nombre || !contraseña || !rol_id) {
             return res.status(400).json({ error: "Faltan datos obligatorios (nombre, contraseña, rol_id)" });
         }
+
+        const client = await pool.connect();
         try {
-            await usuarioModel.create({ nombre, contraseña, rol_id });
+            await client.query("BEGIN");
+
+            const hashedPassword = await bcrypt.hash(contraseña, 10);
+            const userResult = await client.query(
+                `INSERT INTO usuarios (fc_nombre, "fc_contraseña", fi_rol_id)
+                 VALUES ($1, $2, $3) RETURNING *`,
+                [nombre, hashedPassword, rol_id]
+            );
+            const nuevoUsuario = userResult.rows[0];
+
+            const rolResult = await client.query(
+                `SELECT fb_es_root FROM roles WHERE fi_rol_id = $1`,
+                [rol_id]
+            );
+            const esRoot = rolResult.rows[0]?.fb_es_root;
+
+            if (!esRoot) {
+                if (!fc_nombre_empleado || !fc_apellido_paterno || !fc_apellido_materno || !fi_departamento_id) {
+                    await client.query("ROLLBACK");
+                    return res.status(400).json({
+                        error: "Para roles no-root se requiere: fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id"
+                    });
+                }
+
+                await client.query(
+                    `INSERT INTO rrhh.empleados
+                        (fi_usuario_id, fc_nombre, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id)
+                     VALUES ($1, $2, $3, $4, $5, $6)`,
+                    [nuevoUsuario.fi_usuario_id, fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id || null]
+                );
+            }
+
+            await client.query("COMMIT");
             res.status(201).json({ mensaje: "Usuario creado exitosamente" });
         } catch (err) {
+            await client.query("ROLLBACK");
             console.error("Error al crear usuario:", err);
             res.status(500).json({ error: "Error al crear usuario" });
+        } finally {
+            client.release();
         }
     }
 
@@ -40,14 +84,32 @@ class UsuarioController {
         }
     }
 
-    static async delete(req, res) {
+    static async deactivate(req, res) {
         const { id } = req.params;
         try {
-            await usuarioModel.delete(id);
-            res.json({ mensaje: "Usuario eliminado correctamente" });
+            const usuario = await usuarioModel.deactivate(id);
+            if (!usuario) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+            await RefreshTokenModel.revokeAllByUser(id);
+            res.json({ mensaje: "Usuario desactivado correctamente", usuario });
         } catch (err) {
-            console.error("Error al eliminar usuario:", err);
-            res.status(500).json({ error: "Error al eliminar usuario" });
+            console.error("Error al desactivar usuario:", err);
+            res.status(500).json({ error: "Error al desactivar usuario" });
+        }
+    }
+
+    static async activate(req, res) {
+        const { id } = req.params;
+        try {
+            const usuario = await usuarioModel.activate(id);
+            if (!usuario) {
+                return res.status(404).json({ error: "Usuario no encontrado" });
+            }
+            res.json({ mensaje: "Usuario activado correctamente", usuario });
+        } catch (err) {
+            console.error("Error al activar usuario:", err);
+            res.status(500).json({ error: "Error al activar usuario" });
         }
     }
 
@@ -74,6 +136,11 @@ class UsuarioController {
             if (!passwordMatch) {
                 console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
                 return res.status(401).json({ error: "Credenciales inválidas" });
+            }
+
+            if (!usuario.fb_activo) {
+                console.warn(`[LOGIN] Cuenta deshabilitada: "${nombre}" — IP: ${req.ip}`);
+                return res.status(403).json({ error: "Cuenta deshabilitada. Contacte al administrador." });
             }
 
             const modulos = await RolesModulosModel.getModulosByRol(usuario.rol_id);
