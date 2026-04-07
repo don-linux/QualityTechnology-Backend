@@ -5,12 +5,11 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
-COPY index.mjs swagger.yaml ./
+COPY index.mjs ./
 COPY src ./src
 
-RUN mkdir -p uploads uploads/expedientes uploads/facturas
-
-RUN chown -R bun:bun /app
+RUN mkdir -p uploads uploads/expedientes uploads/facturas \
+  && chown -R bun:bun /app
 
 USER bun
 

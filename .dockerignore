@@ -5,6 +5,10 @@
 .vscode/
 .venv/
 node_modules/
+.env
+docker/dev/.env
+docker/prod/.env
+uploads/
 bruno/
 docs/
 .agents/

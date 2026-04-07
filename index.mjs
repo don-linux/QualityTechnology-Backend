@@ -8,16 +8,6 @@ import { parse } from "yaml";
 
 // Importar rutas
 
-// Swagger setup
-let swaggerDocument;
-try {
-  const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
-  swaggerDocument = parse(swaggerFile);
-} catch (error) {
-  console.error("Error loading or parsing './swagger.yaml'. Please ensure the file exists and contains valid YAML.\nDetails:", error.message);
-  process.exit(1);
-}
-
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
 import piletaRoutes from "./src/routes/piletaRoutes.js";
@@ -69,6 +59,19 @@ app.use(helmet());
 
 // Documentación Swagger (solo en desarrollo)
 if (process.env.NODE_ENV !== "production") {
+  let swaggerDocument;
+
+  try {
+    const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
+    swaggerDocument = parse(swaggerFile);
+  } catch (error) {
+    console.error(
+      "Error loading or parsing './swagger.yaml'. Please ensure the file exists and contains valid YAML.\nDetails:",
+      error.message
+    );
+    process.exit(1);
+  }
+
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 }
 
