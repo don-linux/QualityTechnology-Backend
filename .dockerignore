@@ -5,6 +5,12 @@
 .vscode/
 .venv/
 node_modules/
+bruno/
+docs/
+.agents/
+.github/
+.cursor/
+.claude
 .env.example
 *.log
 *.tmp

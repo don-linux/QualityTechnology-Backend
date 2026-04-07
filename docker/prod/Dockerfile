@@ -1,11 +1,21 @@
 FROM oven/bun:1.3.11-alpine
 
-RUN apk add --no-cache openssh-client
-
 WORKDIR /app
 
-RUN chown bun:bun /app
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+COPY index.mjs swagger.yaml ./
+COPY src ./src
+
+RUN mkdir -p uploads uploads/expedientes uploads/facturas
+
+RUN chown -R bun:bun /app
 
 USER bun
 
-CMD ["sleep", "infinity"]
+EXPOSE 5000
+
+ENV NODE_ENV=production
+
+CMD ["bun", "run", "start"]
