@@ -19,6 +19,14 @@ class BitacoraPlagaController {
                 return res.status(401).json({ error: "Token inválido o sin usuario asociado" });
             }
 
+            const { fc_hallazgo, fc_observaciones } = req.body;
+            if (fc_hallazgo && fc_hallazgo.length > 500) {
+                return res.status(400).json({ error: "El campo hallazgo no puede superar los 500 caracteres." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "El campo observaciones no puede superar los 500 caracteres." });
+            }
+
             // Evitar suplantación: fi_usuario_id siempre viene del token.
             const { fi_usuario_id, ...payload } = req.body;
             const data = { ...payload, fi_usuario_id: usuarioId };
@@ -32,6 +40,14 @@ class BitacoraPlagaController {
 
     static async update(req, res) {
         try {
+            const { fc_hallazgo, fc_observaciones } = req.body;
+            if (fc_hallazgo && fc_hallazgo.length > 500) {
+                return res.status(400).json({ error: "El campo hallazgo no puede superar los 500 caracteres." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "El campo observaciones no puede superar los 500 caracteres." });
+            }
+
             await bitacoraPlagaModel.update(req.params.id, req.body);
             res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
