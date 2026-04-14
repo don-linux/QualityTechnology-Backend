@@ -14,7 +14,17 @@ class RecepcionInsumoController {
 
     static async create(req, res) {
         try {
-            const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
+            const { fc_cantidad, fc_observaciones } = req.body;
+
+            const cantidad = parseFloat(fc_cantidad);
+            if (fc_cantidad === undefined || fc_cantidad === "" || isNaN(cantidad) || cantidad < 0) {
+                return res.status(400).json({ error: "La cantidad debe ser un número positivo." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
+            }
+
+            const data = { ...req.body, fc_cantidad: cantidad, fi_usuario_id: req.user.usuario_id };
             await recepcionInsumoModel.create(data);
             res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
@@ -25,7 +35,17 @@ class RecepcionInsumoController {
 
     static async update(req, res) {
         try {
-            await recepcionInsumoModel.update(req.params.id, req.body);
+            const { fc_cantidad, fc_observaciones } = req.body;
+
+            const cantidad = parseFloat(fc_cantidad);
+            if (fc_cantidad === undefined || fc_cantidad === "" || isNaN(cantidad) || cantidad < 0) {
+                return res.status(400).json({ error: "La cantidad debe ser un número positivo." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
+            }
+
+            await recepcionInsumoModel.update(req.params.id, { ...req.body, fc_cantidad: cantidad });
             res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
             console.error("Error PUT /recepcion_insumos:", err.message);
