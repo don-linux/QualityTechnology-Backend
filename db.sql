@@ -231,7 +231,7 @@ CREATE TABLE public.banos (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.banos OWNER TO postgres;
@@ -2824,7 +2824,7 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
     ('Insumos Ceiba', '/ceiba/insumos', true),
     ('Recepcion Insumos', '/recepcion_insumos', true),
     ('Visitas', '/visitas', true),
-    ('Banos Medellin', '/medellin/banos', true),
+    ('Banos', '/banos', true),
     ('Parametros Medellin', '/medellin/parametros', true),
     ('Medicamentos Medellin', '/medellin/medicamentos', true),
     ('Recambios Medellin', '/medellin/recambios', true),

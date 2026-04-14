@@ -121,7 +121,7 @@ app.use("/ceiba/alimentacion", bitacoraAlimentacionRoutes);
 app.use("/ceiba/insumos", bitacoraInsumoRoutes);
 app.use("/recepcion_insumos", recepcionInsumoRoutes);
 app.use("/visitas", bitacoraVisitaRoutes);
-app.use("/medellin/banos", bitacoraBanoRoutes);
+app.use("/banos", bitacoraBanoRoutes);
 app.use("/medellin/parametros", bitacoraParametroRoutes);
 app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
 app.use("/medellin/recambios", bitacoraRecambioRoutes);

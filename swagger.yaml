@@ -3372,9 +3372,9 @@ paths:
         '200':
           description: "Eliminado(s)"
 
-  /medellin/banos:
+  /banos:
     get:
-      summary: "Listar bitácora de baños (Medellín)"
+      summary: "Listar bitácora de baños"
       security:
         - bearerAuth: []
       responses:
@@ -3395,7 +3395,7 @@ paths:
         '201':
           description: "Creado"
 
-  /medellin/banos/empleados:
+  /banos/empleados:
     get:
       summary: "Listar empleados activos para bitácora de baños"
       security:

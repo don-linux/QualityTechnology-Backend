@@ -1,11 +1,11 @@
 meta {
-  name: POST medellin banos
+  name: PUT banos {id}
   type: http
-  seq: 21
+  seq: 18
 }
 
-post {
-  url: {{baseUrl}}/medellin/banos
+put {
+  url: {{baseUrl}}/banos/{{id}}
   body: json
 }
 

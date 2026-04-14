@@ -35,6 +35,11 @@ class BitacoraBanoController {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
             }
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
             const data = { ...req.body, fc_tipo_banio, fi_usuario_id: req.user.usuario_id };
             await bitacoraBanoModel.create(data);
             res.json({ message: "Registro agregado correctamente" });
@@ -48,6 +53,11 @@ class BitacoraBanoController {
             const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
             if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
+            }
+
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
             }
 
             await bitacoraBanoModel.update(req.params.id, { ...req.body, fc_tipo_banio });

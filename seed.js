@@ -48,7 +48,7 @@ const MODULOS = [
   { fc_nombre: "Insumos Ceiba",         fc_ruta: "/ceiba/insumos",         fb_activo: true },
   { fc_nombre: "Recepcion Insumos",     fc_ruta: "/recepcion_insumos",     fb_activo: true },
   { fc_nombre: "Visitas",               fc_ruta: "/visitas",               fb_activo: true },
-  { fc_nombre: "Banos Medellin",        fc_ruta: "/medellin/banos",        fb_activo: true },
+  { fc_nombre: "Banos",                  fc_ruta: "/banos",                 fb_activo: true },
   { fc_nombre: "Parametros Medellin",   fc_ruta: "/medellin/parametros",   fb_activo: true },
   { fc_nombre: "Medicamentos Medellin", fc_ruta: "/medellin/medicamentos", fb_activo: true },
   { fc_nombre: "Recambios Medellin",    fc_ruta: "/medellin/recambios",    fb_activo: true },
