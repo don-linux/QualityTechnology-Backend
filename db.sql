@@ -161,7 +161,7 @@ CREATE TABLE public.alimentacion (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.alimentacion OWNER TO postgres;
@@ -492,7 +492,7 @@ CREATE TABLE public.insumos (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.insumos OWNER TO postgres;
@@ -827,7 +827,7 @@ CREATE TABLE public.inventario_alevines (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.inventario_alevines OWNER TO postgres;
@@ -1046,7 +1046,7 @@ CREATE TABLE public.medicamentos (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.medicamentos OWNER TO postgres;
@@ -1088,7 +1088,7 @@ CREATE TABLE public.parametros (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.parametros OWNER TO postgres;
@@ -1178,7 +1178,7 @@ CREATE TABLE public.recambios (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.recambios OWNER TO postgres;
@@ -2820,15 +2820,15 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
     ('Cuentas', '/cuentas', true),
     ('Biometrias', '/biometrias', true),
     ('Plagas', '/plagas', true),
-    ('Alimentacion Ceiba', '/ceiba/alimentacion', true),
-    ('Insumos Ceiba', '/ceiba/insumos', true),
+    ('Alimentacion', '/alimentacion', true),
+    ('Insumos', '/insumos', true),
     ('Recepcion Insumos', '/recepcion_insumos', true),
     ('Visitas', '/visitas', true),
     ('Banos', '/banos', true),
-    ('Parametros Medellin', '/medellin/parametros', true),
-    ('Medicamentos Medellin', '/medellin/medicamentos', true),
-    ('Recambios Medellin', '/medellin/recambios', true),
-    ('Inventario Medellin', '/medellin/inventario', true),
+    ('Parametros', '/parametros', true),
+    ('Medicamentos', '/medicamentos', true),
+    ('Recambios', '/recambios', true),
+    ('Inventario', '/inventario', true),
     ('Catalogo Estados', '/estados', false),
     ('Expedientes', '/expedientes', false),
     ('Puestos', '/puestos', true),

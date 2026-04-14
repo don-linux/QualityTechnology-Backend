@@ -13,6 +13,10 @@ class BitacoraAlimentacionController {
 
     static async create(req, res) {
         try {
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
             const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
             const id = await bitacoraAlimentacionModel.create(data);
             res.json({ message: "Registro creado", id });
@@ -24,6 +28,10 @@ class BitacoraAlimentacionController {
 
     static async update(req, res) {
         try {
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
             await bitacoraAlimentacionModel.update(req.params.id, req.body);
             res.json({ message: "Registro actualizado" });
         } catch (err) {

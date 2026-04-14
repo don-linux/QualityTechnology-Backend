@@ -1,11 +1,11 @@
 meta {
-  name: POST ceiba alimentacion
+  name: PUT inventario {id}
   type: http
-  seq: 5
+  seq: 19
 }
 
-post {
-  url: {{baseUrl}}/ceiba/alimentacion
+put {
+  url: {{baseUrl}}/inventario/{{id}}
   body: json
 }
 

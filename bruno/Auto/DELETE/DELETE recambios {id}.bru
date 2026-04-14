@@ -1,11 +1,11 @@
 meta {
-  name: DELETE ceiba insumos
+  name: DELETE recambios {id}
   type: http
-  seq: 7
+  seq: 31
 }
 
 delete {
-  url: {{baseUrl}}/ceiba/insumos
+  url: {{baseUrl}}/recambios/{{id}}
   body: none
 }
 

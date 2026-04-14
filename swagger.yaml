@@ -3154,9 +3154,9 @@ paths:
         '200':
           description: "Eliminado"
 
-  /ceiba/alimentacion:
+  /alimentacion:
     get:
-      summary: "Listar bitácora de alimentación (Ceiba)"
+      summary: "Listar bitácora de alimentación"
       security:
         - bearerAuth: []
       responses:
@@ -3202,9 +3202,9 @@ paths:
         '200':
           description: "Eliminado(s)"
 
-  /ceiba/insumos:
+  /insumos:
     get:
-      summary: "Listar insumos (Ceiba)"
+      summary: "Listar insumos"
       security:
         - bearerAuth: []
       responses:
@@ -3404,9 +3404,9 @@ paths:
         '200':
           description: "Listado"
 
-  /medellin/parametros:
+  /parametros:
     get:
-      summary: "Listar parámetros (Medellín)"
+      summary: "Listar parámetros"
       security:
         - bearerAuth: []
       responses:
@@ -3427,7 +3427,7 @@ paths:
         '201':
           description: "Creado"
 
-  /medellin/medicamentos:
+  /medicamentos:
     get:
       summary: "Listar medicamentos"
       security:
@@ -3450,7 +3450,7 @@ paths:
         '201':
           description: "Creado"
 
-  /medellin/recambios:
+  /recambios:
     get:
       summary: "Listar recambios"
       security:
@@ -3473,9 +3473,9 @@ paths:
         '201':
           description: "Creado"
 
-  /medellin/inventario:
+  /inventario:
     get:
-      summary: "Listar inventario (Medellín)"
+      summary: "Listar inventario"
       security:
         - bearerAuth: []
       responses:
@@ -3601,7 +3601,7 @@ paths:
   /bitacoras/insumos:
     get:
       summary: "(Alias) Listar insumos"
-      description: "Ruta agrupada para documentación. Use /ceiba/insumos según el prefijo real."
+      description: "Ruta agrupada para documentación. Use /insumos según el prefijo real."
       responses:
         '200':
           description: "Listado"

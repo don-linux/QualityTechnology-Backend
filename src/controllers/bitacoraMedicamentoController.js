@@ -10,7 +10,7 @@ class BitacoraMedicamentoController {
             const result = await bitacoraMedicamentoModel.getAll();
             res.json(result);
         } catch (err) {
-            console.error("Error en GET /medellin/medicamentos:", err.message);
+            console.error("Error en GET /medicamentos:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -29,15 +29,20 @@ class BitacoraMedicamentoController {
             const numEstanque = BitacoraMedicamentoController.parseNum(fn_num_estanque);
             if (isNaN(numEstanque)) throw new Error("fn_num_estanque debe ser numérico");
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
             await bitacoraMedicamentoModel.create({
                 fd_fecha_hora, fn_num_estanque: numEstanque, fc_diagnosis, fc_tratamiento,
                 fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis, fc_responsable,
-                fi_usuario_id
+                ubicacion, fi_usuario_id
             });
 
             res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
-            console.error("Error en POST /medellin/medicamentos:", err.message);
+            console.error("Error en POST /medicamentos:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -49,15 +54,20 @@ class BitacoraMedicamentoController {
                 fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis, fc_responsable
             } = req.body;
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
             await bitacoraMedicamentoModel.update(req.params.id, {
                 fd_fecha_hora, fn_num_estanque: BitacoraMedicamentoController.parseNum(fn_num_estanque),
                 fc_diagnosis, fc_tratamiento, fc_dosis, fc_forma_aplicacion,
-                fd_fecha_ultima_dosis, fc_responsable
+                fd_fecha_ultima_dosis, fc_responsable, ubicacion
             });
 
             res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
-            console.error("Error en PUT /medellin/medicamentos:", err.message);
+            console.error("Error en PUT /medicamentos:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -67,7 +77,7 @@ class BitacoraMedicamentoController {
             await bitacoraMedicamentoModel.delete(req.params.id);
             res.json({ message: "Registro eliminado" });
         } catch (err) {
-            console.error("Error en DELETE /medellin/medicamentos:", err.message);
+            console.error("Error en DELETE /medicamentos:", err.message);
             res.status(500).json({ error: err.message });
         }
     }

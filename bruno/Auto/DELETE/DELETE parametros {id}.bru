@@ -1,11 +1,11 @@
 meta {
-  name: DELETE medellin medicamentos
+  name: DELETE parametros {id}
   type: http
-  seq: 26
+  seq: 29
 }
 
 delete {
-  url: {{baseUrl}}/medellin/medicamentos
+  url: {{baseUrl}}/parametros/{{id}}
   body: none
 }
 
