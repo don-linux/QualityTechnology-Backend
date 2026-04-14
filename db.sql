@@ -254,6 +254,7 @@ CREATE TABLE public.biometrias (
     fi_instalacion_id integer,
     tipo character varying(20),
     fc_granja character varying(100),
+    ubicacion character varying(50) NOT NULL,
     fi_reproductor_id integer,
     CONSTRAINT chk_biometrias_tipo_repro CHECK (((((tipo)::text = 'REPRODUCTORES'::text) AND (fi_reproductor_id IS NOT NULL)) OR ((tipo)::text <> 'REPRODUCTORES'::text)))
 );

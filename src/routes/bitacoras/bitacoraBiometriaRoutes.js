@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE BIOMETRÍA
 ========================================================= */
+router.get("/", bitacoraBiometriaController.getAll);
 router.get("/:granja", bitacoraBiometriaController.getByGranja);
 router.get("/info/:granja/:instalacion", bitacoraBiometriaController.getInfo);
 router.post("/", bitacoraBiometriaController.create);

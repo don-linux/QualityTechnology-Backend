@@ -1,6 +1,16 @@
 import bitacoraBiometriaModel from "../models/bitacoraBiometriaModel.js";
 
 class BitacoraBiometriaController {
+    static async getAll(req, res) {
+        try {
+            const result = await bitacoraBiometriaModel.getAll();
+            res.json(result);
+        } catch (err) {
+            console.error("GET /biometrias Error:", err);
+            res.status(500).json({ error: "Error obteniendo biometrías" });
+        }
+    }
+
     static async getByGranja(req, res) {
         try {
             const granja = bitacoraBiometriaModel.normalizarGranja(req.params.granja);
@@ -19,11 +29,15 @@ class BitacoraBiometriaController {
             const {
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fc_observaciones, fc_encargado, fi_instalacion_id, fi_lote_id,
-                tipo, fc_granja
+                tipo, ubicacion
             } = req.body;
             const fi_usuario_id = req.user.usuario_id;
 
-            const granjaFinal = bitacoraBiometriaModel.normalizarGranja(fc_granja);
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const granjaFinal = bitacoraBiometriaModel.normalizarGranja(ubicacion);
             if (!granjaFinal) return res.status(400).json({ error: "Granja inválida" });
 
             const pesoProm = fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
@@ -33,7 +47,8 @@ class BitacoraBiometriaController {
             const id = await bitacoraBiometriaModel.create({
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fn_peso_promedio: pesoProm, fc_observaciones, fc_encargado,
-                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id, fc_granja: granjaFinal
+                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id,
+                fc_granja: granjaFinal, ubicacion
             });
 
             if (fi_instalacion_id) {
@@ -51,9 +66,14 @@ class BitacoraBiometriaController {
         try {
             const {
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
-                fc_observaciones, fc_encargado, fi_instalacion_id, fi_lote_id, tipo
+                fc_observaciones, fc_encargado, fi_instalacion_id, fi_lote_id, tipo,
+                ubicacion
             } = req.body;
             const fi_usuario_id = req.user.usuario_id;
+
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
 
             const pesoProm = fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
                 ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
@@ -62,7 +82,7 @@ class BitacoraBiometriaController {
             await bitacoraBiometriaModel.update(req.params.id, {
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fn_peso_promedio: pesoProm, fc_observaciones, fc_encargado,
-                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id
+                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id, ubicacion
             });
 
             if (fi_instalacion_id) {

@@ -3063,6 +3063,13 @@ paths:
                 additionalProperties: true
 
   /biometrias:
+    get:
+      summary: "Listar todas las biometrías"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
     post:
       summary: "Crear registro de biometría"
       security:
