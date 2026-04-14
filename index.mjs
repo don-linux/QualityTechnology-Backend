@@ -27,6 +27,7 @@ import proveedorRoutes from "./src/routes/proveedorRoutes.js";
 import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
 import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
+import alevinRoutes from "./src/routes/alevinRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
@@ -102,6 +103,7 @@ app.use("/engorda", engordaRoutes);
 app.use("/clientes", clienteRoutes);
 app.use("/ventas", ventaRoutes);
 app.use("/alimentos", alimentoRoutes);
+app.use("/alevines", alevinRoutes);
 app.use("/lista-espera", listaEsperaRoutes);
 app.use("/equipos", equipoRoutes);
 app.use("/nomina", nominaRoutes);

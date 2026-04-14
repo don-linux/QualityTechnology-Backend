@@ -15,5 +15,6 @@ router.get("/:granja", bitacoraBiometriaController.getByGranja);
 router.get("/info/:granja/:instalacion", bitacoraBiometriaController.getInfo);
 router.post("/", bitacoraBiometriaController.create);
 router.put("/:id", bitacoraBiometriaController.update);
+router.delete("/:id", bitacoraBiometriaController.delete);
 
 export default router;

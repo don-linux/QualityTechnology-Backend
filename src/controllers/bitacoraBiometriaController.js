@@ -107,6 +107,19 @@ class BitacoraBiometriaController {
             res.status(500).json({ error: "Error obteniendo información automática" });
         }
     }
+
+    static async delete(req, res) {
+        try {
+            const count = await bitacoraBiometriaModel.delete(req.params.id);
+            if (count === 0) {
+                return res.status(404).json({ error: "Biometría no encontrada" });
+            }
+            res.json({ message: "Biometría eliminada correctamente" });
+        } catch (err) {
+            console.error("DELETE /biometrias Error:", err);
+            res.status(500).json({ error: "Error eliminando biometría" });
+        }
+    }
 }
 
 export default BitacoraBiometriaController;

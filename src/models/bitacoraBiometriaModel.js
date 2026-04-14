@@ -196,6 +196,14 @@ class BitacoraBiometriaModel {
             fecha_biometria: row.fecha_biometria
         };
     }
+
+    static async delete(id) {
+        const result = await pool.query(
+            "DELETE FROM biometrias WHERE fi_id = $1 RETURNING fi_id",
+            [id]
+        );
+        return result.rowCount;
+    }
 }
 
 export default BitacoraBiometriaModel;
