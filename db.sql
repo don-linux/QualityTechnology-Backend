@@ -157,7 +157,7 @@ CREATE TABLE public.alimentacion (
     fn_temp_agua numeric,
     fn_amonio numeric,
     fn_ph numeric,
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
