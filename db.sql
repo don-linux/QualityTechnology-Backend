@@ -487,7 +487,7 @@ CREATE TABLE public.insumos (
     fc_cantidad_udm character varying(100),
     fc_num_lote character varying(100),
     fc_descripcion character varying(300),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_encargado_entrega character varying(100),
     fc_encargado_recepcion character varying(100),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
