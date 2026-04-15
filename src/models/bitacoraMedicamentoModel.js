@@ -1,6 +1,18 @@
 import pool from "../db.js";
 
 class BitacoraMedicamentoModel {
+    static async getEmpleadosActivos() {
+        const result = await pool.query(`
+            SELECT
+                e.fi_empleado_id,
+                CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+            FROM rrhh.empleados e
+            WHERE e.fb_activo = true
+            ORDER BY fc_nombre_completo;
+        `);
+        return result.rows;
+    }
+
     static async getAll() {
         const result = await pool.query("SELECT * FROM medicamentos ORDER BY fi_id DESC");
         return result.rows;

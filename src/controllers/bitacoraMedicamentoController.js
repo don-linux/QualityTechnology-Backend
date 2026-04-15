@@ -1,5 +1,26 @@
 import bitacoraMedicamentoModel from "../models/bitacoraMedicamentoModel.js";
 
+const LIMITES_MEDICAMENTOS_TEXTO = {
+    fc_diagnosis: 500,
+    fc_tratamiento: 500,
+    fc_dosis: 100,
+};
+
+const validarLongitudesMedicamentos = (body) => {
+    const etiquetas = {
+        fc_diagnosis: "El diagnóstico",
+        fc_tratamiento: "El tratamiento",
+        fc_dosis: "La dosis",
+    };
+    for (const [campo, max] of Object.entries(LIMITES_MEDICAMENTOS_TEXTO)) {
+        const len = body[campo] == null ? 0 : String(body[campo]).length;
+        if (len > max) {
+            return `${etiquetas[campo]} no puede superar los ${max} caracteres.`;
+        }
+    }
+    return null;
+};
+
 class BitacoraMedicamentoController {
     static parseNum(v) {
         return v === "" || v == null ? null : Number(v);
@@ -11,6 +32,15 @@ class BitacoraMedicamentoController {
             res.json(result);
         } catch (err) {
             console.error("Error en GET /medicamentos:", err.message);
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraMedicamentoModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
@@ -32,6 +62,11 @@ class BitacoraMedicamentoController {
             const { ubicacion } = req.body;
             if (!ubicacion || !ubicacion.trim()) {
                 return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorLongitud = validarLongitudesMedicamentos(req.body);
+            if (errorLongitud) {
+                return res.status(400).json({ error: errorLongitud });
             }
 
             await bitacoraMedicamentoModel.create({
@@ -57,6 +92,11 @@ class BitacoraMedicamentoController {
             const { ubicacion } = req.body;
             if (!ubicacion || !ubicacion.trim()) {
                 return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorLongitud = validarLongitudesMedicamentos(req.body);
+            if (errorLongitud) {
+                return res.status(400).json({ error: errorLongitud });
             }
 
             await bitacoraMedicamentoModel.update(req.params.id, {
