@@ -11,6 +11,15 @@ class BitacoraRecambioController {
         }
     }
 
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraRecambioModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async create(req, res) {
         try {
             const { ubicacion } = req.body;
