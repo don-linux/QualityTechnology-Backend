@@ -246,7 +246,7 @@ CREATE TABLE public.biometrias (
     fn_peso_total_gramos numeric,
     fn_organismos_muestreados integer,
     fn_peso_promedio numeric,
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_encargado character varying(100),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),

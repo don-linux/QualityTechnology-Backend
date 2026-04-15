@@ -1,5 +1,20 @@
 import bitacoraBiometriaModel from "../models/bitacoraBiometriaModel.js";
 
+const MAX_FC_OBSERVACIONES = 500;
+const MAX_FC_ENCARGADO = 100;
+
+const validarTextosBiometria = (body) => {
+    const obsLen = body.fc_observaciones == null ? 0 : String(body.fc_observaciones).length;
+    if (obsLen > MAX_FC_OBSERVACIONES) {
+        return `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.`;
+    }
+    const encLen = body.fc_encargado == null ? 0 : String(body.fc_encargado).length;
+    if (encLen > MAX_FC_ENCARGADO) {
+        return `El encargado no puede superar los ${MAX_FC_ENCARGADO} caracteres.`;
+    }
+    return null;
+};
+
 class BitacoraBiometriaController {
     static async getAll(req, res) {
         try {
@@ -24,6 +39,15 @@ class BitacoraBiometriaController {
         }
     }
 
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraBiometriaModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async create(req, res) {
         try {
             const {
@@ -35,6 +59,11 @@ class BitacoraBiometriaController {
 
             if (!ubicacion || !ubicacion.trim()) {
                 return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorTexto = validarTextosBiometria(req.body);
+            if (errorTexto) {
+                return res.status(400).json({ error: errorTexto });
             }
 
             const granjaFinal = bitacoraBiometriaModel.normalizarGranja(ubicacion);
@@ -73,6 +102,11 @@ class BitacoraBiometriaController {
 
             if (!ubicacion || !ubicacion.trim()) {
                 return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorTexto = validarTextosBiometria(req.body);
+            if (errorTexto) {
+                return res.status(400).json({ error: errorTexto });
             }
 
             const pesoProm = fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0

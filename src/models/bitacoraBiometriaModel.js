@@ -9,6 +9,18 @@ class BitacoraBiometriaModel {
         return null;
     }
 
+    static async getEmpleadosActivos() {
+        const result = await pool.query(`
+            SELECT
+                e.fi_empleado_id,
+                CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+            FROM rrhh.empleados e
+            WHERE e.fb_activo = true
+            ORDER BY fc_nombre_completo;
+        `);
+        return result.rows;
+    }
+
     static async actualizarFechaBiometria(instalacionId, fecha) {
         const inst = await pool.query(
             `SELECT tipo_instalacion, nombre_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
