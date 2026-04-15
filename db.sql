@@ -227,7 +227,7 @@ CREATE TABLE public.banos (
     fc_tipo_banio character varying(20),
     fc_regadera character varying(100),
     fc_realizo character varying(100),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
