@@ -1258,7 +1258,7 @@ CREATE TABLE public.visitas (
     fc_nombre_completo character varying(200),
     fc_origen character varying(200),
     fc_motivo character varying(300),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_foto_identificacion character varying(200),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),

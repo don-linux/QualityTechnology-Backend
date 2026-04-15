@@ -13,6 +13,15 @@ class BitacoraVisitaController {
 
     static async create(req, res) {
         try {
+            const { fc_motivo, fc_observaciones } = req.body;
+
+            if (fc_motivo && fc_motivo.length > 300) {
+                return res.status(400).json({ error: "El motivo no puede superar los 300 caracteres." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
+            }
+
             const data = {
                 ...req.body,
                 fi_usuario_id: req.user.usuario_id,
@@ -29,6 +38,15 @@ class BitacoraVisitaController {
 
     static async update(req, res) {
         try {
+            const { fc_motivo, fc_observaciones } = req.body;
+
+            if (fc_motivo && fc_motivo.length > 300) {
+                return res.status(400).json({ error: "El motivo no puede superar los 300 caracteres." });
+            }
+            if (fc_observaciones && fc_observaciones.length > 500) {
+                return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
+            }
+
             const data = {
                 ...req.body,
                 fi_usuario_id: req.user.usuario_id,
