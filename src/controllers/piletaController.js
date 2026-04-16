@@ -1,6 +1,39 @@
 import piletaModel from "../models/piletaModel.js";
 import origenModel from "../models/origenModel.js";
 
+const MAX_NUMERICO = 15;
+const MAX_OBSERVACION = 500;
+
+// Regresa un mensaje de error si algun campo de alevinaje es invalido.
+// Devuelve null cuando todo esta ok.
+const validarCamposAlevinaje = ({ cantidad, talla_gr, observacion } = {}) => {
+    if (cantidad !== undefined && cantidad !== null && cantidad !== "") {
+        const str = String(cantidad);
+        if (str.length > MAX_NUMERICO) {
+            return `La cantidad no puede superar los ${MAX_NUMERICO} caracteres.`;
+        }
+        if (!/^\d+$/.test(str)) {
+            return "La cantidad debe ser un numero entero sin decimales.";
+        }
+    }
+
+    if (talla_gr !== undefined && talla_gr !== null && talla_gr !== "") {
+        const str = String(talla_gr);
+        if (str.length > MAX_NUMERICO) {
+            return `La talla no puede superar los ${MAX_NUMERICO} caracteres.`;
+        }
+        if (!/^\d+(\.\d+)?$/.test(str)) {
+            return "La talla debe ser un numero valido (permite decimales).";
+        }
+    }
+
+    if (observacion && String(observacion).length > MAX_OBSERVACION) {
+        return `La observacion no puede superar los ${MAX_OBSERVACION} caracteres.`;
+    }
+
+    return null;
+};
+
 class PiletaController {
 
     static async getOrigen(req, res) {
@@ -74,6 +107,11 @@ static async getDestino(req, res) {
         try {
             const data = req.body;
 
+            const errorCampos = validarCamposAlevinaje(data);
+            if (errorCampos) {
+                return res.status(400).json({ error: errorCampos });
+            }
+
             if (data.fi_pileta_id) {
                 await piletaModel.updateSiembra(data.fi_pileta_id, data);
                 return res.json({
@@ -123,6 +161,11 @@ static async getDestino(req, res) {
 
     static async registrarMovimiento(req, res) {
         try {
+            const errorCampos = validarCamposAlevinaje(req.body);
+            if (errorCampos) {
+                return res.status(400).json({ error: errorCampos });
+            }
+
             const id = await piletaModel.createMovimiento(req.body);
 
             res.json({
