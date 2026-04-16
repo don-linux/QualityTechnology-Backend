@@ -222,8 +222,7 @@ ALTER TABLE public.alimentos ALTER COLUMN fi_alimento_id ADD GENERATED ALWAYS AS
 
 CREATE TABLE public.banos (
     fi_id integer NOT NULL,
-    fc_mes character varying(20),
-    fc_dia character varying(20),
+    fd_fecha date NOT NULL,
     fc_tipo_banio character varying(20),
     fc_regadera character varying(100),
     fc_realizo character varying(100),

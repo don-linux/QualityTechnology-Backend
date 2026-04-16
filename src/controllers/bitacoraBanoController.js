@@ -1,8 +1,6 @@
 import bitacoraBanoModel from "../models/bitacoraBanoModel.js";
 
 const LIMITES_BANOS = {
-    fc_mes: 20,
-    fc_dia: 20,
     fc_tipo_banio: 20,
     fc_regadera: 100,
     fc_realizo: 100,
@@ -12,8 +10,6 @@ const LIMITES_BANOS = {
 
 const validarLongitudesBanos = (body) => {
     const etiquetas = {
-        fc_mes: "El mes",
-        fc_dia: "El día",
         fc_tipo_banio: "El tipo de baño",
         fc_regadera: "La regadera",
         fc_realizo: "Realizó",
@@ -60,6 +56,11 @@ class BitacoraBanoController {
 
     static async create(req, res) {
         try {
+            const { fd_fecha } = req.body;
+            if (!fd_fecha) {
+                return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
+            }
+
             const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
             if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
@@ -85,6 +86,11 @@ class BitacoraBanoController {
 
     static async update(req, res) {
         try {
+            const { fd_fecha } = req.body;
+            if (!fd_fecha) {
+                return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
+            }
+
             const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
             if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
