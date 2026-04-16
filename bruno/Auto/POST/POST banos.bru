@@ -1,0 +1,19 @@
+meta {
+  name: POST banos
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/banos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: DELETE banos {id}
+  type: http
+  seq: 23
+}
+
+delete {
+  url: {{baseUrl}}/banos/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

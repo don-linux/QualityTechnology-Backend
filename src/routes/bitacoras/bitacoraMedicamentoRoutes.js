@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE MEDICAMENTOS
 ========================================================= */
+router.get("/empleados", bitacoraMedicamentoController.getEmpleados);
 router.get("/", bitacoraMedicamentoController.getAll);
 router.post("/", bitacoraMedicamentoController.create);
 router.put("/:id", bitacoraMedicamentoController.update);

@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE PARÁMETROS
 ========================================================= */
+router.get("/empleados", bitacoraParametroController.getEmpleados);
 router.get("/", bitacoraParametroController.getAll);
 router.post("/", bitacoraParametroController.create);
 router.put("/:id", bitacoraParametroController.update);

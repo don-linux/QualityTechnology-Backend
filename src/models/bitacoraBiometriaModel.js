@@ -9,6 +9,18 @@ class BitacoraBiometriaModel {
         return null;
     }
 
+    static async getEmpleadosActivos() {
+        const result = await pool.query(`
+            SELECT
+                e.fi_empleado_id,
+                CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+            FROM rrhh.empleados e
+            WHERE e.fb_activo = true
+            ORDER BY fc_nombre_completo;
+        `);
+        return result.rows;
+    }
+
     static async actualizarFechaBiometria(instalacionId, fecha) {
         const inst = await pool.query(
             `SELECT tipo_instalacion, nombre_instalacion FROM instalaciones WHERE fi_instalacion_id = $1`,
@@ -48,6 +60,16 @@ class BitacoraBiometriaModel {
         );
     }
 
+    static async getAll() {
+        const result = await pool.query(`
+            SELECT b.*, i.nombre_instalacion AS instalacion_nombre
+            FROM biometrias b
+            LEFT JOIN instalaciones i ON b.fi_instalacion_id = i.fi_instalacion_id
+            ORDER BY b.fd_fecha DESC
+        `);
+        return result.rows;
+    }
+
     static async getByGranja(granja) {
         const result = await pool.query(
             `
@@ -68,7 +90,7 @@ class BitacoraBiometriaModel {
         const {
             fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
             fc_observaciones, fc_encargado, fi_instalacion_id, tipo,
-            fi_usuario_id, fc_granja
+            fi_usuario_id, fc_granja, ubicacion
         } = data;
 
         const result = await pool.query(
@@ -76,14 +98,14 @@ class BitacoraBiometriaModel {
       INSERT INTO biometrias (
         fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
                 fc_observaciones, fc_encargado, fi_instalacion_id, tipo,
-        fi_usuario_id, fc_granja, fd_fecha_registro
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,CURRENT_TIMESTAMP)
+        fi_usuario_id, fc_granja, ubicacion, fd_fecha_registro
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CURRENT_TIMESTAMP)
       RETURNING fi_id
       `,
             [
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
                                 fc_observaciones, fc_encargado, fi_instalacion_id || null,
-                                tipo || null, fi_usuario_id, fc_granja
+                                tipo || null, fi_usuario_id, fc_granja, ubicacion
             ]
         );
         return result.rows[0].fi_id;
@@ -93,7 +115,7 @@ class BitacoraBiometriaModel {
         const {
             fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
             fc_observaciones, fc_encargado, fi_instalacion_id, tipo,
-            fi_usuario_id
+            fi_usuario_id, ubicacion
         } = data;
 
         await pool.query(
@@ -102,13 +124,13 @@ class BitacoraBiometriaModel {
         fd_fecha = $1, fn_peso_total_gramos = $2, fn_organismos_muestreados = $3,
         fn_peso_promedio = $4, fc_observaciones = $5, fc_encargado = $6,
                 fi_instalacion_id = $7, tipo = $8, fi_usuario_id = $9,
-        fd_fecha_modificacion = CURRENT_TIMESTAMP
-            WHERE fi_id = $10
+        ubicacion = $10, fd_fecha_modificacion = CURRENT_TIMESTAMP
+            WHERE fi_id = $11
       `,
             [
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
                                 fc_observaciones, fc_encargado, fi_instalacion_id || null,
-                                tipo, fi_usuario_id, id
+                                tipo, fi_usuario_id, ubicacion, id
             ]
         );
     }
@@ -185,6 +207,14 @@ class BitacoraBiometriaModel {
             fecha_siembra: row.fecha_siembra,
             fecha_biometria: row.fecha_biometria
         };
+    }
+
+    static async delete(id) {
+        const result = await pool.query(
+            "DELETE FROM biometrias WHERE fi_id = $1 RETURNING fi_id",
+            [id]
+        );
+        return result.rowCount;
     }
 }
 

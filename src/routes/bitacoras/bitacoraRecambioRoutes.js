@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE RECAMBIOS
 ========================================================= */
+router.get("/empleados", bitacoraRecambioController.getEmpleados);
 router.get("/", bitacoraRecambioController.getAll);
 router.post("/", bitacoraRecambioController.create);
 router.put("/:id", bitacoraRecambioController.update);

@@ -27,6 +27,7 @@ import proveedorRoutes from "./src/routes/proveedorRoutes.js";
 import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
 import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
+import alevinRoutes from "./src/routes/alevinRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
@@ -102,6 +103,7 @@ app.use("/engorda", engordaRoutes);
 app.use("/clientes", clienteRoutes);
 app.use("/ventas", ventaRoutes);
 app.use("/alimentos", alimentoRoutes);
+app.use("/alevines", alevinRoutes);
 app.use("/lista-espera", listaEsperaRoutes);
 app.use("/equipos", equipoRoutes);
 app.use("/nomina", nominaRoutes);
@@ -117,15 +119,15 @@ app.use("/uploads", authStaticMiddleware, express.static("uploads"));
 // Bitácoras
 app.use("/biometrias", bitacoraBiometriaRoutes);
 app.use("/plagas", bitacoraPlagaRoutes);
-app.use("/ceiba/alimentacion", bitacoraAlimentacionRoutes);
-app.use("/ceiba/insumos", bitacoraInsumoRoutes);
+app.use("/alimentacion", bitacoraAlimentacionRoutes);
+app.use("/insumos", bitacoraInsumoRoutes);
 app.use("/recepcion_insumos", recepcionInsumoRoutes);
 app.use("/visitas", bitacoraVisitaRoutes);
-app.use("/medellin/banos", bitacoraBanoRoutes);
-app.use("/medellin/parametros", bitacoraParametroRoutes);
-app.use("/medellin/medicamentos", bitacoraMedicamentoRoutes);
-app.use("/medellin/recambios", bitacoraRecambioRoutes);
-app.use("/medellin/inventario", bitacoraInventarioRoutes);
+app.use("/banos", bitacoraBanoRoutes);
+app.use("/parametros", bitacoraParametroRoutes);
+app.use("/medicamentos", bitacoraMedicamentoRoutes);
+app.use("/recambios", bitacoraRecambioRoutes);
+app.use("/inventario", bitacoraInventarioRoutes);
 
 // rrhh
 app.use("/empleados", empleadoRoutes);

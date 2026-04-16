@@ -1,0 +1,17 @@
+meta {
+  name: GET inventario
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/inventario
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

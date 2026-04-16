@@ -1,0 +1,17 @@
+meta {
+  name: GET medicamentos
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{baseUrl}}/medicamentos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

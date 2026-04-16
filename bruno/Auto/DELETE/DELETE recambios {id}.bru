@@ -1,0 +1,17 @@
+meta {
+  name: DELETE recambios {id}
+  type: http
+  seq: 31
+}
+
+delete {
+  url: {{baseUrl}}/recambios/{{id}}
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

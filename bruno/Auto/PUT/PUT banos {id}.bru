@@ -1,0 +1,19 @@
+meta {
+  name: PUT banos {id}
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{baseUrl}}/banos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

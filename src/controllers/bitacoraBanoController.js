@@ -1,5 +1,35 @@
 import bitacoraBanoModel from "../models/bitacoraBanoModel.js";
 
+const LIMITES_BANOS = {
+    fc_mes: 20,
+    fc_dia: 20,
+    fc_tipo_banio: 20,
+    fc_regadera: 100,
+    fc_realizo: 100,
+    fc_observaciones: 500,
+    ubicacion: 50,
+};
+
+const validarLongitudesBanos = (body) => {
+    const etiquetas = {
+        fc_mes: "El mes",
+        fc_dia: "El día",
+        fc_tipo_banio: "El tipo de baño",
+        fc_regadera: "La regadera",
+        fc_realizo: "Realizó",
+        fc_observaciones: "Las observaciones",
+        ubicacion: "La ubicación",
+    };
+    for (const [campo, max] of Object.entries(LIMITES_BANOS)) {
+        const valor = body[campo];
+        const len = valor == null ? 0 : String(valor).length;
+        if (len > max) {
+            return `${etiquetas[campo]} no puede superar los ${max} caracteres.`;
+        }
+    }
+    return null;
+};
+
 const TIPOS_BANIO_VALIDOS = ["Hombre", "Mujer"];
 
 const normalizarTipoBanio = (value = "") => {
@@ -35,6 +65,16 @@ class BitacoraBanoController {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
             }
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorLongitud = validarLongitudesBanos(req.body);
+            if (errorLongitud) {
+                return res.status(400).json({ error: errorLongitud });
+            }
+
             const data = { ...req.body, fc_tipo_banio, fi_usuario_id: req.user.usuario_id };
             await bitacoraBanoModel.create(data);
             res.json({ message: "Registro agregado correctamente" });
@@ -48,6 +88,16 @@ class BitacoraBanoController {
             const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
             if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
                 return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
+            }
+
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
+            const errorLongitud = validarLongitudesBanos(req.body);
+            if (errorLongitud) {
+                return res.status(400).json({ error: errorLongitud });
             }
 
             await bitacoraBanoModel.update(req.params.id, { ...req.body, fc_tipo_banio });

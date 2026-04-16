@@ -1,0 +1,19 @@
+meta {
+  name: PUT alimentacion {id}
+  type: http
+  seq: 23
+}
+
+put {
+  url: {{baseUrl}}/alimentacion/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

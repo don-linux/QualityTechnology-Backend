@@ -1,0 +1,17 @@
+meta {
+  name: GET alimentacion
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{baseUrl}}/alimentacion
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

@@ -1,6 +1,18 @@
 import pool from "../db.js";
 
 class BitacoraRecambioModel {
+    static async getEmpleadosActivos() {
+        const result = await pool.query(`
+            SELECT
+                e.fi_empleado_id,
+                CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+            FROM rrhh.empleados e
+            WHERE e.fb_activo = true
+            ORDER BY fc_nombre_completo;
+        `);
+        return result.rows;
+    }
+
     static async getAll() {
         const result = await pool.query("SELECT * FROM recambios ORDER BY fi_id DESC");
         return result.rows;
@@ -10,7 +22,7 @@ class BitacoraRecambioModel {
         const {
             fc_mes, fn_num_instalacion, fd_fecha1, fc_tipo1, fd_fecha2, fc_tipo2,
             fd_fecha3, fc_tipo3, fd_fecha4, fc_tipo4, fd_fecha5, fc_tipo5,
-            fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id
+            fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id, ubicacion
         } = data;
         const numInstalacion =
             fn_num_instalacion === "" || fn_num_instalacion === null || fn_num_instalacion === undefined
@@ -22,8 +34,8 @@ class BitacoraRecambioModel {
             `INSERT INTO recambios
       (fc_mes, fn_num_instalacion, fd_fecha1, fc_tipo1, fd_fecha2, fc_tipo2,
        fd_fecha3, fc_tipo3, fd_fecha4, fc_tipo4, fd_fecha5, fc_tipo5,
-       fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id, fd_fecha_registro)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())`,
+       fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id, ubicacion, fd_fecha_registro)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())`,
             [
                 fc_mes,
                 safeNumInstalacion,
@@ -40,7 +52,8 @@ class BitacoraRecambioModel {
                 fd_fecha6 || null,
                 fc_tipo6 || null,
                 fc_responsable || null,
-                fi_usuario_id
+                fi_usuario_id,
+                ubicacion || null
             ]
         );
     }
@@ -49,7 +62,7 @@ class BitacoraRecambioModel {
         const {
             fc_mes, fn_num_instalacion, fd_fecha1, fc_tipo1, fd_fecha2, fc_tipo2,
             fd_fecha3, fc_tipo3, fd_fecha4, fc_tipo4, fd_fecha5, fc_tipo5,
-            fd_fecha6, fc_tipo6, fc_responsable
+            fd_fecha6, fc_tipo6, fc_responsable, ubicacion
         } = data;
         const numInstalacion =
             fn_num_instalacion === "" || fn_num_instalacion === null || fn_num_instalacion === undefined
@@ -63,8 +76,8 @@ class BitacoraRecambioModel {
         fd_fecha1=$3, fc_tipo1=$4, fd_fecha2=$5, fc_tipo2=$6,
         fd_fecha3=$7, fc_tipo3=$8, fd_fecha4=$9, fc_tipo4=$10,
         fd_fecha5=$11, fc_tipo5=$12, fd_fecha6=$13, fc_tipo6=$14,
-        fc_responsable=$15, fd_fecha_modificacion=NOW()
-       WHERE fi_id=$16`,
+        fc_responsable=$15, ubicacion=$16, fd_fecha_modificacion=NOW()
+       WHERE fi_id=$17`,
             [
                 fc_mes,
                 safeNumInstalacion,
@@ -81,6 +94,7 @@ class BitacoraRecambioModel {
                 fd_fecha6 || null,
                 fc_tipo6 || null,
                 fc_responsable || null,
+                ubicacion || null,
                 id
             ]
         );

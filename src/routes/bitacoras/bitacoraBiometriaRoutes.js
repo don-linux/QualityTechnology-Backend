@@ -10,9 +10,12 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE BIOMETRÍA
 ========================================================= */
-router.get("/:granja", bitacoraBiometriaController.getByGranja);
+router.get("/", bitacoraBiometriaController.getAll);
+router.get("/empleados", bitacoraBiometriaController.getEmpleados);
 router.get("/info/:granja/:instalacion", bitacoraBiometriaController.getInfo);
+router.get("/:granja", bitacoraBiometriaController.getByGranja);
 router.post("/", bitacoraBiometriaController.create);
 router.put("/:id", bitacoraBiometriaController.update);
+router.delete("/:id", bitacoraBiometriaController.delete);
 
 export default router;

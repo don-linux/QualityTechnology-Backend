@@ -1,0 +1,19 @@
+meta {
+  name: POST inventario
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/inventario
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

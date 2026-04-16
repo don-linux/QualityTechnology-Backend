@@ -21,30 +21,30 @@ class BitacoraBanoModel {
     static async create(data) {
         const {
             fc_mes, fc_dia, fc_tipo_banio, fc_regadera,
-            fc_realizo, fc_observaciones, fi_usuario_id
+            fc_realizo, fc_observaciones, fi_usuario_id, ubicacion
         } = data;
 
         await pool.query(
             `INSERT INTO banos
-        (fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, fd_fecha_registro)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
-            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id]
+        (fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, ubicacion, fd_fecha_registro)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
+            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, ubicacion]
         );
     }
 
     static async update(id, data) {
         const {
             fc_mes, fc_dia, fc_tipo_banio, fc_regadera,
-            fc_realizo, fc_observaciones
+            fc_realizo, fc_observaciones, ubicacion
         } = data;
 
         await pool.query(
             `UPDATE banos SET
       fc_mes=$1, fc_dia=$2, fc_tipo_banio=$3,
       fc_regadera=$4, fc_realizo=$5, fc_observaciones=$6,
-      fd_fecha_modificacion=NOW()
-      WHERE fi_id=$7`,
-            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, id]
+      ubicacion=$7, fd_fecha_modificacion=NOW()
+      WHERE fi_id=$8`,
+            [fc_mes, fc_dia, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, ubicacion, id]
         );
     }
 

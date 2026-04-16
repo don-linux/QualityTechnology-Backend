@@ -9,23 +9,23 @@ class BitacoraInventarioModel {
     static async create(data) {
         const {
             fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
-            fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id
+            fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id, ubicacion
         } = data;
 
         await pool.query(
             `INSERT INTO inventario_alevines
       (fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
-       fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id, fd_fecha_registro)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
+       fd_fecha_siembra, fd_fecha_salida_hormonado, fi_usuario_id, ubicacion, fd_fecha_registro)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())`,
             [fn_num_instalacion, fn_cantidad, fn_talla, fc_lote || null, fc_observacion || null,
-                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, fi_usuario_id]
+                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, fi_usuario_id, ubicacion || null]
         );
     }
 
     static async update(id, data) {
         const {
             fn_num_instalacion, fn_cantidad, fn_talla, fc_lote, fc_observacion,
-            fd_fecha_siembra, fd_fecha_salida_hormonado
+            fd_fecha_siembra, fd_fecha_salida_hormonado, ubicacion
         } = data;
 
         await pool.query(
@@ -33,10 +33,11 @@ class BitacoraInventarioModel {
         fn_num_instalacion=$1, fn_cantidad=$2, fn_talla=$3,
         fc_lote=$4, fc_observacion=$5,
         fd_fecha_siembra=$6, fd_fecha_salida_hormonado=$7,
+        ubicacion=$8,
         fd_fecha_modificacion=NOW()
-       WHERE fi_id=$8`,
+       WHERE fi_id=$9`,
             [fn_num_instalacion, fn_cantidad, fn_talla, fc_lote || null, fc_observacion || null,
-                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, id]
+                fd_fecha_siembra || null, fd_fecha_salida_hormonado || null, ubicacion || null, id]
         );
     }
 

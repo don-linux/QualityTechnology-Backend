@@ -157,11 +157,11 @@ CREATE TABLE public.alimentacion (
     fn_temp_agua numeric,
     fn_amonio numeric,
     fn_ph numeric,
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.alimentacion OWNER TO postgres;
@@ -227,11 +227,11 @@ CREATE TABLE public.banos (
     fc_tipo_banio character varying(20),
     fc_regadera character varying(100),
     fc_realizo character varying(100),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.banos OWNER TO postgres;
@@ -246,7 +246,7 @@ CREATE TABLE public.biometrias (
     fn_peso_total_gramos numeric,
     fn_organismos_muestreados integer,
     fn_peso_promedio numeric,
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_encargado character varying(100),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
@@ -254,6 +254,7 @@ CREATE TABLE public.biometrias (
     fi_instalacion_id integer,
     tipo character varying(20),
     fc_granja character varying(100),
+    ubicacion character varying(50) NOT NULL,
     fi_reproductor_id integer,
     CONSTRAINT chk_biometrias_tipo_repro CHECK (((((tipo)::text = 'REPRODUCTORES'::text) AND (fi_reproductor_id IS NOT NULL)) OR ((tipo)::text <> 'REPRODUCTORES'::text)))
 );
@@ -486,13 +487,13 @@ CREATE TABLE public.insumos (
     fc_cantidad_udm character varying(100),
     fc_num_lote character varying(100),
     fc_descripcion character varying(300),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_encargado_entrega character varying(100),
     fc_encargado_recepcion character varying(100),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.insumos OWNER TO postgres;
@@ -827,7 +828,7 @@ CREATE TABLE public.inventario_alevines (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.inventario_alevines OWNER TO postgres;
@@ -1037,8 +1038,8 @@ CREATE TABLE public.medicamentos (
     fi_id integer NOT NULL,
     fd_fecha_hora timestamp(6) without time zone NOT NULL,
     fn_num_estanque integer,
-    fc_diagnosis text,
-    fc_tratamiento text,
+    fc_diagnosis character varying(500),
+    fc_tratamiento character varying(500),
     fc_dosis character varying(100),
     fc_forma_aplicacion character varying(100),
     fd_fecha_ultima_dosis date,
@@ -1046,7 +1047,7 @@ CREATE TABLE public.medicamentos (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.medicamentos OWNER TO postgres;
@@ -1088,7 +1089,7 @@ CREATE TABLE public.parametros (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.parametros OWNER TO postgres;
@@ -1120,9 +1121,9 @@ CREATE TABLE public.plagas (
     fi_id integer NOT NULL,
     fd_fecha date NOT NULL,
     fc_num_trampa character varying(100),
-    fc_hallazgo text,
+    fc_hallazgo character varying(500),
     fc_malla character varying(200),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_verifico character varying(100),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
@@ -1178,7 +1179,7 @@ CREATE TABLE public.recambios (
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
-    ubicacion character varying(50)
+    ubicacion character varying(50) NOT NULL
 );
 
 ALTER TABLE public.recambios OWNER TO postgres;
@@ -1210,12 +1211,12 @@ CREATE TABLE public.recepcion_insumos (
     fi_id integer NOT NULL,
     fc_mes character varying(20),
     fd_fecha date NOT NULL,
-    fc_cantidad character varying(100),
+    fc_cantidad numeric(15,2),
     fc_lote character varying(100),
     fc_descripcion character varying(300),
     fc_encargado_entrega character varying(100),
     fc_verifico character varying(100),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
     fi_usuario_id integer,
@@ -1257,7 +1258,7 @@ CREATE TABLE public.visitas (
     fc_nombre_completo character varying(200),
     fc_origen character varying(200),
     fc_motivo character varying(300),
-    fc_observaciones text,
+    fc_observaciones character varying(500),
     fc_foto_identificacion character varying(200),
     fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
     fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
@@ -2820,15 +2821,15 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
     ('Cuentas', '/cuentas', true),
     ('Biometrias', '/biometrias', true),
     ('Plagas', '/plagas', true),
-    ('Alimentacion Ceiba', '/ceiba/alimentacion', true),
-    ('Insumos Ceiba', '/ceiba/insumos', true),
+    ('Alimentacion', '/alimentacion', true),
+    ('Insumos', '/insumos', true),
     ('Recepcion Insumos', '/recepcion_insumos', true),
     ('Visitas', '/visitas', true),
-    ('Banos Medellin', '/medellin/banos', true),
-    ('Parametros Medellin', '/medellin/parametros', true),
-    ('Medicamentos Medellin', '/medellin/medicamentos', true),
-    ('Recambios Medellin', '/medellin/recambios', true),
-    ('Inventario Medellin', '/medellin/inventario', true),
+    ('Banos', '/banos', true),
+    ('Parametros', '/parametros', true),
+    ('Medicamentos', '/medicamentos', true),
+    ('Recambios', '/recambios', true),
+    ('Inventario', '/inventario', true),
     ('Catalogo Estados', '/estados', false),
     ('Expedientes', '/expedientes', false),
     ('Puestos', '/puestos', true),

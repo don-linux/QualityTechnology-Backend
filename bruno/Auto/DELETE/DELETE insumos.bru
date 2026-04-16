@@ -1,0 +1,17 @@
+meta {
+  name: DELETE insumos
+  type: http
+  seq: 34
+}
+
+delete {
+  url: {{baseUrl}}/insumos
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

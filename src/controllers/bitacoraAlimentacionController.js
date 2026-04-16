@@ -1,5 +1,7 @@
 import bitacoraAlimentacionModel from "../models/bitacoraAlimentacionModel.js";
 
+const MAX_FC_OBSERVACIONES = 500;
+
 class BitacoraAlimentacionController {
     static async getAll(req, res) {
         try {
@@ -13,6 +15,14 @@ class BitacoraAlimentacionController {
 
     static async create(req, res) {
         try {
+            const { ubicacion, fc_observaciones } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+            const obsLen = fc_observaciones == null ? 0 : String(fc_observaciones).length;
+            if (obsLen > MAX_FC_OBSERVACIONES) {
+                return res.status(400).json({ error: `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.` });
+            }
             const data = { ...req.body, fi_usuario_id: req.user.usuario_id };
             const id = await bitacoraAlimentacionModel.create(data);
             res.json({ message: "Registro creado", id });
@@ -24,6 +34,14 @@ class BitacoraAlimentacionController {
 
     static async update(req, res) {
         try {
+            const { ubicacion, fc_observaciones } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+            const obsLen = fc_observaciones == null ? 0 : String(fc_observaciones).length;
+            if (obsLen > MAX_FC_OBSERVACIONES) {
+                return res.status(400).json({ error: `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.` });
+            }
             await bitacoraAlimentacionModel.update(req.params.id, req.body);
             res.json({ message: "Registro actualizado" });
         } catch (err) {

@@ -5,12 +5,21 @@ class BitacoraParametroController {
         return v === "" || v == null ? null : Number(v);
     }
 
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraParametroModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const result = await bitacoraParametroModel.getAll();
             res.json(result);
         } catch (err) {
-            console.error("Error en GET /medellin/parametros:", err.message);
+            console.error("Error en GET /parametros:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -29,6 +38,11 @@ class BitacoraParametroController {
             const numEstanque = BitacoraParametroController.parseNum(fn_num_estanque);
             if (isNaN(numEstanque)) throw new Error("fn_num_estanque debe ser numérico");
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
             await bitacoraParametroModel.create({
                 fd_fecha, fn_num_estanque: numEstanque,
                 fn_oxigeno: BitacoraParametroController.parseNum(fn_oxigeno),
@@ -37,12 +51,12 @@ class BitacoraParametroController {
                 fn_amonio: BitacoraParametroController.parseNum(fn_amonio),
                 fn_nitritos: BitacoraParametroController.parseNum(fn_nitritos),
                 fn_nitratos: BitacoraParametroController.parseNum(fn_nitratos),
-                fc_responsable, fi_usuario_id
+                fc_responsable, ubicacion, fi_usuario_id
             });
 
             res.json({ message: "Registro agregado correctamente" });
         } catch (err) {
-            console.error("Error en POST /medellin/parametros:", err.message);
+            console.error("Error en POST /parametros:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -54,6 +68,11 @@ class BitacoraParametroController {
                 fn_amonio, fn_nitritos, fn_nitratos, fc_responsable
             } = req.body;
 
+            const { ubicacion } = req.body;
+            if (!ubicacion || !ubicacion.trim()) {
+                return res.status(400).json({ error: "ubicacion es requerido" });
+            }
+
             await bitacoraParametroModel.update(req.params.id, {
                 fd_fecha, fn_num_estanque: BitacoraParametroController.parseNum(fn_num_estanque),
                 fn_oxigeno: BitacoraParametroController.parseNum(fn_oxigeno),
@@ -62,12 +81,12 @@ class BitacoraParametroController {
                 fn_amonio: BitacoraParametroController.parseNum(fn_amonio),
                 fn_nitritos: BitacoraParametroController.parseNum(fn_nitritos),
                 fn_nitratos: BitacoraParametroController.parseNum(fn_nitratos),
-                fc_responsable
+                fc_responsable, ubicacion
             });
 
             res.json({ message: "Registro actualizado correctamente" });
         } catch (err) {
-            console.error("Error en PUT /medellin/parametros:", err.message);
+            console.error("Error en PUT /parametros:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
@@ -77,7 +96,7 @@ class BitacoraParametroController {
             await bitacoraParametroModel.delete(req.params.id);
             res.json({ message: "Registro eliminado" });
         } catch (err) {
-            console.error("Error en DELETE /medellin/parametros:", err.message);
+            console.error("Error en DELETE /parametros:", err.message);
             res.status(500).json({ error: err.message });
         }
     }
