@@ -214,8 +214,10 @@ components:
           type: string
         huevos_ml:
           type: number
+          description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
         observacion:
           type: string
+          maxLength: 500
 
     Reproductor:
       type: object

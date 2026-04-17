@@ -926,7 +926,7 @@ CREATE TABLE public.lotes (
     alevines_inicial integer NOT NULL,
     no_lote character varying(50) NOT NULL,
     fc_granja character varying(100) NOT NULL,
-    observacion text,
+    observacion character varying(500),
     fecha_registro date DEFAULT CURRENT_DATE,
     mortalidad integer DEFAULT 0,
     mortalidad_porcentaje numeric(5,2) DEFAULT 0,

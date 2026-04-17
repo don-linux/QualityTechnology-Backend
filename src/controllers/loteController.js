@@ -1,5 +1,30 @@
 import loteModel from "../models/loteModel.js";
 
+const MAX_NUMERICO = 15;
+const MAX_OBSERVACION = 500;
+const REGEX_DECIMAL = /^\d+(\.\d+)?$/;
+
+function validarCamposLote({ huevos_ml, huevos, observacion }) {
+    const valorHuevos = huevos_ml ?? huevos;
+
+    if (valorHuevos !== undefined && valorHuevos !== null && valorHuevos !== "") {
+        const valor = String(valorHuevos);
+
+        if (valor.length > MAX_NUMERICO) {
+            return `Los huevos no pueden superar los ${MAX_NUMERICO} caracteres.`;
+        }
+        if (!REGEX_DECIMAL.test(valor)) {
+            return "Los huevos deben ser un número (puede incluir decimales).";
+        }
+    }
+
+    if (observacion && observacion.length > MAX_OBSERVACION) {
+        return `La observación no puede superar los ${MAX_OBSERVACION} caracteres.`;
+    }
+
+    return null;
+}
+
 class LoteController {
 
     /* =====================================================
@@ -99,6 +124,11 @@ class LoteController {
                 });
             }
 
+            const errorValidacion = validarCamposLote(req.body);
+            if (errorValidacion) {
+                return res.status(400).json({ error: errorValidacion });
+            }
+
             const granjaFinal = loteModel.normalizarGranja(fc_granja);
 
             const huevosFinal = huevos_ml ?? huevos ?? 0;
@@ -165,6 +195,11 @@ class LoteController {
                 mortalidad = 0,
                 alevines_inicial = 0
             } = req.body;
+
+            const errorValidacion = validarCamposLote(req.body);
+            if (errorValidacion) {
+                return res.status(400).json({ error: errorValidacion });
+            }
 
             const granjaFinal = loteModel.normalizarGranja(fc_granja);
 
