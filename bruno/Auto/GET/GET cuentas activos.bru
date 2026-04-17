@@ -1,11 +1,11 @@
 meta {
-  name: DELETE cuentas {id}
+  name: GET cuentas activos
   type: http
-  seq: 10
+  seq: 11
 }
 
-delete {
-  url: {{baseUrl}}/cuentas/{{id}}
+get {
+  url: {{baseUrl}}/cuentas/activos
   body: none
 }
 

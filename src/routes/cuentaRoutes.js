@@ -1,19 +1,16 @@
 import express from "express";
-import cuentaController from "../controllers/cuentaController.js";
+import CuentaController from "../controllers/cuentaController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// APLICAR PROTECCION GLOBAL A ESTE MODULO
 router.use(authMiddleware);
 
-/* =========================================================
-   RUTAS DE CUENTAS
-========================================================= */
-router.get("/", cuentaController.getAll);
-router.post("/", cuentaController.create);
-router.put("/:id", cuentaController.update);
-router.delete("/:id", cuentaController.delete);
-router.put("/actualizar-saldo/:id", cuentaController.updateSaldo);
+router.get("/", CuentaController.getAll);
+router.get("/activos", CuentaController.getActivos);
+router.post("/", CuentaController.create);
+router.put("/:id", CuentaController.update);
+router.patch("/:id/activate", CuentaController.activate);
+router.patch("/:id/deactivate", CuentaController.deactivate);
 
 export default router;

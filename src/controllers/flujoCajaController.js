@@ -61,7 +61,7 @@ class FlujoCajaController {
         return res.status(400).json({ error: "La cuenta seleccionada no existe." });
       }
 
-      let saldoActual = parseFloat(cuenta.saldo);
+      let saldoActual = parseFloat(cuenta.fn_saldo_actual);
 
       // Validar saldo suficiente si es egreso
       if (egresoFinal > 0) {
@@ -84,7 +84,7 @@ class FlujoCajaController {
         fn_egreso: egresoFinal, fc_descripcion, fc_cuenta,
         fc_categoria, fc_subcategoria, fc_beneficiario,
         fc_noproyecto, fc_factura, fc_estatus, fc_mes,
-      }, cuenta.id, saldoActual);
+      }, cuenta.fi_cuenta_id, saldoActual);
 
       res.json({
         mensaje: "Movimiento registrado correctamente",

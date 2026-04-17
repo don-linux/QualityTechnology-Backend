@@ -1,0 +1,17 @@
+meta {
+  name: PATCH cuentas deactivate {id}
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{baseUrl}}/cuentas/{{id}}/deactivate
+  body: none
+}
+
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body: none

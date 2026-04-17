@@ -47,16 +47,17 @@ class FlujoCajaModel {
 
   static async getCuentaByNombre(nombre) {
     const result = await pool.query(
-      "SELECT * FROM cuentas WHERE nombre = $1",
+      "SELECT * FROM public.cuentas WHERE fc_nombre = $1 AND fb_activo = true",
       [nombre]
     );
     return result.rows[0];
   }
 
   static async updateCuentaSaldo(id, nuevoSaldo) {
-    await pool.query("UPDATE cuentas SET saldo = $1 WHERE id = $2", [
-      nuevoSaldo, id,
-    ]);
+    await pool.query(
+      "UPDATE public.cuentas SET fn_saldo_actual = $1 WHERE fi_cuenta_id = $2",
+      [nuevoSaldo, id]
+    );
   }
 
   static async create(data) {
@@ -100,7 +101,7 @@ class FlujoCajaModel {
       );
 
       await client.query(
-        "UPDATE cuentas SET saldo = $1 WHERE id = $2",
+        "UPDATE public.cuentas SET fn_saldo_actual = $1 WHERE fi_cuenta_id = $2",
         [nuevoSaldo, cuentaId]
       );
 

@@ -610,33 +610,39 @@ ALTER TABLE public.clientes ALTER COLUMN fi_cliente_id ADD GENERATED ALWAYS AS I
 --
 
 CREATE TABLE public.cuentas (
-    id integer NOT NULL,
-    nombre character varying(100) NOT NULL,
-    saldo numeric(12,2) DEFAULT 0,
-    tipo character varying(50) DEFAULT 'CUENTA CORRIENTE'::character varying,
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now()
+    fi_cuenta_id integer NOT NULL,
+    fc_udn character varying(10) NOT NULL,
+    fc_nombre character varying(100) NOT NULL,
+    fc_numero_cuenta character varying(50),
+    fc_tipo character varying(20) NOT NULL,
+    fn_saldo_inicial numeric(15,2) DEFAULT 0 NOT NULL,
+    fn_saldo_actual numeric(15,2) DEFAULT 0 NOT NULL,
+    fb_activo boolean DEFAULT true NOT NULL,
+    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
+    CONSTRAINT cuentas_fc_udn_check CHECK (((fc_udn)::text = ANY (ARRAY[('CQT'::character varying)::text, ('GAM'::character varying)::text, ('GAC'::character varying)::text]))),
+    CONSTRAINT cuentas_fc_tipo_check CHECK (((fc_tipo)::text = ANY (ARRAY[('Cheques'::character varying)::text, ('Efectivo'::character varying)::text, ('Inversion'::character varying)::text])))
 );
 
 ALTER TABLE public.cuentas OWNER TO postgres;
 
 --
--- Name: cuentas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: cuentas_fi_cuenta_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.cuentas_id_seq
+CREATE SEQUENCE public.cuentas_fi_cuenta_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     MAXVALUE 2147483647
     CACHE 1;
 
-ALTER SEQUENCE public.cuentas_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.cuentas_fi_cuenta_id_seq OWNER TO postgres;
 
 --
--- Name: cuentas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: cuentas_fi_cuenta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.cuentas_id_seq OWNED BY public.cuentas.id;
+ALTER SEQUENCE public.cuentas_fi_cuenta_id_seq OWNED BY public.cuentas.fi_cuenta_id;
 
 --
 -- Name: engorda; Type: TABLE; Schema: public; Owner: postgres
@@ -2027,10 +2033,10 @@ ALTER TABLE ONLY public.cat_tesoreria_categorias ALTER COLUMN fi_categoria_id SE
 ALTER TABLE ONLY public.categorias ALTER COLUMN id SET DEFAULT nextval('public.categorias_id_seq'::regclass);
 
 --
--- Name: cuentas id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: cuentas fi_cuenta_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.cuentas ALTER COLUMN id SET DEFAULT nextval('public.cuentas_id_seq'::regclass);
+ALTER TABLE ONLY public.cuentas ALTER COLUMN fi_cuenta_id SET DEFAULT nextval('public.cuentas_fi_cuenta_id_seq'::regclass);
 
 --
 -- Name: engorda fi_engorda_id; Type: DEFAULT; Schema: public; Owner: postgres
@@ -2264,7 +2270,7 @@ ALTER TABLE ONLY public.clientes
 --
 
 ALTER TABLE ONLY public.cuentas
-    ADD CONSTRAINT cuentas_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT cuentas_pkey PRIMARY KEY (fi_cuenta_id);
 
 --
 -- Name: engorda engorda_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
