@@ -1552,7 +1552,7 @@ CREATE TABLE public.reproductores (
     fc_instalacion character varying(50),
     fn_cantidad integer,
     fn_talla numeric(10,2),
-    fc_observacion character varying(100),
+    fc_observacion character varying(500),
     fd_fecha_siembra date,
     fd_fecha_biometria date,
     fi_usuario_id integer,

@@ -1,5 +1,48 @@
 import reproductorModel from "../models/reproductorModel.js";
 
+const MAX_NUMERICO = 15;
+const MAX_OBSERVACION = 500;
+const REGEX_ENTERO = /^\d+$/;
+const REGEX_DECIMAL = /^\d+(\.\d+)?$/;
+
+function validarCamposReproductor({ fn_machos, fn_hembras, fn_talla, fc_observacion }) {
+  if (fn_machos !== undefined && fn_machos !== null && fn_machos !== "") {
+    const valor = String(fn_machos);
+    if (valor.length > MAX_NUMERICO) {
+      return `La cantidad de machos no puede superar los ${MAX_NUMERICO} caracteres.`;
+    }
+    if (!REGEX_ENTERO.test(valor)) {
+      return "La cantidad de machos debe ser un número entero.";
+    }
+  }
+
+  if (fn_hembras !== undefined && fn_hembras !== null && fn_hembras !== "") {
+    const valor = String(fn_hembras);
+    if (valor.length > MAX_NUMERICO) {
+      return `La cantidad de hembras no puede superar los ${MAX_NUMERICO} caracteres.`;
+    }
+    if (!REGEX_ENTERO.test(valor)) {
+      return "La cantidad de hembras debe ser un número entero.";
+    }
+  }
+
+  if (fn_talla !== undefined && fn_talla !== null && fn_talla !== "") {
+    const valor = String(fn_talla);
+    if (valor.length > MAX_NUMERICO) {
+      return `La talla no puede superar los ${MAX_NUMERICO} caracteres.`;
+    }
+    if (!REGEX_DECIMAL.test(valor)) {
+      return "La talla debe ser un número (puede incluir decimales).";
+    }
+  }
+
+  if (fc_observacion && fc_observacion.length > MAX_OBSERVACION) {
+    return `La observación no puede superar los ${MAX_OBSERVACION} caracteres.`;
+  }
+
+  return null;
+}
+
 class ReproductorController {
   static async getMovimientos(req, res) {
     try {
@@ -40,6 +83,11 @@ class ReproductorController {
         });
       }
 
+      const errorValidacion = validarCamposReproductor(req.body);
+      if (errorValidacion) {
+        return res.status(400).json({ error: errorValidacion });
+      }
+
       await reproductorModel.create(req.body);
       res.json({
         success: true,
@@ -53,6 +101,11 @@ class ReproductorController {
 
   static async update(req, res) {
     try {
+      const errorValidacion = validarCamposReproductor(req.body);
+      if (errorValidacion) {
+        return res.status(400).json({ error: errorValidacion });
+      }
+
       await reproductorModel.update(req.params.id, req.body);
       res.json({
         success: true,

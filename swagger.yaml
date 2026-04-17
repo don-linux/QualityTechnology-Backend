@@ -228,10 +228,13 @@ components:
           type: number
         fn_talla:
           type: number
+          description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
         fn_machos:
-          type: number
+          type: integer
+          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
         fn_hembras:
-          type: number
+          type: integer
+          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
         fc_ratio:
           type: string
         fc_linea:
@@ -240,6 +243,7 @@ components:
           type: string
         fc_observacion:
           type: string
+          maxLength: 500
         fd_fecha_siembra:
           type: string
           format: date
@@ -1880,20 +1884,24 @@ paths:
                   type: number
                 fn_talla:
                   type: number
+                  description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
                 fi_usuario_id:
                   type: integer
                 fc_granja:
                   type: string
                 fn_machos:
-                  type: number
+                  type: integer
+                  description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
                 fn_hembras:
-                  type: number
+                  type: integer
+                  description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
                 fc_linea:
                   type: string
                 fc_familia:
                   type: string
                 fc_observacion:
                   type: string
+                  maxLength: 500
       responses:
         '200':
           description: "Reproductor registrado"
