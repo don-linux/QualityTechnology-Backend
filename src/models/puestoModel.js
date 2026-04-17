@@ -35,13 +35,23 @@ class PuestoModel {
         return result.rows[0];
     }
 
-    static async update(id, { fc_nombre, fb_activo }) {
+    static async update(id, { fc_nombre }) {
         const result = await pool.query(`
             UPDATE rrhh.puestos
-            SET fc_nombre = $1, fb_activo = $2
-            WHERE fi_puesto_id = $3
+            SET fc_nombre = $1
+            WHERE fi_puesto_id = $2
             RETURNING *;
-        `, [fc_nombre, fb_activo, id]);
+        `, [fc_nombre, id]);
+        return result.rows[0];
+    }
+
+    static async activate(id) {
+        const result = await pool.query(`
+            UPDATE rrhh.puestos
+            SET fb_activo = true
+            WHERE fi_puesto_id = $1
+            RETURNING *;
+        `, [id]);
         return result.rows[0];
     }
 

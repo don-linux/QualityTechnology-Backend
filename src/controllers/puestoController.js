@@ -38,12 +38,12 @@ class PuestoController {
 
     static async update(req, res) {
         const { id } = req.params;
-        const { fc_nombre, fb_activo } = req.body;
+        const { fc_nombre } = req.body;
         if (!fc_nombre) {
             return res.status(400).json({ error: "El nombre es obligatorio" });
         }
         try {
-            const puesto = await PuestoModel.update(id, { fc_nombre, fb_activo });
+            const puesto = await PuestoModel.update(id, { fc_nombre });
             if (!puesto) {
                 return res.status(404).json({ error: "Puesto no encontrado" });
             }
@@ -51,6 +51,20 @@ class PuestoController {
         } catch (err) {
             console.error("Error al actualizar puesto:", err);
             res.status(500).json({ error: "Error al actualizar puesto" });
+        }
+    }
+
+    static async activate(req, res) {
+        const { id } = req.params;
+        try {
+            const puesto = await PuestoModel.activate(id);
+            if (!puesto) {
+                return res.status(404).json({ error: "Puesto no encontrado" });
+            }
+            res.json({ mensaje: "Puesto activado correctamente", puesto });
+        } catch (err) {
+            console.error("Error al activar puesto:", err);
+            res.status(500).json({ error: "Error al activar puesto" });
         }
     }
 

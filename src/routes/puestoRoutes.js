@@ -10,6 +10,7 @@ router.get("/", PuestoController.getAll);
 router.get("/activos", PuestoController.getActivos);
 router.post("/", PuestoController.create);
 router.put("/:id", PuestoController.update);
+router.patch("/:id/activate", PuestoController.activate);
 router.patch("/:id/deactivate", PuestoController.deactivate);
 
 export default router;
