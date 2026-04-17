@@ -40,14 +40,14 @@ class DepartamentoController {
 
     static async update(req, res) {
         const { id } = req.params;
-        const { fc_nombre, fb_activo } = req.body;
+        const { fc_nombre } = req.body;
 
         if (!fc_nombre) {
             return res.status(400).json({ error: "El nombre es obligatorio" });
         }
 
         try {
-            const departamento = await DepartamentoModel.update(id, { fc_nombre, fb_activo });
+            const departamento = await DepartamentoModel.update(id, { fc_nombre });
             if (!departamento) {
                 return res.status(404).json({ error: "Departamento no encontrado" });
             }
@@ -55,6 +55,21 @@ class DepartamentoController {
         } catch (err) {
             console.error("Error al actualizar departamento:", err);
             res.status(500).json({ error: "Error al actualizar departamento" });
+        }
+    }
+
+    static async activate(req, res) {
+        const { id } = req.params;
+
+        try {
+            const departamento = await DepartamentoModel.activate(id);
+            if (!departamento) {
+                return res.status(404).json({ error: "Departamento no encontrado" });
+            }
+            res.json({ mensaje: "Departamento activado correctamente", departamento });
+        } catch (err) {
+            console.error("Error al activar departamento:", err);
+            res.status(500).json({ error: "Error al activar departamento" });
         }
     }
 
