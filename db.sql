@@ -647,7 +647,7 @@ CREATE TABLE public.engorda (
     fi_instalacion_id integer NOT NULL,
     cantidad integer NOT NULL,
     talla_gr numeric(10,2),
-    observacion text,
+    observacion character varying(500),
     fecha_siembra date,
     fecha_biometria date,
     fecha_registro date DEFAULT CURRENT_DATE,

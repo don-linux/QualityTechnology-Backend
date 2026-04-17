@@ -272,6 +272,7 @@ components:
           type: number
         observacion:
           type: string
+          maxLength: 500
         fecha_siembra:
           type: string
           format: date

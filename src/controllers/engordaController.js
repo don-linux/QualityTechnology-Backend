@@ -1,5 +1,7 @@
 import engordaModel from "../models/engordaModel.js";
 
+const MAX_OBSERVACION = 500;
+
 class EngordaController {
   static async getByGranja(req, res) {
     try {
@@ -14,6 +16,13 @@ class EngordaController {
 
   static async create(req, res) {
     try {
+      const { observacion } = req.body;
+      if (observacion && observacion.length > MAX_OBSERVACION) {
+        return res.status(400).json({
+          error: `La observación no puede superar los ${MAX_OBSERVACION} caracteres.`,
+        });
+      }
+
       const body = {
         ...req.body,
         fc_granja: engordaModel.normalizarGranja(req.body.fc_granja),
