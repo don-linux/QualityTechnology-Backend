@@ -1397,19 +1397,16 @@ ALTER TABLE public.piletas ALTER COLUMN fi_pileta_id ADD GENERATED ALWAYS AS IDE
 
 CREATE TABLE public.proveedores (
     id integer NOT NULL,
-    nombre character varying(255) NOT NULL,
-    empresa character varying(255),
+    razon_social character varying(255) NOT NULL,
     rfc character varying(50),
-    categoria character varying(100),
-    contacto character varying(150),
+    udn character varying(100),
+    nombre_contacto character varying(150),
     telefono character varying(50),
     correo character varying(150),
-    direccion text,
-    forma_pago character varying(50),
-    plazo_credito integer,
-    ultima_compra date,
-    monto_promedio numeric(12,2) DEFAULT 0,
-    activo boolean DEFAULT true,
+    localidad character varying(150),
+    estado character varying(100),
+    ejecutivo character varying(150),
+    precio_venta numeric(12,2) DEFAULT 0,
     created_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
 );

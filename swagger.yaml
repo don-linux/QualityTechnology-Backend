@@ -537,33 +537,26 @@ components:
       properties:
         id:
           type: integer
-        nombre:
-          type: string
-        empresa:
+        razon_social:
           type: string
         rfc:
           type: string
-        categoria:
+        udn:
           type: string
-        contacto:
+        nombre_contacto:
           type: string
         telefono:
           type: string
         correo:
           type: string
-        direccion:
+        localidad:
           type: string
-        forma_pago:
+        estado:
           type: string
-        plazo_credito:
+        ejecutivo:
           type: string
-        ultima_compra:
-          type: string
-          format: date
-        monto_promedio:
+        precio_venta:
           type: number
-        activo:
-          type: boolean
 
     FlujoCajaMovimiento:
       type: object

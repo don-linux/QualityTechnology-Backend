@@ -11,15 +11,14 @@ class ProveedorModel {
   static async create(data) {
     const result = await pool.query(
       `INSERT INTO proveedores
-        (nombre, empresa, rfc, categoria, contacto, telefono, correo,
-         direccion, forma_pago, plazo_credito, ultima_compra, monto_promedio)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        (razon_social, rfc, udn, nombre_contacto, telefono, correo,
+         localidad, estado, ejecutivo, precio_venta)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
       [
-        data.nombre, data.empresa, data.rfc, data.categoria,
-        data.contacto, data.telefono, data.correo, data.direccion,
-        data.forma_pago, data.plazo_credito,
-        data.ultima_compra || null, data.monto_promedio || 0,
+        data.razon_social, data.rfc, data.udn, data.nombre_contacto,
+        data.telefono, data.correo, data.localidad, data.estado,
+        data.ejecutivo, data.precio_venta || 0,
       ]
     );
     return result.rows[0];
@@ -28,17 +27,14 @@ class ProveedorModel {
   static async update(id, data) {
     const result = await pool.query(
       `UPDATE proveedores
-       SET nombre=$1, empresa=$2, rfc=$3, categoria=$4, contacto=$5,
-           telefono=$6, correo=$7, direccion=$8, forma_pago=$9,
-           plazo_credito=$10, ultima_compra=$11, monto_promedio=$12,
-           activo=$13, updated_at=NOW()
-       WHERE id=$14 RETURNING *`,
+       SET razon_social=$1, rfc=$2, udn=$3, nombre_contacto=$4,
+           telefono=$5, correo=$6, localidad=$7, estado=$8,
+           ejecutivo=$9, precio_venta=$10, updated_at=NOW()
+       WHERE id=$11 RETURNING *`,
       [
-        data.nombre, data.empresa, data.rfc, data.categoria,
-        data.contacto, data.telefono, data.correo, data.direccion,
-        data.forma_pago, data.plazo_credito,
-        data.ultima_compra || null, data.monto_promedio || 0,
-        data.activo, id,
+        data.razon_social, data.rfc, data.udn, data.nombre_contacto,
+        data.telefono, data.correo, data.localidad, data.estado,
+        data.ejecutivo, data.precio_venta || 0, id,
       ]
     );
     return result.rows[0];
