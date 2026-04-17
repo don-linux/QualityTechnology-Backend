@@ -95,7 +95,10 @@ class ReproductorController {
       });
     } catch (err) {
       console.error("Error registrar reproductor:", err);
-      res.status(500).json({ error: "Error al registrar reproductor" });
+      res.status(500).json({
+        error: "Error al registrar reproductor",
+        detalle: err.message,
+      });
     }
   }
 
@@ -113,7 +116,10 @@ class ReproductorController {
       });
     } catch (err) {
       console.error("Error actualizar reproductor:", err);
-      res.status(500).json({ error: "Error al actualizar reproductor" });
+      res.status(500).json({
+        error: "Error al actualizar reproductor",
+        detalle: err.message,
+      });
     }
   }
 
