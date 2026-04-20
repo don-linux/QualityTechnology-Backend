@@ -1,2853 +1,1886 @@
+-- ============================================================================
+-- QualityTechnology · Esquema limpio COMPLETO de la base de datos
+-- Archivo        : db_inventarios_limpio.sql
+-- Motor objetivo : PostgreSQL >= 13
+-- Autor          : C-RIP
+-- PD. fer es un pendejo XDXDXDXD
+-- PD2. fer si lees esto felicidades, y eres un pendejo XDXDXDXD
+-- ============================================================================
+-- Reconstrucción profesional de TODO el esquema que consume el sistema
+-- (módulos: Inventarios, Registro Operativo, Ventas/CRM, Finanzas,
+-- Tesorería, RRHH y Seguridad).
 --
--- PostgreSQL database dump
+-- Subsistemas incluidos:
+--   · Inventarios         : instalaciones, piletas, engorda, reproductores,
+--                           lotes, alimentos, equipos, mantenimientos y sus
+--                           trazabilidades.
+--   · Registro operativo  : 11 bitácoras (alimentación, baños, biometrías,
+--                           insumos, inventario alevines, medicamentos,
+--                           parámetros, plagas, recambios, recepción de
+--                           insumos, visitas) + lote_movimientos.
+--   · Ventas / CRM        : clientes, proveedores, ventas, lista_espera.
+--   · Finanzas            : cuentas, flujo_caja + vista vw_tesoreria_general.
+--   · RRHH                : empleados, documentos_empleado, nómina,
+--                           vacaciones, caja_ahorro_resumen + catálogos
+--                           (puestos, departamentos, tipos_documento).
+--   · Seguridad           : roles, usuarios, módulos, roles_modulos,
+--                           refresh_tokens.
 --
-
--- Dumped from database version 18.1
--- Dumped by pg_dump version 18.1
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
+-- Cambios respecto a db.sql:
 --
--- Name: catalogos; Type: SCHEMA; Schema: -; Owner: postgres
+--   1. Se ELIMINAN columnas sobrantes que el frontend nunca usa:
+--        · piletas.ubicacion             — legado, duplicado de fc_granja
+--        · piletas.origen_instalacion    — redundante con trazabilidad_alevinaje
+--        · engorda.origen_instalacion    — confuso: el frontend le guardaba
+--                                          un fi_lote_id; ahora se usa el FK
+--                                          explícito fi_lote_id.
 --
-
-CREATE SCHEMA catalogos;
-
-ALTER SCHEMA catalogos OWNER TO postgres;
-
+--   2. Las columnas de auditoría (fd_fecha_registro, fd_fecha_modificacion),
+--      que estaban declaradas pero no se mantenían, se unifican bajo un
+--      mismo nombre en toda la base y se mantienen activas mediante el
+--      trigger fn_touch_fecha_modificacion(). Dejan de ser "sobrantes".
 --
--- Name: rrhh; Type: SCHEMA; Schema: -; Owner: postgres
+--   3. Relaciones débiles pasan a FK reales:
+--        · reproductores.fc_instalacion  VARCHAR(50) → fi_instalacion_id INT FK
+--        · lotes.fc_instalacion_id       VARCHAR(50) → fi_instalacion_id INT FK
+--        · trazabilidad_reproductores → reproductores (FK añadida)
+--        · trazabilidad_alevinaje → instalaciones (FKs añadidas)
 --
-
-CREATE SCHEMA rrhh;
-
-ALTER SCHEMA rrhh OWNER TO postgres;
-
+--   4. Se añaden CHECK constraints para enums y reglas de negocio:
+--        · instalaciones.tipo_instalacion, estado, fc_granja
+--        · piletas.fc_granja
+--        · alimentos: exactamente uno de (pileta | engorda | reproductor)
+--        · trazabilidad_alevinaje: origen interno XOR externo
 --
--- Name: seguridad; Type: SCHEMA; Schema: -; Owner: postgres
+--   5. Se añaden columnas GENERATED para evitar desincronización:
+--        · reproductores.fn_cantidad      = fn_machos + fn_hembras
+--        · lotes.mortalidad_porcentaje    = mortalidad / alevines_inicial * 100
+--        · instalaciones.metros_cubicos   = largo * ancho * altura (ya existía)
 --
-
-CREATE SCHEMA seguridad;
-
-ALTER SCHEMA seguridad OWNER TO postgres;
-
+--   6. Todas las FKs tienen ON DELETE explícito (RESTRICT / CASCADE / SET NULL
+--      según la semántica de cada relación).
 --
--- Name: sp_limpiarpiletassininstalacion(); Type: PROCEDURE; Schema: public; Owner: postgres
+--   7. Se añaden índices sobre FKs y sobre columnas de filtrado frecuente
+--      (fc_granja, fd_fecha_movimiento, fi_usuario_id).
 --
+--   8. Nuevos CHECKs de integridad en ventas y bitácoras:
+--        · ventas: fn_cantidad_vendida > 0, fn_abonado <= fn_monto_total;
+--          fn_adeudo se vuelve columna GENERATED.
+--        · caja_ahorro_resumen: UNIQUE (categoría, granja) + total GENERATED.
+--        · flujo_caja: ingreso>=0 AND egreso>=0 AND (ingreso>0 OR egreso>0).
+--        · parámetros / alimentación: 0 <= fn_ph <= 14.
+--        · lote_movimientos, biometrías: enums cerrados para tipo_*.
+--        · vacaciones: fd_inicio <= fd_fin.
+--        · documentos_empleado: UNIQUE (empleado, tipo_documento).
+--
+--   9. Se descartan 5 tablas legacy sin uso en el código:
+--        · caja_ahorro_movimientos, cat_caja_ahorro_categorias,
+--          cat_tesoreria_categorias, categorias, limpieza.
+--      También se omite la tabla "public.alevines" cuyo modelo está en el
+--      backend pero no está cableado a ninguna ruta activa del frontend.
+--
+-- Convenciones de naming (heredadas del esquema original):
+--      fi_*   integer / identificador
+--      fc_*   character / varchar
+--      fn_*   numeric
+--      fd_*   date / timestamp
+--      fb_*   boolean
+--
+-- Dependencias:
+--      Este archivo es AUTOSUFICIENTE. Crea esquemas (seguridad, rrhh) y las
+--      tablas de apoyo mínimas (roles, usuarios, modulos, roles_modulos,
+--      refresh_tokens, puestos, departamentos, tipos_documento) usando
+--      CREATE ... IF NOT EXISTS. Si ya existen (p. ej. corres sobre un
+--      db.sql previo) se respetan. Al final se cargan los seeds idempotentes
+--      (ON CONFLICT DO NOTHING/UPDATE), por lo que puedes ejecutarlo tantas
+--      veces como quieras sin efectos indeseados.
+--
+--      Las tablas transaccionales (empleados, clientes, ventas, bitácoras,
+--      nómina, etc.) se crean con CREATE TABLE (no IF NOT EXISTS): se
+--      asume base limpia. Para reconstruir sobre una base existente, usa la
+--      sección "0. RESET" (descomenta los DROP CASCADE).
+--
+-- Ejecución sobre base vacía:
+--      psql -U postgres -d quality_db -f db_inventarios_limpio.sql
+--
+-- Ejecución sobre base con datos previos del módulo Inventarios:
+--      descomenta la sección "0. RESET" para que los DROP ... CASCADE
+--      eliminen los objetos anteriores del inventario antes de crear los
+--      nuevos.
+-- ============================================================================
 
-CREATE PROCEDURE public.sp_limpiarpiletassininstalacion()
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    v_contador_piletas INT := 0;
-    v_contador_alimentos INT := 0;
-    v_contador_rastreabilidad INT := 0;
+BEGIN;
+
+
+-- ============================================================================
+-- 0.  RESET (opcional — descomenta si necesitas reconstruir sobre existente)
+-- ============================================================================
+-- -- Vistas
+-- DROP VIEW  IF EXISTS public.vw_tesoreria_general       CASCADE;
+--
+-- -- Bitácoras operativas
+-- DROP TABLE IF EXISTS public.visitas                    CASCADE;
+-- DROP TABLE IF EXISTS public.recepcion_insumos          CASCADE;
+-- DROP TABLE IF EXISTS public.recambios                  CASCADE;
+-- DROP TABLE IF EXISTS public.plagas                     CASCADE;
+-- DROP TABLE IF EXISTS public.parametros                 CASCADE;
+-- DROP TABLE IF EXISTS public.medicamentos               CASCADE;
+-- DROP TABLE IF EXISTS public.inventario_alevines        CASCADE;
+-- DROP TABLE IF EXISTS public.insumos                    CASCADE;
+-- DROP TABLE IF EXISTS public.biometrias                 CASCADE;
+-- DROP TABLE IF EXISTS public.banos                      CASCADE;
+-- DROP TABLE IF EXISTS public.alimentacion               CASCADE;
+--
+-- -- Ventas / CRM y Finanzas
+-- DROP TABLE IF EXISTS public.lista_espera               CASCADE;
+-- DROP TABLE IF EXISTS public.ventas                     CASCADE;
+-- DROP TABLE IF EXISTS public.proveedores                CASCADE;
+-- DROP TABLE IF EXISTS public.clientes                   CASCADE;
+-- DROP TABLE IF EXISTS public.flujo_caja                 CASCADE;
+-- DROP TABLE IF EXISTS public.cuentas                    CASCADE;
+--
+-- -- RRHH transaccional
+-- DROP TABLE IF EXISTS public.caja_ahorro_resumen        CASCADE;
+-- DROP TABLE IF EXISTS public.vacaciones                 CASCADE;
+-- DROP TABLE IF EXISTS public.nomina                     CASCADE;
+-- DROP TABLE IF EXISTS rrhh.documentos_empleado          CASCADE;
+-- DROP TABLE IF EXISTS rrhh.empleados                    CASCADE;
+--
+-- -- Lotes (histórico) + Inventarios
+-- DROP TABLE IF EXISTS public.lote_movimientos           CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_reproductores CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_engorda       CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_alevinaje     CASCADE;
+-- DROP TABLE IF EXISTS public.mantenimientos             CASCADE;
+-- DROP TABLE IF EXISTS public.equipos                    CASCADE;
+-- DROP TABLE IF EXISTS public.alimentos                  CASCADE;
+-- DROP TABLE IF EXISTS public.engorda                    CASCADE;
+-- DROP TABLE IF EXISTS public.piletas                    CASCADE;
+-- DROP TABLE IF EXISTS public.lotes                      CASCADE;
+-- DROP TABLE IF EXISTS public.reproductores              CASCADE;
+-- DROP TABLE IF EXISTS public.instalaciones              CASCADE;
+--
+-- -- Funciones utilitarias
+-- DROP FUNCTION IF EXISTS public.fn_touch_fecha_modificacion() CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_fecha_actualizacion() CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_updated_at()    CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_actualizado()   CASCADE;
+
+
+-- ============================================================================
+-- 1.  Función utilitaria para auditoría
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_touch_fecha_modificacion()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
 BEGIN
-    -- Inicia la transacción manualmente
-    PERFORM pg_advisory_xact_lock(99999);
-
-    -- Eliminar dependencias de alimentos
-    DELETE FROM alimentos
-    WHERE fi_pileta_id IN (
-        SELECT fi_pileta_id
-        FROM piletas
-        WHERE fi_instalacion_id IS NULL
-    );
-
-    GET DIAGNOSTICS v_contador_alimentos = ROW_COUNT;
-    RAISE NOTICE 'Se eliminaron % registros en la tabla alimentos.', v_contador_alimentos;
-
-    -- Eliminar dependencias en trazabilidad_alevinaje
-    DELETE FROM trazabilidad_alevinaje
-    WHERE fi_pileta_origen IN (
-        SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id IS NULL
-    )
-    OR fi_pileta_destino IN (
-        SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id IS NULL
-    );
-
-    GET DIAGNOSTICS v_contador_rastreabilidad = ROW_COUNT;
-    RAISE NOTICE 'Se eliminaron % registros en trazabilidad_alevinaje.', v_contador_rastreabilidad;
-
-    -- Finalmente eliminar las piletas huerfanas
-    DELETE FROM piletas
-    WHERE fi_instalacion_id IS NULL;
-
-    GET DIAGNOSTICS v_contador_piletas = ROW_COUNT;
-    RAISE NOTICE 'Se eliminaron % piletas sin instalacion.', v_contador_piletas;
-
-    RAISE NOTICE 'Limpieza completada correctamente.';
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'Error al limpiar piletas sin instalacion: %', SQLERRM;
+    NEW.fd_fecha_modificacion := now();
+    RETURN NEW;
 END;
 $$;
 
-ALTER PROCEDURE public.sp_limpiarpiletassininstalacion() OWNER TO postgres;
+COMMENT ON FUNCTION public.fn_touch_fecha_modificacion() IS
+    'Actualiza fd_fecha_modificacion en cada UPDATE. Úsese en triggers BEFORE UPDATE FOR EACH ROW.';
 
---
--- Name: unaccent(text); Type: FUNCTION; Schema: public; Owner: postgres
---
+-- Variante para tablas heredadas que usan fd_fecha_actualizacion
+-- (public.nomina, public.vacaciones) en vez de fd_fecha_modificacion.
+CREATE OR REPLACE FUNCTION public.fn_touch_fecha_actualizacion()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.fd_fecha_actualizacion := now();
+    RETURN NEW;
+END;
+$$;
 
-CREATE FUNCTION public.unaccent(text) RETURNS text
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/unaccent', 'unaccent_dict';
+COMMENT ON FUNCTION public.fn_touch_fecha_actualizacion() IS
+    'Actualiza fd_fecha_actualizacion en cada UPDATE (solo nomina y vacaciones).';
 
-ALTER FUNCTION public.unaccent(text) OWNER TO postgres;
+-- Variante para tablas con naming snake_case heredado (proveedores.updated_at)
+CREATE OR REPLACE FUNCTION public.fn_touch_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
 
---
--- Name: unaccent(regdictionary, text); Type: FUNCTION; Schema: public; Owner: postgres
---
+COMMENT ON FUNCTION public.fn_touch_updated_at() IS
+    'Actualiza updated_at en cada UPDATE (solo public.proveedores).';
 
-CREATE FUNCTION public.unaccent(regdictionary, text) RETURNS text
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/unaccent', 'unaccent_dict';
+-- Variante para caja_ahorro_resumen que usa la columna "actualizado"
+CREATE OR REPLACE FUNCTION public.fn_touch_actualizado()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.actualizado := now();
+    RETURN NEW;
+END;
+$$;
 
-ALTER FUNCTION public.unaccent(regdictionary, text) OWNER TO postgres;
+COMMENT ON FUNCTION public.fn_touch_actualizado() IS
+    'Actualiza la columna "actualizado" en cada UPDATE (solo caja_ahorro_resumen).';
 
---
--- Name: unaccent_init(internal); Type: FUNCTION; Schema: public; Owner: postgres
---
 
-CREATE FUNCTION public.unaccent_init(internal) RETURNS internal
-    LANGUAGE c
-    AS '$libdir/unaccent', 'unaccent_init';
+-- ============================================================================
+-- 1.5  Dependencias: esquemas + tablas de apoyo (auth, RRHH, seguridad)
+-- ----------------------------------------------------------------------------
+-- Todo aquí es idempotente (CREATE ... IF NOT EXISTS). Si tu base ya tiene
+-- estos objetos, no se tocan. Si está vacía, quedan creados para que los
+-- FK del módulo Inventarios y los seeds finales puedan ejecutarse.
+-- ============================================================================
+CREATE SCHEMA IF NOT EXISTS seguridad;
+CREATE SCHEMA IF NOT EXISTS rrhh;
 
-ALTER FUNCTION public.unaccent_init(internal) OWNER TO postgres;
-
---
--- Name: unaccent_lexize(internal, internal, internal, internal); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.unaccent_lexize(internal, internal, internal, internal) RETURNS internal
-    LANGUAGE c
-    AS '$libdir/unaccent', 'unaccent_lexize';
-
-ALTER FUNCTION public.unaccent_lexize(internal, internal, internal, internal) OWNER TO postgres;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: alimentacion; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.alimentacion (
-    fi_id integer NOT NULL,
-    fc_mes character varying(20),
-    fn_num_instalacion integer,
-    fn_peso_promedio_entrada numeric,
-    fd_fecha_siembra date,
-    fc_origen_alevines character varying(200),
-    fd_fecha date,
-    fn_total_alimento_kg numeric,
-    fn_mortalidad integer,
-    fc_recambio_agua character varying(50),
-    fn_temp_agua numeric,
-    fn_amonio numeric,
-    fn_ph numeric,
-    fc_observaciones character varying(500),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
+-- ----------------------------------------------------------------------------
+-- Roles y usuarios
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.roles (
+    fi_rol_id   integer      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre   varchar(50)  NOT NULL,
+    fb_es_root  boolean      NOT NULL DEFAULT false,
+    CONSTRAINT roles_nombre_uk UNIQUE (fc_nombre)
 );
 
-ALTER TABLE public.alimentacion OWNER TO postgres;
-
---
--- Name: alimentos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.alimentos (
-    fi_alimento_id integer NOT NULL,
-    fi_reproductor_id integer,
-    fi_pileta_id integer,
-    fi_usuario_id integer,
-    particula_mm numeric(10,2),
-    alimento_dia numeric(10,3),
-    porcion numeric(10,3),
-    gasto_alimento numeric(12,2),
-    fi_engorda_id integer
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    fi_usuario_id    integer       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre        varchar(100)  NOT NULL,
+    "fc_contraseña"  varchar(255)  NOT NULL,
+    fi_rol_id        integer       NOT NULL,
+    fi_empresa_id    integer,
+    fb_activo        boolean       NOT NULL DEFAULT true,
+    CONSTRAINT usuarios_nombre_uk UNIQUE (fc_nombre),
+    CONSTRAINT usuarios_rol_fk
+        FOREIGN KEY (fi_rol_id) REFERENCES public.roles (fi_rol_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.alimentos OWNER TO postgres;
+CREATE INDEX IF NOT EXISTS usuarios_rol_idx ON public.usuarios (fi_rol_id);
 
---
--- Name: alimentos_fi_alimento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+COMMENT ON TABLE public.roles    IS 'Roles del sistema. fb_es_root = acceso a todos los módulos.';
+COMMENT ON TABLE public.usuarios IS 'Usuarios del sistema, vinculados a un rol.';
 
-CREATE SEQUENCE public.alimentos_fi_alimento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.alimentos_fi_alimento_id_seq OWNER TO postgres;
-
---
--- Name: alimentos_fi_alimento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.alimentos_fi_alimento_id_seq OWNED BY public.alimentos.fi_alimento_id;
-
---
--- Name: alimentos_fi_alimento_id_seq1; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.alimentos ALTER COLUMN fi_alimento_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.alimentos_fi_alimento_id_seq1
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+-- ----------------------------------------------------------------------------
+-- Seguridad: módulos (menú), pivote roles×módulos y refresh tokens
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS seguridad.modulos (
+    fi_modulo_id integer       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre    varchar(50)   NOT NULL,
+    fc_ruta      varchar(100)  NOT NULL,
+    fb_activo    boolean       NOT NULL DEFAULT true,
+    CONSTRAINT modulos_nombre_uk UNIQUE (fc_nombre),
+    CONSTRAINT modulos_ruta_uk   UNIQUE (fc_ruta)
 );
 
---
--- Name: banos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.banos (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fc_tipo_banio character varying(20),
-    fc_regadera character varying(100),
-    fc_realizo character varying(100),
-    fc_observaciones character varying(500),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
+CREATE TABLE IF NOT EXISTS seguridad.roles_modulos (
+    fi_rol_id    integer NOT NULL,
+    fi_modulo_id integer NOT NULL,
+    CONSTRAINT roles_modulos_pk PRIMARY KEY (fi_rol_id, fi_modulo_id),
+    CONSTRAINT roles_modulos_rol_fk
+        FOREIGN KEY (fi_rol_id) REFERENCES public.roles (fi_rol_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT roles_modulos_modulo_fk
+        FOREIGN KEY (fi_modulo_id) REFERENCES seguridad.modulos (fi_modulo_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-ALTER TABLE public.banos OWNER TO postgres;
-
---
--- Name: biometrias; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.biometrias (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fn_peso_total_gramos numeric,
-    fn_organismos_muestreados integer,
-    fn_peso_promedio numeric,
-    fc_observaciones character varying(500),
-    fc_encargado character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    fi_instalacion_id integer,
-    tipo character varying(20),
-    fc_granja character varying(100),
-    ubicacion character varying(50) NOT NULL,
-    fi_reproductor_id integer,
-    CONSTRAINT chk_biometrias_tipo_repro CHECK (((((tipo)::text = 'REPRODUCTORES'::text) AND (fi_reproductor_id IS NOT NULL)) OR ((tipo)::text <> 'REPRODUCTORES'::text)))
+CREATE TABLE IF NOT EXISTS seguridad.refresh_tokens (
+    fi_token_id    integer       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_usuario_id  integer       NOT NULL,
+    fc_token       varchar(255)  NOT NULL,
+    fd_expiracion  timestamp     NOT NULL,
+    fb_revocado    boolean       NOT NULL DEFAULT false,
+    fd_creacion    timestamp     NOT NULL DEFAULT now(),
+    CONSTRAINT refresh_tokens_token_uk UNIQUE (fc_token),
+    CONSTRAINT refresh_tokens_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-ALTER TABLE public.biometrias OWNER TO postgres;
+CREATE INDEX IF NOT EXISTS refresh_tokens_token_idx
+    ON seguridad.refresh_tokens (fc_token) WHERE fb_revocado = false;
+CREATE INDEX IF NOT EXISTS refresh_tokens_usuario_idx
+    ON seguridad.refresh_tokens (fi_usuario_id);
 
---
--- Name: caja_ahorro_movimientos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.caja_ahorro_movimientos (
-    id integer NOT NULL,
-    categoria_id integer,
-    fecha date DEFAULT CURRENT_DATE,
-    tipo_movimiento character varying(10) DEFAULT 'EGRESO'::character varying,
-    monto numeric(12,2) DEFAULT 0.00,
-    descripcion text,
-    CONSTRAINT caja_ahorro_movimientos_tipo_movimiento_check CHECK (((tipo_movimiento)::text = ANY (ARRAY[('INGRESO'::character varying)::text, ('EGRESO'::character varying)::text])))
+-- ----------------------------------------------------------------------------
+-- RRHH: puestos, departamentos y tipos de documento
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS rrhh.puestos (
+    fi_puesto_id integer       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre    varchar(120)  NOT NULL,
+    fb_activo    boolean       NOT NULL DEFAULT true,
+    CONSTRAINT puestos_nombre_uk UNIQUE (fc_nombre)
 );
 
-ALTER TABLE public.caja_ahorro_movimientos OWNER TO postgres;
-
---
--- Name: caja_ahorro_movimientos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.caja_ahorro_movimientos_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.caja_ahorro_movimientos_id_seq OWNER TO postgres;
-
---
--- Name: caja_ahorro_movimientos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.caja_ahorro_movimientos_id_seq OWNED BY public.caja_ahorro_movimientos.id;
-
---
--- Name: caja_ahorro_resumen; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.caja_ahorro_resumen (
-    id integer NOT NULL,
-    categoria character varying(100) NOT NULL,
-    enero numeric(12,2) DEFAULT 0,
-    febrero numeric(12,2) DEFAULT 0,
-    marzo numeric(12,2) DEFAULT 0,
-    abril numeric(12,2) DEFAULT 0,
-    mayo numeric(12,2) DEFAULT 0,
-    junio numeric(12,2) DEFAULT 0,
-    julio numeric(12,2) DEFAULT 0,
-    agosto numeric(12,2) DEFAULT 0,
-    septiembre numeric(12,2) DEFAULT 0,
-    octubre numeric(12,2) DEFAULT 0,
-    noviembre numeric(12,2) DEFAULT 0,
-    diciembre numeric(12,2) DEFAULT 0,
-    total numeric(12,2) GENERATED ALWAYS AS ((((((((((((COALESCE(enero, (0)::numeric) + COALESCE(febrero, (0)::numeric)) + COALESCE(marzo, (0)::numeric)) + COALESCE(abril, (0)::numeric)) + COALESCE(mayo, (0)::numeric)) + COALESCE(junio, (0)::numeric)) + COALESCE(julio, (0)::numeric)) + COALESCE(agosto, (0)::numeric)) + COALESCE(septiembre, (0)::numeric)) + COALESCE(octubre, (0)::numeric)) + COALESCE(noviembre, (0)::numeric)) + COALESCE(diciembre, (0)::numeric))) STORED,
-    actualizado timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
-    granja character varying(50) DEFAULT 'Ceiba'::character varying
+CREATE TABLE IF NOT EXISTS rrhh.departamentos (
+    fi_departamento_id integer      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre          varchar(80)  NOT NULL,
+    fb_activo          boolean      NOT NULL DEFAULT true,
+    CONSTRAINT departamentos_nombre_uk UNIQUE (fc_nombre)
 );
 
-ALTER TABLE public.caja_ahorro_resumen OWNER TO postgres;
-
---
--- Name: caja_ahorro_resumen_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.caja_ahorro_resumen_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.caja_ahorro_resumen_id_seq OWNER TO postgres;
-
---
--- Name: caja_ahorro_resumen_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.caja_ahorro_resumen_id_seq OWNED BY public.caja_ahorro_resumen.id;
-
---
--- Name: cat_caja_ahorro_categorias; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.cat_caja_ahorro_categorias (
-    id integer NOT NULL,
-    nombre character varying(100) NOT NULL,
-    tipo character varying(10) DEFAULT 'EGRESO'::character varying,
-    activo boolean DEFAULT true,
-    CONSTRAINT cat_caja_ahorro_categorias_tipo_check CHECK (((tipo)::text = ANY (ARRAY[('INGRESO'::character varying)::text, ('EGRESO'::character varying)::text])))
+CREATE TABLE IF NOT EXISTS rrhh.tipos_documento (
+    fi_tipo_documento_id integer      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre            varchar(80)  NOT NULL,
+    fb_obligatorio       boolean      NOT NULL DEFAULT false,
+    fb_activo            boolean      NOT NULL DEFAULT true,
+    CONSTRAINT tipos_documento_nombre_uk UNIQUE (fc_nombre)
 );
 
-ALTER TABLE public.cat_caja_ahorro_categorias OWNER TO postgres;
-
---
--- Name: cat_caja_ahorro_categorias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.cat_caja_ahorro_categorias_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.cat_caja_ahorro_categorias_id_seq OWNER TO postgres;
-
---
--- Name: cat_caja_ahorro_categorias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.cat_caja_ahorro_categorias_id_seq OWNED BY public.cat_caja_ahorro_categorias.id;
-
---
--- Name: cat_tesoreria_categorias; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.cat_tesoreria_categorias (
-    fi_categoria_id integer NOT NULL,
-    fc_nombre character varying(100) NOT NULL,
-    fc_grupo character varying(100) NOT NULL
-);
-
-ALTER TABLE public.cat_tesoreria_categorias OWNER TO postgres;
-
---
--- Name: cat_tesoreria_categorias_fi_categoria_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.cat_tesoreria_categorias_fi_categoria_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.cat_tesoreria_categorias_fi_categoria_id_seq OWNER TO postgres;
-
---
--- Name: cat_tesoreria_categorias_fi_categoria_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.cat_tesoreria_categorias_fi_categoria_id_seq OWNED BY public.cat_tesoreria_categorias.fi_categoria_id;
-
---
--- Name: categorias; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.categorias (
-    id integer NOT NULL,
-    nombre character varying(100) NOT NULL,
-    tipo_principal character varying(30),
-    subcategoria character varying(50),
-    descripcion text,
-    fc_empresa character varying(20) DEFAULT 'ALL'::character varying
-);
-
-ALTER TABLE public.categorias OWNER TO postgres;
-
---
--- Name: categorias_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.categorias_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.categorias_id_seq OWNER TO postgres;
-
---
--- Name: categorias_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.categorias_id_seq OWNED BY public.categorias.id;
-
---
--- Name: ceiba_alimentacion_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.ceiba_alimentacion_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.ceiba_alimentacion_fi_id_seq OWNER TO postgres;
-
---
--- Name: ceiba_alimentacion_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.ceiba_alimentacion_fi_id_seq OWNED BY public.alimentacion.fi_id;
-
---
--- Name: ceiba_biometrias_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.ceiba_biometrias_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.ceiba_biometrias_fi_id_seq OWNER TO postgres;
-
---
--- Name: ceiba_biometrias_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.ceiba_biometrias_fi_id_seq OWNED BY public.biometrias.fi_id;
-
---
--- Name: insumos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.insumos (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fc_cantidad_udm character varying(100),
-    fc_num_lote character varying(100),
-    fc_descripcion character varying(300),
-    fc_observaciones character varying(500),
-    fc_encargado_entrega character varying(100),
-    fc_encargado_recepcion character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
-);
-
-ALTER TABLE public.insumos OWNER TO postgres;
-
---
--- Name: ceiba_insumos_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.ceiba_insumos_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.ceiba_insumos_fi_id_seq OWNER TO postgres;
-
---
--- Name: ceiba_insumos_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.ceiba_insumos_fi_id_seq OWNED BY public.insumos.fi_id;
-
---
--- Name: limpieza; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.limpieza (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fc_tipo_instalacion character varying(100),
-    fn_num_instalacion integer,
-    fc_desinfectante character varying(150),
-    fc_observaciones text,
-    fc_encargado character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50)
-);
-
-ALTER TABLE public.limpieza OWNER TO postgres;
-
---
--- Name: ceiba_limpieza_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.ceiba_limpieza_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.ceiba_limpieza_fi_id_seq OWNER TO postgres;
-
---
--- Name: ceiba_limpieza_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.ceiba_limpieza_fi_id_seq OWNED BY public.limpieza.fi_id;
-
---
--- Name: clientes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.clientes (
-    fi_cliente_id integer NOT NULL,
-    fc_nombre character varying(100),
-    fc_telefono character varying(20),
-    fc_correo character varying(255),
-    fi_usuario_id integer NOT NULL,
-    fd_fecha_registro date NOT NULL,
-    fd_fecha_modificacion date NOT NULL,
-    fc_cp character(5),
-    fc_localidad character varying(100)
-);
-
-ALTER TABLE public.clientes OWNER TO postgres;
-
---
--- Name: clientes_fi_cliente_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.clientes_fi_cliente_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.clientes_fi_cliente_id_seq OWNER TO postgres;
-
---
--- Name: clientes_fi_cliente_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.clientes_fi_cliente_id_seq OWNED BY public.clientes.fi_cliente_id;
-
---
--- Name: clientes_fi_cliente_id_seq1; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.clientes ALTER COLUMN fi_cliente_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.clientes_fi_cliente_id_seq1
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
---
--- Name: cuentas; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.cuentas (
-    fi_cuenta_id integer NOT NULL,
-    fc_udn character varying(10) NOT NULL,
-    fc_nombre character varying(100) NOT NULL,
-    fc_numero_cuenta character varying(50),
-    fc_tipo character varying(20) NOT NULL,
-    fn_saldo_inicial numeric(15,2) DEFAULT 0 NOT NULL,
-    fn_saldo_actual numeric(15,2) DEFAULT 0 NOT NULL,
-    fb_activo boolean DEFAULT true NOT NULL,
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    CONSTRAINT cuentas_fc_udn_check CHECK (((fc_udn)::text = ANY (ARRAY[('CQT'::character varying)::text, ('GAM'::character varying)::text, ('GAC'::character varying)::text]))),
-    CONSTRAINT cuentas_fc_tipo_check CHECK (((fc_tipo)::text = ANY (ARRAY[('Cheques'::character varying)::text, ('Efectivo'::character varying)::text, ('Inversion'::character varying)::text])))
-);
-
-ALTER TABLE public.cuentas OWNER TO postgres;
-
---
--- Name: cuentas_fi_cuenta_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.cuentas_fi_cuenta_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.cuentas_fi_cuenta_id_seq OWNER TO postgres;
-
---
--- Name: cuentas_fi_cuenta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.cuentas_fi_cuenta_id_seq OWNED BY public.cuentas.fi_cuenta_id;
-
---
--- Name: engorda; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.engorda (
-    fi_engorda_id integer NOT NULL,
-    fi_instalacion_id integer NOT NULL,
-    cantidad integer NOT NULL,
-    talla_gr numeric(10,2),
-    observacion character varying(500),
-    fecha_siembra date,
-    fecha_biometria date,
-    fecha_registro date DEFAULT CURRENT_DATE,
-    fi_usuario_id integer,
-    fc_granja character varying(100),
-    fi_lote_id integer,
-    origen_instalacion integer,
-    fd_fecha_modificacion date
-);
-
-ALTER TABLE public.engorda OWNER TO postgres;
-
---
--- Name: engorda_fi_engorda_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.engorda_fi_engorda_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.engorda_fi_engorda_id_seq OWNER TO postgres;
-
---
--- Name: engorda_fi_engorda_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.engorda_fi_engorda_id_seq OWNED BY public.engorda.fi_engorda_id;
-
---
--- Name: equipos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.equipos (
-    fi_equipo_id integer NOT NULL,
-    fc_nombre character varying(150) NOT NULL,
-    fc_marca character varying(100),
-    fc_modelo character varying(100),
-    fc_tipo character varying(100),
-    fd_fecha_compra date,
-    fn_costo numeric(12,2),
-    fc_estado character varying(50) DEFAULT 'Operativo'::character varying,
-    fc_ubicacion character varying(150),
-    fc_responsable character varying(100),
-    fd_proximo_mantenimiento date,
-    fc_notas text,
-    fi_usuario_id integer
-);
-
-ALTER TABLE public.equipos OWNER TO postgres;
-
---
--- Name: equipos_fi_equipo_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.equipos_fi_equipo_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.equipos_fi_equipo_id_seq OWNER TO postgres;
-
---
--- Name: equipos_fi_equipo_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.equipos_fi_equipo_id_seq OWNED BY public.equipos.fi_equipo_id;
-
---
--- Name: flujo_caja; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.flujo_caja (
-    fi_movimiento_id integer NOT NULL,
-    fc_granja character varying(50) NOT NULL,
-    fd_fecha date NOT NULL,
-    fn_ingreso numeric(12,2) DEFAULT 0,
-    fn_egreso numeric(12,2) DEFAULT 0,
-    fc_descripcion character varying(200),
-    fc_cuenta character varying(50),
-    fc_categoria character varying(100),
-    fc_subcategoria character varying(100),
-    fc_factura character varying(50),
-    fc_estatus character varying(20),
-    fc_mes character varying(7),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
-    categoria_id integer,
-    fc_beneficiario character varying(100),
-    fc_noproyecto character varying(50),
-    fc_equilibrar numeric(12,2),
-    CONSTRAINT flujo_caja_fc_estatus_check CHECK (((fc_estatus)::text = ANY (ARRAY[('REPOSICION'::character varying)::text, ('LIQUIDADO'::character varying)::text, ('ADEUDO'::character varying)::text, ('PARCIAL'::character varying)::text])))
-);
-
-ALTER TABLE public.flujo_caja OWNER TO postgres;
-
---
--- Name: flujo_caja_fi_movimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.flujo_caja_fi_movimiento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.flujo_caja_fi_movimiento_id_seq OWNER TO postgres;
-
---
--- Name: flujo_caja_fi_movimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.flujo_caja_fi_movimiento_id_seq OWNED BY public.flujo_caja.fi_movimiento_id;
-
---
--- Name: instalaciones; Type: TABLE; Schema: public; Owner: postgres
---
-
+COMMENT ON TABLE rrhh.puestos         IS 'Catálogo de puestos organizacionales.';
+COMMENT ON TABLE rrhh.departamentos   IS 'Catálogo de departamentos.';
+COMMENT ON TABLE rrhh.tipos_documento IS 'Tipos de documento para expedientes de empleados.';
+
+
+-- ============================================================================
+-- 2.  INSTALACIONES
+-- ----------------------------------------------------------------------------
+-- Infraestructura física (tinas, piletas, estanques) donde se alojan los
+-- organismos. Base del flujo de inventarios.
+-- ============================================================================
 CREATE TABLE public.instalaciones (
-    fi_instalacion_id integer NOT NULL,
-    nombre_instalacion character varying(100) NOT NULL,
-    largo numeric(10,2) NOT NULL,
-    ancho numeric(10,2) NOT NULL,
-    altura numeric(10,2) NOT NULL,
-    material character varying(100) NOT NULL,
-    metros_cubicos numeric(10,2) GENERATED ALWAYS AS (((largo * ancho) * altura)) STORED,
-    fi_usuario_id integer,
-    fecha_registro date DEFAULT CURRENT_DATE,
-    fd_fecha_modificacion date,
-    fc_granja character varying(100),
-    tipo_instalacion character varying(50),
-    estado character varying(20) DEFAULT 'vacia'::character varying,
-    CONSTRAINT chk_instalaciones_granja CHECK (((fc_granja)::text = ANY (ARRAY[('Granja Acuícola Medellin'::character varying)::text, ('Granja Acuícola La Ceiba'::character varying)::text]))),
-    CONSTRAINT instalaciones_altura_check CHECK ((altura > (0)::numeric)),
-    CONSTRAINT instalaciones_ancho_check CHECK ((ancho > (0)::numeric)),
-    CONSTRAINT instalaciones_largo_check CHECK ((largo > (0)::numeric))
+    fi_instalacion_id       integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre_instalacion      varchar(100)   NOT NULL,
+    largo                   numeric(10,2)  NOT NULL,
+    ancho                   numeric(10,2)  NOT NULL,
+    altura                  numeric(10,2)  NOT NULL,
+    material                varchar(100)   NOT NULL,
+    metros_cubicos          numeric(12,2)  GENERATED ALWAYS AS (largo * ancho * altura) STORED,
+    tipo_instalacion        varchar(20)    NOT NULL,
+    estado                  varchar(20)    NOT NULL DEFAULT 'vacia',
+    fc_granja               varchar(100)   NOT NULL,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT instalaciones_largo_chk   CHECK (largo  > 0),
+    CONSTRAINT instalaciones_ancho_chk   CHECK (ancho  > 0),
+    CONSTRAINT instalaciones_altura_chk  CHECK (altura > 0),
+    CONSTRAINT instalaciones_tipo_chk
+        CHECK (tipo_instalacion IN ('Alevinaje', 'Reproductores', 'Engorda')),
+    CONSTRAINT instalaciones_estado_chk
+        CHECK (estado IN ('vacia', 'ocupada')),
+    CONSTRAINT instalaciones_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT instalaciones_nombre_granja_uk
+        UNIQUE (nombre_instalacion, fc_granja),
+    CONSTRAINT instalaciones_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.instalaciones OWNER TO postgres;
-
---
--- Name: instalaciones_fi_instalacion_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.instalaciones_fi_instalacion_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.instalaciones_fi_instalacion_id_seq OWNER TO postgres;
-
---
--- Name: instalaciones_fi_instalacion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.instalaciones_fi_instalacion_id_seq OWNED BY public.instalaciones.fi_instalacion_id;
-
---
--- Name: inventario_alevines; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.inventario_alevines (
-    fi_id integer NOT NULL,
-    fn_num_instalacion integer,
-    fn_cantidad integer,
-    fn_talla numeric,
-    fc_lote character varying(100),
-    fc_observacion text,
-    fd_fecha_siembra date,
-    fd_fecha_salida_hormonado date,
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
-);
-
-ALTER TABLE public.inventario_alevines OWNER TO postgres;
-
---
--- Name: lista_espera; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.lista_espera (
-    fi_lista_id integer NOT NULL,
-    fd_fecha_entrega date NOT NULL,
-    fc_talla character varying(50),
-    fn_cantidad numeric(12,2),
-    fc_cliente character varying(200),
-    fc_lugar_entrega character varying(200),
-    fc_encargado_venta character varying(200),
-    fc_unidad_produccion character varying(200),
-    fc_hora_embolsado character varying(20),
-    fc_hora_entrega character varying(20),
-    fn_precio_venta numeric(12,2),
-    fc_uap_asignada character varying(200),
-    fc_granja_asignada character varying(200),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now()
-);
-
-ALTER TABLE public.lista_espera OWNER TO postgres;
-
---
--- Name: lista_espera_fi_lista_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.lista_espera_fi_lista_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.lista_espera_fi_lista_id_seq OWNER TO postgres;
-
---
--- Name: lista_espera_fi_lista_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.lista_espera_fi_lista_id_seq OWNED BY public.lista_espera.fi_lista_id;
-
---
--- Name: lote_movimientos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.lote_movimientos (
-    fi_mov_id integer NOT NULL,
-    fi_lote_id integer NOT NULL,
-    tipo_movimiento character varying(20) NOT NULL,
-    cantidad integer NOT NULL,
-    fecha date NOT NULL,
-    destino character varying(100),
-    observacion text,
-    fi_usuario_id integer,
-    talla numeric(5,2),
-    CONSTRAINT lote_movimientos_cantidad_check CHECK ((cantidad > 0))
-);
-
-ALTER TABLE public.lote_movimientos OWNER TO postgres;
-
---
--- Name: lote_movimientos_fi_mov_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.lote_movimientos_fi_mov_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.lote_movimientos_fi_mov_id_seq OWNER TO postgres;
-
---
--- Name: lote_movimientos_fi_mov_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.lote_movimientos_fi_mov_id_seq OWNED BY public.lote_movimientos.fi_mov_id;
-
---
--- Name: lotes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.lotes (
-    fi_lote_id integer NOT NULL,
-    fecha date NOT NULL,
-    familia character varying(50) NOT NULL,
-    fc_instalacion_id character varying(50) NOT NULL,
-    huevos_ml numeric(10,2),
-    alevines_inicial integer NOT NULL,
-    no_lote character varying(50) NOT NULL,
-    fc_granja character varying(100) NOT NULL,
-    observacion character varying(500),
-    fecha_registro date DEFAULT CURRENT_DATE,
-    mortalidad integer DEFAULT 0,
-    mortalidad_porcentaje numeric(5,2) DEFAULT 0,
-    ovadas integer DEFAULT 0
-);
-
-ALTER TABLE public.lotes OWNER TO postgres;
-
---
--- Name: lotes_fi_lote_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.lotes_fi_lote_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.lotes_fi_lote_id_seq OWNER TO postgres;
-
---
--- Name: lotes_fi_lote_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.lotes_fi_lote_id_seq OWNED BY public.lotes.fi_lote_id;
-
---
--- Name: mantenimientos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.mantenimientos (
-    fi_mantenimiento_id integer NOT NULL,
-    fi_equipo_id integer,
-    fd_fecha date NOT NULL,
-    fc_tipo character varying(50) DEFAULT 'Preventivo'::character varying,
-    fc_responsable character varying(100),
-    fc_descripcion text,
-    fn_costo numeric(12,2) DEFAULT 0,
-    fc_estado_post character varying(50),
-    fd_proximo_mantenimiento date
-);
-
-ALTER TABLE public.mantenimientos OWNER TO postgres;
-
---
--- Name: mantenimientos_fi_mantenimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.mantenimientos_fi_mantenimiento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.mantenimientos_fi_mantenimiento_id_seq OWNER TO postgres;
-
---
--- Name: mantenimientos_fi_mantenimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.mantenimientos_fi_mantenimiento_id_seq OWNED BY public.mantenimientos.fi_mantenimiento_id;
-
---
--- Name: medellin_banos_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_banos_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_banos_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_banos_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_banos_fi_id_seq OWNED BY public.banos.fi_id;
-
---
--- Name: medellin_inventario_alevines_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_inventario_alevines_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_inventario_alevines_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_inventario_alevines_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_inventario_alevines_fi_id_seq OWNED BY public.inventario_alevines.fi_id;
-
---
--- Name: medicamentos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.medicamentos (
-    fi_id integer NOT NULL,
-    fd_fecha_hora timestamp(6) without time zone NOT NULL,
-    fn_num_estanque integer,
-    fc_diagnosis character varying(500),
-    fc_tratamiento character varying(500),
-    fc_dosis character varying(100),
-    fc_forma_aplicacion character varying(100),
-    fd_fecha_ultima_dosis date,
-    fc_responsable character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
-);
-
-ALTER TABLE public.medicamentos OWNER TO postgres;
-
---
--- Name: medellin_medicamentos_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_medicamentos_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_medicamentos_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_medicamentos_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_medicamentos_fi_id_seq OWNED BY public.medicamentos.fi_id;
-
---
--- Name: parametros; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.parametros (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fn_num_estanque integer,
-    fn_oxigeno numeric,
-    fn_temperatura numeric,
-    fn_ph numeric,
-    fn_amonio numeric,
-    fn_nitritos numeric,
-    fn_nitratos numeric,
-    fc_responsable character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
-);
-
-ALTER TABLE public.parametros OWNER TO postgres;
-
---
--- Name: medellin_parametros_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_parametros_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_parametros_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_parametros_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_parametros_fi_id_seq OWNED BY public.parametros.fi_id;
-
---
--- Name: plagas; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.plagas (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fc_num_trampa character varying(100),
-    fc_hallazgo character varying(500),
-    fc_malla character varying(200),
-    fc_observaciones character varying(500),
-    fc_verifico character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(100),
-    tipo_trampa character varying(100),
-    fc_veneno character varying(100),
-    unidad_produccion character varying(100)
-);
-
-ALTER TABLE public.plagas OWNER TO postgres;
-
---
--- Name: medellin_plagas_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_plagas_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_plagas_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_plagas_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_plagas_fi_id_seq OWNED BY public.plagas.fi_id;
-
---
--- Name: recambios; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.recambios (
-    fi_id integer NOT NULL,
-    fc_mes character varying(20),
-    fn_num_instalacion integer,
-    fd_fecha1 date,
-    fc_tipo1 character varying(30),
-    fd_fecha2 date,
-    fc_tipo2 character varying(30),
-    fd_fecha3 date,
-    fc_tipo3 character varying(30),
-    fd_fecha4 date,
-    fc_tipo4 character varying(30),
-    fd_fecha5 date,
-    fc_tipo5 character varying(30),
-    fd_fecha6 date,
-    fc_tipo6 character varying(30),
-    fc_responsable character varying(100),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50) NOT NULL
-);
-
-ALTER TABLE public.recambios OWNER TO postgres;
-
---
--- Name: medellin_recambios_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_recambios_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_recambios_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_recambios_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_recambios_fi_id_seq OWNED BY public.recambios.fi_id;
-
---
--- Name: recepcion_insumos; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.recepcion_insumos (
-    fi_id integer NOT NULL,
-    fc_mes character varying(20),
-    fd_fecha date NOT NULL,
-    fc_cantidad numeric(15,2),
-    fc_lote character varying(100),
-    fc_descripcion character varying(300),
-    fc_encargado_entrega character varying(100),
-    fc_verifico character varying(100),
-    fc_observaciones character varying(500),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50),
-    fc_proveedor character varying(100),
-    fc_producto character varying(255),
-    fc_unidad_medida character varying(255),
-    fc_condiciones_entrega character varying(150)
-);
-
-ALTER TABLE public.recepcion_insumos OWNER TO postgres;
-
---
--- Name: medellin_recepcion_insumos_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_recepcion_insumos_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_recepcion_insumos_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_recepcion_insumos_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_recepcion_insumos_fi_id_seq OWNED BY public.recepcion_insumos.fi_id;
-
---
--- Name: visitas; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.visitas (
-    fi_id integer NOT NULL,
-    fd_fecha date NOT NULL,
-    fc_nombre_completo character varying(200),
-    fc_origen character varying(200),
-    fc_motivo character varying(300),
-    fc_observaciones character varying(500),
-    fc_foto_identificacion character varying(200),
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_modificacion timestamp(6) without time zone DEFAULT now(),
-    fi_usuario_id integer,
-    ubicacion character varying(50),
-    fd_entrada time(6) without time zone,
-    fd_salida time(6) without time zone
-);
-
-ALTER TABLE public.visitas OWNER TO postgres;
-
---
--- Name: medellin_visitas_fi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.medellin_visitas_fi_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.medellin_visitas_fi_id_seq OWNER TO postgres;
-
---
--- Name: medellin_visitas_fi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.medellin_visitas_fi_id_seq OWNED BY public.visitas.fi_id;
-
---
--- Name: nomina; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.nomina (
-    fi_nomina_id integer NOT NULL,
-    fc_nombre_empleado character varying(120) NOT NULL,
-    fi_empleado_id integer,
-    fd_fecha_pago date DEFAULT CURRENT_DATE NOT NULL,
-    fn_total numeric(10,2) DEFAULT 0,
-    fn_bono numeric(10,2) DEFAULT 0,
-    fn_deuda numeric(10,2) DEFAULT 0,
-    fn_descuento numeric(10,2) DEFAULT 0,
-    fn_anticipo numeric(10,2) DEFAULT 0,
-    fi_usuario_id integer,
-    fd_fecha_registro timestamp(6) without time zone DEFAULT now(),
-    fd_fecha_actualizacion timestamp(6) without time zone DEFAULT now()
-);
-
-ALTER TABLE public.nomina OWNER TO postgres;
-
---
--- Name: nomina_fi_nomina_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.nomina_fi_nomina_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.nomina_fi_nomina_id_seq OWNER TO postgres;
-
---
--- Name: nomina_fi_nomina_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.nomina_fi_nomina_id_seq OWNED BY public.nomina.fi_nomina_id;
-
---
--- Name: piletas; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.piletas (
-    fi_pileta_id integer NOT NULL,
-    nombre_instalacion character varying(50),
-    ubicacion character varying(100),
-    fecha_registro date DEFAULT CURRENT_DATE NOT NULL,
-    fd_fecha_modificacion date,
-    fecha_siembra date DEFAULT now(),
-    fecha_ultima_biometria date DEFAULT now(),
-    cantidad bigint DEFAULT 0,
-    talla_gr numeric(14,2),
-    observacion character varying(500),
-    fi_usuario_id integer,
-    fc_granja character varying(100),
-    fi_instalacion_id integer,
-    origen_instalacion character varying(100),
-    fi_lote_id integer,
-    CONSTRAINT chk_piletas_granja CHECK (((fc_granja)::text = ANY (ARRAY[('Granja Acuícola Medellin'::character varying)::text, ('Granja Acuícola La Ceiba'::character varying)::text])))
-);
-
-ALTER TABLE public.piletas OWNER TO postgres;
-
---
--- Name: piletas_fi_pileta_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.piletas_fi_pileta_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.piletas_fi_pileta_id_seq OWNER TO postgres;
-
---
--- Name: piletas_fi_pileta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.piletas_fi_pileta_id_seq OWNED BY public.piletas.fi_pileta_id;
-
---
--- Name: piletas_fi_pileta_id_seq1; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.piletas ALTER COLUMN fi_pileta_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.piletas_fi_pileta_id_seq1
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
---
--- Name: proveedores; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.proveedores (
-    id integer NOT NULL,
-    razon_social character varying(255) NOT NULL,
-    rfc character varying(50),
-    udn character varying(100),
-    nombre_contacto character varying(150),
-    telefono character varying(50),
-    correo character varying(150),
-    localidad character varying(150),
-    estado character varying(100),
-    ejecutivo character varying(150),
-    precio_venta numeric(12,2) DEFAULT 0,
-    created_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER TABLE public.proveedores OWNER TO postgres;
-
---
--- Name: proveedores_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.proveedores_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.proveedores_id_seq OWNER TO postgres;
-
---
--- Name: proveedores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.proveedores_id_seq OWNED BY public.proveedores.id;
-
---
--- Name: trazabilidad_engorda; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.trazabilidad_engorda (
-    fi_movimiento_id integer NOT NULL,
-    fi_engorda_origen integer,
-    fi_engorda_destino integer,
-    cantidad_trasladada integer NOT NULL,
-    fecha_movimiento date DEFAULT CURRENT_DATE,
-    observacion text,
-    fi_usuario_id integer,
-    CONSTRAINT rastreabilidad_engorda_cantidad_trasladada_check CHECK (((cantidad_trasladada)::numeric > (0)::numeric))
-);
-
-ALTER TABLE public.trazabilidad_engorda OWNER TO postgres;
-
---
--- Name: rastreabilidad_engorda_fi_movimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.rastreabilidad_engorda_fi_movimiento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.rastreabilidad_engorda_fi_movimiento_id_seq OWNER TO postgres;
-
---
--- Name: rastreabilidad_engorda_fi_movimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.rastreabilidad_engorda_fi_movimiento_id_seq OWNED BY public.trazabilidad_engorda.fi_movimiento_id;
-
---
--- Name: trazabilidad_alevinaje; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.trazabilidad_alevinaje (
-    fi_movimiento_id integer NOT NULL,
-    fi_pileta_origen integer,
-    fi_pileta_destino integer,
-    cantidad bigint NOT NULL,
-    fecha_movimiento date DEFAULT CURRENT_DATE,
-    observacion character varying(500),
-    fi_usuario_id integer,
-    fi_lote_id integer,
-    tipo_movimiento character varying(20) DEFAULT 'traslado'::character varying,
-    origen_externo text,
-    fc_granja character varying(100),
-    fi_instalacion_origen integer,
-    fi_instalacion_destino integer
-);
-
-ALTER TABLE public.trazabilidad_alevinaje OWNER TO postgres;
-
---
--- Name: rastreabilidad_fi_movimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.rastreabilidad_fi_movimiento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.rastreabilidad_fi_movimiento_id_seq OWNER TO postgres;
-
---
--- Name: rastreabilidad_fi_movimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.rastreabilidad_fi_movimiento_id_seq OWNED BY public.trazabilidad_alevinaje.fi_movimiento_id;
-
---
--- Name: trazabilidad_reproductores; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.trazabilidad_reproductores (
-    fi_movimiento_id integer NOT NULL,
-    fi_repro_origen integer,
-    fi_repro_destino integer,
-    cantidad_trasladada integer,
-    fecha_movimiento date,
-    observacion text,
-    fi_usuario_id integer,
-    origen_texto character varying(150),
-    CONSTRAINT chk_origen_reproductores CHECK (((origen_texto IS NOT NULL) OR (fi_repro_origen IS NOT NULL)))
-);
-
-ALTER TABLE public.trazabilidad_reproductores OWNER TO postgres;
-
---
--- Name: rastreabilidad_reproductores_fi_movimiento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.rastreabilidad_reproductores_fi_movimiento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
-
-ALTER SEQUENCE public.rastreabilidad_reproductores_fi_movimiento_id_seq OWNER TO postgres;
-
---
--- Name: rastreabilidad_reproductores_fi_movimiento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.rastreabilidad_reproductores_fi_movimiento_id_seq OWNED BY public.trazabilidad_reproductores.fi_movimiento_id;
-
---
--- Name: reproductores; Type: TABLE; Schema: public; Owner: postgres
---
-
+CREATE INDEX instalaciones_granja_idx  ON public.instalaciones (fc_granja);
+CREATE INDEX instalaciones_tipo_idx    ON public.instalaciones (tipo_instalacion);
+CREATE INDEX instalaciones_usuario_idx ON public.instalaciones (fi_usuario_id);
+
+CREATE TRIGGER instalaciones_modif_trg
+    BEFORE UPDATE ON public.instalaciones
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+
+COMMENT ON TABLE  public.instalaciones IS
+    'Infraestructura física por granja. Base del inventario.';
+COMMENT ON COLUMN public.instalaciones.metros_cubicos IS
+    'Volumen en m³ = largo * ancho * altura (columna calculada).';
+COMMENT ON COLUMN public.instalaciones.tipo_instalacion IS
+    'Enum: Alevinaje, Reproductores, Engorda.';
+COMMENT ON COLUMN public.instalaciones.estado IS
+    'Enum: vacia (inicial) | ocupada (al sembrar).';
+
+
+-- ============================================================================
+-- 3.  REPRODUCTORES
+-- ----------------------------------------------------------------------------
+-- Peces reproductores alojados en instalaciones de tipo Reproductores.
+-- Generan los lotes de huevos que bajan a las piletas de alevinaje.
+-- ============================================================================
 CREATE TABLE public.reproductores (
-    fi_reproductor_id integer NOT NULL,
-    fc_instalacion character varying(50),
-    fn_cantidad integer,
-    fn_talla numeric(10,2),
-    fc_observacion character varying(500),
-    fd_fecha_siembra date,
-    fd_fecha_biometria date,
-    fi_usuario_id integer,
-    fd_fecha_registro timestamp(6) without time zone,
-    fn_machos integer DEFAULT 0,
-    fn_hembras integer DEFAULT 0,
-    fc_ratio character varying(10),
-    fc_granja character varying(100),
-    fc_linea character varying(50),
-    fc_familia character varying(20)
+    fi_reproductor_id       integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_instalacion_id       integer        NOT NULL,
+    fn_machos               integer        NOT NULL DEFAULT 0,
+    fn_hembras              integer        NOT NULL DEFAULT 0,
+    fn_cantidad             integer        GENERATED ALWAYS AS (fn_machos + fn_hembras) STORED,
+    fn_talla                numeric(10,2),
+    fc_ratio                varchar(10),
+    fc_linea                varchar(50),
+    fc_familia              varchar(20),
+    fc_observacion          varchar(500),
+    fd_fecha_siembra        date,
+    fd_fecha_biometria      date,
+    fc_granja               varchar(100)   NOT NULL,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT reproductores_machos_chk  CHECK (fn_machos  >= 0),
+    CONSTRAINT reproductores_hembras_chk CHECK (fn_hembras >= 0),
+    CONSTRAINT reproductores_talla_chk   CHECK (fn_talla IS NULL OR fn_talla > 0),
+    CONSTRAINT reproductores_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT reproductores_instalacion_fk
+        FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT reproductores_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.reproductores OWNER TO postgres;
+CREATE INDEX reproductores_instalacion_idx ON public.reproductores (fi_instalacion_id);
+CREATE INDEX reproductores_granja_idx      ON public.reproductores (fc_granja);
+CREATE INDEX reproductores_familia_idx     ON public.reproductores (fc_familia);
 
---
--- Name: reproductores_fi_reproductor_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+CREATE TRIGGER reproductores_modif_trg
+    BEFORE UPDATE ON public.reproductores
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
-CREATE SEQUENCE public.reproductores_fi_reproductor_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
+COMMENT ON TABLE  public.reproductores IS
+    'Stock de reproductores por instalación. fn_cantidad es calculada.';
+COMMENT ON COLUMN public.reproductores.fi_instalacion_id IS
+    'FK a instalaciones. Sustituye al antiguo fc_instalacion VARCHAR(50).';
+COMMENT ON COLUMN public.reproductores.fn_cantidad IS
+    'Total = fn_machos + fn_hembras (columna calculada).';
 
-ALTER SEQUENCE public.reproductores_fi_reproductor_id_seq OWNER TO postgres;
 
---
--- Name: reproductores_fi_reproductor_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
+-- ============================================================================
+-- 4.  LOTES
+-- ----------------------------------------------------------------------------
+-- Cada lote es una camada producida por los reproductores: ovadas, huevos
+-- por ml, alevines disponibles y mortalidad acumulada.
+-- ============================================================================
+CREATE TABLE public.lotes (
+    fi_lote_id              integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_instalacion_id       integer        NOT NULL,
+    fd_fecha                date           NOT NULL,
+    familia                 varchar(50)    NOT NULL,
+    no_lote                 varchar(50)    NOT NULL,
+    huevos_ml               numeric(10,2),
+    ovadas                  integer        NOT NULL DEFAULT 0,
+    alevines_inicial        integer        NOT NULL,
+    mortalidad              integer        NOT NULL DEFAULT 0,
+    mortalidad_porcentaje   numeric(6,2)   GENERATED ALWAYS AS (
+                                CASE
+                                    WHEN alevines_inicial > 0
+                                        THEN round(mortalidad::numeric * 100 / alevines_inicial, 2)
+                                    ELSE 0
+                                END
+                            ) STORED,
+    fc_granja               varchar(100)   NOT NULL,
+    observacion             varchar(500),
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
-ALTER SEQUENCE public.reproductores_fi_reproductor_id_seq OWNED BY public.reproductores.fi_reproductor_id;
-
---
--- Name: roles; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.roles (
-    fi_rol_id integer NOT NULL,
-    fc_nombre character varying(50) NOT NULL,
-    fb_es_root boolean DEFAULT false
+    CONSTRAINT lotes_ovadas_chk           CHECK (ovadas           >= 0),
+    CONSTRAINT lotes_alevines_chk         CHECK (alevines_inicial >= 0),
+    CONSTRAINT lotes_mortalidad_chk       CHECK (mortalidad       >= 0),
+    CONSTRAINT lotes_mortalidad_limit_chk CHECK (mortalidad       <= alevines_inicial),
+    CONSTRAINT lotes_no_lote_chk          CHECK (no_lote ~ '^[A-Z0-9-]+$'),
+    CONSTRAINT lotes_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT lotes_no_lote_uk
+        UNIQUE (no_lote),
+    CONSTRAINT lotes_instalacion_fk
+        FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT lotes_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.roles OWNER TO postgres;
+CREATE INDEX lotes_instalacion_idx ON public.lotes (fi_instalacion_id);
+CREATE INDEX lotes_granja_idx      ON public.lotes (fc_granja);
+CREATE INDEX lotes_fecha_idx       ON public.lotes (fd_fecha);
 
---
--- Name: roles_fi_rol_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+CREATE TRIGGER lotes_modif_trg
+    BEFORE UPDATE ON public.lotes
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
-CREATE SEQUENCE public.roles_fi_rol_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
+COMMENT ON TABLE  public.lotes IS
+    'Camadas producidas por los reproductores. Origen de los alevines.';
+COMMENT ON COLUMN public.lotes.fi_instalacion_id IS
+    'FK a instalaciones (de tipo Reproductores). Sustituye al antiguo fc_instalacion_id VARCHAR(50).';
+COMMENT ON COLUMN public.lotes.mortalidad_porcentaje IS
+    'Porcentaje calculado = mortalidad * 100 / alevines_inicial (0 si alevines_inicial = 0).';
 
-ALTER SEQUENCE public.roles_fi_rol_id_seq OWNER TO postgres;
 
---
--- Name: roles_fi_rol_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
+-- ============================================================================
+-- 5.  PILETAS (Alevinaje)
+-- ----------------------------------------------------------------------------
+-- Inventario actual por instalación de tipo Alevinaje: cantidad de alevines,
+-- lote de origen, talla. El histórico de movimientos vive en
+-- trazabilidad_alevinaje.
+-- ============================================================================
+CREATE TABLE public.piletas (
+    fi_pileta_id            integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_instalacion_id       integer        NOT NULL,
+    fi_lote_id              integer,
+    cantidad                bigint         NOT NULL DEFAULT 0,
+    talla_gr                numeric(14,2),
+    observacion             varchar(500),
+    fd_fecha_siembra        date           NOT NULL DEFAULT CURRENT_DATE,
+    fd_fecha_ultima_biometria date         NOT NULL DEFAULT CURRENT_DATE,
+    fc_granja               varchar(100)   NOT NULL,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
-ALTER SEQUENCE public.roles_fi_rol_id_seq OWNED BY public.roles.fi_rol_id;
-
---
--- Name: roles_fi_rol_id_seq1; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.roles ALTER COLUMN fi_rol_id ADD GENERATED BY DEFAULT AS IDENTITY (
-    SEQUENCE NAME public.roles_fi_rol_id_seq1
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+    CONSTRAINT piletas_cantidad_chk CHECK (cantidad >= 0),
+    CONSTRAINT piletas_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
+    CONSTRAINT piletas_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT piletas_instalacion_uk
+        UNIQUE (fi_instalacion_id),
+    CONSTRAINT piletas_instalacion_fk
+        FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT piletas_lote_fk
+        FOREIGN KEY (fi_lote_id) REFERENCES public.lotes (fi_lote_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT piletas_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
---
--- Name: usuarios; Type: TABLE; Schema: public; Owner: postgres
---
+CREATE INDEX piletas_lote_idx    ON public.piletas (fi_lote_id);
+CREATE INDEX piletas_granja_idx  ON public.piletas (fc_granja);
+CREATE INDEX piletas_usuario_idx ON public.piletas (fi_usuario_id);
 
-CREATE TABLE public.usuarios (
-    fi_usuario_id integer NOT NULL,
-    fc_nombre character varying(100) NOT NULL,
-    "fc_contraseña" character varying(255) NOT NULL,
-    fi_rol_id integer NOT NULL,
-    fi_empresa_id integer,
-    fb_activo boolean NOT NULL DEFAULT true
+CREATE TRIGGER piletas_modif_trg
+    BEFORE UPDATE ON public.piletas
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+
+COMMENT ON TABLE  public.piletas IS
+    'Estado vigente de cada instalación de alevinaje. El histórico de movimientos está en trazabilidad_alevinaje.';
+COMMENT ON CONSTRAINT piletas_instalacion_uk ON public.piletas IS
+    'Una pileta por instalación: los movimientos SUMAN a la pileta existente, no crean duplicados.';
+
+
+-- ============================================================================
+-- 6.  ENGORDA
+-- ----------------------------------------------------------------------------
+-- Traslado desde piletas de alevinaje hacia instalaciones de tipo Engorda.
+-- fi_lote_id indica el lote de origen directamente (ya no existe el campo
+-- confuso origen_instalacion).
+-- ============================================================================
+CREATE TABLE public.engorda (
+    fi_engorda_id           integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_instalacion_id       integer        NOT NULL,
+    fi_lote_id              integer        NOT NULL,
+    cantidad                integer        NOT NULL,
+    talla_gr                numeric(10,2),
+    observacion             varchar(500),
+    fd_fecha_siembra        date,
+    fd_fecha_biometria      date,
+    fc_granja               varchar(100)   NOT NULL,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT engorda_cantidad_chk CHECK (cantidad > 0),
+    CONSTRAINT engorda_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
+    CONSTRAINT engorda_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT engorda_instalacion_fk
+        FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT engorda_lote_fk
+        FOREIGN KEY (fi_lote_id) REFERENCES public.lotes (fi_lote_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT engorda_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.usuarios OWNER TO postgres;
+CREATE INDEX engorda_instalacion_idx ON public.engorda (fi_instalacion_id);
+CREATE INDEX engorda_lote_idx        ON public.engorda (fi_lote_id);
+CREATE INDEX engorda_granja_idx      ON public.engorda (fc_granja);
 
---
--- Name: usuarios_fi_usuario_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+CREATE TRIGGER engorda_modif_trg
+    BEFORE UPDATE ON public.engorda
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
-CREATE SEQUENCE public.usuarios_fi_usuario_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
+COMMENT ON TABLE  public.engorda IS
+    'Estado vigente de cada instalación de engorda. El histórico está en trazabilidad_engorda.';
+COMMENT ON COLUMN public.engorda.fi_lote_id IS
+    'FK directo al lote de origen. Sustituye al antiguo origen_instalacion integer.';
 
-ALTER SEQUENCE public.usuarios_fi_usuario_id_seq OWNER TO postgres;
 
---
--- Name: usuarios_fi_usuario_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
+-- ============================================================================
+-- 7.  EQUIPOS
+-- ----------------------------------------------------------------------------
+-- Inventario de equipos/herramientas por usuario (bombas, redes, sensores).
+-- Independiente del flujo biológico.
+-- ============================================================================
+CREATE TABLE public.equipos (
+    fi_equipo_id                integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre                   varchar(150)   NOT NULL,
+    fc_marca                    varchar(100),
+    fc_modelo                   varchar(100),
+    fc_tipo                     varchar(100),
+    fd_fecha_compra             date,
+    fn_costo                    numeric(12,2),
+    fc_estado                   varchar(50)    NOT NULL DEFAULT 'Operativo',
+    fc_ubicacion                varchar(150),
+    fc_responsable              varchar(100),
+    fd_proximo_mantenimiento    date,
+    fc_notas                    text,
+    fi_usuario_id               integer        NOT NULL,
+    fd_fecha_registro           timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion       timestamp      NOT NULL DEFAULT now(),
 
-ALTER SEQUENCE public.usuarios_fi_usuario_id_seq OWNED BY public.usuarios.fi_usuario_id;
-
---
--- Name: usuarios_fi_usuario_id_seq1; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.usuarios ALTER COLUMN fi_usuario_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.usuarios_fi_usuario_id_seq1
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+    CONSTRAINT equipos_costo_chk CHECK (fn_costo IS NULL OR fn_costo >= 0),
+    CONSTRAINT equipos_estado_chk
+        CHECK (fc_estado IN ('Operativo', 'En mantenimiento', 'Dañado')),
+    CONSTRAINT equipos_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
---
--- Name: vacaciones; Type: TABLE; Schema: public; Owner: postgres
---
+CREATE INDEX equipos_usuario_idx ON public.equipos (fi_usuario_id);
+CREATE INDEX equipos_estado_idx  ON public.equipos (fc_estado);
 
-CREATE TABLE public.vacaciones (
-    fi_vacacion_id integer NOT NULL,
-    fc_nombre_empleado character varying(120) NOT NULL,
-    fi_empleado_id integer,
-    fd_inicio_periodo date NOT NULL,
-    fd_fin_periodo date NOT NULL,
-    fc_departamento character varying(80),
-    fn_dias_trabajados integer DEFAULT 0,
-    fn_vacaciones_v integer DEFAULT 0,
-    fn_enfermedad_e integer DEFAULT 0,
-    fn_maternidad_m integer DEFAULT 0,
-    fn_permiso_parcial_pp integer DEFAULT 0,
-    fn_permiso_total_pt integer DEFAULT 0,
-    fn_inasistencias_i integer DEFAULT 0,
-    fn_vacaciones_anio integer DEFAULT 0,
-    fn_dias_previos integer DEFAULT 0,
-    fn_vacaciones_disponibles integer DEFAULT 0,
-    fn_vacaciones_disfrutadas integer DEFAULT 0,
-    fd_fecha_actualizacion timestamp(6) without time zone DEFAULT now(),
-    fc_asistencia character varying(50) DEFAULT 'Asistió'::character varying
+CREATE TRIGGER equipos_modif_trg
+    BEFORE UPDATE ON public.equipos
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+
+COMMENT ON TABLE public.equipos IS
+    'Equipos/herramientas del usuario (bombas, redes, sensores, etc.).';
+
+
+-- ============================================================================
+-- 8.  MANTENIMIENTOS
+-- ----------------------------------------------------------------------------
+-- Bitácora de mantenimientos aplicados a cada equipo.
+-- ============================================================================
+CREATE TABLE public.mantenimientos (
+    fi_mantenimiento_id         integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_equipo_id                integer        NOT NULL,
+    fd_fecha                    date           NOT NULL,
+    fc_tipo                     varchar(50)    NOT NULL DEFAULT 'Preventivo',
+    fc_responsable              varchar(100),
+    fc_descripcion              text,
+    fn_costo                    numeric(12,2)  NOT NULL DEFAULT 0,
+    fc_estado_post              varchar(50),
+    fd_proximo_mantenimiento    date,
+    fd_fecha_registro           timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion       timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT mantenimientos_costo_chk CHECK (fn_costo >= 0),
+    CONSTRAINT mantenimientos_tipo_chk
+        CHECK (fc_tipo IN ('Preventivo', 'Correctivo', 'Predictivo')),
+    CONSTRAINT mantenimientos_equipo_fk
+        FOREIGN KEY (fi_equipo_id) REFERENCES public.equipos (fi_equipo_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-ALTER TABLE public.vacaciones OWNER TO postgres;
+CREATE INDEX mantenimientos_equipo_idx ON public.mantenimientos (fi_equipo_id);
+CREATE INDEX mantenimientos_fecha_idx  ON public.mantenimientos (fd_fecha);
 
---
--- Name: vacaciones_fi_vacacion_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+CREATE TRIGGER mantenimientos_modif_trg
+    BEFORE UPDATE ON public.mantenimientos
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
-CREATE SEQUENCE public.vacaciones_fi_vacacion_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    MAXVALUE 2147483647
-    CACHE 1;
+COMMENT ON TABLE public.mantenimientos IS
+    'Histórico de visitas de mantenimiento por equipo. Cascade al borrar el equipo.';
 
-ALTER SEQUENCE public.vacaciones_fi_vacacion_id_seq OWNER TO postgres;
 
---
--- Name: vacaciones_fi_vacacion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
+-- ============================================================================
+-- 9.  ALIMENTOS
+-- ----------------------------------------------------------------------------
+-- Registro diario de alimentación. Cada fila referencia exactamente UNA
+-- unidad productiva: pileta, engorda o reproductor (nunca varias).
+-- ============================================================================
+CREATE TABLE public.alimentos (
+    fi_alimento_id          integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_pileta_id            integer,
+    fi_engorda_id           integer,
+    fi_reproductor_id       integer,
+    particula_mm            numeric(10,2),
+    alimento_dia            numeric(10,3),
+    porcion                 numeric(10,3),
+    gasto_alimento          numeric(12,2),
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
-ALTER SEQUENCE public.vacaciones_fi_vacacion_id_seq OWNED BY public.vacaciones.fi_vacacion_id;
-
---
--- Name: ventas; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.ventas (
-    fi_venta_id integer NOT NULL,
-    fn_monto_total numeric(12,2) NOT NULL,
-    fd_fecha_venta date NOT NULL,
-    fd_fecha_registro date DEFAULT now() NOT NULL,
-    fd_fecha_modificacion date DEFAULT now() NOT NULL,
-    fc_observaciones text,
-    fc_cliente character varying(150) NOT NULL,
-    fn_cantidad_vendida integer NOT NULL,
-    fn_precio_venta numeric(10,2) NOT NULL,
-    fc_encargado_venta text,
-    fn_abonado numeric(12,2) DEFAULT 0,
-    fn_adeudo numeric(12,2),
-    fc_empresa text NOT NULL,
-    fc_folio character varying(50),
-    fc_tipo_venta character varying(50) NOT NULL,
-    fc_estado_pago character varying(20) DEFAULT 'ADEUDO'::character varying
+    CONSTRAINT alimentos_unidad_chk CHECK (
+        (CASE WHEN fi_pileta_id      IS NOT NULL THEN 1 ELSE 0 END)
+      + (CASE WHEN fi_engorda_id     IS NOT NULL THEN 1 ELSE 0 END)
+      + (CASE WHEN fi_reproductor_id IS NOT NULL THEN 1 ELSE 0 END) = 1
+    ),
+    CONSTRAINT alimentos_pileta_fk
+        FOREIGN KEY (fi_pileta_id) REFERENCES public.piletas (fi_pileta_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT alimentos_engorda_fk
+        FOREIGN KEY (fi_engorda_id) REFERENCES public.engorda (fi_engorda_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT alimentos_reproductor_fk
+        FOREIGN KEY (fi_reproductor_id) REFERENCES public.reproductores (fi_reproductor_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT alimentos_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE public.ventas OWNER TO postgres;
+CREATE INDEX alimentos_pileta_idx      ON public.alimentos (fi_pileta_id);
+CREATE INDEX alimentos_engorda_idx     ON public.alimentos (fi_engorda_id);
+CREATE INDEX alimentos_reproductor_idx ON public.alimentos (fi_reproductor_id);
+CREATE INDEX alimentos_usuario_idx     ON public.alimentos (fi_usuario_id);
 
---
--- Name: ventas_fi_venta_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
+CREATE TRIGGER alimentos_modif_trg
+    BEFORE UPDATE ON public.alimentos
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
-CREATE SEQUENCE public.ventas_fi_venta_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+COMMENT ON TABLE public.alimentos IS
+    'Bitácora de alimentación. Cada fila referencia exactamente una unidad productiva (pileta | engorda | reproductor).';
+COMMENT ON CONSTRAINT alimentos_unidad_chk ON public.alimentos IS
+    'Garantiza que exactamente una de las tres FKs (pileta/engorda/reproductor) esté poblada.';
 
-ALTER SEQUENCE public.ventas_fi_venta_id_seq OWNER TO postgres;
 
---
--- Name: ventas_fi_venta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
+-- ============================================================================
+-- 10.  TRAZABILIDAD — ALEVINAJE
+-- ----------------------------------------------------------------------------
+-- Histórico de movimientos entre piletas / desde origen externo / bajas por
+-- mortalidad. Se conserva aunque se borren piletas o lotes (SET NULL).
+-- ============================================================================
+CREATE TABLE public.trazabilidad_alevinaje (
+    fi_movimiento_id        integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_pileta_origen        integer,
+    fi_pileta_destino       integer,
+    fi_instalacion_origen   integer,
+    fi_instalacion_destino  integer,
+    fi_lote_id              integer,
+    origen_externo          text,
+    tipo_movimiento         varchar(20)    NOT NULL DEFAULT 'TRASLADO',
+    cantidad                bigint         NOT NULL,
+    observacion             varchar(500),
+    fc_granja               varchar(100)   NOT NULL,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
 
-ALTER SEQUENCE public.ventas_fi_venta_id_seq OWNED BY public.ventas.fi_venta_id;
-
---
--- Name: vw_tesoreria_general; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.vw_tesoreria_general AS
- SELECT fc_granja,
-    fc_mes,
-    fc_categoria,
-    sum(fn_ingreso) AS total_ingreso,
-    sum(fn_egreso) AS total_egreso,
-    sum((fn_ingreso - fn_egreso)) AS saldo_neto
-   FROM public.flujo_caja
-  WHERE ((fn_ingreso IS NOT NULL) OR (fn_egreso IS NOT NULL))
-  GROUP BY fc_granja, fc_mes, fc_categoria
-  ORDER BY fc_granja, fc_mes, fc_categoria;
-
-ALTER VIEW public.vw_tesoreria_general OWNER TO postgres;
-
---
--- Name: vw_tesoreria_overview; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.vw_tesoreria_overview AS
- SELECT EXTRACT(year FROM f.fd_fecha) AS anio,
-    to_char((f.fd_fecha)::timestamp with time zone, 'YYYY-MM'::text) AS periodo,
-    initcap(to_char((f.fd_fecha)::timestamp with time zone, 'TMMonth'::text)) AS mes_nombre,
-    upper((f.fc_granja)::text) AS fc_granja,
-    c.tipo_principal AS grupo,
-    c.subcategoria AS subgrupo,
-    c.nombre AS categoria,
-    round(sum(f.fn_ingreso), 2) AS total_ingreso,
-    round(sum(f.fn_egreso), 2) AS total_egreso,
-    round(sum((f.fn_ingreso - f.fn_egreso)), 2) AS saldo_neto
-   FROM (public.flujo_caja f
-     LEFT JOIN public.categorias c ON ((f.categoria_id = c.id)))
-  GROUP BY (EXTRACT(year FROM f.fd_fecha)), (to_char((f.fd_fecha)::timestamp with time zone, 'YYYY-MM'::text)), (initcap(to_char((f.fd_fecha)::timestamp with time zone, 'TMMonth'::text))), f.fc_granja, c.tipo_principal, c.subcategoria, c.nombre
-  ORDER BY (EXTRACT(year FROM f.fd_fecha)), (to_char((f.fd_fecha)::timestamp with time zone, 'YYYY-MM'::text)), c.tipo_principal, c.subcategoria, c.nombre;
-
-ALTER VIEW public.vw_tesoreria_overview OWNER TO postgres;
-
---
--- Name: puestos; Type: TABLE; Schema: rrhh; Owner: postgres
---
-
-CREATE TABLE rrhh.puestos (
-    fi_puesto_id integer NOT NULL,
-    fc_nombre character varying(120) NOT NULL,
-    fb_activo boolean DEFAULT true
+    CONSTRAINT traza_alev_cantidad_chk CHECK (cantidad > 0),
+    CONSTRAINT traza_alev_tipo_chk
+        CHECK (tipo_movimiento IN ('TRASLADO', 'SIEMBRA', 'MORTALIDAD')),
+    CONSTRAINT traza_alev_granja_chk
+        CHECK (fc_granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
+    CONSTRAINT traza_alev_origen_chk CHECK (
+        fi_pileta_origen     IS NOT NULL
+     OR fi_instalacion_origen IS NOT NULL
+     OR origen_externo       IS NOT NULL
+    ),
+    CONSTRAINT traza_alev_origen_interno_externo_chk CHECK (
+        NOT (origen_externo IS NOT NULL
+             AND (fi_pileta_origen IS NOT NULL OR fi_instalacion_origen IS NOT NULL))
+    ),
+    CONSTRAINT traza_alev_pileta_origen_fk
+        FOREIGN KEY (fi_pileta_origen)  REFERENCES public.piletas (fi_pileta_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_alev_pileta_destino_fk
+        FOREIGN KEY (fi_pileta_destino) REFERENCES public.piletas (fi_pileta_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_alev_instalacion_origen_fk
+        FOREIGN KEY (fi_instalacion_origen)  REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_alev_instalacion_destino_fk
+        FOREIGN KEY (fi_instalacion_destino) REFERENCES public.instalaciones (fi_instalacion_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_alev_lote_fk
+        FOREIGN KEY (fi_lote_id) REFERENCES public.lotes (fi_lote_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_alev_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE rrhh.puestos OWNER TO postgres;
+CREATE INDEX traza_alev_pileta_origen_idx       ON public.trazabilidad_alevinaje (fi_pileta_origen);
+CREATE INDEX traza_alev_pileta_destino_idx      ON public.trazabilidad_alevinaje (fi_pileta_destino);
+CREATE INDEX traza_alev_instalacion_origen_idx  ON public.trazabilidad_alevinaje (fi_instalacion_origen);
+CREATE INDEX traza_alev_instalacion_destino_idx ON public.trazabilidad_alevinaje (fi_instalacion_destino);
+CREATE INDEX traza_alev_lote_idx                ON public.trazabilidad_alevinaje (fi_lote_id);
+CREATE INDEX traza_alev_fecha_idx               ON public.trazabilidad_alevinaje (fd_fecha_movimiento DESC);
+CREATE INDEX traza_alev_granja_idx              ON public.trazabilidad_alevinaje (fc_granja);
 
-ALTER TABLE rrhh.puestos ALTER COLUMN fi_puesto_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME rrhh.puestos_fi_puesto_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+COMMENT ON TABLE public.trazabilidad_alevinaje IS
+    'Histórico de movimientos de alevinaje (traslados, siembras, mortalidad).';
+COMMENT ON CONSTRAINT traza_alev_origen_chk ON public.trazabilidad_alevinaje IS
+    'Todo movimiento debe tener algún origen: pileta interna, instalación o texto externo.';
+COMMENT ON CONSTRAINT traza_alev_origen_interno_externo_chk ON public.trazabilidad_alevinaje IS
+    'origen_externo y origen interno son mutuamente excluyentes.';
+
+
+-- ============================================================================
+-- 11.  TRAZABILIDAD — ENGORDA
+-- ----------------------------------------------------------------------------
+-- Histórico de traslados entre instalaciones de engorda.
+-- ============================================================================
+CREATE TABLE public.trazabilidad_engorda (
+    fi_movimiento_id        integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_engorda_origen       integer,
+    fi_engorda_destino      integer,
+    cantidad_trasladada     integer        NOT NULL,
+    observacion             text,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT traza_eng_cantidad_chk CHECK (cantidad_trasladada > 0),
+    CONSTRAINT traza_eng_distinto_chk
+        CHECK (fi_engorda_origen IS DISTINCT FROM fi_engorda_destino),
+    CONSTRAINT traza_eng_origen_fk
+        FOREIGN KEY (fi_engorda_origen)  REFERENCES public.engorda (fi_engorda_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_eng_destino_fk
+        FOREIGN KEY (fi_engorda_destino) REFERENCES public.engorda (fi_engorda_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_eng_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
---
--- Name: tipos_documento; Type: TABLE; Schema: rrhh; Owner: postgres
---
+CREATE INDEX traza_eng_origen_idx  ON public.trazabilidad_engorda (fi_engorda_origen);
+CREATE INDEX traza_eng_destino_idx ON public.trazabilidad_engorda (fi_engorda_destino);
+CREATE INDEX traza_eng_fecha_idx   ON public.trazabilidad_engorda (fd_fecha_movimiento DESC);
 
-CREATE TABLE rrhh.tipos_documento (
-    fi_tipo_documento_id integer NOT NULL,
-    fc_nombre character varying(80) NOT NULL,
-    fb_obligatorio boolean DEFAULT false,
-    fb_activo boolean DEFAULT true
+COMMENT ON TABLE public.trazabilidad_engorda IS
+    'Histórico de traslados entre instalaciones de engorda.';
+
+
+-- ============================================================================
+-- 12.  TRAZABILIDAD — REPRODUCTORES
+-- ----------------------------------------------------------------------------
+-- Histórico de altas/traslados de reproductores. Origen puede ser interno
+-- (otro reproductor registrado) o externo (texto libre: "proveedor X").
+-- ============================================================================
+CREATE TABLE public.trazabilidad_reproductores (
+    fi_movimiento_id        integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_repro_origen         integer,
+    fi_repro_destino        integer,
+    origen_texto            varchar(150),
+    cantidad_trasladada     integer,
+    observacion             text,
+    fi_usuario_id           integer        NOT NULL,
+    fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
+    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
+
+    CONSTRAINT traza_repro_cantidad_chk
+        CHECK (cantidad_trasladada IS NULL OR cantidad_trasladada > 0),
+    CONSTRAINT traza_repro_origen_chk
+        CHECK (origen_texto IS NOT NULL OR fi_repro_origen IS NOT NULL),
+    CONSTRAINT traza_repro_distinto_chk
+        CHECK (fi_repro_origen IS DISTINCT FROM fi_repro_destino),
+    CONSTRAINT traza_repro_origen_fk
+        FOREIGN KEY (fi_repro_origen)  REFERENCES public.reproductores (fi_reproductor_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_repro_destino_fk
+        FOREIGN KEY (fi_repro_destino) REFERENCES public.reproductores (fi_reproductor_id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT traza_repro_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-ALTER TABLE rrhh.tipos_documento OWNER TO postgres;
+CREATE INDEX traza_repro_origen_idx  ON public.trazabilidad_reproductores (fi_repro_origen);
+CREATE INDEX traza_repro_destino_idx ON public.trazabilidad_reproductores (fi_repro_destino);
+CREATE INDEX traza_repro_fecha_idx   ON public.trazabilidad_reproductores (fd_fecha_movimiento DESC);
 
-ALTER TABLE rrhh.tipos_documento ALTER COLUMN fi_tipo_documento_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME rrhh.tipos_documento_fi_tipo_documento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
+COMMENT ON TABLE public.trazabilidad_reproductores IS
+    'Histórico de altas/traslados de reproductores (interno o externo).';
 
---
--- Name: departamentos; Type: TABLE; Schema: rrhh; Owner: postgres
---
 
-CREATE TABLE rrhh.departamentos (
-    fi_departamento_id integer NOT NULL,
-    fc_nombre character varying(80) NOT NULL,
-    fb_activo boolean DEFAULT true
-);
-
-ALTER TABLE rrhh.departamentos OWNER TO postgres;
-
---
--- Name: departamentos_fi_departamento_id_seq; Type: SEQUENCE; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE rrhh.departamentos ALTER COLUMN fi_departamento_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME rrhh.departamentos_fi_departamento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
---
--- Name: empleados; Type: TABLE; Schema: rrhh; Owner: postgres
---
+-- ============================================================================
+-- 13.  RRHH — TRANSACCIONAL  (empleados, documentos, nómina, vacaciones,
+--                             caja de ahorro)
+-- ----------------------------------------------------------------------------
+-- Las tablas catálogo (puestos, departamentos, tipos_documento) ya quedaron
+-- creadas en la sección 1.5. Aquí se definen las tablas que acumulan
+-- movimientos diarios del área de Recursos Humanos.
+-- ============================================================================
 
 CREATE TABLE rrhh.empleados (
-    fi_empleado_id integer NOT NULL,
-    fi_usuario_id integer,
-    fi_departamento_id integer NOT NULL,
-    fi_puesto_id integer,
-    fc_nombre character varying(60) NOT NULL,
-    fc_apellido_paterno character varying(60) NOT NULL,
-    fc_apellido_materno character varying(60) NOT NULL,
-    fc_genero character varying(20),
-    fd_fecha_nacimiento date,
-    fc_estado character varying(50),
-    fc_ciudad character varying(60),
-    fc_calle character varying(120),
-    fc_codigo_postal character varying(10),
-    fc_referencias character varying(255),
-    ft_comentarios_adicionales text,
-    fd_fecha_contratacion date,
-    fn_uniformes integer DEFAULT 0,
-    fb_activo boolean DEFAULT true,
-    fd_fecha_alta date DEFAULT CURRENT_DATE
+    fi_empleado_id           INTEGER         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_usuario_id            INTEGER,
+    fi_departamento_id       INTEGER         NOT NULL,
+    fi_puesto_id             INTEGER,
+
+    fc_nombre                VARCHAR(60)     NOT NULL,
+    fc_apellido_paterno      VARCHAR(60)     NOT NULL,
+    fc_apellido_materno      VARCHAR(60)     NOT NULL,
+    fc_genero                VARCHAR(20),
+    fd_fecha_nacimiento      DATE,
+
+    fc_estado                VARCHAR(50),
+    fc_ciudad                VARCHAR(60),
+    fc_calle                 VARCHAR(120),
+    fc_codigo_postal         VARCHAR(10),
+    fc_referencias           VARCHAR(255),
+    ft_comentarios_adicionales TEXT,
+
+    fd_fecha_contratacion    DATE,
+    fn_uniformes             INTEGER         NOT NULL DEFAULT 0,
+    fb_activo                BOOLEAN         NOT NULL DEFAULT TRUE,
+    fd_fecha_alta            DATE            NOT NULL DEFAULT CURRENT_DATE,
+
+    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT empleados_genero_check
+        CHECK (fc_genero IS NULL OR fc_genero IN ('M','F','Masculino','Femenino','Otro')),
+    CONSTRAINT empleados_uniformes_check
+        CHECK (fn_uniformes >= 0),
+    CONSTRAINT empleados_codigo_postal_check
+        CHECK (fc_codigo_postal IS NULL OR fc_codigo_postal ~ '^[0-9]{4,10}$'),
+
+    CONSTRAINT empleados_usuario_fk
+        FOREIGN KEY (fi_usuario_id)      REFERENCES public.usuarios (fi_usuario_id)      ON DELETE SET NULL,
+    CONSTRAINT empleados_departamento_fk
+        FOREIGN KEY (fi_departamento_id) REFERENCES rrhh.departamentos (fi_departamento_id) ON DELETE RESTRICT,
+    CONSTRAINT empleados_puesto_fk
+        FOREIGN KEY (fi_puesto_id)       REFERENCES rrhh.puestos (fi_puesto_id)           ON DELETE SET NULL
 );
 
-ALTER TABLE rrhh.empleados OWNER TO postgres;
+CREATE INDEX empleados_departamento_idx ON rrhh.empleados (fi_departamento_id);
+CREATE INDEX empleados_puesto_idx       ON rrhh.empleados (fi_puesto_id);
+CREATE INDEX empleados_usuario_idx      ON rrhh.empleados (fi_usuario_id);
+CREATE INDEX empleados_activo_idx       ON rrhh.empleados (fb_activo);
+CREATE INDEX empleados_apellidos_idx    ON rrhh.empleados (fc_apellido_paterno, fc_apellido_materno);
 
---
--- Name: empleados_fi_empleado_id_seq; Type: SEQUENCE; Schema: rrhh; Owner: postgres
---
+COMMENT ON TABLE rrhh.empleados IS
+'Expediente de empleados. fi_usuario_id es opcional: no todo empleado
+ tiene cuenta de acceso. Al borrar un usuario, el empleado conserva su
+ historial (SET NULL).';
 
-ALTER TABLE rrhh.empleados ALTER COLUMN fi_empleado_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME rrhh.empleados_fi_empleado_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
 
---
--- Name: documentos_empleado; Type: TABLE; Schema: rrhh; Owner: postgres
---
+-- Documentos del expediente -------------------------------------------------
 
 CREATE TABLE rrhh.documentos_empleado (
-    fi_documento_id integer NOT NULL,
-    fi_empleado_id integer NOT NULL,
-    fi_tipo_documento_id integer NOT NULL,
-    fc_ruta_archivo character varying(500) NOT NULL,
-    fc_nombre_original character varying(255) NOT NULL,
-    fd_fecha_carga date DEFAULT CURRENT_DATE
+    fi_documento_id          INTEGER         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_empleado_id           INTEGER         NOT NULL,
+    fi_tipo_documento_id     INTEGER         NOT NULL,
+    fc_ruta_archivo          VARCHAR(500)    NOT NULL,
+    fc_nombre_original       VARCHAR(255)    NOT NULL,
+    fd_fecha_carga           DATE            NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT doc_emp_unico UNIQUE (fi_empleado_id, fi_tipo_documento_id),
+
+    CONSTRAINT doc_emp_empleado_fk
+        FOREIGN KEY (fi_empleado_id)       REFERENCES rrhh.empleados (fi_empleado_id)       ON DELETE CASCADE,
+    CONSTRAINT doc_emp_tipo_fk
+        FOREIGN KEY (fi_tipo_documento_id) REFERENCES rrhh.tipos_documento (fi_tipo_documento_id) ON DELETE RESTRICT
 );
 
-ALTER TABLE rrhh.documentos_empleado OWNER TO postgres;
+CREATE INDEX doc_emp_empleado_idx ON rrhh.documentos_empleado (fi_empleado_id);
+CREATE INDEX doc_emp_tipo_idx     ON rrhh.documentos_empleado (fi_tipo_documento_id);
 
-ALTER TABLE rrhh.documentos_empleado ALTER COLUMN fi_documento_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME rrhh.documentos_empleado_fi_documento_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+COMMENT ON TABLE rrhh.documentos_empleado IS
+'Archivos cargados al expediente (INE, RFC, CURP, etc.). Un empleado
+ no puede tener dos documentos del mismo tipo: UNIQUE (empleado, tipo).';
+
+
+-- Nómina --------------------------------------------------------------------
+
+CREATE TABLE public.nomina (
+    fi_nomina_id             INTEGER         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_empleado_id           INTEGER,
+    fc_nombre_empleado       VARCHAR(120)    NOT NULL,
+    fd_fecha_pago            DATE            NOT NULL DEFAULT CURRENT_DATE,
+    fn_total                 NUMERIC(10,2)   NOT NULL DEFAULT 0,
+    fn_bono                  NUMERIC(10,2)   NOT NULL DEFAULT 0,
+    fn_deuda                 NUMERIC(10,2)   NOT NULL DEFAULT 0,
+    fn_descuento             NUMERIC(10,2)   NOT NULL DEFAULT 0,
+    fn_anticipo              NUMERIC(10,2)   NOT NULL DEFAULT 0,
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+    fd_fecha_actualizacion   TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT nomina_montos_no_negativos
+        CHECK (fn_total >= 0 AND fn_bono >= 0 AND fn_deuda >= 0
+               AND fn_descuento >= 0 AND fn_anticipo >= 0),
+
+    CONSTRAINT nomina_empleado_fk
+        FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados (fi_empleado_id) ON DELETE SET NULL,
+    CONSTRAINT nomina_usuario_fk
+        FOREIGN KEY (fi_usuario_id)  REFERENCES public.usuarios (fi_usuario_id)  ON DELETE SET NULL
 );
 
---
--- Name: modulos; Type: TABLE; Schema: seguridad; Owner: postgres
---
+CREATE INDEX nomina_empleado_idx    ON public.nomina (fi_empleado_id);
+CREATE INDEX nomina_fecha_pago_idx  ON public.nomina (fd_fecha_pago DESC);
+CREATE INDEX nomina_usuario_idx     ON public.nomina (fi_usuario_id);
 
-CREATE TABLE seguridad.modulos (
-    fi_modulo_id integer NOT NULL,
-    fc_nombre character varying(50) NOT NULL,
-    fc_ruta character varying(100) NOT NULL,
-    fb_activo boolean DEFAULT true
+COMMENT ON TABLE public.nomina IS
+'Pagos de nómina. Mantiene fc_nombre_empleado para preservar el histórico
+ aunque el empleado sea eliminado o renombrado. El trigger de auditoría
+ mantiene fd_fecha_actualizacion alineada con cualquier UPDATE.';
+
+
+-- Vacaciones ----------------------------------------------------------------
+
+CREATE TABLE public.vacaciones (
+    fi_vacacion_id              INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_empleado_id              INTEGER,
+    fc_nombre_empleado          VARCHAR(120) NOT NULL,
+    fc_departamento             VARCHAR(80),
+
+    fd_inicio_periodo           DATE         NOT NULL,
+    fd_fin_periodo              DATE         NOT NULL,
+
+    fn_dias_trabajados          INTEGER      NOT NULL DEFAULT 0,
+    fn_vacaciones_v             INTEGER      NOT NULL DEFAULT 0,
+    fn_enfermedad_e             INTEGER      NOT NULL DEFAULT 0,
+    fn_maternidad_m             INTEGER      NOT NULL DEFAULT 0,
+    fn_permiso_parcial_pp       INTEGER      NOT NULL DEFAULT 0,
+    fn_permiso_total_pt         INTEGER      NOT NULL DEFAULT 0,
+    fn_inasistencias_i          INTEGER      NOT NULL DEFAULT 0,
+    fn_vacaciones_anio          INTEGER      NOT NULL DEFAULT 0,
+    fn_dias_previos             INTEGER      NOT NULL DEFAULT 0,
+    fn_vacaciones_disponibles   INTEGER      NOT NULL DEFAULT 0,
+    fn_vacaciones_disfrutadas   INTEGER      NOT NULL DEFAULT 0,
+
+    fc_asistencia               VARCHAR(50)  NOT NULL DEFAULT 'Asistió',
+    fd_fecha_actualizacion      TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT vacaciones_periodo_valido
+        CHECK (fd_inicio_periodo <= fd_fin_periodo),
+    CONSTRAINT vacaciones_contadores_no_negativos
+        CHECK (fn_dias_trabajados        >= 0
+           AND fn_vacaciones_v           >= 0
+           AND fn_enfermedad_e           >= 0
+           AND fn_maternidad_m           >= 0
+           AND fn_permiso_parcial_pp     >= 0
+           AND fn_permiso_total_pt       >= 0
+           AND fn_inasistencias_i        >= 0
+           AND fn_vacaciones_anio        >= 0
+           AND fn_dias_previos           >= 0
+           AND fn_vacaciones_disponibles >= 0
+           AND fn_vacaciones_disfrutadas >= 0),
+
+    CONSTRAINT vacaciones_empleado_fk
+        FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados (fi_empleado_id) ON DELETE SET NULL
 );
 
-ALTER TABLE seguridad.modulos OWNER TO postgres;
+CREATE INDEX vacaciones_empleado_idx ON public.vacaciones (fi_empleado_id);
+CREATE INDEX vacaciones_periodo_idx  ON public.vacaciones (fd_inicio_periodo, fd_fin_periodo);
 
---
--- Name: modulos_fi_modulo_id_seq; Type: SEQUENCE; Schema: seguridad; Owner: postgres
---
+COMMENT ON TABLE public.vacaciones IS
+'Registro semanal de días trabajados / ausencias / vacaciones por empleado.
+ fi_empleado_id es opcional para soportar periodos históricos previos a la
+ creación formal del expediente.';
 
-ALTER TABLE seguridad.modulos ALTER COLUMN fi_modulo_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME seguridad.modulos_fi_modulo_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
+
+-- Caja de ahorro (resumen mensual) -----------------------------------------
+
+CREATE TABLE public.caja_ahorro_resumen (
+    fi_caja_ahorro_id   INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_categoria        VARCHAR(100)   NOT NULL,
+    fc_granja           VARCHAR(50)    NOT NULL DEFAULT 'Ceiba',
+
+    enero       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    febrero     NUMERIC(12,2) NOT NULL DEFAULT 0,
+    marzo       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    abril       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    mayo        NUMERIC(12,2) NOT NULL DEFAULT 0,
+    junio       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    julio       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    agosto      NUMERIC(12,2) NOT NULL DEFAULT 0,
+    septiembre  NUMERIC(12,2) NOT NULL DEFAULT 0,
+    octubre     NUMERIC(12,2) NOT NULL DEFAULT 0,
+    noviembre   NUMERIC(12,2) NOT NULL DEFAULT 0,
+    diciembre   NUMERIC(12,2) NOT NULL DEFAULT 0,
+
+    total NUMERIC(14,2) GENERATED ALWAYS AS (
+        COALESCE(enero,0)      + COALESCE(febrero,0)   + COALESCE(marzo,0)
+      + COALESCE(abril,0)      + COALESCE(mayo,0)      + COALESCE(junio,0)
+      + COALESCE(julio,0)      + COALESCE(agosto,0)    + COALESCE(septiembre,0)
+      + COALESCE(octubre,0)    + COALESCE(noviembre,0) + COALESCE(diciembre,0)
+    ) STORED,
+
+    actualizado TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT caja_ahorro_categoria_granja_uq UNIQUE (fc_categoria, fc_granja),
+
+    CONSTRAINT caja_ahorro_montos_no_negativos
+        CHECK (enero>=0 AND febrero>=0 AND marzo>=0 AND abril>=0
+           AND mayo>=0  AND junio>=0   AND julio>=0 AND agosto>=0
+           AND septiembre>=0 AND octubre>=0 AND noviembre>=0 AND diciembre>=0)
 );
 
---
--- Name: roles_modulos; Type: TABLE; Schema: seguridad; Owner: postgres
---
+CREATE INDEX caja_ahorro_categoria_idx ON public.caja_ahorro_resumen (fc_categoria);
+CREATE INDEX caja_ahorro_granja_idx    ON public.caja_ahorro_resumen (fc_granja);
 
-CREATE TABLE seguridad.roles_modulos (
-    fi_rol_id integer NOT NULL,
-    fi_modulo_id integer NOT NULL
+COMMENT ON TABLE public.caja_ahorro_resumen IS
+'Resumen anual (12 meses) del fondo de caja de ahorro. Una fila por
+ categoría/granja. La columna total se calcula automáticamente (GENERATED).';
+
+COMMENT ON COLUMN public.caja_ahorro_resumen.total IS
+'Total anual calculado automáticamente como suma de los 12 meses.';
+
+
+-- ============================================================================
+-- 14.  VENTAS / CRM  (clientes, proveedores, ventas, lista_espera)
+-- ============================================================================
+
+CREATE TABLE public.clientes (
+    fi_cliente_id          INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre              VARCHAR(100) NOT NULL,
+    fc_telefono            VARCHAR(20),
+    fc_correo              VARCHAR(255),
+    fc_cp                  CHAR(5),
+    fc_localidad           VARCHAR(100),
+    fi_usuario_id          INTEGER      NOT NULL,
+    fd_fecha_registro      TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion  TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT clientes_correo_check
+        CHECK (fc_correo IS NULL OR fc_correo ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+    CONSTRAINT clientes_cp_check
+        CHECK (fc_cp IS NULL OR fc_cp ~ '^[0-9]{5}$'),
+
+    CONSTRAINT clientes_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE RESTRICT
 );
 
-ALTER TABLE seguridad.roles_modulos OWNER TO postgres;
-
---
--- Name: alimentacion fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentacion ALTER COLUMN fi_id SET DEFAULT nextval('public.ceiba_alimentacion_fi_id_seq'::regclass);
-
---
--- Name: banos fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.banos ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_banos_fi_id_seq'::regclass);
-
---
--- Name: biometrias fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.biometrias ALTER COLUMN fi_id SET DEFAULT nextval('public.ceiba_biometrias_fi_id_seq'::regclass);
-
---
--- Name: caja_ahorro_movimientos id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.caja_ahorro_movimientos ALTER COLUMN id SET DEFAULT nextval('public.caja_ahorro_movimientos_id_seq'::regclass);
-
---
--- Name: caja_ahorro_resumen id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.caja_ahorro_resumen ALTER COLUMN id SET DEFAULT nextval('public.caja_ahorro_resumen_id_seq'::regclass);
-
---
--- Name: cat_caja_ahorro_categorias id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cat_caja_ahorro_categorias ALTER COLUMN id SET DEFAULT nextval('public.cat_caja_ahorro_categorias_id_seq'::regclass);
-
---
--- Name: cat_tesoreria_categorias fi_categoria_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cat_tesoreria_categorias ALTER COLUMN fi_categoria_id SET DEFAULT nextval('public.cat_tesoreria_categorias_fi_categoria_id_seq'::regclass);
-
---
--- Name: categorias id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.categorias ALTER COLUMN id SET DEFAULT nextval('public.categorias_id_seq'::regclass);
-
---
--- Name: cuentas fi_cuenta_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cuentas ALTER COLUMN fi_cuenta_id SET DEFAULT nextval('public.cuentas_fi_cuenta_id_seq'::regclass);
-
---
--- Name: engorda fi_engorda_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.engorda ALTER COLUMN fi_engorda_id SET DEFAULT nextval('public.engorda_fi_engorda_id_seq'::regclass);
-
---
--- Name: equipos fi_equipo_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.equipos ALTER COLUMN fi_equipo_id SET DEFAULT nextval('public.equipos_fi_equipo_id_seq'::regclass);
-
---
--- Name: flujo_caja fi_movimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.flujo_caja ALTER COLUMN fi_movimiento_id SET DEFAULT nextval('public.flujo_caja_fi_movimiento_id_seq'::regclass);
-
---
--- Name: instalaciones fi_instalacion_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.instalaciones ALTER COLUMN fi_instalacion_id SET DEFAULT nextval('public.instalaciones_fi_instalacion_id_seq'::regclass);
-
---
--- Name: insumos fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.insumos ALTER COLUMN fi_id SET DEFAULT nextval('public.ceiba_insumos_fi_id_seq'::regclass);
-
---
--- Name: inventario_alevines fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.inventario_alevines ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_inventario_alevines_fi_id_seq'::regclass);
-
---
--- Name: limpieza fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.limpieza ALTER COLUMN fi_id SET DEFAULT nextval('public.ceiba_limpieza_fi_id_seq'::regclass);
-
---
--- Name: lista_espera fi_lista_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lista_espera ALTER COLUMN fi_lista_id SET DEFAULT nextval('public.lista_espera_fi_lista_id_seq'::regclass);
-
---
--- Name: lote_movimientos fi_mov_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lote_movimientos ALTER COLUMN fi_mov_id SET DEFAULT nextval('public.lote_movimientos_fi_mov_id_seq'::regclass);
-
---
--- Name: lotes fi_lote_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lotes ALTER COLUMN fi_lote_id SET DEFAULT nextval('public.lotes_fi_lote_id_seq'::regclass);
-
---
--- Name: mantenimientos fi_mantenimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.mantenimientos ALTER COLUMN fi_mantenimiento_id SET DEFAULT nextval('public.mantenimientos_fi_mantenimiento_id_seq'::regclass);
-
---
--- Name: medicamentos fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.medicamentos ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_medicamentos_fi_id_seq'::regclass);
-
---
--- Name: nomina fi_nomina_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.nomina ALTER COLUMN fi_nomina_id SET DEFAULT nextval('public.nomina_fi_nomina_id_seq'::regclass);
-
---
--- Name: parametros fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.parametros ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_parametros_fi_id_seq'::regclass);
-
---
--- Name: plagas fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.plagas ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_plagas_fi_id_seq'::regclass);
-
---
--- Name: proveedores id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.proveedores ALTER COLUMN id SET DEFAULT nextval('public.proveedores_id_seq'::regclass);
-
---
--- Name: recambios fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.recambios ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_recambios_fi_id_seq'::regclass);
-
---
--- Name: recepcion_insumos fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.recepcion_insumos ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_recepcion_insumos_fi_id_seq'::regclass);
-
---
--- Name: reproductores fi_reproductor_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.reproductores ALTER COLUMN fi_reproductor_id SET DEFAULT nextval('public.reproductores_fi_reproductor_id_seq'::regclass);
-
---
--- Name: trazabilidad_alevinaje fi_movimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje ALTER COLUMN fi_movimiento_id SET DEFAULT nextval('public.rastreabilidad_fi_movimiento_id_seq'::regclass);
-
---
--- Name: trazabilidad_engorda fi_movimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_engorda ALTER COLUMN fi_movimiento_id SET DEFAULT nextval('public.rastreabilidad_engorda_fi_movimiento_id_seq'::regclass);
-
---
--- Name: trazabilidad_reproductores fi_movimiento_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_reproductores ALTER COLUMN fi_movimiento_id SET DEFAULT nextval('public.rastreabilidad_reproductores_fi_movimiento_id_seq'::regclass);
-
---
--- Name: vacaciones fi_vacacion_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vacaciones ALTER COLUMN fi_vacacion_id SET DEFAULT nextval('public.vacaciones_fi_vacacion_id_seq'::regclass);
-
---
--- Name: ventas fi_venta_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ventas ALTER COLUMN fi_venta_id SET DEFAULT nextval('public.ventas_fi_venta_id_seq'::regclass);
-
---
--- Name: visitas fi_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.visitas ALTER COLUMN fi_id SET DEFAULT nextval('public.medellin_visitas_fi_id_seq'::regclass);
-
---
--- Name: alimentos alimentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT alimentos_pkey PRIMARY KEY (fi_alimento_id);
-
---
--- Name: caja_ahorro_movimientos caja_ahorro_movimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.caja_ahorro_movimientos
-    ADD CONSTRAINT caja_ahorro_movimientos_pkey PRIMARY KEY (id);
-
---
--- Name: caja_ahorro_resumen caja_ahorro_resumen_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.caja_ahorro_resumen
-    ADD CONSTRAINT caja_ahorro_resumen_pkey PRIMARY KEY (id);
-
---
--- Name: cat_caja_ahorro_categorias cat_caja_ahorro_categorias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cat_caja_ahorro_categorias
-    ADD CONSTRAINT cat_caja_ahorro_categorias_pkey PRIMARY KEY (id);
-
---
--- Name: cat_tesoreria_categorias cat_tesoreria_categorias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cat_tesoreria_categorias
-    ADD CONSTRAINT cat_tesoreria_categorias_pkey PRIMARY KEY (fi_categoria_id);
-
---
--- Name: categorias categorias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.categorias
-    ADD CONSTRAINT categorias_pkey PRIMARY KEY (id);
-
---
--- Name: alimentacion ceiba_alimentacion_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentacion
-    ADD CONSTRAINT ceiba_alimentacion_pkey PRIMARY KEY (fi_id);
-
---
--- Name: biometrias ceiba_biometrias_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.biometrias
-    ADD CONSTRAINT ceiba_biometrias_pkey PRIMARY KEY (fi_id);
-
---
--- Name: insumos ceiba_insumos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.insumos
-    ADD CONSTRAINT ceiba_insumos_pkey PRIMARY KEY (fi_id);
-
---
--- Name: limpieza ceiba_limpieza_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.limpieza
-    ADD CONSTRAINT ceiba_limpieza_pkey PRIMARY KEY (fi_id);
-
---
--- Name: clientes clientes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.clientes
-    ADD CONSTRAINT clientes_pkey PRIMARY KEY (fi_cliente_id);
-
---
--- Name: cuentas cuentas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cuentas
-    ADD CONSTRAINT cuentas_pkey PRIMARY KEY (fi_cuenta_id);
-
---
--- Name: engorda engorda_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.engorda
-    ADD CONSTRAINT engorda_pkey PRIMARY KEY (fi_engorda_id);
-
---
--- Name: equipos equipos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.equipos
-    ADD CONSTRAINT equipos_pkey PRIMARY KEY (fi_equipo_id);
-
---
--- Name: flujo_caja flujo_caja_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.flujo_caja
-    ADD CONSTRAINT flujo_caja_pkey PRIMARY KEY (fi_movimiento_id);
-
---
--- Name: instalaciones instalaciones_nombre_granja_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.instalaciones
-    ADD CONSTRAINT instalaciones_nombre_granja_unique UNIQUE (nombre_instalacion, fc_granja);
-
---
--- Name: instalaciones instalaciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.instalaciones
-    ADD CONSTRAINT instalaciones_pkey PRIMARY KEY (fi_instalacion_id);
-
---
--- Name: lista_espera lista_espera_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lista_espera
-    ADD CONSTRAINT lista_espera_pkey PRIMARY KEY (fi_lista_id);
-
---
--- Name: lote_movimientos lote_movimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lote_movimientos
-    ADD CONSTRAINT lote_movimientos_pkey PRIMARY KEY (fi_mov_id);
-
---
--- Name: lotes lotes_no_lote_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lotes
-    ADD CONSTRAINT lotes_no_lote_key UNIQUE (no_lote);
-
---
--- Name: lotes lotes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lotes
-    ADD CONSTRAINT lotes_pkey PRIMARY KEY (fi_lote_id);
-
---
--- Name: mantenimientos mantenimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.mantenimientos
-    ADD CONSTRAINT mantenimientos_pkey PRIMARY KEY (fi_mantenimiento_id);
-
---
--- Name: banos medellin_banos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.banos
-    ADD CONSTRAINT medellin_banos_pkey PRIMARY KEY (fi_id);
-
---
--- Name: inventario_alevines medellin_inventario_alevines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.inventario_alevines
-    ADD CONSTRAINT medellin_inventario_alevines_pkey PRIMARY KEY (fi_id);
-
---
--- Name: medicamentos medellin_medicamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.medicamentos
-    ADD CONSTRAINT medellin_medicamentos_pkey PRIMARY KEY (fi_id);
-
---
--- Name: parametros medellin_parametros_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.parametros
-    ADD CONSTRAINT medellin_parametros_pkey PRIMARY KEY (fi_id);
-
---
--- Name: plagas medellin_plagas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.plagas
-    ADD CONSTRAINT medellin_plagas_pkey PRIMARY KEY (fi_id);
-
---
--- Name: recambios medellin_recambios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.recambios
-    ADD CONSTRAINT medellin_recambios_pkey PRIMARY KEY (fi_id);
-
---
--- Name: recepcion_insumos medellin_recepcion_insumos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.recepcion_insumos
-    ADD CONSTRAINT medellin_recepcion_insumos_pkey PRIMARY KEY (fi_id);
-
---
--- Name: visitas medellin_visitas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.visitas
-    ADD CONSTRAINT medellin_visitas_pkey PRIMARY KEY (fi_id);
-
---
--- Name: nomina nomina_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.nomina
-    ADD CONSTRAINT nomina_pkey PRIMARY KEY (fi_nomina_id);
-
---
--- Name: piletas piletas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.piletas
-    ADD CONSTRAINT piletas_pkey PRIMARY KEY (fi_pileta_id);
-
---
--- Name: proveedores proveedores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.proveedores
-    ADD CONSTRAINT proveedores_pkey PRIMARY KEY (id);
-
---
--- Name: trazabilidad_engorda rastreabilidad_engorda_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_engorda
-    ADD CONSTRAINT rastreabilidad_engorda_pkey PRIMARY KEY (fi_movimiento_id);
-
---
--- Name: trazabilidad_alevinaje rastreabilidad_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje
-    ADD CONSTRAINT rastreabilidad_pkey PRIMARY KEY (fi_movimiento_id);
-
---
--- Name: trazabilidad_reproductores rastreabilidad_reproductores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_reproductores
-    ADD CONSTRAINT rastreabilidad_reproductores_pkey PRIMARY KEY (fi_movimiento_id);
-
---
--- Name: reproductores reproductores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.reproductores
-    ADD CONSTRAINT reproductores_pkey PRIMARY KEY (fi_reproductor_id);
-
---
--- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.roles
-    ADD CONSTRAINT roles_pkey PRIMARY KEY (fi_rol_id);
-
---
--- Name: usuarios usuarios_fc_nombre_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.usuarios
-    ADD CONSTRAINT usuarios_fc_nombre_key UNIQUE (fc_nombre);
-
---
--- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.usuarios
-    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (fi_usuario_id);
-
---
--- Name: vacaciones vacaciones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.vacaciones
-    ADD CONSTRAINT vacaciones_pkey PRIMARY KEY (fi_vacacion_id);
-
---
--- Name: ventas ventas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ventas
-    ADD CONSTRAINT ventas_pkey PRIMARY KEY (fi_venta_id);
-
---
--- Name: puestos puestos_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.puestos
-    ADD CONSTRAINT puestos_pkey PRIMARY KEY (fi_puesto_id);
-
---
--- Name: tipos_documento tipos_documento_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.tipos_documento
-    ADD CONSTRAINT tipos_documento_pkey PRIMARY KEY (fi_tipo_documento_id);
-
---
--- Name: documentos_empleado documentos_empleado_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.documentos_empleado
-    ADD CONSTRAINT documentos_empleado_pkey PRIMARY KEY (fi_documento_id);
-
---
--- Name: documentos_empleado documentos_empleado_unique; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.documentos_empleado
-    ADD CONSTRAINT documentos_empleado_unique UNIQUE (fi_empleado_id, fi_tipo_documento_id);
-
---
--- Name: departamentos departamentos_fc_nombre_key; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.departamentos
-    ADD CONSTRAINT departamentos_fc_nombre_key UNIQUE (fc_nombre);
-
---
--- Name: departamentos departamentos_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.departamentos
-    ADD CONSTRAINT departamentos_pkey PRIMARY KEY (fi_departamento_id);
-
---
--- Name: empleados empleados_fi_usuario_id_key; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_usuario_id_key UNIQUE (fi_usuario_id);
-
---
--- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_pkey PRIMARY KEY (fi_empleado_id);
-
---
--- Name: modulos modulos_fc_nombre_key; Type: CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.modulos
-    ADD CONSTRAINT modulos_fc_nombre_key UNIQUE (fc_nombre);
-
---
--- Name: modulos modulos_fc_ruta_key; Type: CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.modulos
-    ADD CONSTRAINT modulos_fc_ruta_key UNIQUE (fc_ruta);
-
---
--- Name: modulos modulos_pkey; Type: CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.modulos
-    ADD CONSTRAINT modulos_pkey PRIMARY KEY (fi_modulo_id);
-
---
--- Name: roles_modulos roles_modulos_pkey; Type: CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.roles_modulos
-    ADD CONSTRAINT roles_modulos_pkey PRIMARY KEY (fi_rol_id, fi_modulo_id);
-
---
--- Name: fki_fi_rol_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX fki_fi_rol_id ON public.usuarios USING btree (fi_rol_id);
-
---
--- Name: unico_root; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX unico_root ON public.roles USING btree (fb_es_root) WHERE (fb_es_root = true);
-
---
--- Name: caja_ahorro_movimientos caja_ahorro_movimientos_categoria_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.caja_ahorro_movimientos
-    ADD CONSTRAINT caja_ahorro_movimientos_categoria_id_fkey FOREIGN KEY (categoria_id) REFERENCES public.cat_caja_ahorro_categorias(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
---
--- Name: engorda engorda_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.engorda
-    ADD CONSTRAINT engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
-
---
--- Name: equipos equipos_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.equipos
-    ADD CONSTRAINT equipos_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id);
-
---
--- Name: usuarios fi_rol_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.usuarios
-    ADD CONSTRAINT fi_rol_id FOREIGN KEY (fi_rol_id) REFERENCES public.roles(fi_rol_id);
-
---
--- Name: clientes fi_usuario_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.clientes
-    ADD CONSTRAINT fi_usuario_id FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id);
-
---
--- Name: alimentos fk_alimentos_engorda; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_alimentos_engorda FOREIGN KEY (fi_engorda_id) REFERENCES public.engorda(fi_engorda_id) ON DELETE SET NULL;
-
---
--- Name: biometrias fk_biometrias_reproductores; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.biometrias
-    ADD CONSTRAINT fk_biometrias_reproductores FOREIGN KEY (fi_reproductor_id) REFERENCES public.reproductores(fi_reproductor_id) ON DELETE CASCADE;
-
---
--- Name: engorda fk_engorda_lote; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.engorda
-    ADD CONSTRAINT fk_engorda_lote FOREIGN KEY (fi_lote_id) REFERENCES public.lotes(fi_lote_id) ON DELETE SET NULL;
-
---
--- Name: trazabilidad_alevinaje fk_mov_lote; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje
-    ADD CONSTRAINT fk_mov_lote FOREIGN KEY (fi_lote_id) REFERENCES public.lotes(fi_lote_id);
-
---
--- Name: alimentos fk_pileta; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_pileta FOREIGN KEY (fi_pileta_id) REFERENCES public.piletas(fi_pileta_id) ON DELETE CASCADE;
-
---
--- Name: alimentos fk_reproductor; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_reproductor FOREIGN KEY (fi_reproductor_id) REFERENCES public.reproductores(fi_reproductor_id);
-
---
--- Name: alimentos fk_usuario_alimentos; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.alimentos
-    ADD CONSTRAINT fk_usuario_alimentos FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
-
---
--- Name: instalaciones instalaciones_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.instalaciones
-    ADD CONSTRAINT instalaciones_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
-
---
--- Name: lote_movimientos lote_movimientos_fi_lote_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.lote_movimientos
-    ADD CONSTRAINT lote_movimientos_fi_lote_id_fkey FOREIGN KEY (fi_lote_id) REFERENCES public.lotes(fi_lote_id) ON DELETE CASCADE;
-
---
--- Name: mantenimientos mantenimientos_fi_equipo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.mantenimientos
-    ADD CONSTRAINT mantenimientos_fi_equipo_id_fkey FOREIGN KEY (fi_equipo_id) REFERENCES public.equipos(fi_equipo_id) ON DELETE CASCADE;
-
---
--- Name: piletas piletas_fi_instalacion_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.piletas
-    ADD CONSTRAINT piletas_fi_instalacion_id_fkey FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones(fi_instalacion_id);
-
---
--- Name: trazabilidad_engorda rastreabilidad_engorda_fi_engorda_destino_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_engorda
-    ADD CONSTRAINT rastreabilidad_engorda_fi_engorda_destino_fkey FOREIGN KEY (fi_engorda_destino) REFERENCES public.engorda(fi_engorda_id) ON DELETE CASCADE;
-
---
--- Name: trazabilidad_engorda rastreabilidad_engorda_fi_engorda_origen_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_engorda
-    ADD CONSTRAINT rastreabilidad_engorda_fi_engorda_origen_fkey FOREIGN KEY (fi_engorda_origen) REFERENCES public.engorda(fi_engorda_id) ON DELETE CASCADE;
-
---
--- Name: trazabilidad_engorda rastreabilidad_engorda_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_engorda
-    ADD CONSTRAINT rastreabilidad_engorda_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id);
-
---
--- Name: trazabilidad_alevinaje rastreabilidad_fi_pileta_destino_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje
-    ADD CONSTRAINT rastreabilidad_fi_pileta_destino_fkey FOREIGN KEY (fi_pileta_destino) REFERENCES public.piletas(fi_pileta_id) ON DELETE SET NULL;
-
---
--- Name: trazabilidad_alevinaje rastreabilidad_fi_pileta_origen_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje
-    ADD CONSTRAINT rastreabilidad_fi_pileta_origen_fkey FOREIGN KEY (fi_pileta_origen) REFERENCES public.piletas(fi_pileta_id) ON DELETE SET NULL;
-
---
--- Name: trazabilidad_alevinaje rastreabilidad_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.trazabilidad_alevinaje
-    ADD CONSTRAINT rastreabilidad_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id);
-
---
--- Name: empleados empleados_fi_departamento_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_departamento_id_fkey FOREIGN KEY (fi_departamento_id) REFERENCES rrhh.departamentos(fi_departamento_id) ON DELETE RESTRICT;
-
---
--- Name: empleados empleados_fi_puesto_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_puesto_id_fkey FOREIGN KEY (fi_puesto_id) REFERENCES rrhh.puestos(fi_puesto_id) ON DELETE RESTRICT;
-
---
--- Name: empleados empleados_fi_usuario_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.empleados
-    ADD CONSTRAINT empleados_fi_usuario_id_fkey FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios(fi_usuario_id) ON DELETE RESTRICT;
-
---
--- Name: documentos_empleado documentos_empleado_fi_empleado_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.documentos_empleado
-    ADD CONSTRAINT documentos_empleado_fi_empleado_id_fkey FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados(fi_empleado_id) ON DELETE CASCADE;
-
---
--- Name: documentos_empleado documentos_empleado_fi_tipo_documento_id_fkey; Type: FK CONSTRAINT; Schema: rrhh; Owner: postgres
---
-
-ALTER TABLE ONLY rrhh.documentos_empleado
-    ADD CONSTRAINT documentos_empleado_fi_tipo_documento_id_fkey FOREIGN KEY (fi_tipo_documento_id) REFERENCES rrhh.tipos_documento(fi_tipo_documento_id);
-
---
--- Name: roles_modulos roles_modulos_fi_modulo_id_fkey; Type: FK CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.roles_modulos
-    ADD CONSTRAINT roles_modulos_fi_modulo_id_fkey FOREIGN KEY (fi_modulo_id) REFERENCES seguridad.modulos(fi_modulo_id);
-
---
--- Name: roles_modulos roles_modulos_fi_rol_id_fkey; Type: FK CONSTRAINT; Schema: seguridad; Owner: postgres
---
-
-ALTER TABLE ONLY seguridad.roles_modulos
-    ADD CONSTRAINT roles_modulos_fi_rol_id_fkey FOREIGN KEY (fi_rol_id) REFERENCES public.roles(fi_rol_id);
-
---
--- Data for initial setup
---
-
-INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root) OVERRIDING SYSTEM VALUE
+CREATE INDEX clientes_nombre_idx   ON public.clientes (fc_nombre);
+CREATE INDEX clientes_localidad_idx ON public.clientes (fc_localidad);
+CREATE INDEX clientes_usuario_idx  ON public.clientes (fi_usuario_id);
+
+COMMENT ON TABLE public.clientes IS
+'Catálogo de clientes. fi_usuario_id registra quién dio de alta al cliente.';
+
+
+-- Proveedores ---------------------------------------------------------------
+--
+-- Nota: en el schema original esta tabla usa snake_case (razon_social,
+-- created_at, updated_at). Se mantiene esa convención para no romper el
+-- backend, pero se añaden restricciones y auditoría.
+
+CREATE TABLE public.proveedores (
+    id                 INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    razon_social       VARCHAR(255) NOT NULL,
+    rfc                VARCHAR(50),
+    udn                VARCHAR(100),
+    nombre_contacto    VARCHAR(150),
+    telefono           VARCHAR(50),
+    correo             VARCHAR(150),
+    localidad          VARCHAR(150),
+    estado             VARCHAR(100),
+    ejecutivo          VARCHAR(150),
+    precio_venta       NUMERIC(12,2) NOT NULL DEFAULT 0,
+    created_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT proveedores_precio_venta_no_negativo
+        CHECK (precio_venta >= 0),
+    CONSTRAINT proveedores_correo_check
+        CHECK (correo IS NULL OR correo ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+);
+
+CREATE INDEX proveedores_razon_social_idx ON public.proveedores (razon_social);
+CREATE INDEX proveedores_udn_idx          ON public.proveedores (udn);
+CREATE INDEX proveedores_rfc_idx          ON public.proveedores (rfc);
+
+COMMENT ON TABLE public.proveedores IS
+'Catálogo de proveedores. Mantiene naming snake_case heredado del esquema
+ original por compatibilidad con el backend.';
+
+
+-- Ventas --------------------------------------------------------------------
+--
+-- fc_cliente y fc_encargado_venta se conservan como texto para preservar el
+-- historial aunque el cliente/usuario sea eliminado o renombrado.
+
+CREATE TABLE public.ventas (
+    fi_venta_id           INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_folio              VARCHAR(50),
+    fd_fecha_venta        DATE          NOT NULL,
+    fc_cliente            VARCHAR(150)  NOT NULL,
+    fc_tipo_venta         VARCHAR(50)   NOT NULL,
+    fn_cantidad_vendida   INTEGER       NOT NULL,
+    fn_precio_venta       NUMERIC(10,2) NOT NULL,
+    fn_monto_total        NUMERIC(12,2) NOT NULL,
+    fn_abonado            NUMERIC(12,2) NOT NULL DEFAULT 0,
+    fn_adeudo             NUMERIC(12,2) GENERATED ALWAYS AS (fn_monto_total - fn_abonado) STORED,
+    fc_estado_pago        VARCHAR(20)   NOT NULL DEFAULT 'ADEUDO',
+    fc_empresa            TEXT          NOT NULL,
+    fc_encargado_venta    TEXT,
+    fc_observaciones      TEXT,
+    fd_fecha_registro     TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ventas_cantidad_positiva   CHECK (fn_cantidad_vendida > 0),
+    CONSTRAINT ventas_precio_no_negativo  CHECK (fn_precio_venta    >= 0),
+    CONSTRAINT ventas_monto_no_negativo   CHECK (fn_monto_total     >= 0),
+    CONSTRAINT ventas_abonado_no_negativo CHECK (fn_abonado         >= 0),
+    CONSTRAINT ventas_abonado_max         CHECK (fn_abonado <= fn_monto_total),
+    CONSTRAINT ventas_estado_pago_check
+        CHECK (fc_estado_pago IN ('PAGADO','ADEUDO','PARCIAL','CANCELADO'))
+);
+
+CREATE INDEX ventas_cliente_idx     ON public.ventas (fc_cliente);
+CREATE INDEX ventas_fecha_idx       ON public.ventas (fd_fecha_venta DESC);
+CREATE INDEX ventas_estado_pago_idx ON public.ventas (fc_estado_pago);
+CREATE INDEX ventas_empresa_idx     ON public.ventas (fc_empresa);
+CREATE INDEX ventas_folio_idx       ON public.ventas (fc_folio) WHERE fc_folio IS NOT NULL;
+
+COMMENT ON TABLE public.ventas IS
+'Ventas registradas. fn_adeudo se calcula automáticamente como
+ fn_monto_total - fn_abonado. El CHECK (abonado <= monto_total) evita
+ pagos en exceso.';
+
+
+-- Lista de espera (reservas pendientes) ------------------------------------
+
+CREATE TABLE public.lista_espera (
+    fi_lista_id             INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fd_fecha_entrega        DATE         NOT NULL,
+    fc_talla                VARCHAR(50),
+    fn_cantidad             NUMERIC(12,2) NOT NULL,
+    fn_precio_venta         NUMERIC(12,2),
+    fc_cliente              VARCHAR(200),
+    fc_lugar_entrega        VARCHAR(200),
+    fc_encargado_venta      VARCHAR(200),
+    fc_unidad_produccion    VARCHAR(200),
+    fc_uap_asignada         VARCHAR(200),
+    fc_granja_asignada      VARCHAR(200),
+    fc_hora_embolsado       VARCHAR(20),
+    fc_hora_entrega         VARCHAR(20),
+    fd_fecha_registro       TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion   TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT lista_espera_cantidad_positiva   CHECK (fn_cantidad > 0),
+    CONSTRAINT lista_espera_precio_no_negativo
+        CHECK (fn_precio_venta IS NULL OR fn_precio_venta >= 0)
+);
+
+CREATE INDEX lista_espera_fecha_entrega_idx ON public.lista_espera (fd_fecha_entrega);
+CREATE INDEX lista_espera_cliente_idx       ON public.lista_espera (fc_cliente);
+CREATE INDEX lista_espera_granja_idx        ON public.lista_espera (fc_granja_asignada);
+
+COMMENT ON TABLE public.lista_espera IS
+'Pedidos confirmados pendientes de entrega. Al concretarse la entrega se
+ convierten en filas de public.ventas (responsabilidad de la aplicación).';
+
+
+-- ============================================================================
+-- 15.  FINANZAS  (cuentas, flujo_caja)
+-- ============================================================================
+
+CREATE TABLE public.cuentas (
+    fi_cuenta_id        INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_udn              VARCHAR(10)    NOT NULL,
+    fc_nombre           VARCHAR(100)   NOT NULL,
+    fc_numero_cuenta    VARCHAR(50),
+    fc_tipo             VARCHAR(20)    NOT NULL,
+    fn_saldo_inicial    NUMERIC(15,2)  NOT NULL DEFAULT 0,
+    fn_saldo_actual     NUMERIC(15,2)  NOT NULL DEFAULT 0,
+    fb_activo           BOOLEAN        NOT NULL DEFAULT TRUE,
+    fd_fecha_registro   TIMESTAMP(6)   NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT cuentas_udn_check  CHECK (fc_udn  IN ('CQT','GAM','GAC')),
+    CONSTRAINT cuentas_tipo_check CHECK (fc_tipo IN ('Cheques','Efectivo','Inversion')),
+    CONSTRAINT cuentas_nombre_udn_uq UNIQUE (fc_nombre, fc_udn)
+);
+
+CREATE INDEX cuentas_udn_idx      ON public.cuentas (fc_udn);
+CREATE INDEX cuentas_activo_idx   ON public.cuentas (fb_activo);
+CREATE INDEX cuentas_nombre_idx   ON public.cuentas (fc_nombre);
+
+COMMENT ON TABLE public.cuentas IS
+'Cuentas bancarias / cajas de efectivo del grupo. fc_udn identifica la
+ unidad de negocio (CQT = corporativo, GAM = Granja Medellin,
+ GAC = Granja La Ceiba). UNIQUE (fc_nombre, fc_udn) impide duplicados.';
+
+
+-- Flujo de caja -------------------------------------------------------------
+--
+-- fc_cuenta se mantiene como VARCHAR (referencia lógica por nombre) porque
+-- el backend busca en cuentas por nombre; así la vista de tesorería y los
+-- agrupamientos siguen funcionando.
+
+CREATE TABLE public.flujo_caja (
+    fi_movimiento_id      INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_granja             VARCHAR(50)    NOT NULL,
+    fd_fecha              DATE           NOT NULL,
+    fn_ingreso            NUMERIC(12,2)  NOT NULL DEFAULT 0,
+    fn_egreso             NUMERIC(12,2)  NOT NULL DEFAULT 0,
+    fc_descripcion        VARCHAR(200),
+    fc_cuenta             VARCHAR(50),
+    fc_categoria          VARCHAR(100),
+    fc_subcategoria       VARCHAR(100),
+    fc_beneficiario       VARCHAR(100),
+    fc_noproyecto         VARCHAR(50),
+    fc_factura            VARCHAR(50),
+    fc_estatus            VARCHAR(20),
+    fc_mes                VARCHAR(7),
+    fc_equilibrar         NUMERIC(12,2),
+    fd_fecha_registro     TIMESTAMP(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT flujo_caja_ingreso_no_negativo CHECK (fn_ingreso >= 0),
+    CONSTRAINT flujo_caja_egreso_no_negativo  CHECK (fn_egreso  >= 0),
+    CONSTRAINT flujo_caja_mov_valido          CHECK (fn_ingreso > 0 OR fn_egreso > 0),
+    CONSTRAINT flujo_caja_estatus_check
+        CHECK (fc_estatus IS NULL
+               OR fc_estatus IN ('REPOSICION','LIQUIDADO','ADEUDO','PARCIAL')),
+    CONSTRAINT flujo_caja_mes_formato
+        CHECK (fc_mes IS NULL OR fc_mes ~ '^[0-9]{4}-[0-9]{2}$')
+);
+
+CREATE INDEX flujo_caja_granja_idx    ON public.flujo_caja (fc_granja);
+CREATE INDEX flujo_caja_fecha_idx     ON public.flujo_caja (fd_fecha DESC);
+CREATE INDEX flujo_caja_cuenta_idx    ON public.flujo_caja (fc_cuenta);
+CREATE INDEX flujo_caja_categoria_idx ON public.flujo_caja (fc_categoria);
+CREATE INDEX flujo_caja_mes_idx       ON public.flujo_caja (fc_mes);
+CREATE INDEX flujo_caja_estatus_idx   ON public.flujo_caja (fc_estatus);
+
+COMMENT ON TABLE public.flujo_caja IS
+'Movimientos de tesorería. CHECK (ingreso > 0 OR egreso > 0) obliga a que
+ cada fila represente un movimiento real (sin ceros en ambos lados).';
+
+
+-- Vista agregada usada por flujoCajaModel.getTesoreriaByGranja -------------
+
+CREATE OR REPLACE VIEW public.vw_tesoreria_general AS
+SELECT
+    fc_granja,
+    fc_mes,
+    fc_categoria,
+    SUM(fn_ingreso)                   AS total_ingreso,
+    SUM(fn_egreso)                    AS total_egreso,
+    SUM(fn_ingreso - fn_egreso)       AS saldo_neto
+FROM public.flujo_caja
+WHERE fn_ingreso IS NOT NULL OR fn_egreso IS NOT NULL
+GROUP BY fc_granja, fc_mes, fc_categoria
+ORDER BY fc_granja, fc_mes, fc_categoria;
+
+COMMENT ON VIEW public.vw_tesoreria_general IS
+'Agregado mensual de flujo_caja por granja y categoría. Consumido por
+ flujoCajaModel.getTesoreriaByGranja.';
+
+
+-- ============================================================================
+-- 16.  LOTE MOVIMIENTOS  (historial de traslados/mermas por lote)
+-- ============================================================================
+
+CREATE TABLE public.lote_movimientos (
+    fi_mov_id          INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_lote_id         INTEGER      NOT NULL,
+    tipo_movimiento    VARCHAR(20)  NOT NULL,
+    cantidad           INTEGER      NOT NULL,
+    talla              NUMERIC(5,2),
+    fecha              DATE         NOT NULL,
+    destino            VARCHAR(100),
+    observacion        TEXT,
+    fi_usuario_id      INTEGER,
+
+    CONSTRAINT lote_mov_cantidad_positiva CHECK (cantidad > 0),
+    CONSTRAINT lote_mov_tipo_check
+        CHECK (tipo_movimiento IN (
+            'siembra','traslado','cosecha','venta','mortalidad','merma','ajuste'
+        )),
+
+    CONSTRAINT lote_mov_lote_fk
+        FOREIGN KEY (fi_lote_id)    REFERENCES public.lotes (fi_lote_id)    ON DELETE CASCADE,
+    CONSTRAINT lote_mov_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX lote_mov_lote_idx    ON public.lote_movimientos (fi_lote_id);
+CREATE INDEX lote_mov_fecha_idx   ON public.lote_movimientos (fecha DESC);
+CREATE INDEX lote_mov_tipo_idx    ON public.lote_movimientos (tipo_movimiento);
+CREATE INDEX lote_mov_usuario_idx ON public.lote_movimientos (fi_usuario_id);
+
+COMMENT ON TABLE public.lote_movimientos IS
+'Bitácora de eventos por lote. Al borrar un lote se borra su historial
+ (CASCADE). CHECK restringe tipo_movimiento a un conjunto cerrado.';
+
+
+-- ============================================================================
+-- 17.  BITÁCORAS — REGISTRO OPERATIVO
+-- ----------------------------------------------------------------------------
+-- Patrón común:
+--   · Clave primaria  : fi_id (IDENTITY)
+--   · fc_granja/ubicacion: texto libre que referencia a una instalación
+--                          por nombre (se preservó como VARCHAR por
+--                          compatibilidad con el backend actual)
+--   · fi_usuario_id   : FK blanda a public.usuarios (ON DELETE SET NULL)
+--   · Auditoría       : fd_fecha_registro + fd_fecha_modificacion
+--                       con trigger fn_touch_fecha_modificacion().
+-- ============================================================================
+
+-- 17.1  Alimentación (consumo diario por estanque) -------------------------
+
+CREATE TABLE public.alimentacion (
+    fi_id                      INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                  VARCHAR(50)   NOT NULL,
+    fd_fecha                   DATE,
+    fc_mes                     VARCHAR(20),
+    fn_num_instalacion         INTEGER,
+    fd_fecha_siembra           DATE,
+    fc_origen_alevines         VARCHAR(200),
+    fn_peso_promedio_entrada   NUMERIC(12,3),
+    fn_total_alimento_kg       NUMERIC(12,3),
+    fn_mortalidad              INTEGER,
+    fc_recambio_agua           VARCHAR(50),
+    fn_temp_agua               NUMERIC(6,2),
+    fn_amonio                  NUMERIC(10,4),
+    fn_ph                      NUMERIC(5,2),
+    fc_observaciones           VARCHAR(500),
+    fi_usuario_id              INTEGER,
+    fd_fecha_registro          TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion      TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT alimentacion_ph_check
+        CHECK (fn_ph IS NULL OR (fn_ph >= 0 AND fn_ph <= 14)),
+    CONSTRAINT alimentacion_alimento_no_negativo
+        CHECK (fn_total_alimento_kg IS NULL OR fn_total_alimento_kg >= 0),
+    CONSTRAINT alimentacion_mortalidad_no_negativa
+        CHECK (fn_mortalidad IS NULL OR fn_mortalidad >= 0),
+
+    CONSTRAINT alimentacion_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX alimentacion_ubicacion_idx ON public.alimentacion (ubicacion);
+CREATE INDEX alimentacion_fecha_idx     ON public.alimentacion (fd_fecha DESC);
+CREATE INDEX alimentacion_usuario_idx   ON public.alimentacion (fi_usuario_id);
+
+
+-- 17.2  Baños (tratamientos de regadera) -----------------------------------
+
+CREATE TABLE public.banos (
+    fi_id                  INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion              VARCHAR(50)  NOT NULL,
+    fd_fecha               DATE         NOT NULL,
+    fc_tipo_banio          VARCHAR(20),
+    fc_regadera            VARCHAR(100),
+    fc_realizo             VARCHAR(100),
+    fc_observaciones       VARCHAR(500),
+    fi_usuario_id          INTEGER,
+    fd_fecha_registro      TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion  TIMESTAMP(6) NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT banos_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX banos_ubicacion_idx ON public.banos (ubicacion);
+CREATE INDEX banos_fecha_idx     ON public.banos (fd_fecha DESC);
+CREATE INDEX banos_usuario_idx   ON public.banos (fi_usuario_id);
+
+
+-- 17.3  Biometrías ---------------------------------------------------------
+--
+-- Esta bitácora SÍ tiene FKs reales a instalaciones y reproductores porque
+-- es la única que las necesita para discriminar el tipo de sujeto medido.
+
+CREATE TABLE public.biometrias (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fi_instalacion_id        INTEGER,
+    fi_reproductor_id        INTEGER,
+    tipo                     VARCHAR(20),
+    fc_granja                VARCHAR(100),
+    fd_fecha                 DATE          NOT NULL,
+    fn_peso_total_gramos     NUMERIC(12,3),
+    fn_organismos_muestreados INTEGER,
+    fn_peso_promedio         NUMERIC(10,3),
+    fc_encargado             VARCHAR(100),
+    fc_observaciones         VARCHAR(500),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT biometrias_tipo_check
+        CHECK (tipo IS NULL
+               OR tipo IN ('ALEVINAJE','ENGORDA','REPRODUCTORES')),
+    CONSTRAINT biometrias_tipo_repro_coherente
+        CHECK (tipo <> 'REPRODUCTORES' OR fi_reproductor_id IS NOT NULL),
+    CONSTRAINT biometrias_organismos_positivo
+        CHECK (fn_organismos_muestreados IS NULL OR fn_organismos_muestreados > 0),
+    CONSTRAINT biometrias_peso_no_negativo
+        CHECK (fn_peso_total_gramos IS NULL OR fn_peso_total_gramos >= 0),
+
+    CONSTRAINT biometrias_instalacion_fk
+        FOREIGN KEY (fi_instalacion_id) REFERENCES public.instalaciones (fi_instalacion_id) ON DELETE SET NULL,
+    CONSTRAINT biometrias_reproductor_fk
+        FOREIGN KEY (fi_reproductor_id) REFERENCES public.reproductores (fi_reproductor_id) ON DELETE SET NULL,
+    CONSTRAINT biometrias_usuario_fk
+        FOREIGN KEY (fi_usuario_id)     REFERENCES public.usuarios (fi_usuario_id)          ON DELETE SET NULL
+);
+
+CREATE INDEX biometrias_ubicacion_idx    ON public.biometrias (ubicacion);
+CREATE INDEX biometrias_instalacion_idx  ON public.biometrias (fi_instalacion_id);
+CREATE INDEX biometrias_reproductor_idx  ON public.biometrias (fi_reproductor_id);
+CREATE INDEX biometrias_fecha_idx        ON public.biometrias (fd_fecha DESC);
+CREATE INDEX biometrias_tipo_idx         ON public.biometrias (tipo);
+CREATE INDEX biometrias_usuario_idx      ON public.biometrias (fi_usuario_id);
+
+
+-- 17.4  Insumos (uso diario) ----------------------------------------------
+
+CREATE TABLE public.insumos (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fd_fecha                 DATE          NOT NULL,
+    fc_cantidad_udm          VARCHAR(100),
+    fc_num_lote              VARCHAR(100),
+    fc_descripcion           VARCHAR(300),
+    fc_encargado_entrega     VARCHAR(100),
+    fc_encargado_recepcion   VARCHAR(100),
+    fc_observaciones         VARCHAR(500),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT insumos_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX insumos_ubicacion_idx ON public.insumos (ubicacion);
+CREATE INDEX insumos_fecha_idx     ON public.insumos (fd_fecha DESC);
+CREATE INDEX insumos_usuario_idx   ON public.insumos (fi_usuario_id);
+
+
+-- 17.5  Inventario de alevines (conteos por lote) -------------------------
+
+CREATE TABLE public.inventario_alevines (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fn_num_instalacion       INTEGER,
+    fc_lote                  VARCHAR(100),
+    fn_cantidad              INTEGER,
+    fn_talla                 NUMERIC(10,2),
+    fc_observacion           TEXT,
+    fd_fecha_siembra         DATE,
+    fd_fecha_salida_hormonado DATE,
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT inv_alev_cantidad_no_negativa
+        CHECK (fn_cantidad IS NULL OR fn_cantidad >= 0),
+    CONSTRAINT inv_alev_fechas_coherentes
+        CHECK (fd_fecha_salida_hormonado IS NULL
+               OR fd_fecha_siembra IS NULL
+               OR fd_fecha_salida_hormonado >= fd_fecha_siembra),
+
+    CONSTRAINT inv_alev_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX inv_alev_ubicacion_idx ON public.inventario_alevines (ubicacion);
+CREATE INDEX inv_alev_lote_idx      ON public.inventario_alevines (fc_lote);
+CREATE INDEX inv_alev_usuario_idx   ON public.inventario_alevines (fi_usuario_id);
+
+
+-- 17.6  Medicamentos ------------------------------------------------------
+
+CREATE TABLE public.medicamentos (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fd_fecha_hora            TIMESTAMP(6)  NOT NULL,
+    fn_num_estanque          INTEGER,
+    fc_diagnosis             VARCHAR(500),
+    fc_tratamiento           VARCHAR(500),
+    fc_dosis                 VARCHAR(100),
+    fc_forma_aplicacion      VARCHAR(100),
+    fd_fecha_ultima_dosis    DATE,
+    fc_responsable           VARCHAR(100),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT medicamentos_ultima_dosis_coherente
+        CHECK (fd_fecha_ultima_dosis IS NULL
+               OR fd_fecha_ultima_dosis >= fd_fecha_hora::date),
+
+    CONSTRAINT medicamentos_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX medicamentos_ubicacion_idx ON public.medicamentos (ubicacion);
+CREATE INDEX medicamentos_fecha_idx     ON public.medicamentos (fd_fecha_hora DESC);
+CREATE INDEX medicamentos_usuario_idx   ON public.medicamentos (fi_usuario_id);
+
+
+-- 17.7  Parámetros de agua ------------------------------------------------
+
+CREATE TABLE public.parametros (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fd_fecha                 DATE          NOT NULL,
+    fn_num_estanque          INTEGER,
+    fn_oxigeno               NUMERIC(8,3),
+    fn_temperatura           NUMERIC(6,2),
+    fn_ph                    NUMERIC(5,2),
+    fn_amonio                NUMERIC(10,4),
+    fn_nitritos              NUMERIC(10,4),
+    fn_nitratos              NUMERIC(10,4),
+    fc_responsable           VARCHAR(100),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT parametros_ph_range
+        CHECK (fn_ph IS NULL OR (fn_ph >= 0 AND fn_ph <= 14)),
+    CONSTRAINT parametros_oxigeno_no_negativo
+        CHECK (fn_oxigeno IS NULL OR fn_oxigeno >= 0),
+    CONSTRAINT parametros_amonio_no_negativo
+        CHECK (fn_amonio IS NULL OR fn_amonio >= 0),
+    CONSTRAINT parametros_nitritos_no_negativo
+        CHECK (fn_nitritos IS NULL OR fn_nitritos >= 0),
+    CONSTRAINT parametros_nitratos_no_negativo
+        CHECK (fn_nitratos IS NULL OR fn_nitratos >= 0),
+
+    CONSTRAINT parametros_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX parametros_ubicacion_idx ON public.parametros (ubicacion);
+CREATE INDEX parametros_fecha_idx     ON public.parametros (fd_fecha DESC);
+CREATE INDEX parametros_usuario_idx   ON public.parametros (fi_usuario_id);
+
+
+-- 17.8  Plagas (trampas y control) ----------------------------------------
+
+CREATE TABLE public.plagas (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(100),
+    unidad_produccion        VARCHAR(100),
+    fd_fecha                 DATE          NOT NULL,
+    fc_num_trampa            VARCHAR(100),
+    tipo_trampa              VARCHAR(100),
+    fc_hallazgo              VARCHAR(500),
+    fc_malla                 VARCHAR(200),
+    fc_veneno                VARCHAR(100),
+    fc_verifico              VARCHAR(100),
+    fc_observaciones         VARCHAR(500),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT plagas_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX plagas_ubicacion_idx ON public.plagas (ubicacion);
+CREATE INDEX plagas_fecha_idx     ON public.plagas (fd_fecha DESC);
+CREATE INDEX plagas_usuario_idx   ON public.plagas (fi_usuario_id);
+
+
+-- 17.9  Recambios de agua (calendarizado mensual) -------------------------
+--
+-- La tabla almacena hasta 6 recambios por mes como columnas separadas
+-- (fd_fecha1..fd_fecha6, fc_tipo1..fc_tipo6). Se conserva así por
+-- compatibilidad con el backend existente.
+
+CREATE TABLE public.recambios (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50)   NOT NULL,
+    fc_mes                   VARCHAR(20),
+    fn_num_instalacion       INTEGER,
+    fd_fecha1                DATE,
+    fc_tipo1                 VARCHAR(30),
+    fd_fecha2                DATE,
+    fc_tipo2                 VARCHAR(30),
+    fd_fecha3                DATE,
+    fc_tipo3                 VARCHAR(30),
+    fd_fecha4                DATE,
+    fc_tipo4                 VARCHAR(30),
+    fd_fecha5                DATE,
+    fc_tipo5                 VARCHAR(30),
+    fd_fecha6                DATE,
+    fc_tipo6                 VARCHAR(30),
+    fc_responsable           VARCHAR(100),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT recambios_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX recambios_ubicacion_idx ON public.recambios (ubicacion);
+CREATE INDEX recambios_mes_idx       ON public.recambios (fc_mes);
+CREATE INDEX recambios_usuario_idx   ON public.recambios (fi_usuario_id);
+
+
+-- 17.10  Recepción de insumos (entrada desde proveedor) -------------------
+
+CREATE TABLE public.recepcion_insumos (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50),
+    fd_fecha                 DATE          NOT NULL,
+    fc_mes                   VARCHAR(20),
+    fc_proveedor             VARCHAR(100),
+    fc_producto              VARCHAR(255),
+    fc_descripcion           VARCHAR(300),
+    fc_unidad_medida         VARCHAR(255),
+    fc_cantidad              NUMERIC(15,2),
+    fc_lote                  VARCHAR(100),
+    fc_condiciones_entrega   VARCHAR(150),
+    fc_encargado_entrega     VARCHAR(100),
+    fc_verifico              VARCHAR(100),
+    fc_observaciones         VARCHAR(500),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT recepcion_cantidad_no_negativa
+        CHECK (fc_cantidad IS NULL OR fc_cantidad >= 0),
+
+    CONSTRAINT recepcion_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX recepcion_ubicacion_idx  ON public.recepcion_insumos (ubicacion);
+CREATE INDEX recepcion_fecha_idx      ON public.recepcion_insumos (fd_fecha DESC);
+CREATE INDEX recepcion_proveedor_idx  ON public.recepcion_insumos (fc_proveedor);
+CREATE INDEX recepcion_usuario_idx    ON public.recepcion_insumos (fi_usuario_id);
+
+
+-- 17.11  Visitas (registro de entrada/salida de personas externas) --------
+
+CREATE TABLE public.visitas (
+    fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ubicacion                VARCHAR(50),
+    fd_fecha                 DATE          NOT NULL,
+    fd_entrada               TIME(6),
+    fd_salida                TIME(6),
+    fc_nombre_completo       VARCHAR(200),
+    fc_origen                VARCHAR(200),
+    fc_motivo                VARCHAR(300),
+    fc_observaciones         VARCHAR(500),
+    fc_foto_identificacion   VARCHAR(200),
+    fi_usuario_id            INTEGER,
+    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT visitas_horario_coherente
+        CHECK (fd_entrada IS NULL OR fd_salida IS NULL OR fd_salida >= fd_entrada),
+
+    CONSTRAINT visitas_usuario_fk
+        FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
+);
+
+CREATE INDEX visitas_ubicacion_idx ON public.visitas (ubicacion);
+CREATE INDEX visitas_fecha_idx     ON public.visitas (fd_fecha DESC);
+CREATE INDEX visitas_usuario_idx   ON public.visitas (fi_usuario_id);
+
+
+-- ============================================================================
+-- 17.X  TRIGGERS de auditoría para las nuevas tablas
+-- ============================================================================
+
+CREATE TRIGGER trg_empleados_touch_modif            BEFORE UPDATE ON rrhh.empleados            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_nomina_touch_actualiz            BEFORE UPDATE ON public.nomina             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
+CREATE TRIGGER trg_vacaciones_touch_actualiz        BEFORE UPDATE ON public.vacaciones         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
+CREATE TRIGGER trg_clientes_touch_modif             BEFORE UPDATE ON public.clientes           FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_ventas_touch_modif               BEFORE UPDATE ON public.ventas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_lista_espera_touch_modif         BEFORE UPDATE ON public.lista_espera       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_alimentacion_touch_modif         BEFORE UPDATE ON public.alimentacion       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_banos_touch_modif                BEFORE UPDATE ON public.banos              FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_biometrias_touch_modif           BEFORE UPDATE ON public.biometrias         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_insumos_touch_modif              BEFORE UPDATE ON public.insumos            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_inv_alev_touch_modif             BEFORE UPDATE ON public.inventario_alevines FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_medicamentos_touch_modif         BEFORE UPDATE ON public.medicamentos       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_parametros_touch_modif           BEFORE UPDATE ON public.parametros         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_plagas_touch_modif               BEFORE UPDATE ON public.plagas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_recambios_touch_modif            BEFORE UPDATE ON public.recambios          FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_recepcion_insumos_touch_modif    BEFORE UPDATE ON public.recepcion_insumos  FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_visitas_touch_modif              BEFORE UPDATE ON public.visitas            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+
+-- Triggers con columnas de nombre distinto
+CREATE TRIGGER trg_proveedores_touch_updated_at     BEFORE UPDATE ON public.proveedores        FOR EACH ROW EXECUTE FUNCTION public.fn_touch_updated_at();
+CREATE TRIGGER trg_caja_ahorro_touch_actualizado    BEFORE UPDATE ON public.caja_ahorro_resumen FOR EACH ROW EXECUTE FUNCTION public.fn_touch_actualizado();
+
+
+-- ============================================================================
+-- 18.  SEEDS (idempotentes)
+-- ----------------------------------------------------------------------------
+-- Seguros de re-ejecutar: todos los INSERT usan ON CONFLICT DO NOTHING/UPDATE.
+-- Al final se sincronizan las secuencias de identidad con el máximo insertado.
+-- ============================================================================
+
+-- Rol raíz
+INSERT INTO public.roles (fi_rol_id, fc_nombre, fb_es_root)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 'Administrador', true)
 ON CONFLICT (fi_rol_id) DO UPDATE
-SET fc_nombre = EXCLUDED.fc_nombre,
-    fb_es_root = EXCLUDED.fb_es_root;
+    SET fc_nombre  = EXCLUDED.fc_nombre,
+        fb_es_root = EXCLUDED.fb_es_root;
 
+-- Usuario admin por defecto (recordar cambiar la contraseña en producción)
 INSERT INTO public.usuarios (fc_nombre, "fc_contraseña", fi_rol_id)
 VALUES ('admin', '$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.', 1)
 ON CONFLICT (fc_nombre) DO NOTHING;
 
--- Modulos base del menu (idempotente)
+-- Módulos base del menú
 WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
-  VALUES
-    ('Dashboard', '/', true),
-    ('Operaciones', '/operaciones', true),
-    ('Inventarios', '/inventarios', true),
-    ('Finanzas', '/finanzas', true),
-    ('RRHH', '/rrhh', true),
-    ('Catálogos', '/catalogos', true),
-    ('Seguridad', '/seguridad', true),
-    ('Roles', '/roles', true),
-    ('Usuarios', '/usuarios', true),
-    ('Piletas', '/piletas', true),
-    ('Instalaciones', '/instalaciones', true),
-    ('Lotes', '/lotes', true),
-    ('Reproductores', '/reproductores', true),
-    ('Engorda', '/engorda', true),
-    ('Clientes', '/clientes', true),
-    ('Ventas', '/ventas', true),
-    ('Alimentos', '/alimentos', true),
-    ('Lista de Espera', '/lista-espera', true),
-    ('Equipos', '/equipos', true),
-    ('Nomina', '/nomina', true),
-    ('Vacaciones', '/vacaciones', true),
-    ('Caja de Ahorro', '/caja-ahorro', true),
-    ('Proveedores', '/proveedores', true),
-    ('Flujo de Caja', '/flujo-caja', true),
-    ('Tesoreria', '/tesoreria', true),
-    ('Cuentas', '/cuentas', true),
-    ('Biometrias', '/biometrias', true),
-    ('Plagas', '/plagas', true),
-    ('Alimentacion', '/alimentacion', true),
-    ('Insumos', '/insumos', true),
-    ('Recepcion Insumos', '/recepcion_insumos', true),
-    ('Visitas', '/visitas', true),
-    ('Banos', '/banos', true),
-    ('Parametros', '/parametros', true),
-    ('Medicamentos', '/medicamentos', true),
-    ('Recambios', '/recambios', true),
-    ('Inventario', '/inventario', true),
-    ('Catalogo Estados', '/estados', false),
-    ('Expedientes', '/expedientes', false),
-    ('Puestos', '/puestos', true),
-    ('Empleados', '/empleados', true),
-    ('Departamentos', '/departamentos', true),
-    ('Modulos', '/modulos', true),
-    ('Roles Modulos', '/roles-modulos', true)
+    VALUES
+        ('Dashboard',         '/',                  true),
+        ('Operaciones',       '/operaciones',       true),
+        ('Inventarios',       '/inventarios',       true),
+        ('Finanzas',          '/finanzas',          true),
+        ('RRHH',              '/rrhh',              true),
+        ('Catálogos',         '/catalogos',         true),
+        ('Seguridad',         '/seguridad',         true),
+        ('Roles',             '/roles',             true),
+        ('Usuarios',          '/usuarios',          true),
+        ('Piletas',           '/piletas',           true),
+        ('Instalaciones',     '/instalaciones',     true),
+        ('Lotes',             '/lotes',             true),
+        ('Reproductores',     '/reproductores',     true),
+        ('Engorda',           '/engorda',           true),
+        ('Clientes',          '/clientes',          true),
+        ('Ventas',            '/ventas',            true),
+        ('Alimentos',         '/alimentos',         true),
+        ('Lista de Espera',   '/lista-espera',      true),
+        ('Equipos',           '/equipos',           true),
+        ('Nomina',            '/nomina',            true),
+        ('Vacaciones',        '/vacaciones',        true),
+        ('Caja de Ahorro',    '/caja-ahorro',       true),
+        ('Proveedores',       '/proveedores',       true),
+        ('Flujo de Caja',     '/flujo-caja',        true),
+        ('Tesoreria',         '/tesoreria',         true),
+        ('Cuentas',           '/cuentas',           true),
+        ('Biometrias',        '/biometrias',        true),
+        ('Plagas',            '/plagas',            true),
+        ('Alimentacion',      '/alimentacion',      true),
+        ('Insumos',           '/insumos',           true),
+        ('Recepcion Insumos', '/recepcion_insumos', true),
+        ('Visitas',           '/visitas',           true),
+        ('Banos',             '/banos',             true),
+        ('Parametros',        '/parametros',        true),
+        ('Medicamentos',      '/medicamentos',      true),
+        ('Recambios',         '/recambios',         true),
+        ('Inventario',        '/inventario',        true),
+        ('Catalogo Estados',  '/estados',           false),
+        ('Expedientes',       '/expedientes',       false),
+        ('Puestos',           '/puestos',           true),
+        ('Empleados',         '/empleados',         true),
+        ('Departamentos',     '/departamentos',     true),
+        ('Modulos',           '/modulos',           true),
+        ('Roles Modulos',     '/roles-modulos',     true)
 )
 INSERT INTO seguridad.modulos (fc_nombre, fc_ruta, fb_activo)
-SELECT mb.fc_nombre, mb.fc_ruta, mb.fb_activo
-FROM modulos_base mb
+SELECT fc_nombre, fc_ruta, fb_activo FROM modulos_base
 ON CONFLICT (fc_ruta) DO UPDATE
-SET fc_nombre = EXCLUDED.fc_nombre,
-    fb_activo = EXCLUDED.fb_activo;
+    SET fc_nombre = EXCLUDED.fc_nombre,
+        fb_activo = EXCLUDED.fb_activo;
 
--- Asignacion inicial de modulos a roles root
+-- Todos los roles root reciben acceso a todos los módulos
 INSERT INTO seguridad.roles_modulos (fi_rol_id, fi_modulo_id)
 SELECT r.fi_rol_id, m.fi_modulo_id
 FROM public.roles r
@@ -2855,20 +1888,7 @@ CROSS JOIN seguridad.modulos m
 WHERE r.fb_es_root = true
 ON CONFLICT (fi_rol_id, fi_modulo_id) DO NOTHING;
 
--- Refresh tokens para rotación de sesiones
-CREATE TABLE IF NOT EXISTS seguridad.refresh_tokens (
-    fi_token_id SERIAL PRIMARY KEY,
-    fi_usuario_id INTEGER NOT NULL REFERENCES public.usuarios(fi_usuario_id) ON DELETE CASCADE,
-    fc_token CHARACTER VARYING(255) NOT NULL UNIQUE,
-    fd_expiracion TIMESTAMP NOT NULL,
-    fb_revocado BOOLEAN DEFAULT FALSE,
-    fd_creacion TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON seguridad.refresh_tokens (fc_token) WHERE fb_revocado = false;
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_usuario ON seguridad.refresh_tokens (fi_usuario_id);
-
--- Seed: puestos
+-- Puestos organizacionales
 INSERT INTO rrhh.puestos (fc_nombre) VALUES
     ('Director General'),
     ('Director de Administracion, Finanzas y RRHH'),
@@ -2881,9 +1901,9 @@ INSERT INTO rrhh.puestos (fc_nombre) VALUES
     ('Encargado de Taller'),
     ('Auxiliar de Taller'),
     ('Becario')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (fc_nombre) DO NOTHING;
 
--- Seed: departamentos
+-- Departamentos
 INSERT INTO rrhh.departamentos (fc_nombre) VALUES
     ('Direccion General'),
     ('Administracion, Finanzas y RRHH'),
@@ -2895,32 +1915,115 @@ INSERT INTO rrhh.departamentos (fc_nombre) VALUES
     ('Taller')
 ON CONFLICT (fc_nombre) DO NOTHING;
 
--- Seed: tipos_documento
+-- Tipos de documento para expedientes
 INSERT INTO rrhh.tipos_documento (fc_nombre, fb_obligatorio) VALUES
-    ('Credencial', true),
-    ('Fotografia', true),
-    ('Acta de Nacimiento', true),
-    ('INE', true),
-    ('Licencia de Conducir', false),
-    ('Comprobante de Domicilio', true),
-    ('RFC', true),
-    ('CURP', true),
-    ('Comprobante de Estudios', false),
-    ('CV', false),
-    ('Carta de Recomendacion', false),
+    ('Credencial',                  true),
+    ('Fotografia',                  true),
+    ('Acta de Nacimiento',          true),
+    ('INE',                         true),
+    ('Licencia de Conducir',        false),
+    ('Comprobante de Domicilio',    true),
+    ('RFC',                         true),
+    ('CURP',                        true),
+    ('Comprobante de Estudios',     false),
+    ('CV',                          false),
+    ('Carta de Recomendacion',      false),
     ('Acuerdo de Confidencialidad', true),
-    ('Codigo de Etica', true),
-    ('Codigo de Conducta', true),
-    ('Solicitud de Empleo', true)
-ON CONFLICT DO NOTHING;
+    ('Codigo de Etica',             true),
+    ('Codigo de Conducta',          true),
+    ('Solicitud de Empleo',         true)
+ON CONFLICT (fc_nombre) DO NOTHING;
 
---
--- Synchronize identity sequences with seed data
---
+-- ----------------------------------------------------------------------------
+-- Sincronizar secuencias de identidad con los datos sembrados
+-- ----------------------------------------------------------------------------
+-- Usamos pg_get_serial_sequence para no depender del nombre exacto de la
+-- secuencia (sea _seq, _seq1, etc. según versión de pg_dump previa).
+SELECT setval(
+    pg_get_serial_sequence('public.roles', 'fi_rol_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_rol_id) FROM public.roles), 0), 1)
+);
 
-SELECT setval('public.roles_fi_rol_id_seq1',
-              COALESCE((SELECT MAX(fi_rol_id) FROM public.roles), 0) + 1,
-              false);
+SELECT setval(
+    pg_get_serial_sequence('public.usuarios', 'fi_usuario_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_usuario_id) FROM public.usuarios), 0), 1)
+);
 
+SELECT setval(
+    pg_get_serial_sequence('seguridad.modulos', 'fi_modulo_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_modulo_id) FROM seguridad.modulos), 0), 1)
+);
+
+SELECT setval(
+    pg_get_serial_sequence('rrhh.puestos', 'fi_puesto_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_puesto_id) FROM rrhh.puestos), 0), 1)
+);
+
+SELECT setval(
+    pg_get_serial_sequence('rrhh.departamentos', 'fi_departamento_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_departamento_id) FROM rrhh.departamentos), 0), 1)
+);
+
+SELECT setval(
+    pg_get_serial_sequence('rrhh.tipos_documento', 'fi_tipo_documento_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_tipo_documento_id) FROM rrhh.tipos_documento), 0), 1)
+);
+
+
+COMMIT;
+
+-- ============================================================================
+-- Fin del archivo.
+-- ----------------------------------------------------------------------------
+-- Esquemas:           public, seguridad, rrhh
 --
--- PostgreSQL database dump complete
+-- Tablas de apoyo:    8
+--   public.roles, public.usuarios,
+--   seguridad.modulos, seguridad.roles_modulos, seguridad.refresh_tokens,
+--   rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento
+--
+-- Tablas Inventarios: 11
+--   instalaciones, reproductores, lotes, piletas, engorda, alimentos,
+--   equipos, mantenimientos,
+--   trazabilidad_alevinaje, trazabilidad_engorda, trazabilidad_reproductores
+--
+-- Tablas RRHH transaccional: 5
+--   rrhh.empleados, rrhh.documentos_empleado,
+--   public.nomina, public.vacaciones, public.caja_ahorro_resumen
+--
+-- Tablas Ventas / CRM: 4
+--   clientes, proveedores, ventas, lista_espera
+--
+-- Tablas Finanzas: 2  (+ 1 vista)
+--   cuentas, flujo_caja, vw_tesoreria_general
+--
+-- Tablas Lotes / movimientos: 1
+--   lote_movimientos
+--
+-- Tablas Bitácoras (registro operativo diario): 11
+--   alimentacion, banos, biometrias, insumos, inventario_alevines,
+--   medicamentos, parametros, plagas, recambios, recepcion_insumos, visitas
+--
+-- TOTAL TABLAS:        42  (8 apoyo + 11 inventarios + 5 rrhh + 4 ventas
+--                           + 2 finanzas + 1 lotes + 11 bitácoras)
+-- TOTAL VISTAS:         1  (vw_tesoreria_general)
+--
+-- Tablas legacy descartadas (no existen en el código activo): 6
+--   caja_ahorro_movimientos, cat_caja_ahorro_categorias,
+--   cat_tesoreria_categorias, categorias, limpieza, alevines
+--
+-- Funciones:          4
+--   fn_touch_fecha_modificacion, fn_touch_fecha_actualizacion,
+--   fn_touch_updated_at, fn_touch_actualizado
+--
+-- Triggers:          27  (auditoría automática en cada UPDATE)
+-- Foreign keys:      57
+-- Check constraints: 80+
+-- Índices:          117
+--
+-- Seeds idempotentes:
+--   public.roles, public.usuarios,
+--   seguridad.modulos, seguridad.roles_modulos,
+--   rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento,
+--   sincronización de secuencias de identidad.
+-- ============================================================================
