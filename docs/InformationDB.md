@@ -1,0 +1,109 @@
+-- ============================================================================
+# Información de la bd
+-- ----------------------------------------------------------------------------
+--
+-- Tablas de apoyo:    8
+--   public.roles, public.usuarios,
+--   seguridad.modulos, seguridad.roles_modulos, seguridad.refresh_tokens,
+--   rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento
+--
+-- Tablas Inventarios: 11
+--   instalaciones, reproductores, lotes, piletas, engorda, alimentos,
+--   equipos, mantenimientos,
+--   trazabilidad_alevinaje, trazabilidad_engorda, trazabilidad_reproductores
+--
+-- Tablas RRHH transaccional: 5
+--   rrhh.empleados, rrhh.documentos_empleado,
+--   public.nomina, public.vacaciones, public.caja_ahorro_resumen
+--
+-- Tablas Ventas / CRM: 4
+--   clientes, proveedores, ventas, lista_espera
+--
+-- Tablas Finanzas: 2  (+ 1 vista)
+--   cuentas, flujo_caja, vw_tesoreria_general
+--
+-- Tablas Lotes / movimientos: 1
+--   lote_movimientos
+--
+-- Tablas Bitácoras (registro operativo diario): 11
+--   alimentacion, banos, biometrias, insumos, inventario_alevines,
+--   medicamentos, parametros, plagas, recambios, recepcion_insumos, visitas
+--
+-- TOTAL TABLAS:        42  (8 apoyo + 11 inventarios + 5 rrhh + 4 ventas
+--                           + 2 finanzas + 1 lotes + 11 bitácoras)
+-- TOTAL VISTAS:         1  (vw_tesoreria_general)
+--
+-- Tablas legacy descartadas (no existen en el código activo): 6
+--   caja_ahorro_movimientos, cat_caja_ahorro_categorias,
+--   cat_tesoreria_categorias, categorias, limpieza, alevines
+--
+-- Funciones:          4
+--   fn_touch_fecha_modificacion, fn_touch_fecha_actualizacion,
+--   fn_touch_updated_at, fn_touch_actualizado
+--
+-- Triggers:          27  (auditoría automática en cada UPDATE)
+-- Foreign keys:      57
+-- Check constraints: 80+
+-- Índices:          117
+--
+-- Seeds idempotentes:
+--    public.roles, public.usuarios,
+--    seguridad.modulos, seguridad.roles_modulos,
+--    rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento,
+--    sincronización de secuencias de identidad.
+-- ============================================================================
+
+
+-- ============================================================================
+-- 0.  RESET (opcional — descomenta si necesitas reconstruir sobre existente)
+-- ============================================================================
+-- -- Vistas
+-- DROP VIEW  IF EXISTS public.vw_tesoreria_general       CASCADE;
+--
+-- -- Bitácoras operativas
+-- DROP TABLE IF EXISTS public.visitas                    CASCADE;
+-- DROP TABLE IF EXISTS public.recepcion_insumos          CASCADE;
+-- DROP TABLE IF EXISTS public.recambios                  CASCADE;
+-- DROP TABLE IF EXISTS public.plagas                     CASCADE;
+-- DROP TABLE IF EXISTS public.parametros                 CASCADE;
+-- DROP TABLE IF EXISTS public.medicamentos               CASCADE;
+-- DROP TABLE IF EXISTS public.inventario_alevines        CASCADE;
+-- DROP TABLE IF EXISTS public.insumos                    CASCADE;
+-- DROP TABLE IF EXISTS public.biometrias                 CASCADE;
+-- DROP TABLE IF EXISTS public.banos                      CASCADE;
+-- DROP TABLE IF EXISTS public.alimentacion               CASCADE;
+--
+-- -- Ventas / CRM y Finanzas
+-- DROP TABLE IF EXISTS public.lista_espera               CASCADE;
+-- DROP TABLE IF EXISTS public.ventas                     CASCADE;
+-- DROP TABLE IF EXISTS public.proveedores                CASCADE;
+-- DROP TABLE IF EXISTS public.clientes                   CASCADE;
+-- DROP TABLE IF EXISTS public.flujo_caja                 CASCADE;
+-- DROP TABLE IF EXISTS public.cuentas                    CASCADE;
+--
+-- -- RRHH transaccional
+-- DROP TABLE IF EXISTS public.caja_ahorro_resumen        CASCADE;
+-- DROP TABLE IF EXISTS public.vacaciones                 CASCADE;
+-- DROP TABLE IF EXISTS public.nomina                     CASCADE;
+-- DROP TABLE IF EXISTS rrhh.documentos_empleado          CASCADE;
+-- DROP TABLE IF EXISTS rrhh.empleados                    CASCADE;
+--
+-- -- Lotes (histórico) + Inventarios
+-- DROP TABLE IF EXISTS public.lote_movimientos           CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_reproductores CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_engorda       CASCADE;
+-- DROP TABLE IF EXISTS public.trazabilidad_alevinaje     CASCADE;
+-- DROP TABLE IF EXISTS public.mantenimientos             CASCADE;
+-- DROP TABLE IF EXISTS public.equipos                    CASCADE;
+-- DROP TABLE IF EXISTS public.alimentos                  CASCADE;
+-- DROP TABLE IF EXISTS public.engorda                    CASCADE;
+-- DROP TABLE IF EXISTS public.piletas                    CASCADE;
+-- DROP TABLE IF EXISTS public.lotes                      CASCADE;
+-- DROP TABLE IF EXISTS public.reproductores              CASCADE;
+-- DROP TABLE IF EXISTS public.instalaciones              CASCADE;
+--
+-- -- Funciones utilitarias
+-- DROP FUNCTION IF EXISTS public.fn_touch_fecha_modificacion() CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_fecha_actualizacion() CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_updated_at()    CASCADE;
+-- DROP FUNCTION IF EXISTS public.fn_touch_actualizado()   CASCADE;
