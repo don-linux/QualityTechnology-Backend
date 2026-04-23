@@ -11,7 +11,7 @@ function sanitize(value) {
 function calcularEstado(total, abonado) {
   if (abonado <= 0) return "ADEUDO";
   if (abonado > 0 && abonado < total) return "PARCIAL";
-  return "LIQUIDADO";
+  return "PAGADO";
 }
 
 class VentaController {
@@ -76,13 +76,12 @@ class VentaController {
       }
 
       const fn_monto_total = fn_cantidad_vendida * fn_precio_venta;
-      const fn_adeudo = fn_monto_total - fn_abonado;
       const fc_estado_pago = calcularEstado(fn_monto_total, fn_abonado);
 
       await ventaModel.create({
         fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
         fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
-        fn_abonado, fn_adeudo, fc_estado_pago,
+        fn_abonado, fc_estado_pago,
         fc_encargado_venta, fc_observaciones, fc_empresa,
       });
 
@@ -107,13 +106,12 @@ class VentaController {
       fn_abonado = sanitize(fn_abonado);
 
       const fn_monto_total = fn_cantidad_vendida * fn_precio_venta;
-      const fn_adeudo = fn_monto_total - fn_abonado;
       const fc_estado_pago = calcularEstado(fn_monto_total, fn_abonado);
 
       await ventaModel.update(id, {
         fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
         fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
-        fn_abonado, fn_adeudo, fc_estado_pago,
+        fn_abonado, fc_estado_pago,
         fc_encargado_venta, fc_observaciones, fc_empresa,
       });
 

@@ -13,7 +13,8 @@ class ClienteController {
 
   static async create(req, res) {
     try {
-      const cliente = await clienteModel.create(req.body);
+      const { fi_usuario_id, ...payload } = req.body;
+      const cliente = await clienteModel.create({ ...payload, fi_usuario_id: req.user.usuario_id });
       res.json(cliente);
     } catch (err) {
       console.error("Error al registrar cliente:", err);

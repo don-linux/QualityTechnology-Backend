@@ -105,7 +105,8 @@ static async getDestino(req, res) {
 
     static async siembra(req, res) {
         try {
-            const data = req.body;
+            const { fi_usuario_id, ...rest } = req.body;
+            const data = { ...rest, fi_usuario_id: req.user.usuario_id };
 
             const errorCampos = validarCamposAlevinaje(data);
             if (errorCampos) {
@@ -166,7 +167,8 @@ static async getDestino(req, res) {
                 return res.status(400).json({ error: errorCampos });
             }
 
-            const id = await piletaModel.createMovimiento(req.body);
+            const { fi_usuario_id, ...movPayload } = req.body;
+            const id = await piletaModel.createMovimiento({ ...movPayload, fi_usuario_id: req.user.usuario_id });
 
             res.json({
                 success: true,

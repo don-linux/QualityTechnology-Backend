@@ -13,7 +13,8 @@ class AlevinController {
 
   static async create(req, res) {
     try {
-      const alevin = await alevinModel.create(req.body);
+      const { fi_usuario_id, ...payload } = req.body;
+      const alevin = await alevinModel.create({ ...payload, fi_usuario_id: req.user.usuario_id });
       res.status(201).json(alevin);
     } catch (err) {
       console.error("Error al insertar alevines:", err);

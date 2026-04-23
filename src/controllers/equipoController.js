@@ -13,7 +13,8 @@ class EquipoController {
 
   static async create(req, res) {
     try {
-      const equipo = await equipoModel.create(req.body);
+      const { fi_usuario_id, ...payload } = req.body;
+      const equipo = await equipoModel.create({ ...payload, fi_usuario_id: req.user.usuario_id });
       res.json(equipo);
     } catch (err) {
       console.error("Error al registrar equipo:", err);

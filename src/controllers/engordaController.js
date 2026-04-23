@@ -23,9 +23,11 @@ class EngordaController {
         });
       }
 
+      const { fi_usuario_id, ...rest } = req.body;
       const body = {
-        ...req.body,
+        ...rest,
         fc_granja: engordaModel.normalizarGranja(req.body.fc_granja),
+        fi_usuario_id: req.user.usuario_id,
       };
       const result = await engordaModel.createOrUpdate(body);
 

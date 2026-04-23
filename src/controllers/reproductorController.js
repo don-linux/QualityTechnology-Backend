@@ -88,7 +88,7 @@ class ReproductorController {
         return res.status(400).json({ error: errorValidacion });
       }
 
-      const { fi_usuario_id, ...payload } = req.body;
+      const { fi_usuario_id, fn_cantidad, ...payload } = req.body;
       await reproductorModel.create({ ...payload, fi_usuario_id: req.user.usuario_id });
       res.json({
         success: true,
@@ -110,7 +110,7 @@ class ReproductorController {
         return res.status(400).json({ error: errorValidacion });
       }
 
-      const { fi_usuario_id, ...payload } = req.body;
+      const { fi_usuario_id, fn_cantidad, ...payload } = req.body;
       await reproductorModel.update(req.params.id, { ...payload, fi_usuario_id: req.user.usuario_id });
       res.json({
         success: true,
