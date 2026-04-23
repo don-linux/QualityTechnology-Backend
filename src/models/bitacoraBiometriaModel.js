@@ -29,30 +29,22 @@ class BitacoraBiometriaModel {
 
         if (inst.rowCount === 0) return;
 
-        const { tipo_instalacion, nombre_instalacion } = inst.rows[0];
+        const { tipo_instalacion } = inst.rows[0];
         let tabla = "";
         let campoFecha = "";
 
         if (tipo_instalacion === "Alevinaje") {
             tabla = "piletas";
-            campoFecha = "fecha_ultima_biometria";
+            campoFecha = "fd_fecha_ultima_biometria";
         } else if (tipo_instalacion === "Engorda") {
             tabla = "engorda";
-            campoFecha = "fecha_biometria";
+            campoFecha = "fd_fecha_biometria";
         } else if (tipo_instalacion === "Reproductores") {
             tabla = "reproductores";
             campoFecha = "fd_fecha_biometria";
         }
 
         if (!tabla || !campoFecha) return;
-
-        if (tabla === "reproductores") {
-            await pool.query(
-                `UPDATE ${tabla} SET ${campoFecha} = $1 WHERE fc_instalacion = $2`,
-                [fecha, nombre_instalacion]
-            );
-            return;
-        }
 
         await pool.query(
             `UPDATE ${tabla} SET ${campoFecha} = $1 WHERE fi_instalacion_id = $2`,
@@ -143,16 +135,16 @@ class BitacoraBiometriaModel {
 
         if (inst.rowCount === 0) return null;
 
-        const { tipo_instalacion, nombre_instalacion } = inst.rows[0];
+        const { tipo_instalacion } = inst.rows[0];
         let tabla = "";
         let campoFecha = "";
 
         if (tipo_instalacion === "Alevinaje") {
             tabla = "piletas";
-            campoFecha = "fecha_ultima_biometria";
+            campoFecha = "fd_fecha_ultima_biometria";
         } else if (tipo_instalacion === "Engorda") {
             tabla = "engorda";
-            campoFecha = "fecha_biometria";
+            campoFecha = "fd_fecha_biometria";
         } else if (tipo_instalacion === "Reproductores") {
             tabla = "reproductores";
             campoFecha = "fd_fecha_biometria";
@@ -160,32 +152,11 @@ class BitacoraBiometriaModel {
 
         if (!tabla || !campoFecha) return { tipo: tipo_instalacion };
 
-        if (tabla === "reproductores") {
-            const q = await pool.query(
-                `
-      SELECT 
-        ${campoFecha} AS fecha_biometria
-      FROM ${tabla}
-      WHERE fc_instalacion = $1
-      LIMIT 1
-      `,
-                [nombre_instalacion]
-            );
-
-            if (q.rowCount === 0) return { tipo: tipo_instalacion, fi_lote_id: null };
-
-            const row = q.rows[0];
-            return {
-                tipo: tipo_instalacion,
-                fi_lote_id: null,
-                fecha_biometria: row.fecha_biometria
-            };
-        }
-
         const q = await pool.query(
             `
       SELECT 
-        m.fi_lote_id, l.no_lote, m.cantidad, m.talla_gr, m.fecha_siembra,
+        m.fi_lote_id, l.no_lote, m.cantidad, m.talla_gr,
+        m.${tabla === "piletas" ? "fd_fecha_siembra" : "fd_fecha_siembra"} AS fecha_siembra,
         m.${campoFecha} AS fecha_biometria
       FROM ${tabla} m
       LEFT JOIN lotes l ON m.fi_lote_id = l.fi_lote_id

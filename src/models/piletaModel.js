@@ -20,13 +20,13 @@ class PiletaModel {
                 l.fi_lote_id,
                 l.no_lote,
                 l.alevines_inicial,
-                l.fecha::date AS fecha,
-                l.fc_instalacion_id,
+                l.fd_fecha::date AS fecha,
+                l.fi_instalacion_id,
                 i.nombre_instalacion AS origen_instalacion,
-                (CURRENT_DATE - l.fecha::date) AS dias_en_lote
+                (CURRENT_DATE - l.fd_fecha::date) AS dias_en_lote
             FROM lotes l
             LEFT JOIN instalaciones i 
-                ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
+                ON l.fi_instalacion_id = i.fi_instalacion_id
             WHERE LOWER(i.fc_granja) = LOWER($1)
             ORDER BY l.no_lote ASC
             `,
@@ -47,21 +47,21 @@ class PiletaModel {
                 p.talla_gr,
                 p.fi_lote_id,
                 l.no_lote,
-                p.fecha_siembra,
-                p.fecha_ultima_biometria,
-                (CURRENT_DATE - p.fecha_siembra) AS dias_en_pila,
-                (CURRENT_DATE - p.fecha_ultima_biometria) AS dias_transcurridos,
+                p.fd_fecha_siembra AS fecha_siembra,
+                p.fd_fecha_ultima_biometria AS fecha_ultima_biometria,
+                (CURRENT_DATE - p.fd_fecha_siembra) AS dias_en_pila,
+                (CURRENT_DATE - p.fd_fecha_ultima_biometria) AS dias_transcurridos,
                 COALESCE(i.nombre_instalacion, '-') AS nombre_instalacion,
                 CASE 
-                WHEN (CURRENT_DATE - p.fecha_siembra) BETWEEN 1 AND 10 THEN 'Hormonado etapa 1'
-                WHEN (CURRENT_DATE - p.fecha_siembra) BETWEEN 11 AND 20 THEN 'Hormonado etapa 2'
+                WHEN (CURRENT_DATE - p.fd_fecha_siembra) BETWEEN 1 AND 10 THEN 'Hormonado etapa 1'
+                WHEN (CURRENT_DATE - p.fd_fecha_siembra) BETWEEN 11 AND 20 THEN 'Hormonado etapa 2'
                 ELSE p.observacion
             END AS etapa_hormonal
             FROM piletas p
             LEFT JOIN instalaciones i 
                 ON p.fi_instalacion_id = i.fi_instalacion_id
             LEFT JOIN lotes l 
-                ON p.fi_lote_id::text = l.fi_lote_id::text
+                ON p.fi_lote_id = l.fi_lote_id
             WHERE LOWER(p.fc_granja) = LOWER($1)
             ORDER BY p.fi_pileta_id DESC
             `,
@@ -84,8 +84,6 @@ class PiletaModel {
     );
     return result.rows[0];
 }
-
-/* DEVOLVER ALEVINES AL LOTE */
 
 static async devolverAlevinesAlLote(loteId, cantidad) {
 
@@ -111,7 +109,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             COALESCE(i_origen.nombre_instalacion, m.origen_externo) AS origen_nombre,
             i_destino.nombre_instalacion AS destino_nombre,
             m.cantidad,
-            m.fecha_movimiento,
+            m.fd_fecha_movimiento AS fecha_movimiento,
             m.observacion,
             m.tipo_movimiento
 
@@ -129,7 +127,7 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         WHERE LOWER(l.fc_granja) = LOWER($1)
         AND m.fi_usuario_id = $2
 
-        ORDER BY m.fecha_movimiento DESC
+        ORDER BY m.fd_fecha_movimiento DESC
         `,
         [granja, usuario]
     );
@@ -141,29 +139,17 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             SELECT 
                 m.fi_movimiento_id,
                 COALESCE(
-                    i_o.nombre_instalacion, 
-                    i_o_m.nombre_instalacion, 
-                    i_l_o.nombre_instalacion,
+                    i_o.nombre_instalacion,
                     m.origen_externo
                 ) AS origen_nombre,
-                COALESCE(
-                    i_d.nombre_instalacion, 
-                    i_d_m.nombre_instalacion
-                ) AS destino_nombre,
+                i_d.nombre_instalacion AS destino_nombre,
                 m.cantidad,
-                m.fecha_movimiento,
+                m.fd_fecha_movimiento AS fecha_movimiento,
                 m.observacion,
                 m.tipo_movimiento
             FROM trazabilidad_alevinaje m
-            LEFT JOIN instalaciones po ON po.fi_instalacion_id = m.fi_instalacion_origen
-            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id::text = p_o.fi_instalacion_id::text
-            LEFT JOIN instalaciones pd ON pd.fi_instalacion_id = m.fi_instalacion_destino
-            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id::text = p_d.fi_instalacion_id::text
-            LEFT JOIN instalaciones i_o_m ON i_o_m.fi_instalacion_id::text = m.fi_instalacion_origen::text
-            LEFT JOIN instalaciones i_d_m ON i_d_m.fi_instalacion_id::text = m.fi_instalacion_destino::text
-            -- Respaldo extra
-            LEFT JOIN lotes l_o ON l_o.fi_lote_id = m.fi_lote_id
-            LEFT JOIN instalaciones i_l_o ON i_l_o.fi_instalacion_id::text = l_o.fc_instalacion_id::text
+            LEFT JOIN instalaciones i_o ON i_o.fi_instalacion_id = m.fi_instalacion_origen
+            LEFT JOIN instalaciones i_d ON i_d.fi_instalacion_id = m.fi_instalacion_destino
             WHERE LOWER(m.fc_granja) = LOWER($1)
             AND m.fi_usuario_id = $2
         `;
@@ -177,14 +163,14 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
 
         if (inicio) {
             params.push(inicio);
-            sql += ` AND m.fecha_movimiento >= $${params.length}`;
+            sql += ` AND m.fd_fecha_movimiento >= $${params.length}`;
         }
         if (fin) {
             params.push(fin);
-            sql += ` AND m.fecha_movimiento <= $${params.length}`;
+            sql += ` AND m.fd_fecha_movimiento <= $${params.length}`;
         }
 
-        sql += ` ORDER BY m.fecha_movimiento DESC`;
+        sql += ` ORDER BY m.fd_fecha_movimiento DESC`;
 
         const result = await pool.query(sql, params);
         return result.rows;
@@ -231,7 +217,6 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
         let piletaOrigenId = null;
         let piletaDestinoId = null;
 
-        /* 1. BUSCAR PILETA ORIGEN */
         if (origenInstalacionId) {
             const origen = await client.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
@@ -242,7 +227,6 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             }
         }
 
-        /* 2. BUSCAR O CREAR PILETA DESTINO */
         if (destinoId) {
             const destinoRes = await client.query(
                 `SELECT fi_pileta_id FROM piletas WHERE fi_instalacion_id = $1 LIMIT 1`,
@@ -262,8 +246,8 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 const nuevaPileta = await client.query(
                     `INSERT INTO piletas
                     (fi_instalacion_id, fi_lote_id, cantidad, talla_gr, observacion,
-                    fecha_siembra, fecha_ultima_biometria, fc_granja)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    fd_fecha_siembra, fd_fecha_ultima_biometria, fc_granja, fi_usuario_id)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     RETURNING fi_pileta_id`,
                     [
                         destinoId,
@@ -271,9 +255,10 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                         cantidad,
                         data.talla_gr || 0,
                         observacion || null,
-                        data.fecha_siembra || new Date(),
-                        data.fecha_ultima_biometria || new Date(),
-                        fc_granja
+                        data.fecha_siembra || data.fd_fecha_siembra || new Date(),
+                        data.fecha_ultima_biometria || data.fd_fecha_ultima_biometria || new Date(),
+                        fc_granja,
+                        fi_usuario_id
                     ]
                 );
                 piletaDestinoId = nuevaPileta.rows[0].fi_pileta_id;
@@ -287,7 +272,6 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             }
         }
 
-        /* 3. RESTAR DEL ORIGEN */
         if (piletaOrigenId) {
             await client.query(
                 `UPDATE piletas SET cantidad = cantidad - $1 WHERE fi_pileta_id = $2`,
@@ -295,12 +279,11 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
             );
         }
 
-        /* 4. GUARDAR TRAZABILIDAD */
         const trace = await client.query(
             `INSERT INTO trazabilidad_alevinaje
             (fi_instalacion_origen, origen_externo, fi_instalacion_destino, cantidad,
-            fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento)
-            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8)
+            fd_fecha_movimiento, observacion, fi_usuario_id, fi_lote_id, tipo_movimiento, fc_granja)
+            VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8, $9)
             RETURNING fi_movimiento_id`,
             [
                 origenInstalacionId || null,
@@ -308,13 +291,13 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 destinoId || null,
                 cantidad,
                 observacion,
-                fi_usuario_id || null,
+                fi_usuario_id,
                 loteId || null,
-                tipo_movimiento
+                tipo_movimiento,
+                fc_granja
             ]
         );
 
-        /* 5. ACTUALIZAR CANTIDAD DEL LOTE */
         if (loteId) {
             await client.query(
                 `UPDATE lotes SET alevines_inicial = $1 WHERE fi_lote_id = $2`,
@@ -344,9 +327,10 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                 cantidad,
                 talla_gr,
                 observacion,
-                fecha_siembra,
-                fecha_ultima_biometria
             } = data;
+
+            const fechaSiembra = data.fecha_siembra || data.fd_fecha_siembra;
+            const fechaBiometria = data.fecha_ultima_biometria || data.fd_fecha_ultima_biometria;
 
             await pool.query(
                 `
@@ -357,8 +341,8 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                     cantidad = $3,
                     talla_gr = $4,
                     observacion = $5,
-                    fecha_siembra = $6,
-                    fecha_ultima_biometria = $7
+                    fd_fecha_siembra = $6,
+                    fd_fecha_ultima_biometria = $7
                 WHERE fi_pileta_id = $8
                 `,
                 [
@@ -367,8 +351,8 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
                     cantidad,
                     talla_gr,
                     observacion,
-                    fecha_siembra,
-                    fecha_ultima_biometria,
+                    fechaSiembra,
+                    fechaBiometria,
                     id
                 ]
             );
@@ -381,11 +365,25 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      await client.query(
-        `DELETE FROM trazabilidad_alevinaje
-         WHERE fi_instalacion_origen = $1 OR fi_instalacion_destino = $1`,
+
+      const pileta = await client.query(
+        "SELECT fi_instalacion_id FROM piletas WHERE fi_pileta_id = $1",
         [id]
       );
+      const instalacionId = pileta.rows[0]?.fi_instalacion_id;
+
+      await client.query(
+        `DELETE FROM trazabilidad_alevinaje
+         WHERE fi_pileta_origen = $1 OR fi_pileta_destino = $1`,
+        [id]
+      );
+      if (instalacionId) {
+        await client.query(
+          `DELETE FROM trazabilidad_alevinaje
+           WHERE fi_instalacion_origen = $1 OR fi_instalacion_destino = $1`,
+          [instalacionId]
+        );
+      }
       await client.query(
         `DELETE FROM piletas WHERE fi_pileta_id = $1`,
         [id]
@@ -399,41 +397,6 @@ static async devolverAlevinesAlLote(loteId, cantidad) {
     }
 }
 
-/* =====================================================
-   FILTRAR MOVIMIENTOS
-===================================================== */
-static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_fin) {
-
-    const result = await pool.query(
-        `
-        SELECT 
-            m.fi_movimiento_id,
-            COALESCE(po.fi_pileta_id::text, m.origen_externo) AS origen_nombre,
-            pd.fi_pileta_id::text AS destino_nombre,
-            m.cantidad,
-            m.fecha_movimiento,
-            m.observacion
-        FROM trazabilidad_alevinaje m
-        LEFT JOIN piletas po 
-            ON po.fi_pileta_id = m.fi_pileta_origen
-        LEFT JOIN piletas pd 
-            ON pd.fi_pileta_id = m.fi_pileta_destino
-        WHERE LOWER(m.fc_granja) = LOWER($1)
-        AND m.fi_usuario_id = $2
-        AND (
-            po.fi_pileta_id::text ILIKE '%' || $3 || '%'
-            OR pd.fi_pileta_id::text ILIKE '%' || $3 || '%'
-        )
-        AND ($4 = '' OR m.fecha_movimiento >= $4)
-        AND ($5 = '' OR m.fecha_movimiento <= $5)
-        ORDER BY m.fecha_movimiento DESC
-        `,
-        [granja, usuario, buscar, fecha_inicio, fecha_fin]
-    );
-
-    return result.rows;
-
-}
     /* =====================================================
        ELIMINAR UN MOVIMIENTO
     ===================================================== */
@@ -521,8 +484,7 @@ static async getMovimientosFiltro(usuario, granja, buscar, fecha_inicio, fecha_f
                 l.no_lote,
                 l.alevines_inicial
             FROM lotes l
-            JOIN instalaciones i ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
-            WHERE i.fi_instalacion_id = $1
+            WHERE l.fi_instalacion_id = $1
             LIMIT 1
             `,
             [instalacion_id]

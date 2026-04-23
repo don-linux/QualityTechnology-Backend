@@ -88,7 +88,8 @@ class ReproductorController {
         return res.status(400).json({ error: errorValidacion });
       }
 
-      await reproductorModel.create(req.body);
+      const { fi_usuario_id, ...payload } = req.body;
+      await reproductorModel.create({ ...payload, fi_usuario_id: req.user.usuario_id });
       res.json({
         success: true,
         mensaje: "Reproductor y trazabilidad registrados correctamente",
@@ -109,7 +110,8 @@ class ReproductorController {
         return res.status(400).json({ error: errorValidacion });
       }
 
-      await reproductorModel.update(req.params.id, req.body);
+      const { fi_usuario_id, ...payload } = req.body;
+      await reproductorModel.update(req.params.id, { ...payload, fi_usuario_id: req.user.usuario_id });
       res.json({
         success: true,
         mensaje: "Reproductor actualizado y trazabilidad registrada",

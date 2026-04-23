@@ -24,7 +24,7 @@ class OrigenModel {
                     l.alevines_inicial
                 FROM lotes l
                 INNER JOIN instalaciones i
-                    ON l.fc_instalacion_id::text = i.fi_instalacion_id::text
+                    ON l.fi_instalacion_id = i.fi_instalacion_id
                 WHERE LOWER(i.fc_granja) = LOWER($1)
                 ORDER BY i.nombre_instalacion ASC
                 `,

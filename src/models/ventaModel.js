@@ -11,10 +11,11 @@ class VentaModel {
 
   static async getEncargados(puesto) {
     const result = await pool.query(
-      `SELECT fi_expediente_id AS id, fc_nombre AS nombre
-       FROM expedientes WHERE fc_puesto = $1
-       ORDER BY fc_nombre ASC`,
-      [puesto]
+      `SELECT fi_empleado_id AS id,
+              CONCAT_WS(' ', fc_nombre, fc_apellido_paterno, fc_apellido_materno) AS nombre
+       FROM rrhh.empleados
+       WHERE fb_activo = true
+       ORDER BY nombre ASC`
     );
     return result.rows;
   }
@@ -31,14 +32,14 @@ class VentaModel {
       `INSERT INTO ventas (
         fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
         fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
-        fn_abonado, fn_adeudo, fc_estado_pago,
+        fn_abonado, fc_estado_pago,
         fc_encargado_venta, fc_observaciones, fc_empresa,
         fd_fecha_registro
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, NOW())`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, NOW())`,
       [
         data.fc_folio, data.fd_fecha_venta, data.fc_cliente,
         data.fc_tipo_venta, data.fn_cantidad_vendida, data.fn_precio_venta,
-        data.fn_monto_total, data.fn_abonado, data.fn_adeudo,
+        data.fn_monto_total, data.fn_abonado,
         data.fc_estado_pago, data.fc_encargado_venta,
         data.fc_observaciones, data.fc_empresa,
       ]
@@ -50,15 +51,15 @@ class VentaModel {
       `UPDATE ventas SET
         fc_folio = $1, fd_fecha_venta = $2, fc_cliente = $3,
         fc_tipo_venta = $4, fn_cantidad_vendida = $5, fn_precio_venta = $6,
-        fn_monto_total = $7, fn_abonado = $8, fn_adeudo = $9,
-        fc_estado_pago = $10, fc_encargado_venta = $11,
-        fc_observaciones = $12, fc_empresa = $13,
+        fn_monto_total = $7, fn_abonado = $8,
+        fc_estado_pago = $9, fc_encargado_venta = $10,
+        fc_observaciones = $11, fc_empresa = $12,
         fd_fecha_modificacion = NOW()
-      WHERE fi_venta_id = $14`,
+      WHERE fi_venta_id = $13`,
       [
         data.fc_folio, data.fd_fecha_venta, data.fc_cliente,
         data.fc_tipo_venta, data.fn_cantidad_vendida, data.fn_precio_venta,
-        data.fn_monto_total, data.fn_abonado, data.fn_adeudo,
+        data.fn_monto_total, data.fn_abonado,
         data.fc_estado_pago, data.fc_encargado_venta,
         data.fc_observaciones, data.fc_empresa, id,
       ]

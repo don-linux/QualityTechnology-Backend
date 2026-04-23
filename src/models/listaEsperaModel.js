@@ -90,12 +90,12 @@ class ListaEsperaModel {
         `INSERT INTO ventas (
           fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
           fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
-          fn_abonado, fn_adeudo, fc_estado_pago,
+          fn_abonado, fc_estado_pago,
           fc_encargado_venta, fc_observaciones, fc_empresa,
           fd_fecha_registro
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
-          $8, $9, $10, $11, $12, $13, $14
+          $8, $9, $10, $11, $12, $13
         ) RETURNING *`,
         [
           `LE-${id}`,
@@ -106,7 +106,6 @@ class ListaEsperaModel {
           precio,
           total,
           0,
-          total,
           "ADEUDO",
           d.fc_encargado_venta,
           "",

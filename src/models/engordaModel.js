@@ -2,11 +2,11 @@ import pool from "../db.js";
 
 class EngordaModel {
   static normalizarGranja(valor) {
-    if (!valor) return "Granja Acu\u00EDcola Medellin";
+    if (!valor) return "Granja Acuícola Medellin";
     const texto = valor.toLowerCase();
-    if (texto.includes("medell")) return "Granja Acu\u00EDcola Medellin";
-    if (texto.includes("ceiba")) return "Granja Acu\u00EDcola La Ceiba";
-    return "Granja Acu\u00EDcola Medellin";
+    if (texto.includes("medell")) return "Granja Acuícola Medellin";
+    if (texto.includes("ceiba")) return "Granja Acuícola La Ceiba";
+    return "Granja Acuícola Medellin";
   }
 
   static async esLote(id) {
@@ -23,13 +23,15 @@ class EngordaModel {
         e.fi_engorda_id, e.fi_instalacion_id,
         i.nombre_instalacion AS destino_nombre,
         e.fi_lote_id, l.no_lote, e.cantidad, e.talla_gr,
-        e.observacion, e.fecha_siembra, e.fecha_biometria,
-        CURRENT_DATE - e.fecha_siembra AS dias_en_pila,
-        CURRENT_DATE - e.fecha_biometria AS dias_transcurridos,
+        e.observacion,
+        e.fd_fecha_siembra AS fecha_siembra,
+        e.fd_fecha_biometria AS fecha_biometria,
+        CURRENT_DATE - e.fd_fecha_siembra AS dias_en_pila,
+        CURRENT_DATE - e.fd_fecha_biometria AS dias_transcurridos,
         e.fi_usuario_id, e.fc_granja
       FROM engorda e
       LEFT JOIN instalaciones i ON i.fi_instalacion_id = e.fi_instalacion_id
-      LEFT JOIN lotes l ON l.fi_lote_id::text = e.fi_lote_id::text
+      LEFT JOIN lotes l ON l.fi_lote_id = e.fi_lote_id
       WHERE LOWER(e.fc_granja) = LOWER($1)
       ORDER BY e.fi_engorda_id DESC`,
       [granja]
@@ -46,19 +48,19 @@ class EngordaModel {
         await client.query(
           `UPDATE engorda SET
             cantidad = $1, talla_gr = $2, observacion = $3,
-            fecha_siembra = $4, fecha_biometria = $5,
-            fd_fecha_modificacion = CURRENT_DATE
+            fd_fecha_siembra = $4, fd_fecha_biometria = $5
           WHERE fi_engorda_id = $6`,
           [
             data.cantidad, data.talla_gr, data.observacion,
-            data.fecha_siembra, data.fecha_biometria, data.fi_engorda_id,
+            data.fecha_siembra || data.fd_fecha_siembra,
+            data.fecha_biometria || data.fd_fecha_biometria,
+            data.fi_engorda_id,
           ]
         );
         await client.query("COMMIT");
         return { updated: true };
       }
 
-      // Determinar lote final segun el origen
       const origenEsLote = await this.esLote(data.origen_instalacion);
       let loteFinal;
 
@@ -75,20 +77,21 @@ class EngordaModel {
       const insert = await client.query(
         `INSERT INTO engorda (
           fi_instalacion_id, fi_lote_id, cantidad, talla_gr,
-          observacion, fecha_siembra, fecha_biometria,
-          fi_usuario_id, fc_granja, fecha_registro
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,CURRENT_DATE)
+          observacion, fd_fecha_siembra, fd_fecha_biometria,
+          fi_usuario_id, fc_granja
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         RETURNING fi_engorda_id`,
         [
           data.fi_instalacion_id, loteFinal, data.cantidad,
-          data.talla_gr, data.observacion, data.fecha_siembra,
-          data.fecha_biometria, data.fi_usuario_id, data.fc_granja,
+          data.talla_gr, data.observacion,
+          data.fecha_siembra || data.fd_fecha_siembra,
+          data.fecha_biometria || data.fd_fecha_biometria,
+          data.fi_usuario_id, data.fc_granja,
         ]
       );
 
       const destinoId = insert.rows[0].fi_engorda_id;
 
-      // Restar origen
       if (origenEsLote) {
         await client.query(
           "UPDATE lotes SET alevines_inicial = alevines_inicial - $1 WHERE fi_lote_id = $2",
@@ -101,12 +104,11 @@ class EngordaModel {
         );
       }
 
-      // Trazabilidad
       if (origenEsLote) {
         await client.query(
           `INSERT INTO trazabilidad_engorda (
             fi_engorda_destino, cantidad_trasladada,
-            fecha_movimiento, observacion, fi_usuario_id
+            fd_fecha_movimiento, observacion, fi_usuario_id
           ) VALUES ($1, $2, CURRENT_DATE, $3, $4)`,
           [destinoId, data.cantidad, data.observacion, data.fi_usuario_id]
         );
@@ -114,7 +116,7 @@ class EngordaModel {
         await client.query(
           `INSERT INTO trazabilidad_engorda (
             fi_engorda_origen, fi_engorda_destino,
-            cantidad_trasladada, fecha_movimiento,
+            cantidad_trasladada, fd_fecha_movimiento,
             observacion, fi_usuario_id
           ) VALUES ($1,$2,$3,CURRENT_DATE,$4,$5)`,
           [
@@ -163,7 +165,7 @@ class EngordaModel {
         COALESCE(io.nombre_instalacion, 'Siembra Lote') AS origen_nombre,
         idst.nombre_instalacion AS destino_nombre,
         t.cantidad_trasladada,
-        t.fecha_movimiento,
+        t.fd_fecha_movimiento AS fecha_movimiento,
         t.observacion
       FROM trazabilidad_engorda t
       LEFT JOIN engorda eo ON eo.fi_engorda_id = t.fi_engorda_origen
