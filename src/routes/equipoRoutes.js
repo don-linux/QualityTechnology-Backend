@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
    RUTAS DE EQUIPOS
 ========================================================= */
+router.get("/empleados", equipoController.getEmpleados);
 router.get("/:usuario_id", equipoController.getByUsuario);
 router.post("/", equipoController.create);
 router.put("/:id", equipoController.update);

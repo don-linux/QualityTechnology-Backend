@@ -1,6 +1,18 @@
 import pool from "../db.js";
 
 class EquipoModel {
+  static async getEmpleadosActivos() {
+    const result = await pool.query(`
+      SELECT
+        e.fi_empleado_id,
+        CONCAT_WS(' ', e.fc_nombre, e.fc_apellido_paterno, e.fc_apellido_materno) AS fc_nombre_completo
+      FROM rrhh.empleados e
+      WHERE e.fb_activo = true
+      ORDER BY fc_nombre_completo;
+    `);
+    return result.rows;
+  }
+
   static async getByUsuario(usuarioId) {
     const result = await pool.query(
       "SELECT * FROM equipos WHERE fi_usuario_id = $1 ORDER BY fi_equipo_id DESC",

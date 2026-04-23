@@ -1,6 +1,15 @@
 import equipoModel from "../models/equipoModel.js";
 
 class EquipoController {
+  static async getEmpleados(req, res) {
+    try {
+      const empleados = await equipoModel.getEmpleadosActivos();
+      res.json(empleados);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   static async getByUsuario(req, res) {
     try {
       const equipos = await equipoModel.getByUsuario(req.params.usuario_id);
