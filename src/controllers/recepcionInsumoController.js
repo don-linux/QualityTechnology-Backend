@@ -1,6 +1,15 @@
 import recepcionInsumoModel from "../models/recepcionInsumoModel.js";
 
 class RecepcionInsumoController {
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await recepcionInsumoModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const { ubicacion } = req.query;
@@ -23,6 +32,10 @@ class RecepcionInsumoController {
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
             }
+            const { fc_verifico } = req.body;
+            if (fc_verifico != null && String(fc_verifico).length > 100) {
+                return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
+            }
 
             const data = { ...req.body, fc_cantidad: cantidad, fi_usuario_id: req.user.usuario_id };
             await recepcionInsumoModel.create(data);
@@ -43,6 +56,10 @@ class RecepcionInsumoController {
             }
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
+            }
+            const { fc_verifico } = req.body;
+            if (fc_verifico != null && String(fc_verifico).length > 100) {
+                return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
             }
 
             await recepcionInsumoModel.update(req.params.id, { ...req.body, fc_cantidad: cantidad });

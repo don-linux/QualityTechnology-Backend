@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE PLAGAS
 ========================================================= */
+router.get("/empleados", bitacoraPlagaController.getEmpleados);
 router.get("/", bitacoraPlagaController.getAll);
 router.post("/", bitacoraPlagaController.create);
 router.put("/:id", bitacoraPlagaController.update);

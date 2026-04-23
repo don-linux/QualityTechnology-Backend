@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
     RUTAS DE BITÁCORA DE RECEPCIÓN DE INSUMOS
 ========================================================= */
+router.get("/empleados", recepcionInsumoController.getEmpleados);
 router.get("/", recepcionInsumoController.getAll);
 router.post("/", recepcionInsumoController.create);
 router.put("/:id", recepcionInsumoController.update);

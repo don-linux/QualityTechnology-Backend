@@ -1,6 +1,15 @@
 import bitacoraPlagaModel from "../models/bitacoraPlagaModel.js";
 
 class BitacoraPlagaController {
+    static async getEmpleados(req, res) {
+        try {
+            const empleados = await bitacoraPlagaModel.getEmpleadosActivos();
+            res.json(empleados);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const { ubicacion } = req.query;
@@ -26,6 +35,10 @@ class BitacoraPlagaController {
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "El campo observaciones no puede superar los 500 caracteres." });
             }
+            const { fc_verifico } = req.body;
+            if (fc_verifico != null && String(fc_verifico).length > 100) {
+                return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
+            }
 
             // Evitar suplantación: fi_usuario_id siempre viene del token.
             const { fi_usuario_id, ...payload } = req.body;
@@ -46,6 +59,10 @@ class BitacoraPlagaController {
             }
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "El campo observaciones no puede superar los 500 caracteres." });
+            }
+            const { fc_verifico } = req.body;
+            if (fc_verifico != null && String(fc_verifico).length > 100) {
+                return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
             }
 
             await bitacoraPlagaModel.update(req.params.id, req.body);

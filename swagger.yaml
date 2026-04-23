@@ -3231,6 +3231,15 @@ paths:
         '200':
           description: "Eliminado"
 
+  /plagas/empleados:
+    get:
+      summary: "Listar empleados activos para bitácora de plagas"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+
   /alimentacion:
     get:
       summary: "Listar bitácora de alimentación"
@@ -3376,6 +3385,15 @@ paths:
       responses:
         '200':
           description: "Eliminado(s)"
+
+  /recepcion_insumos/empleados:
+    get:
+      summary: "Listar empleados activos para recepción de insumos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
 
   /visitas:
     get:
