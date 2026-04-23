@@ -5,10 +5,13 @@ services:
     build:
       context: ../../
       dockerfile: docker/dev/Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
     volumes:
       - ../../:/app
+      - node_modules:/app/node_modules
     environment:
-      WATCHPACK_POLLING: 'true'
       PGUSER: ${DOCKER_DEV_POSTGRES_DB_USER}
       PGPASSWORD: ${DOCKER_DEV_POSTGRES_DB_PASSWORD}
       PGHOST: postgres_db
@@ -23,9 +26,9 @@ services:
         condition: service_healthy
   
   postgres_db:
-    image: postgres:18-alpine
+    image: postgres:18.3-alpine3.23
     volumes:
-      - postgres_db_data:/var/lib/postgresql/data/
+      - postgres_db_data:/var/lib/postgresql
       - ../../db.sql:/docker-entrypoint-initdb.d/init.sql 
     environment:
       - POSTGRES_DB=${DOCKER_DEV_POSTGRES_DB_NAME}
@@ -43,3 +46,4 @@ services:
 
 volumes:
   postgres_db_data:
+  node_modules:
