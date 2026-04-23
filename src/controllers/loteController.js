@@ -133,14 +133,7 @@ class LoteController {
 
             const huevosFinal = huevos_ml ?? huevos ?? 0;
 
-
-            const mortalidad_porcentaje =
-                alevines_inicial > 0
-                    ? (mortalidad / alevines_inicial) * 100
-                    : 0;
-
             await loteModel.create({
-
                 fecha,
                 familia,
                 fc_instalacion_id,
@@ -151,8 +144,7 @@ class LoteController {
                 fc_granja: granjaFinal,
                 observacion,
                 mortalidad,
-                mortalidad_porcentaje
-
+                fi_usuario_id: req.user.usuario_id
             });
 
             res.json({
@@ -203,14 +195,7 @@ class LoteController {
 
             const granjaFinal = loteModel.normalizarGranja(fc_granja);
 
-
-            const mortalidad_porcentaje =
-                alevines_inicial > 0
-                    ? (mortalidad / alevines_inicial) * 100
-                    : 0;
-
             await loteModel.update(id, {
-
                 fecha,
                 familia,
                 fc_instalacion_id,
@@ -220,9 +205,7 @@ class LoteController {
                 no_lote,
                 fc_granja: granjaFinal,
                 observacion,
-                mortalidad,
-                mortalidad_porcentaje
-
+                mortalidad
             });
 
             res.json({
