@@ -93,11 +93,27 @@ class EngordaModel {
       const destinoId = insert.rows[0].fi_engorda_id;
 
       if (origenEsLote) {
+        const stock = await client.query(
+          "SELECT alevines_inicial FROM lotes WHERE fi_lote_id = $1",
+          [data.origen_instalacion]
+        );
+        const disponible = Number(stock.rows[0]?.alevines_inicial || 0);
+        if (data.cantidad > disponible) {
+          throw new Error(`El lote solo tiene ${disponible} alevines disponibles. No se pueden trasladar ${data.cantidad}.`);
+        }
         await client.query(
           "UPDATE lotes SET alevines_inicial = alevines_inicial - $1 WHERE fi_lote_id = $2",
           [data.cantidad, data.origen_instalacion]
         );
       } else {
+        const stock = await client.query(
+          "SELECT cantidad FROM engorda WHERE fi_engorda_id = $1",
+          [data.origen_instalacion]
+        );
+        const disponible = Number(stock.rows[0]?.cantidad || 0);
+        if (data.cantidad > disponible) {
+          throw new Error(`La engorda origen solo tiene ${disponible} organismos. No se pueden trasladar ${data.cantidad}.`);
+        }
         await client.query(
           "UPDATE engorda SET cantidad = cantidad - $1 WHERE fi_engorda_id = $2",
           [data.cantidad, data.origen_instalacion]
