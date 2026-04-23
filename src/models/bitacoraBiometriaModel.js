@@ -4,7 +4,7 @@ class BitacoraBiometriaModel {
     static normalizarGranja(g) {
         if (!g) return null;
         g = g.toLowerCase().trim();
-        if (g.includes("med")) return "Granja Acuícola Medellín";
+        if (g.includes("med")) return "Granja Acuícola Medellin";
         if (g.includes("ceiba")) return "Granja Acuícola La Ceiba";
         return null;
     }
@@ -152,17 +152,38 @@ class BitacoraBiometriaModel {
 
         if (!tabla || !campoFecha) return { tipo: tipo_instalacion };
 
+        if (tabla === "reproductores") {
+            const q = await pool.query(
+                `SELECT
+                    fn_cantidad AS cantidad, fn_talla AS talla_gr,
+                    fd_fecha_siembra AS fecha_siembra,
+                    ${campoFecha} AS fecha_biometria
+                FROM reproductores
+                WHERE fi_instalacion_id = $1
+                LIMIT 1`,
+                [instalacionId]
+            );
+            if (q.rowCount === 0) return { tipo: tipo_instalacion, fi_lote_id: null };
+            const row = q.rows[0];
+            return {
+                tipo: tipo_instalacion,
+                fi_lote_id: null,
+                cantidad: row.cantidad,
+                talla: row.talla_gr,
+                fecha_siembra: row.fecha_siembra,
+                fecha_biometria: row.fecha_biometria
+            };
+        }
+
         const q = await pool.query(
-            `
-      SELECT 
-        m.fi_lote_id, l.no_lote, m.cantidad, m.talla_gr,
-        m.${tabla === "piletas" ? "fd_fecha_siembra" : "fd_fecha_siembra"} AS fecha_siembra,
-        m.${campoFecha} AS fecha_biometria
-      FROM ${tabla} m
-      LEFT JOIN lotes l ON m.fi_lote_id = l.fi_lote_id
-      WHERE m.fi_instalacion_id = $1
-      LIMIT 1
-      `,
+            `SELECT
+                m.fi_lote_id, l.no_lote, m.cantidad, m.talla_gr,
+                m.fd_fecha_siembra AS fecha_siembra,
+                m.${campoFecha} AS fecha_biometria
+            FROM ${tabla} m
+            LEFT JOIN lotes l ON m.fi_lote_id = l.fi_lote_id
+            WHERE m.fi_instalacion_id = $1
+            LIMIT 1`,
             [instalacionId]
         );
 

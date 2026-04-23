@@ -73,10 +73,12 @@ class BitacoraBiometriaController {
                 ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
                 : 0;
 
+            const tipoUpper = tipo ? tipo.toUpperCase() : null;
+
             const id = await bitacoraBiometriaModel.create({
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fn_peso_promedio: pesoProm, fc_observaciones, fc_encargado,
-                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id,
+                fi_instalacion_id, fi_lote_id, tipo: tipoUpper, fi_usuario_id,
                 fc_granja: granjaFinal, ubicacion
             });
 
@@ -113,10 +115,12 @@ class BitacoraBiometriaController {
                 ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
                 : 0;
 
+            const tipoUpper = tipo ? tipo.toUpperCase() : null;
+
             await bitacoraBiometriaModel.update(req.params.id, {
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fn_peso_promedio: pesoProm, fc_observaciones, fc_encargado,
-                fi_instalacion_id, fi_lote_id, tipo, fi_usuario_id, ubicacion
+                fi_instalacion_id, fi_lote_id, tipo: tipoUpper, fi_usuario_id, ubicacion
             });
 
             if (fi_instalacion_id) {
