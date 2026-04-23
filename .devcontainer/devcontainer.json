@@ -7,7 +7,7 @@
   "remoteUser": "bun",
   "overrideCommand": false,
   "forwardPorts": [5000],
-  "postCreateCommand": "bun install --frozen-lockfile || bun install",
+  "postCreateCommand": "bun install",
   "postStartCommand": "bun run dev",
   "remoteEnv": {
     "SHELL": "/bin/bash"
