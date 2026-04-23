@@ -64,22 +64,23 @@ class InstalacionModel {
             largo,
             ancho,
             altura,
-            material
+            material,
+            fi_usuario_id
         } = data;
 
         const result = await pool.query(
             `
       INSERT INTO instalaciones
       (nombre_instalacion, tipo_instalacion, fc_granja, estado,
-       largo, ancho, altura, material, fecha_registro)
+       largo, ancho, altura, material, fi_usuario_id, fd_fecha_registro)
       VALUES ($1,$2,$3,$4,
         NULLIF($5,'')::numeric,
         NULLIF($6,'')::numeric,
         NULLIF($7,'')::numeric,
-        $8,
+        $8, $9,
       CURRENT_DATE) RETURNING *;
       `,
-            [nombre_instalacion, tipo_instalacion, fc_granja, estado, largo, ancho, altura, material]
+            [nombre_instalacion, tipo_instalacion, fc_granja, estado, largo, ancho, altura, material, fi_usuario_id]
         );
         return result.rows[0];
     }

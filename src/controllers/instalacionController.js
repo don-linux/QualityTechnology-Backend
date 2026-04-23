@@ -30,7 +30,8 @@ class InstalacionController {
             const estadoFinal = estado || "vacia";
             await instalacionModel.create({
                 nombre_instalacion, tipo_instalacion, fc_granja: granjaFinal,
-                estado: estadoFinal, largo, ancho, altura, material
+                estado: estadoFinal, largo, ancho, altura, material,
+                fi_usuario_id: req.user.usuario_id
             });
             res.json({ message: "Instalación registrada correctamente." });
         } catch (err) {
