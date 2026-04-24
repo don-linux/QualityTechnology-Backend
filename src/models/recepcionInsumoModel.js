@@ -28,37 +28,36 @@ class RecepcionInsumoModel {
     static async create(data) {
         const {
             fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
-            fc_unidad_medida, fc_condiciones_entrega, fc_verifico,
-            fc_observaciones, fi_usuario_id, ubicacion
+            fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
+            fc_verifico, fc_observaciones, fi_usuario_id, ubicacion
         } = data;
 
         await pool.query(
             `INSERT INTO recepcion_insumos
-      (fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad, fc_unidad_medida, fc_condiciones_entrega, fc_verifico, fc_observaciones, fi_usuario_id, ubicacion, fd_fecha_registro)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+      (fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad, fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega, fc_verifico, fc_observaciones, fi_usuario_id, ubicacion)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
             [fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
-                fc_unidad_medida, fc_condiciones_entrega, fc_verifico,
-                fc_observaciones, fi_usuario_id, ubicacion || "medellin"]
+                fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
+                fc_verifico, fc_observaciones, fi_usuario_id, ubicacion || "medellin"]
         );
     }
 
     static async update(id, data) {
         const {
             fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
-            fc_unidad_medida, fc_condiciones_entrega, fc_verifico,
-            fc_observaciones, ubicacion
+            fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
+            fc_verifico, fc_observaciones, ubicacion
         } = data;
 
         await pool.query(
             `UPDATE recepcion_insumos SET
         fd_fecha=$1, fc_proveedor=$2, fc_producto=$3, fc_lote=$4,
         fc_cantidad=$5, fc_unidad_medida=$6, fc_condiciones_entrega=$7,
-        fc_verifico=$8, fc_observaciones=$9, ubicacion=$10,
-        fd_fecha_modificacion=NOW()
-       WHERE fi_id=$11`,
+        fc_encargado_entrega=$8, fc_verifico=$9, fc_observaciones=$10, ubicacion=$11
+       WHERE fi_id=$12`,
             [fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
-                fc_unidad_medida, fc_condiciones_entrega, fc_verifico,
-                fc_observaciones, ubicacion || "medellin", id]
+                fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
+                fc_verifico, fc_observaciones, ubicacion || "medellin", id]
         );
     }
 

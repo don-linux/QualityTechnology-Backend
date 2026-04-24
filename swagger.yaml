@@ -3698,7 +3698,53 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              required:
+                - fd_fecha
+                - fc_proveedor
+                - fc_producto
+                - fc_lote
+                - fc_cantidad
+                - fc_unidad_medida
+                - fc_condiciones_entrega
+                - fc_encargado_entrega
+                - fc_verifico
+                - fc_observaciones
+                - ubicacion
+              properties:
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_proveedor:
+                  type: string
+                  maxLength: 100
+                fc_producto:
+                  type: string
+                  maxLength: 255
+                fc_lote:
+                  type: string
+                  maxLength: 100
+                fc_cantidad:
+                  type: number
+                  minimum: 0
+                fc_unidad_medida:
+                  type: string
+                  maxLength: 255
+                fc_condiciones_entrega:
+                  type: string
+                  maxLength: 150
+                fc_encargado_entrega:
+                  type: string
+                  maxLength: 100
+                  description: "Nombre completo del empleado encargado de entrega."
+                fc_verifico:
+                  type: string
+                  maxLength: 100
+                  description: "Nombre completo del empleado que verificó."
+                fc_observaciones:
+                  type: string
+                  maxLength: 500
+                ubicacion:
+                  type: string
       responses:
         '201':
           description: "Creado"
@@ -3718,7 +3764,53 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              required:
+                - fd_fecha
+                - fc_proveedor
+                - fc_producto
+                - fc_lote
+                - fc_cantidad
+                - fc_unidad_medida
+                - fc_condiciones_entrega
+                - fc_encargado_entrega
+                - fc_verifico
+                - fc_observaciones
+                - ubicacion
+              properties:
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_proveedor:
+                  type: string
+                  maxLength: 100
+                fc_producto:
+                  type: string
+                  maxLength: 255
+                fc_lote:
+                  type: string
+                  maxLength: 100
+                fc_cantidad:
+                  type: number
+                  minimum: 0
+                fc_unidad_medida:
+                  type: string
+                  maxLength: 255
+                fc_condiciones_entrega:
+                  type: string
+                  maxLength: 150
+                fc_encargado_entrega:
+                  type: string
+                  maxLength: 100
+                  description: "Nombre completo del empleado encargado de entrega."
+                fc_verifico:
+                  type: string
+                  maxLength: 100
+                  description: "Nombre completo del empleado que verificó."
+                fc_observaciones:
+                  type: string
+                  maxLength: 500
+                ubicacion:
+                  type: string
       responses:
         '200':
           description: "Actualizado"

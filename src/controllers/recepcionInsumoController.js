@@ -32,7 +32,10 @@ class RecepcionInsumoController {
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
             }
-            const { fc_verifico } = req.body;
+            const { fc_encargado_entrega, fc_verifico } = req.body;
+            if (fc_encargado_entrega != null && String(fc_encargado_entrega).length > 100) {
+                return res.status(400).json({ error: "El campo encargado de entrega no puede superar los 100 caracteres." });
+            }
             if (fc_verifico != null && String(fc_verifico).length > 100) {
                 return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
             }
@@ -57,7 +60,10 @@ class RecepcionInsumoController {
             if (fc_observaciones && fc_observaciones.length > 500) {
                 return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
             }
-            const { fc_verifico } = req.body;
+            const { fc_encargado_entrega, fc_verifico } = req.body;
+            if (fc_encargado_entrega != null && String(fc_encargado_entrega).length > 100) {
+                return res.status(400).json({ error: "El campo encargado de entrega no puede superar los 100 caracteres." });
+            }
             if (fc_verifico != null && String(fc_verifico).length > 100) {
                 return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
             }

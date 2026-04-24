@@ -1594,10 +1594,8 @@ CREATE TABLE public.recepcion_insumos (
     fi_id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ubicacion                VARCHAR(50),
     fd_fecha                 DATE          NOT NULL,
-    fc_mes                   VARCHAR(20),
     fc_proveedor             VARCHAR(100),
     fc_producto              VARCHAR(255),
-    fc_descripcion           VARCHAR(300),
     fc_unidad_medida         VARCHAR(255),
     fc_cantidad              NUMERIC(15,2),
     fc_lote                  VARCHAR(100),
@@ -1606,8 +1604,6 @@ CREATE TABLE public.recepcion_insumos (
     fc_verifico              VARCHAR(100),
     fc_observaciones         VARCHAR(500),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT recepcion_cantidad_no_negativa
         CHECK (fc_cantidad IS NULL OR fc_cantidad >= 0),
@@ -1671,7 +1667,6 @@ CREATE TRIGGER trg_medicamentos_touch_modif         BEFORE UPDATE ON public.medi
 CREATE TRIGGER trg_parametros_touch_modif           BEFORE UPDATE ON public.parametros         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_plagas_touch_modif               BEFORE UPDATE ON public.plagas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_recambios_touch_modif            BEFORE UPDATE ON public.recambios          FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_recepcion_insumos_touch_modif    BEFORE UPDATE ON public.recepcion_insumos  FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_visitas_touch_modif              BEFORE UPDATE ON public.visitas            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 -- Triggers con columnas de nombre distinto
