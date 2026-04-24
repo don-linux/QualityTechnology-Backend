@@ -58,6 +58,19 @@ components:
           type: string
         rol_id:
           type: integer
+        fc_nombre_empleado:
+          type: string
+          description: "Requerido para roles no-root; crea el perfil de empleado vinculado."
+        fc_apellido_paterno:
+          type: string
+        fc_apellido_materno:
+          type: string
+        fi_departamento_id:
+          type: integer
+        fi_puesto_id:
+          type: integer
+        fi_unidad_negocio_id:
+          type: integer
       required: [nombre, contraseña, rol_id]
 
     UsuarioLoginRequest:
@@ -317,6 +330,10 @@ components:
           type: integer
         fi_departamento_id:
           type: integer
+        fi_unidad_negocio_id:
+          type: integer
+        unidad_negocio_nombre:
+          type: string
         fi_ciudad_id:
           type: integer
         fi_estado_id:
@@ -329,6 +346,53 @@ components:
         fd_fecha_contratacion:
           type: string
           format: date
+        fd_fecha_baja:
+          type: string
+          format: date
+
+    DocumentoEmpleado:
+      type: object
+      properties:
+        fi_documento_id:
+          type: integer
+        fi_empleado_id:
+          type: integer
+        fi_tipo_documento_id:
+          type: integer
+        fc_ruta_archivo:
+          type: string
+        fc_nombre_original:
+          type: string
+        fd_fecha_carga:
+          type: string
+          format: date
+        tipo_nombre:
+          type: string
+        fb_obligatorio:
+          type: boolean
+
+    ActaAdministrativa:
+      type: object
+      properties:
+        fi_acta_id:
+          type: integer
+        fi_empleado_id:
+          type: integer
+        fc_motivo:
+          type: string
+        fd_fecha:
+          type: string
+          format: date
+        fc_ruta_archivo:
+          type: string
+        fc_nombre_original:
+          type: string
+        fd_fecha_registro:
+          type: string
+          format: date-time
+        fd_fecha_modificacion:
+          type: string
+          format: date-time
 
     Cliente:
       type: object
@@ -2094,6 +2158,360 @@ paths:
           description: "No encontrado"
         '500':
           description: "Error del servidor"
+
+  /empleados/{id}/deactivate:
+    patch:
+      summary: "Desactivar empleado"
+      description: "Requiere token JWT + módulo /empleados. Si no se envía fd_fecha_baja, usa la fecha del día del servidor."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fd_fecha_baja:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: "Empleado desactivado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+
+  /empleados/{id}/activate:
+    patch:
+      summary: "Activar empleado"
+      description: "Requiere token JWT + módulo /empleados. Limpia fd_fecha_baja."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Empleado activado"
+        '404':
+          description: "No encontrado"
+        '500':
+          description: "Error del servidor"
+
+  /empleados/mi-perfil:
+    get:
+      summary: "Obtener mi perfil de empleado"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Perfil de empleado"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empleado'
+        '404':
+          description: "Perfil no vinculado"
+    put:
+      summary: "Actualizar mi perfil de empleado"
+      description: "Solo actualiza datos personales; no permite modificar UdN ni fecha de baja."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Empleado'
+      responses:
+        '200':
+          description: "Perfil actualizado"
+
+  /documentos-empleado/{empleadoId}:
+    get:
+      summary: "Listar documentos de un empleado"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: empleadoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Documentos del empleado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoEmpleado'
+
+  /documentos-empleado/{empleadoId}/upload:
+    post:
+      summary: "Subir documento de empleado"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: empleadoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fi_tipo_documento_id, archivo]
+              properties:
+                fi_tipo_documento_id:
+                  type: integer
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: "Documento subido"
+
+  /documentos-empleado/mis-documentos:
+    get:
+      summary: "Listar mis documentos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Documentos propios"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentoEmpleado'
+
+  /documentos-empleado/mis-documentos/upload:
+    post:
+      summary: "Subir mi documento"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fi_tipo_documento_id, archivo]
+              properties:
+                fi_tipo_documento_id:
+                  type: integer
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: "Documento subido"
+
+  /documentos-empleado/view/{documentoId}:
+    get:
+      summary: "Visualizar documento de empleado"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo inline"
+
+  /documentos-empleado/download/{documentoId}:
+    get:
+      summary: "Descargar documento de empleado"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo descargable"
+
+  /documentos-empleado/mis-documentos/view/{documentoId}:
+    get:
+      summary: "Visualizar mi documento"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo inline"
+
+  /documentos-empleado/mis-documentos/download/{documentoId}:
+    get:
+      summary: "Descargar mi documento"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo descargable"
+
+  /documentos-empleado/{documentoId}:
+    delete:
+      summary: "Eliminar documento de empleado"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Documento eliminado"
+
+  /documentos-empleado/mis-documentos/{documentoId}:
+    delete:
+      summary: "Eliminar mi documento"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documentoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Documento eliminado"
+
+  /actas-administrativas/{empleadoId}:
+    get:
+      summary: "Listar actas administrativas de un empleado"
+      description: "Requiere token JWT + módulo /empleados."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: empleadoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Actas administrativas"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActaAdministrativa'
+
+  /actas-administrativas/{empleadoId}/upload:
+    post:
+      summary: "Guardar acta administrativa"
+      description: "Requiere token JWT + módulo /empleados."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: empleadoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fc_motivo, fd_fecha, archivo]
+              properties:
+                fc_motivo:
+                  type: string
+                fd_fecha:
+                  type: string
+                  format: date
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: "Acta administrativa guardada"
+
+  /actas-administrativas/view/{actaId}:
+    get:
+      summary: "Visualizar acta administrativa"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: actaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo inline"
+
+  /actas-administrativas/download/{actaId}:
+    get:
+      summary: "Descargar acta administrativa"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: actaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Archivo descargable"
+
+  /actas-administrativas/{actaId}:
+    delete:
+      summary: "Eliminar acta administrativa"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: actaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Acta administrativa eliminada"
 
   /clientes:
     get:

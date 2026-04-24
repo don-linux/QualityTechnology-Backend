@@ -759,6 +759,7 @@ CREATE TABLE rrhh.empleados (
     fi_usuario_id            INTEGER,
     fi_departamento_id       INTEGER         NOT NULL,
     fi_puesto_id             INTEGER,
+    fi_unidad_negocio_id     INTEGER,
 
     fc_nombre                VARCHAR(60)     NOT NULL,
     fc_apellido_paterno      VARCHAR(60)     NOT NULL,
@@ -777,6 +778,7 @@ CREATE TABLE rrhh.empleados (
     fn_uniformes             INTEGER         NOT NULL DEFAULT 0,
     fb_activo                BOOLEAN         NOT NULL DEFAULT TRUE,
     fd_fecha_alta            DATE            NOT NULL DEFAULT CURRENT_DATE,
+    fd_fecha_baja            DATE,
 
     fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
     fd_fecha_modificacion    TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
@@ -793,11 +795,14 @@ CREATE TABLE rrhh.empleados (
     CONSTRAINT empleados_departamento_fk
         FOREIGN KEY (fi_departamento_id) REFERENCES rrhh.departamentos (fi_departamento_id) ON DELETE RESTRICT,
     CONSTRAINT empleados_puesto_fk
-        FOREIGN KEY (fi_puesto_id)       REFERENCES rrhh.puestos (fi_puesto_id)           ON DELETE SET NULL
+        FOREIGN KEY (fi_puesto_id)       REFERENCES rrhh.puestos (fi_puesto_id)           ON DELETE SET NULL,
+    CONSTRAINT empleados_unidad_negocio_fk
+        FOREIGN KEY (fi_unidad_negocio_id) REFERENCES public.unidades_negocio (fi_unidad_negocio_id) ON DELETE SET NULL
 );
 
 CREATE INDEX empleados_departamento_idx ON rrhh.empleados (fi_departamento_id);
 CREATE INDEX empleados_puesto_idx       ON rrhh.empleados (fi_puesto_id);
+CREATE INDEX empleados_unidad_negocio_idx ON rrhh.empleados (fi_unidad_negocio_id);
 CREATE INDEX empleados_usuario_idx      ON rrhh.empleados (fi_usuario_id);
 CREATE INDEX empleados_activo_idx       ON rrhh.empleados (fb_activo);
 CREATE INDEX empleados_apellidos_idx    ON rrhh.empleados (fc_apellido_paterno, fc_apellido_materno);
@@ -832,6 +837,29 @@ CREATE INDEX doc_emp_tipo_idx     ON rrhh.documentos_empleado (fi_tipo_documento
 COMMENT ON TABLE rrhh.documentos_empleado IS
 'Archivos cargados al expediente (INE, RFC, CURP, etc.). Un empleado
  no puede tener dos documentos del mismo tipo: UNIQUE (empleado, tipo).';
+
+
+-- Actas administrativas -----------------------------------------------------
+
+CREATE TABLE rrhh.actas_administrativas (
+    fi_acta_id               INTEGER         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fi_empleado_id           INTEGER         NOT NULL,
+    fc_motivo                TEXT            NOT NULL,
+    fd_fecha                 DATE            NOT NULL,
+    fc_ruta_archivo          VARCHAR(500)    NOT NULL,
+    fc_nombre_original       VARCHAR(255)    NOT NULL,
+    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+    fd_fecha_modificacion    TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT actas_admin_empleado_fk
+        FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados (fi_empleado_id) ON DELETE CASCADE
+);
+
+CREATE INDEX actas_admin_empleado_idx ON rrhh.actas_administrativas (fi_empleado_id);
+CREATE INDEX actas_admin_fecha_idx    ON rrhh.actas_administrativas (fd_fecha DESC);
+
+COMMENT ON TABLE rrhh.actas_administrativas IS
+'Actas administrativas vinculadas al expediente de cada empleado.';
 
 
 -- Nómina --------------------------------------------------------------------
@@ -1628,6 +1656,7 @@ CREATE INDEX visitas_usuario_idx   ON public.visitas (fi_usuario_id);
 -- ============================================================================
 
 CREATE TRIGGER trg_empleados_touch_modif            BEFORE UPDATE ON rrhh.empleados            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
+CREATE TRIGGER trg_actas_admin_touch_modif          BEFORE UPDATE ON rrhh.actas_administrativas FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_nomina_touch_actualiz            BEFORE UPDATE ON public.nomina             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
 CREATE TRIGGER trg_vacaciones_touch_actualiz        BEFORE UPDATE ON public.vacaciones         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
 CREATE TRIGGER trg_clientes_touch_modif             BEFORE UPDATE ON public.clientes           FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
@@ -1824,6 +1853,11 @@ SELECT setval(
 SELECT setval(
     pg_get_serial_sequence('public.unidades_negocio', 'fi_unidad_negocio_id'),
     GREATEST(COALESCE((SELECT MAX(fi_unidad_negocio_id) FROM public.unidades_negocio), 0), 1)
+);
+
+SELECT setval(
+    pg_get_serial_sequence('rrhh.actas_administrativas', 'fi_acta_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_acta_id) FROM rrhh.actas_administrativas), 0), 1)
 );
 
 

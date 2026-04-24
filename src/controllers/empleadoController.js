@@ -2,6 +2,12 @@ import EmpleadoModel from "../models/empleadoModel.js";
 import UsuarioModel from "../models/usuarioModel.js";
 import RefreshTokenModel from "../models/refreshTokenModel.js";
 
+const dateFields = ["fd_fecha_nacimiento", "fd_fecha_contratacion", "fd_fecha_baja"];
+
+function isValidDate(value) {
+    return !value || /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 class EmpleadoController {
 
     static async getAll(req, res) {
@@ -53,6 +59,12 @@ class EmpleadoController {
             if (!existente) {
                 return res.status(404).json({ error: "Empleado no encontrado" });
             }
+
+            const invalidDateField = dateFields.find((field) => !isValidDate(req.body[field]));
+            if (invalidDateField) {
+                return res.status(400).json({ error: `${invalidDateField} debe tener formato YYYY-MM-DD` });
+            }
+
             const empleado = await EmpleadoModel.update(id, req.body);
             res.json({ mensaje: "Empleado actualizado correctamente", empleado });
         } catch (err) {
@@ -78,8 +90,14 @@ class EmpleadoController {
 
     static async deactivate(req, res) {
         const { id } = req.params;
+        const fechaBaja = req.body?.fd_fecha_baja || req.body?.fecha_baja || null;
+
+        if (!isValidDate(fechaBaja)) {
+            return res.status(400).json({ error: "fd_fecha_baja debe tener formato YYYY-MM-DD" });
+        }
+
         try {
-            const empleado = await EmpleadoModel.deactivate(id);
+            const empleado = await EmpleadoModel.deactivate(id, fechaBaja);
             if (!empleado) {
                 return res.status(404).json({ error: "Empleado no encontrado" });
             }

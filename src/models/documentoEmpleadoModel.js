@@ -20,6 +20,17 @@ class DocumentoEmpleadoModel {
         return result.rows[0];
     }
 
+    static async getByIdForUsuario(id, usuarioId) {
+        const result = await pool.query(`
+            SELECT de.*
+            FROM rrhh.documentos_empleado de
+            JOIN rrhh.empleados e ON de.fi_empleado_id = e.fi_empleado_id
+            WHERE de.fi_documento_id = $1
+              AND e.fi_usuario_id = $2;
+        `, [id, usuarioId]);
+        return result.rows[0];
+    }
+
     static async getEmpleadoIdByUsuario(usuarioId) {
         const result = await pool.query(`
             SELECT fi_empleado_id FROM rrhh.empleados WHERE fi_usuario_id = $1;

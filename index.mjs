@@ -49,6 +49,7 @@ import puestoRoutes from "./src/routes/puestoRoutes.js";
 import empleadoRoutes from "./src/routes/empleadoRoutes.js";
 import tipoDocumentoRoutes from "./src/routes/tipoDocumentoRoutes.js";
 import documentoEmpleadoRoutes from "./src/routes/documentoEmpleadoRoutes.js";
+import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -137,6 +138,7 @@ app.use("/departamentos", departamentoRoutes);
 app.use("/puestos", puestoRoutes);
 app.use("/tipos-documento", tipoDocumentoRoutes);
 app.use("/documentos-empleado", documentoEmpleadoRoutes);
+app.use("/actas-administrativas", actaAdministrativaRoutes);
 
 //Seguridad - Roles y Módulos
 app.use("/modulos", modulosRoutes);

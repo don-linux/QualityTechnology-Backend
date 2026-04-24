@@ -2,6 +2,27 @@ import DocumentoEmpleadoModel from "../models/documentoEmpleadoModel.js";
 import path from "node:path";
 import fs from "node:fs";
 
+function getFilePath(doc) {
+    return path.resolve("." + doc.fc_ruta_archivo);
+}
+
+function sendInlineFile(res, doc) {
+    const filePath = getFilePath(doc);
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Archivo no encontrado en disco" });
+    }
+    const safeName = encodeURIComponent(doc.fc_nombre_original);
+    res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${safeName}`);
+    return res.sendFile(filePath);
+}
+
+function deletePhysicalFile(doc) {
+    const filePath = getFilePath(doc);
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+}
+
 class DocumentoEmpleadoController {
 
     // Admin: obtener documentos de un empleado
@@ -51,7 +72,7 @@ class DocumentoEmpleadoController {
             if (!doc) {
                 return res.status(404).json({ error: "Documento no encontrado" });
             }
-            const filePath = path.resolve("." + doc.fc_ruta_archivo);
+            const filePath = getFilePath(doc);
             if (!fs.existsSync(filePath)) {
                 return res.status(404).json({ error: "Archivo no encontrado en disco" });
             }
@@ -59,6 +80,21 @@ class DocumentoEmpleadoController {
         } catch (err) {
             console.error("Error al descargar documento:", err);
             res.status(500).json({ error: "Error al descargar documento" });
+        }
+    }
+
+    // Admin: visualizar documento en navegador
+    static async view(req, res) {
+        const { documentoId } = req.params;
+        try {
+            const doc = await DocumentoEmpleadoModel.getById(documentoId);
+            if (!doc) {
+                return res.status(404).json({ error: "Documento no encontrado" });
+            }
+            return sendInlineFile(res, doc);
+        } catch (err) {
+            console.error("Error al visualizar documento:", err);
+            res.status(500).json({ error: "Error al visualizar documento" });
         }
     }
 
@@ -70,10 +106,7 @@ class DocumentoEmpleadoController {
             if (!doc) {
                 return res.status(404).json({ error: "Documento no encontrado" });
             }
-            const filePath = path.resolve("." + doc.fc_ruta_archivo);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+            deletePhysicalFile(doc);
             res.json({ mensaje: "Documento eliminado correctamente" });
         } catch (err) {
             console.error("Error al eliminar documento:", err);
@@ -124,6 +157,57 @@ class DocumentoEmpleadoController {
         } catch (err) {
             console.error("Error al subir mi documento:", err);
             res.status(500).json({ error: "Error al subir documento" });
+        }
+    }
+
+    // Self-service: visualizar mi documento
+    static async viewMiDocumento(req, res) {
+        const { documentoId } = req.params;
+        try {
+            const doc = await DocumentoEmpleadoModel.getByIdForUsuario(documentoId, req.user.usuario_id);
+            if (!doc) {
+                return res.status(404).json({ error: "Documento no encontrado" });
+            }
+            return sendInlineFile(res, doc);
+        } catch (err) {
+            console.error("Error al visualizar mi documento:", err);
+            res.status(500).json({ error: "Error al visualizar documento" });
+        }
+    }
+
+    // Self-service: descargar mi documento
+    static async downloadMiDocumento(req, res) {
+        const { documentoId } = req.params;
+        try {
+            const doc = await DocumentoEmpleadoModel.getByIdForUsuario(documentoId, req.user.usuario_id);
+            if (!doc) {
+                return res.status(404).json({ error: "Documento no encontrado" });
+            }
+            const filePath = getFilePath(doc);
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({ error: "Archivo no encontrado en disco" });
+            }
+            res.download(filePath, doc.fc_nombre_original);
+        } catch (err) {
+            console.error("Error al descargar mi documento:", err);
+            res.status(500).json({ error: "Error al descargar documento" });
+        }
+    }
+
+    // Self-service: eliminar mi documento
+    static async deleteMiDocumento(req, res) {
+        const { documentoId } = req.params;
+        try {
+            const doc = await DocumentoEmpleadoModel.getByIdForUsuario(documentoId, req.user.usuario_id);
+            if (!doc) {
+                return res.status(404).json({ error: "Documento no encontrado" });
+            }
+            const deleted = await DocumentoEmpleadoModel.delete(documentoId);
+            deletePhysicalFile(deleted);
+            res.json({ mensaje: "Documento eliminado correctamente" });
+        } catch (err) {
+            console.error("Error al eliminar mi documento:", err);
+            res.status(500).json({ error: "Error al eliminar documento" });
         }
     }
 }

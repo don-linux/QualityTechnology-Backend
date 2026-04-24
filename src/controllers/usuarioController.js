@@ -20,7 +20,7 @@ class UsuarioController {
         const {
             nombre, contraseña, rol_id,
             fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno,
-            fi_departamento_id, fi_puesto_id
+            fi_departamento_id, fi_puesto_id, fi_unidad_negocio_id
         } = req.body;
 
         if (!nombre || !contraseña || !rol_id) {
@@ -55,9 +55,17 @@ class UsuarioController {
 
                 await client.query(
                     `INSERT INTO rrhh.empleados
-                        (fi_usuario_id, fc_nombre, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id)
-                     VALUES ($1, $2, $3, $4, $5, $6)`,
-                    [nuevoUsuario.fi_usuario_id, fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id || null]
+                        (fi_usuario_id, fc_nombre, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id, fi_unidad_negocio_id)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                    [
+                        nuevoUsuario.fi_usuario_id,
+                        fc_nombre_empleado,
+                        fc_apellido_paterno,
+                        fc_apellido_materno,
+                        fi_departamento_id,
+                        fi_puesto_id || null,
+                        fi_unidad_negocio_id || null
+                    ]
                 );
             }
 
