@@ -27,6 +27,7 @@ import proveedorRoutes from "./src/routes/proveedorRoutes.js";
 import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
 import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
+import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
 import alevinRoutes from "./src/routes/alevinRoutes.js";
 
 // Rutas de Bitácoras
@@ -113,6 +114,7 @@ app.use("/proveedores", proveedorRoutes);
 app.use("/flujo-caja", flujoCajaRoutes);
 app.use("/tesoreria", tesoreriaRoutes);
 app.use("/cuentas", cuentaRoutes);
+app.use("/unidades-negocio", unidadNegocioRoutes);
 import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
 app.use("/uploads", authStaticMiddleware, express.static("uploads"));
 

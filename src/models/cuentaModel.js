@@ -14,8 +14,8 @@ class CuentaModel {
 
     static async getActivos() {
         const result = await pool.query(`
-            SELECT fi_cuenta_id, fc_udn, fc_nombre, fc_numero_cuenta, fc_tipo,
-                   fn_saldo_inicial, fn_saldo_actual
+            SELECT fi_cuenta_id, fc_udn, fc_nombre, fc_numero_cuenta, fc_banco,
+                   fc_tipo, fn_saldo_actual
             FROM public.cuentas
             WHERE fb_activo = true
             ORDER BY fc_nombre;
@@ -45,33 +45,30 @@ class CuentaModel {
         return result.rows[0];
     }
 
-    static async create({ fc_udn, fc_nombre, fc_numero_cuenta, fc_tipo, fn_saldo_inicial }) {
-        const saldoIni = Number(fn_saldo_inicial) || 0;
-
+    static async create({ fc_udn, fc_nombre, fc_numero_cuenta, fc_banco, fc_tipo }) {
         const result = await pool.query(`
             INSERT INTO public.cuentas (
-                fc_udn, fc_nombre, fc_numero_cuenta, fc_tipo,
-                fn_saldo_inicial, fn_saldo_actual
+                fc_udn, fc_nombre, fc_numero_cuenta, fc_banco, fc_tipo
             )
-            VALUES ($1, $2, $3, $4, $5, $5)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *;
-        `, [fc_udn, fc_nombre, fc_numero_cuenta || null, fc_tipo, saldoIni]);
+        `, [fc_udn, fc_nombre, fc_numero_cuenta || null, fc_banco || null, fc_tipo]);
 
         return result.rows[0];
     }
 
-    // Solo se editan datos maestros. Los saldos son inmutables desde este endpoint:
-    // fn_saldo_inicial se fija al crear y fn_saldo_actual solo lo mueve Flujo de Caja.
-    static async update(id, { fc_udn, fc_nombre, fc_numero_cuenta, fc_tipo }) {
+    // Solo se editan datos maestros. fn_saldo_actual solo lo mueve Flujo de Caja.
+    static async update(id, { fc_udn, fc_nombre, fc_numero_cuenta, fc_banco, fc_tipo }) {
         const result = await pool.query(`
             UPDATE public.cuentas
             SET fc_udn = $1,
                 fc_nombre = $2,
                 fc_numero_cuenta = $3,
-                fc_tipo = $4
-            WHERE fi_cuenta_id = $5
+                fc_banco = $4,
+                fc_tipo = $5
+            WHERE fi_cuenta_id = $6
             RETURNING *;
-        `, [fc_udn, fc_nombre, fc_numero_cuenta || null, fc_tipo, id]);
+        `, [fc_udn, fc_nombre, fc_numero_cuenta || null, fc_banco || null, fc_tipo, id]);
 
         return result.rows[0];
     }

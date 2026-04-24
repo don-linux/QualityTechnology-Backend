@@ -625,18 +625,19 @@ components:
           type: integer
         fc_udn:
           type: string
-          enum: [CQT, GAM, GAC]
+          maxLength: 100
         fc_nombre:
           type: string
         fc_numero_cuenta:
           type: string
           nullable: true
+        fc_banco:
+          type: string
+          nullable: true
+          maxLength: 150
         fc_tipo:
           type: string
-          enum: [Cheques, Efectivo, Inversion]
-        fn_saldo_inicial:
-          type: number
-          format: double
+          enum: [Cheques, Efectivo, Inversion, Ahorro]
         fn_saldo_actual:
           type: number
           format: double
@@ -645,6 +646,17 @@ components:
         fd_fecha_registro:
           type: string
           format: date-time
+
+    UnidadNegocio:
+      type: object
+      properties:
+        fi_unidad_negocio_id:
+          type: integer
+        fc_nombre:
+          type: string
+          maxLength: 100
+        fb_activo:
+          type: boolean
 
     MovimientoAlevines:
       type: object
@@ -2974,23 +2986,23 @@ paths:
           application/json:
             schema:
               type: object
-              required: [fc_udn, fc_nombre, fc_tipo, fn_saldo_inicial]
+              required: [fc_udn, fc_nombre, fc_tipo]
               properties:
                 fc_udn:
                   type: string
-                  enum: [CQT, GAM, GAC]
+                  maxLength: 100
                 fc_nombre:
                   type: string
                 fc_numero_cuenta:
                   type: string
                   nullable: true
+                fc_banco:
+                  type: string
+                  nullable: true
+                  maxLength: 150
                 fc_tipo:
                   type: string
-                  enum: [Cheques, Efectivo, Inversion]
-                fn_saldo_inicial:
-                  type: number
-                  format: double
-                  minimum: 0
+                  enum: [Cheques, Efectivo, Inversion, Ahorro]
       responses:
         '201':
           description: "Cuenta creada"
@@ -3033,15 +3045,19 @@ paths:
               properties:
                 fc_udn:
                   type: string
-                  enum: [CQT, GAM, GAC]
+                  maxLength: 100
                 fc_nombre:
                   type: string
                 fc_numero_cuenta:
                   type: string
                   nullable: true
+                fc_banco:
+                  type: string
+                  nullable: true
+                  maxLength: 150
                 fc_tipo:
                   type: string
-                  enum: [Cheques, Efectivo, Inversion]
+                  enum: [Cheques, Efectivo, Inversion, Ahorro]
       responses:
         '200':
           description: "Cuenta actualizada"
@@ -3083,6 +3099,120 @@ paths:
           description: "Cuenta desactivada"
         '404':
           description: "Cuenta no encontrada"
+
+  /unidades-negocio:
+    get:
+      summary: "Obtener todas las unidades de negocio"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de unidades de negocio"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnidadNegocio'
+    post:
+      summary: "Crear unidad de negocio"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fc_nombre]
+              properties:
+                fc_nombre:
+                  type: string
+                  maxLength: 100
+      responses:
+        '201':
+          description: "Unidad de negocio creada"
+        '400':
+          description: "Solicitud inválida"
+
+  /unidades-negocio/activos:
+    get:
+      summary: "Obtener unidades de negocio activas (para dropdowns)"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado de unidades de negocio activas"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnidadNegocio'
+
+  /unidades-negocio/{id}:
+    put:
+      summary: "Actualizar unidad de negocio"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fc_nombre]
+              properties:
+                fc_nombre:
+                  type: string
+                  maxLength: 100
+      responses:
+        '200':
+          description: "Unidad de negocio actualizada"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Unidad de negocio no encontrada"
+
+  /unidades-negocio/{id}/activate:
+    patch:
+      summary: "Activar unidad de negocio"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Unidad de negocio activada"
+        '404':
+          description: "Unidad de negocio no encontrada"
+
+  /unidades-negocio/{id}/deactivate:
+    patch:
+      summary: "Desactivar unidad de negocio"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Unidad de negocio desactivada"
+        '404':
+          description: "Unidad de negocio no encontrada"
 
   /biometrias/{granja}:
     get:

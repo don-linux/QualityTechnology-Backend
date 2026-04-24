@@ -169,6 +169,18 @@ COMMENT ON TABLE rrhh.puestos         IS 'Catálogo de puestos organizacionales.
 COMMENT ON TABLE rrhh.departamentos   IS 'Catálogo de departamentos.';
 COMMENT ON TABLE rrhh.tipos_documento IS 'Tipos de documento para expedientes de empleados.';
 
+-- ----------------------------------------------------------------------------
+-- Catálogo de unidades de negocio
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.unidades_negocio (
+    fi_unidad_negocio_id integer      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_nombre            varchar(100) NOT NULL,
+    fb_activo            boolean      NOT NULL DEFAULT true,
+    CONSTRAINT unidades_negocio_nombre_uk UNIQUE (fc_nombre)
+);
+
+COMMENT ON TABLE public.unidades_negocio IS 'Catálogo de unidades de negocio del grupo.';
+
 
 -- ============================================================================
 -- 2.  INSTALACIONES
@@ -1111,17 +1123,16 @@ COMMENT ON TABLE public.lista_espera IS
 
 CREATE TABLE public.cuentas (
     fi_cuenta_id        INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fc_udn              VARCHAR(10)    NOT NULL,
+    fc_udn              VARCHAR(100)   NOT NULL,
     fc_nombre           VARCHAR(100)   NOT NULL,
     fc_numero_cuenta    VARCHAR(50),
+    fc_banco            VARCHAR(150),
     fc_tipo             VARCHAR(20)    NOT NULL,
-    fn_saldo_inicial    NUMERIC(15,2)  NOT NULL DEFAULT 0,
     fn_saldo_actual     NUMERIC(15,2)  NOT NULL DEFAULT 0,
     fb_activo           BOOLEAN        NOT NULL DEFAULT TRUE,
     fd_fecha_registro   TIMESTAMP(6)   NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT cuentas_udn_check  CHECK (fc_udn  IN ('CQT','GAM','GAC')),
-    CONSTRAINT cuentas_tipo_check CHECK (fc_tipo IN ('Cheques','Efectivo','Inversion')),
+    CONSTRAINT cuentas_tipo_check CHECK (fc_tipo IN ('Cheques','Efectivo','Inversion','Ahorro')),
     CONSTRAINT cuentas_nombre_udn_uq UNIQUE (fc_nombre, fc_udn)
 );
 
@@ -1130,9 +1141,9 @@ CREATE INDEX cuentas_activo_idx   ON public.cuentas (fb_activo);
 CREATE INDEX cuentas_nombre_idx   ON public.cuentas (fc_nombre);
 
 COMMENT ON TABLE public.cuentas IS
-'Cuentas bancarias / cajas de efectivo del grupo. fc_udn identifica la
- unidad de negocio (CQT = corporativo, GAM = Granja Medellin,
- GAC = Granja La Ceiba). UNIQUE (fc_nombre, fc_udn) impide duplicados.';
+'Cuentas bancarias / cajas de efectivo del grupo. fc_udn guarda el nombre
+ de la unidad de negocio (referencia lógica al catálogo public.unidades_negocio).
+ UNIQUE (fc_nombre, fc_udn) impide duplicados dentro de la misma UdN.';
 
 
 -- Flujo de caja -------------------------------------------------------------
@@ -1705,7 +1716,8 @@ WITH modulos_base (fc_nombre, fc_ruta, fb_activo) AS (
         ('Empleados',         '/empleados',         true),
         ('Departamentos',     '/departamentos',     true),
         ('Modulos',           '/modulos',           true),
-        ('Roles Modulos',     '/roles-modulos',     true)
+        ('Roles Modulos',     '/roles-modulos',     true),
+        ('Unidades de Negocio', '/unidades-negocio', true)
 )
 INSERT INTO seguridad.modulos (fc_nombre, fc_ruta, fb_activo)
 SELECT fc_nombre, fc_ruta, fb_activo FROM modulos_base
@@ -1746,6 +1758,13 @@ INSERT INTO rrhh.departamentos (fc_nombre) VALUES
     ('Laboratorio'),
     ('Bienestar Animal y Control de Patologias'),
     ('Taller')
+ON CONFLICT (fc_nombre) DO NOTHING;
+
+-- Unidades de negocio
+INSERT INTO public.unidades_negocio (fc_nombre) VALUES
+    ('Granja Acuicola Medellin'),
+    ('Granja Acuicola Ceiba'),
+    ('Quality Technology')
 ON CONFLICT (fc_nombre) DO NOTHING;
 
 -- Tipos de documento para expedientes
@@ -1800,6 +1819,11 @@ SELECT setval(
 SELECT setval(
     pg_get_serial_sequence('rrhh.tipos_documento', 'fi_tipo_documento_id'),
     GREATEST(COALESCE((SELECT MAX(fi_tipo_documento_id) FROM rrhh.tipos_documento), 0), 1)
+);
+
+SELECT setval(
+    pg_get_serial_sequence('public.unidades_negocio', 'fi_unidad_negocio_id'),
+    GREATEST(COALESCE((SELECT MAX(fi_unidad_negocio_id) FROM public.unidades_negocio), 0), 1)
 );
 
 

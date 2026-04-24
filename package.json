@@ -5,7 +5,8 @@
   "main": "index.mjs",
   "scripts": {
     "start": "bun index.mjs",
-    "dev": "bun --watch index.mjs"
+    "dev": "bun --watch index.mjs",
+    "db:reset": "docker compose -f docker/dev/compose.yaml down -v && docker compose -f docker/dev/compose.yaml up -d"
   },
   "keywords": [],
   "author": "",
