@@ -3,7 +3,7 @@ import pool from "../db.js";
 class FlujoCajaModel {
   static async getClientes() {
     const result = await pool.query(
-      "SELECT fc_nombre AS nombre FROM public.clientes ORDER BY fc_nombre ASC"
+      "SELECT fc_razon_social AS nombre FROM public.clientes ORDER BY fc_razon_social ASC"
     );
     return result.rows;
   }

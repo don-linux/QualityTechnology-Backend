@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
    RUTAS DE CLIENTES
 ========================================================= */
+router.get("/empleados-activos", clienteController.getEmpleadosActivos);
 router.get("/", clienteController.getAll);
 router.post("/", clienteController.create);
 router.put("/:id", clienteController.update);

@@ -1006,27 +1006,36 @@ COMMENT ON COLUMN public.caja_ahorro_resumen.total IS
 
 CREATE TABLE public.clientes (
     fi_cliente_id          INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fc_nombre              VARCHAR(100) NOT NULL,
-    fc_telefono            VARCHAR(20),
+    fc_razon_social        VARCHAR(150) NOT NULL,
+    fc_rfc                 VARCHAR(20),
+    fi_unidad_negocio_id   INTEGER      NOT NULL,
+    fc_nombre_contacto     VARCHAR(150),
+    fc_telefono            VARCHAR(10),
     fc_correo              VARCHAR(255),
-    fc_cp                  CHAR(5),
     fc_localidad           VARCHAR(100),
+    fc_estado              VARCHAR(100),
+    fi_ejecutivo_empleado_id INTEGER    NOT NULL,
     fi_usuario_id          INTEGER      NOT NULL,
-    fd_fecha_registro      TIMESTAMP(6) NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion  TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
+    CONSTRAINT clientes_telefono_check
+        CHECK (fc_telefono IS NULL OR fc_telefono ~ '^[0-9]{1,10}$'),
     CONSTRAINT clientes_correo_check
         CHECK (fc_correo IS NULL OR fc_correo ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
-    CONSTRAINT clientes_cp_check
-        CHECK (fc_cp IS NULL OR fc_cp ~ '^[0-9]{5}$'),
 
+    CONSTRAINT clientes_unidad_negocio_fk
+        FOREIGN KEY (fi_unidad_negocio_id) REFERENCES public.unidades_negocio (fi_unidad_negocio_id) ON DELETE RESTRICT,
+    CONSTRAINT clientes_ejecutivo_fk
+        FOREIGN KEY (fi_ejecutivo_empleado_id) REFERENCES rrhh.empleados (fi_empleado_id) ON DELETE RESTRICT,
     CONSTRAINT clientes_usuario_fk
         FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE RESTRICT
 );
 
-CREATE INDEX clientes_nombre_idx   ON public.clientes (fc_nombre);
-CREATE INDEX clientes_localidad_idx ON public.clientes (fc_localidad);
-CREATE INDEX clientes_usuario_idx  ON public.clientes (fi_usuario_id);
+CREATE INDEX clientes_razon_idx      ON public.clientes (fc_razon_social);
+CREATE INDEX clientes_rfc_idx        ON public.clientes (fc_rfc);
+CREATE INDEX clientes_localidad_idx  ON public.clientes (fc_localidad);
+CREATE INDEX clientes_udn_idx        ON public.clientes (fi_unidad_negocio_id);
+CREATE INDEX clientes_ejecutivo_idx  ON public.clientes (fi_ejecutivo_empleado_id);
+CREATE INDEX clientes_usuario_idx    ON public.clientes (fi_usuario_id);
 
 COMMENT ON TABLE public.clientes IS
 'Catálogo de clientes. fi_usuario_id registra quién dio de alta al cliente.';
@@ -1655,7 +1664,6 @@ CREATE TRIGGER trg_empleados_touch_modif            BEFORE UPDATE ON rrhh.emplea
 CREATE TRIGGER trg_actas_admin_touch_modif          BEFORE UPDATE ON rrhh.actas_administrativas FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_nomina_touch_actualiz            BEFORE UPDATE ON public.nomina             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
 CREATE TRIGGER trg_vacaciones_touch_actualiz        BEFORE UPDATE ON public.vacaciones         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
-CREATE TRIGGER trg_clientes_touch_modif             BEFORE UPDATE ON public.clientes           FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_ventas_touch_modif               BEFORE UPDATE ON public.ventas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_lista_espera_touch_modif         BEFORE UPDATE ON public.lista_espera       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_alimentacion_touch_modif         BEFORE UPDATE ON public.alimentacion       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();

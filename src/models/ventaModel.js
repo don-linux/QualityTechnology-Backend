@@ -3,7 +3,7 @@ import pool from "../db.js";
 class VentaModel {
   static async getClientes() {
     const result = await pool.query(
-      `SELECT fi_cliente_id AS id, fc_nombre AS nombre
+      `SELECT fi_cliente_id AS id, fc_razon_social AS nombre
        FROM clientes ORDER BY nombre ASC`
     );
     return result.rows;

@@ -399,24 +399,45 @@ components:
       properties:
         fi_cliente_id:
           type: integer
-        fc_nombre:
+        fc_razon_social:
+          type: string
+        fc_rfc:
+          type: string
+          maxLength: 20
+        fi_unidad_negocio_id:
+          type: integer
+        unidad_negocio_nombre:
+          type: string
+          readOnly: true
+        fc_nombre_contacto:
           type: string
         fc_telefono:
           type: string
+          pattern: '^[0-9]{1,10}$'
         fc_correo:
           type: string
+          format: email
         fc_localidad:
           type: string
-        fc_cp:
+        fc_estado:
           type: string
+        fi_ejecutivo_empleado_id:
+          type: integer
+        ejecutivo_nombre:
+          type: string
+          readOnly: true
         fi_usuario_id:
           type: integer
-        fd_fecha_registro:
-          type: string
-          format: date-time
-        fd_fecha_modificacion:
-          type: string
-          format: date-time
+      required:
+        - fc_razon_social
+        - fc_rfc
+        - fi_unidad_negocio_id
+        - fc_nombre_contacto
+        - fc_telefono
+        - fc_correo
+        - fc_localidad
+        - fc_estado
+        - fi_ejecutivo_empleado_id
 
     Venta:
       type: object
@@ -2536,6 +2557,26 @@ paths:
       responses:
         '201':
           description: "Cliente creado"
+        '500':
+          description: "Error del servidor"
+
+  /clientes/empleados-activos:
+    get:
+      summary: "Listar empleados activos para seleccionar ejecutivo"
+      responses:
+        '200':
+          description: "Listado de empleados activos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fi_empleado_id:
+                      type: integer
+                    fc_nombre_completo:
+                      type: string
         '500':
           description: "Error del servidor"
 
