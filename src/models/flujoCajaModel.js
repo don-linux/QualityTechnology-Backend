@@ -10,7 +10,7 @@ class FlujoCajaModel {
 
   static async getProveedores() {
     const result = await pool.query(
-      "SELECT razon_social FROM public.proveedores ORDER BY razon_social ASC"
+      "SELECT fc_razon_social AS nombre FROM public.proveedores ORDER BY fc_razon_social ASC"
     );
     return result.rows;
   }

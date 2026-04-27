@@ -16,7 +16,7 @@ $$;
 COMMENT ON FUNCTION public.fn_touch_fecha_actualizacion() IS
     'Actualiza fd_fecha_actualizacion en cada UPDATE (solo nomina y vacaciones).';
 
--- Variante para tablas con naming snake_case heredado (proveedores.updated_at)
+-- Variante para tablas con columna updated_at (proveedores)
 CREATE OR REPLACE FUNCTION public.fn_touch_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -962,39 +962,37 @@ COMMENT ON TABLE public.clientes IS
 
 
 -- Proveedores ---------------------------------------------------------------
---
--- Nota: en el schema original esta tabla usa snake_case (razon_social,
--- created_at, updated_at). Se mantiene esa convención para no romper el
--- backend, pero se añaden restricciones y auditoría.
 
 CREATE TABLE public.proveedores (
-    id                 INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    razon_social       VARCHAR(255) NOT NULL,
-    rfc                VARCHAR(50),
-    udn                VARCHAR(100),
-    nombre_contacto    VARCHAR(150),
-    telefono           VARCHAR(50),
-    correo             VARCHAR(150),
-    localidad          VARCHAR(150),
-    estado             VARCHAR(100),
-    ejecutivo          VARCHAR(150),
-    precio_venta       NUMERIC(12,2) NOT NULL DEFAULT 0,
-    created_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at         TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fi_proveedor_id       INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fc_razon_social       VARCHAR(150) NOT NULL,
+    fc_rfc                VARCHAR(20)  NOT NULL,
+    fc_producto_servicio  VARCHAR(255) NOT NULL,
+    fi_unidad_negocio_id  INTEGER      NOT NULL,
+    fc_nombre_contacto    VARCHAR(150) NOT NULL,
+    fc_telefono           VARCHAR(10)  NOT NULL,
+    fc_correo             VARCHAR(255) NOT NULL,
+    fc_localidad          VARCHAR(100) NOT NULL,
+    fc_estado             VARCHAR(100) NOT NULL,
+    created_at            TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT proveedores_precio_venta_no_negativo
-        CHECK (precio_venta >= 0),
+    CONSTRAINT proveedores_telefono_check
+        CHECK (fc_telefono ~ '^[0-9]{1,10}$'),
     CONSTRAINT proveedores_correo_check
-        CHECK (correo IS NULL OR correo ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+        CHECK (fc_correo ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+
+    CONSTRAINT proveedores_unidad_negocio_fk
+        FOREIGN KEY (fi_unidad_negocio_id) REFERENCES public.unidades_negocio (fi_unidad_negocio_id) ON DELETE RESTRICT
 );
 
-CREATE INDEX proveedores_razon_social_idx ON public.proveedores (razon_social);
-CREATE INDEX proveedores_udn_idx          ON public.proveedores (udn);
-CREATE INDEX proveedores_rfc_idx          ON public.proveedores (rfc);
+CREATE INDEX proveedores_razon_social_idx ON public.proveedores (fc_razon_social);
+CREATE INDEX proveedores_rfc_idx          ON public.proveedores (fc_rfc);
+CREATE INDEX proveedores_localidad_idx    ON public.proveedores (fc_localidad);
+CREATE INDEX proveedores_udn_idx          ON public.proveedores (fi_unidad_negocio_id);
 
 COMMENT ON TABLE public.proveedores IS
-'Catálogo de proveedores. Mantiene naming snake_case heredado del esquema
- original por compatibilidad con el backend.';
+'Catálogo de proveedores con unidad de negocio normalizada.';
 
 
 -- Ventas --------------------------------------------------------------------

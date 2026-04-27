@@ -613,29 +613,42 @@ components:
 
     Proveedor:
       type: object
+      required:
+        - fc_razon_social
+        - fc_rfc
+        - fc_producto_servicio
+        - fi_unidad_negocio_id
+        - fc_nombre_contacto
+        - fc_telefono
+        - fc_correo
+        - fc_localidad
+        - fc_estado
       properties:
-        id:
+        fi_proveedor_id:
           type: integer
-        razon_social:
+        fc_razon_social:
           type: string
-        rfc:
+        fc_rfc:
           type: string
-        udn:
+          maxLength: 20
+        fc_producto_servicio:
           type: string
-        nombre_contacto:
+        fi_unidad_negocio_id:
+          type: integer
+        unidad_negocio_nombre:
           type: string
-        telefono:
+        fc_nombre_contacto:
           type: string
-        correo:
+        fc_telefono:
           type: string
-        localidad:
+          maxLength: 10
+        fc_correo:
           type: string
-        estado:
+          format: email
+        fc_localidad:
           type: string
-        ejecutivo:
+        fc_estado:
           type: string
-        precio_venta:
-          type: number
 
     FlujoCajaMovimiento:
       type: object
@@ -3212,7 +3225,7 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        '204':
           description: "Proveedor eliminado"
 
   /flujo-caja/clientes:
