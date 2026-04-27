@@ -36,7 +36,7 @@ class FlujoCajaModel {
         fi_movimiento_id, fc_granja, fd_fecha, fn_ingreso, fn_egreso,
         fc_descripcion, fc_cuenta, fc_categoria, fc_subcategoria,
         fc_beneficiario, fc_noproyecto,
-        fc_factura, fc_estatus, fc_mes, fd_fecha_registro
+        fc_factura, fc_estatus, fc_mes
       FROM flujo_caja
       WHERE UPPER(fc_granja) = UPPER($1)
       ORDER BY fd_fecha DESC`,
@@ -66,8 +66,8 @@ class FlujoCajaModel {
         fc_granja, fd_fecha, fn_ingreso, fn_egreso, fc_descripcion,
         fc_cuenta, fc_categoria, fc_subcategoria,
         fc_beneficiario, fc_noproyecto,
-        fc_factura, fc_estatus, fc_mes, fd_fecha_registro
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+        fc_factura, fc_estatus, fc_mes
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *`,
       [
         data.fc_granja, data.fd_fecha, data.fn_ingreso, data.fn_egreso,
@@ -89,8 +89,8 @@ class FlujoCajaModel {
           fc_granja, fd_fecha, fn_ingreso, fn_egreso, fc_descripcion,
           fc_cuenta, fc_categoria, fc_subcategoria,
           fc_beneficiario, fc_noproyecto,
-          fc_factura, fc_estatus, fc_mes, fd_fecha_registro
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+          fc_factura, fc_estatus, fc_mes
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
         RETURNING *`,
         [
           data.fc_granja, data.fd_fecha, data.fn_ingreso, data.fn_egreso,

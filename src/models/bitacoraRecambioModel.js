@@ -34,8 +34,8 @@ class BitacoraRecambioModel {
             `INSERT INTO recambios
       (fc_mes, fn_num_instalacion, fd_fecha1, fc_tipo1, fd_fecha2, fc_tipo2,
        fd_fecha3, fc_tipo3, fd_fecha4, fc_tipo4, fd_fecha5, fc_tipo5,
-       fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id, ubicacion, fd_fecha_registro)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW())`,
+       fd_fecha6, fc_tipo6, fc_responsable, fi_usuario_id, ubicacion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
             [
                 fc_mes,
                 safeNumInstalacion,
@@ -76,7 +76,7 @@ class BitacoraRecambioModel {
         fd_fecha1=$3, fc_tipo1=$4, fd_fecha2=$5, fc_tipo2=$6,
         fd_fecha3=$7, fc_tipo3=$8, fd_fecha4=$9, fc_tipo4=$10,
         fd_fecha5=$11, fc_tipo5=$12, fd_fecha6=$13, fc_tipo6=$14,
-        fc_responsable=$15, ubicacion=$16, fd_fecha_modificacion=NOW()
+        fc_responsable=$15, ubicacion=$16
        WHERE fi_id=$17`,
             [
                 fc_mes,

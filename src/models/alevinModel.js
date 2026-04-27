@@ -5,15 +5,7 @@ class AlevinModel {
     const result = await pool.query(
       "SELECT * FROM inventario_alevines ORDER BY fi_id DESC"
     );
-    return result.rows.map((row) => ({
-      ...row,
-      fd_fecha_registro: row.fd_fecha_registro
-        ? row.fd_fecha_registro.toISOString()
-        : null,
-      fd_fecha_modificacion: row.fd_fecha_modificacion
-        ? row.fd_fecha_modificacion.toISOString()
-        : null,
-    }));
+    return result.rows;
   }
 
   static async create(data) {

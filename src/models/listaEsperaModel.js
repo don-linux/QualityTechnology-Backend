@@ -74,7 +74,6 @@ class ListaEsperaModel {
       }
 
       const d = dato.rows[0];
-      const now = new Date();
       const cantidad = parseInt(d.fn_cantidad);
       const precio = parseFloat(d.fn_precio_venta);
       const total = cantidad * precio;
@@ -91,11 +90,10 @@ class ListaEsperaModel {
           fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
           fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
           fn_abonado, fc_estado_pago,
-          fc_encargado_venta, fc_observaciones, fc_empresa,
-          fd_fecha_registro
+          fc_encargado_venta, fc_observaciones, fc_empresa
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7,
-          $8, $9, $10, $11, $12, $13
+          $8, $9, $10, $11, $12
         ) RETURNING *`,
         [
           `LE-${id}`,
@@ -110,7 +108,6 @@ class ListaEsperaModel {
           d.fc_encargado_venta,
           "",
           empresa,
-          now,
         ]
       );
 

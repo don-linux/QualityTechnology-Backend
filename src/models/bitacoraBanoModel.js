@@ -26,8 +26,8 @@ class BitacoraBanoModel {
 
         await pool.query(
             `INSERT INTO banos
-        (fd_fecha, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, ubicacion, fd_fecha_registro)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
+        (fd_fecha, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, ubicacion)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
             [fd_fecha, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, fi_usuario_id, ubicacion]
         );
     }
@@ -42,7 +42,7 @@ class BitacoraBanoModel {
             `UPDATE banos SET
       fd_fecha=$1, fc_tipo_banio=$2,
       fc_regadera=$3, fc_realizo=$4, fc_observaciones=$5,
-      ubicacion=$6, fd_fecha_modificacion=NOW()
+      ubicacion=$6
       WHERE fi_id=$7`,
             [fd_fecha, fc_tipo_banio, fc_regadera, fc_realizo, fc_observaciones, ubicacion, id]
         );

@@ -29,8 +29,8 @@ class BitacoraMedicamentoModel {
             `INSERT INTO medicamentos
       (fd_fecha_hora, fn_num_estanque, fc_diagnosis, fc_tratamiento,
        fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis,
-       fc_responsable, fi_usuario_id, ubicacion, fd_fecha_registro)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())`,
+       fc_responsable, fi_usuario_id, ubicacion)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
             [fd_fecha_hora, fn_num_estanque, fc_diagnosis || null, fc_tratamiento || null,
                 fc_dosis || null, fc_forma_aplicacion || null, fd_fecha_ultima_dosis || null,
                 fc_responsable || null, fi_usuario_id, ubicacion || null]
@@ -48,7 +48,7 @@ class BitacoraMedicamentoModel {
             `UPDATE medicamentos SET
       fd_fecha_hora=$1, fn_num_estanque=$2, fc_diagnosis=$3, fc_tratamiento=$4,
       fc_dosis=$5, fc_forma_aplicacion=$6, fd_fecha_ultima_dosis=$7,
-      fc_responsable=$8, ubicacion=$9, fd_fecha_modificacion=NOW()
+      fc_responsable=$8, ubicacion=$9
       WHERE fi_id=$10`,
             [fd_fecha_hora || null, fn_num_estanque, fc_diagnosis || null, fc_tratamiento || null,
             fc_dosis || null, fc_forma_aplicacion || null, fd_fecha_ultima_dosis || null,

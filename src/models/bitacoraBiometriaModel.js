@@ -90,8 +90,8 @@ class BitacoraBiometriaModel {
       INSERT INTO biometrias (
         fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fn_peso_promedio,
                 fc_observaciones, fc_encargado, fi_instalacion_id, tipo,
-        fi_usuario_id, fc_granja, ubicacion, fd_fecha_registro
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CURRENT_TIMESTAMP)
+        fi_usuario_id, fc_granja, ubicacion
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING fi_id
       `,
             [
@@ -116,7 +116,7 @@ class BitacoraBiometriaModel {
         fd_fecha = $1, fn_peso_total_gramos = $2, fn_organismos_muestreados = $3,
         fn_peso_promedio = $4, fc_observaciones = $5, fc_encargado = $6,
                 fi_instalacion_id = $7, tipo = $8, fi_usuario_id = $9,
-        ubicacion = $10, fd_fecha_modificacion = CURRENT_TIMESTAMP
+        ubicacion = $10
             WHERE fi_id = $11
       `,
             [

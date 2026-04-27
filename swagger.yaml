@@ -387,12 +387,6 @@ components:
           type: string
         fc_nombre_original:
           type: string
-        fd_fecha_registro:
-          type: string
-          format: date-time
-        fd_fecha_modificacion:
-          type: string
-          format: date-time
 
     Cliente:
       type: object
@@ -675,9 +669,6 @@ components:
           type: string
         fc_mes:
           type: string
-        fd_fecha_registro:
-          type: string
-          format: date-time
 
     TesoreriaOverview:
       type: object
@@ -728,9 +719,6 @@ components:
           format: double
         fb_activo:
           type: boolean
-        fd_fecha_registro:
-          type: string
-          format: date-time
 
     UnidadNegocio:
       type: object
@@ -760,12 +748,6 @@ components:
           type: integer
         fn_peso_promedio:
           type: number
-        fd_fecha_registro:
-          type: string
-          format: date-time
-        fd_fecha_modificacion:
-          type: string
-          format: date-time
 
     Alevin:
       type: object
@@ -784,12 +766,6 @@ components:
           type: integer
         fi_colecta_id:
           type: integer
-        fd_fecha_registro:
-          type: string
-          format: date-time
-        fd_fecha_modificacion:
-          type: string
-          format: date-time
 
     CeibaInsumo:
       type: object

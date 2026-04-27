@@ -72,13 +72,12 @@ class InstalacionModel {
             `
       INSERT INTO instalaciones
       (nombre_instalacion, tipo_instalacion, fc_granja, estado,
-       largo, ancho, altura, material, fi_usuario_id, fd_fecha_registro)
+       largo, ancho, altura, material, fi_usuario_id)
       VALUES ($1,$2,$3,$4,
         NULLIF($5,'')::numeric,
         NULLIF($6,'')::numeric,
         NULLIF($7,'')::numeric,
-        $8, $9,
-      CURRENT_DATE) RETURNING *;
+        $8, $9) RETURNING *;
       `,
             [nombre_instalacion, tipo_instalacion, fc_granja, estado, largo, ancho, altura, material, fi_usuario_id]
         );
@@ -108,8 +107,7 @@ class InstalacionModel {
         largo  = NULLIF($5,'')::numeric,
         ancho  = NULLIF($6,'')::numeric,
         altura = NULLIF($7,'')::numeric,
-        material = $8,
-        fd_fecha_modificacion = CURRENT_DATE
+        material = $8
       WHERE fi_instalacion_id = $9
       RETURNING *;
       `,

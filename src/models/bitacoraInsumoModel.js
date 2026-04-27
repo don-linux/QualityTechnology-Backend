@@ -30,8 +30,8 @@ class BitacoraInsumoModel {
       INSERT INTO insumos 
       (fd_fecha, fc_cantidad_udm, fc_num_lote, fc_descripcion, 
        fc_observaciones, fc_encargado_entrega, fc_encargado_recepcion, ubicacion,
-       fd_fecha_registro, fi_usuario_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW(), $9)
+       fi_usuario_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING fi_id
       `,
             [
@@ -61,7 +61,7 @@ class BitacoraInsumoModel {
             UPDATE insumos SET
                 fd_fecha=$1, fc_cantidad_udm=$2, fc_num_lote=$3, fc_descripcion=$4,
                 fc_observaciones=$5, fc_encargado_entrega=$6, fc_encargado_recepcion=$7,
-                fd_fecha_modificacion=NOW(), fi_usuario_id=$8, ubicacion=$9
+                fi_usuario_id=$8, ubicacion=$9
             WHERE fi_id=$10
             `,
                         [

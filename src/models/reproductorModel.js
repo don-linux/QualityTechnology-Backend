@@ -70,13 +70,11 @@ class ReproductorModel {
           fd_fecha_siembra, fd_fecha_biometria,
           fi_usuario_id, fc_granja,
           fn_machos, fn_hembras, fc_ratio,
-          fc_linea, fc_familia, fc_observacion,
-          fd_fecha_registro
+          fc_linea, fc_familia, fc_observacion
         ) VALUES (
           $1, $2, $3, $4, $5,
           COALESCE(NULLIF($6,''),'Granja Acuícola Medellin'),
-          $7, $8, $9, $10, $11, $12,
-          CURRENT_TIMESTAMP
+          $7, $8, $9, $10, $11, $12
         ) RETURNING fi_reproductor_id`,
         [
           data.fi_instalacion_id, data.fn_talla,

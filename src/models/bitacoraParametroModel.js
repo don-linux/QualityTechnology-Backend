@@ -29,8 +29,8 @@ class BitacoraParametroModel {
             `INSERT INTO parametros
       (fd_fecha, fn_num_estanque, fn_oxigeno, fn_temperatura, fn_ph,
        fn_amonio, fn_nitritos, fn_nitratos, fc_responsable,
-       fi_usuario_id, ubicacion, fd_fecha_registro)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+       fi_usuario_id, ubicacion)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
             [fd_fecha, fn_num_estanque, fn_oxigeno, fn_temperatura, fn_ph,
                 fn_amonio, fn_nitritos, fn_nitratos, fc_responsable || null, fi_usuario_id,
                 ubicacion || null]
@@ -47,7 +47,7 @@ class BitacoraParametroModel {
             `UPDATE parametros SET
       fd_fecha=$1, fn_num_estanque=$2, fn_oxigeno=$3, fn_temperatura=$4,
       fn_ph=$5, fn_amonio=$6, fn_nitritos=$7, fn_nitratos=$8,
-      fc_responsable=$9, ubicacion=$10, fd_fecha_modificacion=NOW()
+      fc_responsable=$9, ubicacion=$10
       WHERE fi_id=$11`,
             [fd_fecha, fn_num_estanque, fn_oxigeno, fn_temperatura, fn_ph,
                 fn_amonio, fn_nitritos, fn_nitratos, fc_responsable || null, ubicacion || null, id]

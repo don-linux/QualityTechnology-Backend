@@ -34,8 +34,8 @@ class BitacoraPlagaModel {
         await pool.query(
             `INSERT INTO plagas 
         (fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno, 
-         fc_observaciones, fc_verifico, unidad_produccion, ubicacion, fi_usuario_id, fd_fecha_registro)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+         fc_observaciones, fc_verifico, unidad_produccion, ubicacion, fi_usuario_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
             [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
                 fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", fi_usuario_id]
         );
@@ -51,7 +51,7 @@ class BitacoraPlagaModel {
             `UPDATE plagas SET
         fd_fecha=$1, fc_num_trampa=$2, tipo_trampa=$3, fc_hallazgo=$4,
         fc_malla=$5, fc_veneno=$6, fc_observaciones=$7, fc_verifico=$8,
-        unidad_produccion=$9, ubicacion=$10, fd_fecha_modificacion=NOW()
+        unidad_produccion=$9, ubicacion=$10
        WHERE fi_id=$11`,
             [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
                 fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", id]

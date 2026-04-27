@@ -33,9 +33,8 @@ class VentaModel {
         fc_folio, fd_fecha_venta, fc_cliente, fc_tipo_venta,
         fn_cantidad_vendida, fn_precio_venta, fn_monto_total,
         fn_abonado, fc_estado_pago,
-        fc_encargado_venta, fc_observaciones, fc_empresa,
-        fd_fecha_registro
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, NOW())`,
+        fc_encargado_venta, fc_observaciones, fc_empresa
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [
         data.fc_folio, data.fd_fecha_venta, data.fc_cliente,
         data.fc_tipo_venta, data.fn_cantidad_vendida, data.fn_precio_venta,
@@ -53,8 +52,7 @@ class VentaModel {
         fc_tipo_venta = $4, fn_cantidad_vendida = $5, fn_precio_venta = $6,
         fn_monto_total = $7, fn_abonado = $8,
         fc_estado_pago = $9, fc_encargado_venta = $10,
-        fc_observaciones = $11, fc_empresa = $12,
-        fd_fecha_modificacion = NOW()
+        fc_observaciones = $11, fc_empresa = $12
       WHERE fi_venta_id = $13`,
       [
         data.fc_folio, data.fd_fecha_venta, data.fc_cliente,

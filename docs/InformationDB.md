@@ -37,11 +37,10 @@
 --   caja_ahorro_movimientos, cat_caja_ahorro_categorias,
 --   cat_tesoreria_categorias, categorias, limpieza, alevines
 --
--- Funciones:          4
---   fn_touch_fecha_modificacion, fn_touch_fecha_actualizacion,
---   fn_touch_updated_at, fn_touch_actualizado
+-- Funciones:          3
+--   fn_touch_fecha_actualizacion, fn_touch_updated_at, fn_touch_actualizado
 --
--- Triggers:          27  (auditoría automática en cada UPDATE)
+-- Triggers:           4  (actualización automática de columnas funcionales)
 -- Foreign keys:      57
 -- Check constraints: 80+
 -- Índices:          117
@@ -103,7 +102,6 @@
 -- DROP TABLE IF EXISTS public.instalaciones              CASCADE;
 --
 -- -- Funciones utilitarias
--- DROP FUNCTION IF EXISTS public.fn_touch_fecha_modificacion() CASCADE;
 -- DROP FUNCTION IF EXISTS public.fn_touch_fecha_actualizacion() CASCADE;
 -- DROP FUNCTION IF EXISTS public.fn_touch_updated_at()    CASCADE;
 -- DROP FUNCTION IF EXISTS public.fn_touch_actualizado()   CASCADE;

@@ -1,23 +1,8 @@
 BEGIN;
 
 -- ============================================================================
--- 1.  Función utilitaria para auditoría
+-- 1.  Funciones utilitarias de actualización
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.fn_touch_fecha_modificacion()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    NEW.fd_fecha_modificacion := now();
-    RETURN NEW;
-END;
-$$;
-
-COMMENT ON FUNCTION public.fn_touch_fecha_modificacion() IS
-    'Actualiza fd_fecha_modificacion en cada UPDATE. Úsese en triggers BEFORE UPDATE FOR EACH ROW.';
-
--- Variante para tablas heredadas que usan fd_fecha_actualizacion
--- (public.nomina, public.vacaciones) en vez de fd_fecha_modificacion.
 CREATE OR REPLACE FUNCTION public.fn_touch_fecha_actualizacion()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -200,8 +185,6 @@ CREATE TABLE public.instalaciones (
     estado                  varchar(20)    NOT NULL DEFAULT 'vacia',
     fc_granja               varchar(100)   NOT NULL,
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT instalaciones_largo_chk   CHECK (largo  > 0),
     CONSTRAINT instalaciones_ancho_chk   CHECK (ancho  > 0),
@@ -222,11 +205,6 @@ CREATE TABLE public.instalaciones (
 CREATE INDEX instalaciones_granja_idx  ON public.instalaciones (fc_granja);
 CREATE INDEX instalaciones_tipo_idx    ON public.instalaciones (tipo_instalacion);
 CREATE INDEX instalaciones_usuario_idx ON public.instalaciones (fi_usuario_id);
-
-CREATE TRIGGER instalaciones_modif_trg
-    BEFORE UPDATE ON public.instalaciones
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE  public.instalaciones IS
     'Infraestructura física por granja. Base del inventario.';
@@ -259,8 +237,6 @@ CREATE TABLE public.reproductores (
     fd_fecha_biometria      date,
     fc_granja               varchar(100)   NOT NULL,
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT reproductores_machos_chk  CHECK (fn_machos  >= 0),
     CONSTRAINT reproductores_hembras_chk CHECK (fn_hembras >= 0),
@@ -278,11 +254,6 @@ CREATE TABLE public.reproductores (
 CREATE INDEX reproductores_instalacion_idx ON public.reproductores (fi_instalacion_id);
 CREATE INDEX reproductores_granja_idx      ON public.reproductores (fc_granja);
 CREATE INDEX reproductores_familia_idx     ON public.reproductores (fc_familia);
-
-CREATE TRIGGER reproductores_modif_trg
-    BEFORE UPDATE ON public.reproductores
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE  public.reproductores IS
     'Stock de reproductores por instalación. fn_cantidad es calculada.';
@@ -318,8 +289,6 @@ CREATE TABLE public.lotes (
     fc_granja               varchar(100)   NOT NULL,
     observacion             varchar(500),
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT lotes_ovadas_chk           CHECK (ovadas           >= 0),
     CONSTRAINT lotes_alevines_chk         CHECK (alevines_inicial >= 0),
@@ -341,11 +310,6 @@ CREATE TABLE public.lotes (
 CREATE INDEX lotes_instalacion_idx ON public.lotes (fi_instalacion_id);
 CREATE INDEX lotes_granja_idx      ON public.lotes (fc_granja);
 CREATE INDEX lotes_fecha_idx       ON public.lotes (fd_fecha);
-
-CREATE TRIGGER lotes_modif_trg
-    BEFORE UPDATE ON public.lotes
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE  public.lotes IS
     'Camadas producidas por los reproductores. Origen de los alevines.';
@@ -373,8 +337,6 @@ CREATE TABLE public.piletas (
     fd_fecha_ultima_biometria date         NOT NULL DEFAULT CURRENT_DATE,
     fc_granja               varchar(100)   NOT NULL,
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT piletas_cantidad_chk CHECK (cantidad >= 0),
     CONSTRAINT piletas_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
@@ -396,11 +358,6 @@ CREATE TABLE public.piletas (
 CREATE INDEX piletas_lote_idx    ON public.piletas (fi_lote_id);
 CREATE INDEX piletas_granja_idx  ON public.piletas (fc_granja);
 CREATE INDEX piletas_usuario_idx ON public.piletas (fi_usuario_id);
-
-CREATE TRIGGER piletas_modif_trg
-    BEFORE UPDATE ON public.piletas
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE  public.piletas IS
     'Estado vigente de cada instalación de alevinaje. El histórico de movimientos está en trazabilidad_alevinaje.';
@@ -426,8 +383,6 @@ CREATE TABLE public.engorda (
     fd_fecha_biometria      date,
     fc_granja               varchar(100)   NOT NULL,
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT engorda_cantidad_chk CHECK (cantidad > 0),
     CONSTRAINT engorda_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
@@ -447,11 +402,6 @@ CREATE TABLE public.engorda (
 CREATE INDEX engorda_instalacion_idx ON public.engorda (fi_instalacion_id);
 CREATE INDEX engorda_lote_idx        ON public.engorda (fi_lote_id);
 CREATE INDEX engorda_granja_idx      ON public.engorda (fc_granja);
-
-CREATE TRIGGER engorda_modif_trg
-    BEFORE UPDATE ON public.engorda
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE  public.engorda IS
     'Estado vigente de cada instalación de engorda. El histórico está en trazabilidad_engorda.';
@@ -479,8 +429,6 @@ CREATE TABLE public.equipos (
     fd_proximo_mantenimiento    date,
     fc_notas                    text,
     fi_usuario_id               integer        NOT NULL,
-    fd_fecha_registro           timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion       timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT equipos_costo_chk CHECK (fn_costo IS NULL OR fn_costo >= 0),
     CONSTRAINT equipos_estado_chk
@@ -492,11 +440,6 @@ CREATE TABLE public.equipos (
 
 CREATE INDEX equipos_usuario_idx ON public.equipos (fi_usuario_id);
 CREATE INDEX equipos_estado_idx  ON public.equipos (fc_estado);
-
-CREATE TRIGGER equipos_modif_trg
-    BEFORE UPDATE ON public.equipos
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE public.equipos IS
     'Equipos/herramientas del usuario (bombas, redes, sensores, etc.).';
@@ -517,8 +460,6 @@ CREATE TABLE public.mantenimientos (
     fn_costo                    numeric(12,2)  NOT NULL DEFAULT 0,
     fc_estado_post              varchar(50),
     fd_proximo_mantenimiento    date,
-    fd_fecha_registro           timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion       timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT mantenimientos_costo_chk CHECK (fn_costo >= 0),
     CONSTRAINT mantenimientos_tipo_chk
@@ -530,11 +471,6 @@ CREATE TABLE public.mantenimientos (
 
 CREATE INDEX mantenimientos_equipo_idx ON public.mantenimientos (fi_equipo_id);
 CREATE INDEX mantenimientos_fecha_idx  ON public.mantenimientos (fd_fecha);
-
-CREATE TRIGGER mantenimientos_modif_trg
-    BEFORE UPDATE ON public.mantenimientos
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE public.mantenimientos IS
     'Histórico de visitas de mantenimiento por equipo. Cascade al borrar el equipo.';
@@ -556,8 +492,6 @@ CREATE TABLE public.alimentos (
     porcion                 numeric(10,3),
     gasto_alimento          numeric(12,2),
     fi_usuario_id           integer        NOT NULL,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
-    fd_fecha_modificacion   timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT alimentos_unidad_chk CHECK (
         (CASE WHEN fi_pileta_id      IS NOT NULL THEN 1 ELSE 0 END)
@@ -582,11 +516,6 @@ CREATE INDEX alimentos_pileta_idx      ON public.alimentos (fi_pileta_id);
 CREATE INDEX alimentos_engorda_idx     ON public.alimentos (fi_engorda_id);
 CREATE INDEX alimentos_reproductor_idx ON public.alimentos (fi_reproductor_id);
 CREATE INDEX alimentos_usuario_idx     ON public.alimentos (fi_usuario_id);
-
-CREATE TRIGGER alimentos_modif_trg
-    BEFORE UPDATE ON public.alimentos
-    FOR EACH ROW
-    EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 
 COMMENT ON TABLE public.alimentos IS
     'Bitácora de alimentación. Cada fila referencia exactamente una unidad productiva (pileta | engorda | reproductor).';
@@ -614,7 +543,6 @@ CREATE TABLE public.trazabilidad_alevinaje (
     fc_granja               varchar(100)   NOT NULL,
     fi_usuario_id           integer        NOT NULL,
     fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT traza_alev_cantidad_chk CHECK (cantidad > 0),
     CONSTRAINT traza_alev_tipo_chk
@@ -679,7 +607,6 @@ CREATE TABLE public.trazabilidad_engorda (
     observacion             text,
     fi_usuario_id           integer        NOT NULL,
     fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT traza_eng_cantidad_chk CHECK (cantidad_trasladada > 0),
     CONSTRAINT traza_eng_distinto_chk
@@ -718,7 +645,6 @@ CREATE TABLE public.trazabilidad_reproductores (
     observacion             text,
     fi_usuario_id           integer        NOT NULL,
     fd_fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
-    fd_fecha_registro       timestamp      NOT NULL DEFAULT now(),
 
     CONSTRAINT traza_repro_cantidad_chk
         CHECK (cantidad_trasladada IS NULL OR cantidad_trasladada > 0),
@@ -779,9 +705,6 @@ CREATE TABLE rrhh.empleados (
     fb_activo                BOOLEAN         NOT NULL DEFAULT TRUE,
     fd_fecha_alta            DATE            NOT NULL DEFAULT CURRENT_DATE,
     fd_fecha_baja            DATE,
-
-    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT empleados_genero_check
         CHECK (fc_genero IS NULL OR fc_genero IN ('M','F','Masculino','Femenino','Otro')),
@@ -848,8 +771,6 @@ CREATE TABLE rrhh.actas_administrativas (
     fd_fecha                 DATE            NOT NULL,
     fc_ruta_archivo          VARCHAR(500)    NOT NULL,
     fc_nombre_original       VARCHAR(255)    NOT NULL,
-    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT actas_admin_empleado_fk
         FOREIGN KEY (fi_empleado_id) REFERENCES rrhh.empleados (fi_empleado_id) ON DELETE CASCADE
@@ -875,7 +796,6 @@ CREATE TABLE public.nomina (
     fn_descuento             NUMERIC(10,2)   NOT NULL DEFAULT 0,
     fn_anticipo              NUMERIC(10,2)   NOT NULL DEFAULT 0,
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
     fd_fecha_actualizacion   TIMESTAMP(6)    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT nomina_montos_no_negativos
@@ -1097,8 +1017,6 @@ CREATE TABLE public.ventas (
     fc_empresa            TEXT          NOT NULL,
     fc_encargado_venta    TEXT,
     fc_observaciones      TEXT,
-    fd_fecha_registro     TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT ventas_cantidad_positiva   CHECK (fn_cantidad_vendida > 0),
     CONSTRAINT ventas_precio_no_negativo  CHECK (fn_precio_venta    >= 0),
@@ -1137,8 +1055,6 @@ CREATE TABLE public.lista_espera (
     fc_granja_asignada      VARCHAR(200),
     fc_hora_embolsado       VARCHAR(20),
     fc_hora_entrega         VARCHAR(20),
-    fd_fecha_registro       TIMESTAMP(6) NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion   TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
     CONSTRAINT lista_espera_cantidad_positiva   CHECK (fn_cantidad > 0),
     CONSTRAINT lista_espera_precio_no_negativo
@@ -1167,7 +1083,6 @@ CREATE TABLE public.cuentas (
     fc_tipo             VARCHAR(20)    NOT NULL,
     fn_saldo_actual     NUMERIC(15,2)  NOT NULL DEFAULT 0,
     fb_activo           BOOLEAN        NOT NULL DEFAULT TRUE,
-    fd_fecha_registro   TIMESTAMP(6)   NOT NULL DEFAULT NOW(),
 
     CONSTRAINT cuentas_tipo_check CHECK (fc_tipo IN ('Cheques','Efectivo','Inversion','Ahorro')),
     CONSTRAINT cuentas_nombre_udn_uq UNIQUE (fc_nombre, fc_udn)
@@ -1205,7 +1120,6 @@ CREATE TABLE public.flujo_caja (
     fc_estatus            VARCHAR(20),
     fc_mes                VARCHAR(7),
     fc_equilibrar         NUMERIC(12,2),
-    fd_fecha_registro     TIMESTAMP(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT flujo_caja_ingreso_no_negativo CHECK (fn_ingreso >= 0),
     CONSTRAINT flujo_caja_egreso_no_negativo  CHECK (fn_egreso  >= 0),
@@ -1295,8 +1209,6 @@ COMMENT ON TABLE public.lote_movimientos IS
 --                          por nombre (se preservó como VARCHAR por
 --                          compatibilidad con el backend actual)
 --   · fi_usuario_id   : FK blanda a public.usuarios (ON DELETE SET NULL)
---   · Auditoría       : fd_fecha_registro + fd_fecha_modificacion
---                       con trigger fn_touch_fecha_modificacion().
 -- ============================================================================
 
 -- 17.1  Alimentación (consumo diario por estanque) -------------------------
@@ -1318,8 +1230,6 @@ CREATE TABLE public.alimentacion (
     fn_ph                      NUMERIC(5,2),
     fc_observaciones           VARCHAR(500),
     fi_usuario_id              INTEGER,
-    fd_fecha_registro          TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion      TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT alimentacion_ph_check
         CHECK (fn_ph IS NULL OR (fn_ph >= 0 AND fn_ph <= 14)),
@@ -1348,8 +1258,6 @@ CREATE TABLE public.banos (
     fc_realizo             VARCHAR(100),
     fc_observaciones       VARCHAR(500),
     fi_usuario_id          INTEGER,
-    fd_fecha_registro      TIMESTAMP(6) NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion  TIMESTAMP(6) NOT NULL DEFAULT NOW(),
 
     CONSTRAINT banos_usuario_fk
         FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
@@ -1379,8 +1287,6 @@ CREATE TABLE public.biometrias (
     fc_encargado             VARCHAR(100),
     fc_observaciones         VARCHAR(500),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT biometrias_tipo_check
         CHECK (tipo IS NULL
@@ -1421,8 +1327,6 @@ CREATE TABLE public.insumos (
     fc_encargado_recepcion   VARCHAR(100),
     fc_observaciones         VARCHAR(500),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT insumos_usuario_fk
         FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
@@ -1446,8 +1350,6 @@ CREATE TABLE public.inventario_alevines (
     fd_fecha_siembra         DATE,
     fd_fecha_salida_hormonado DATE,
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT inv_alev_cantidad_no_negativa
         CHECK (fn_cantidad IS NULL OR fn_cantidad >= 0),
@@ -1479,8 +1381,6 @@ CREATE TABLE public.medicamentos (
     fd_fecha_ultima_dosis    DATE,
     fc_responsable           VARCHAR(100),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT medicamentos_ultima_dosis_coherente
         CHECK (fd_fecha_ultima_dosis IS NULL
@@ -1510,8 +1410,6 @@ CREATE TABLE public.parametros (
     fn_nitratos              NUMERIC(10,4),
     fc_responsable           VARCHAR(100),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT parametros_ph_range
         CHECK (fn_ph IS NULL OR (fn_ph >= 0 AND fn_ph <= 14)),
@@ -1548,8 +1446,6 @@ CREATE TABLE public.plagas (
     fc_verifico              VARCHAR(100),
     fc_observaciones         VARCHAR(500),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT plagas_usuario_fk
         FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
@@ -1585,8 +1481,6 @@ CREATE TABLE public.recambios (
     fc_tipo6                 VARCHAR(30),
     fc_responsable           VARCHAR(100),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT recambios_usuario_fk
         FOREIGN KEY (fi_usuario_id) REFERENCES public.usuarios (fi_usuario_id) ON DELETE SET NULL
@@ -1641,8 +1535,6 @@ CREATE TABLE public.visitas (
     fc_observaciones         VARCHAR(500),
     fc_foto_identificacion   VARCHAR(200),
     fi_usuario_id            INTEGER,
-    fd_fecha_registro        TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
-    fd_fecha_modificacion    TIMESTAMP(6)  NOT NULL DEFAULT NOW(),
 
     CONSTRAINT visitas_horario_coherente
         CHECK (fd_entrada IS NULL OR fd_salida IS NULL OR fd_salida >= fd_entrada),
@@ -1657,27 +1549,11 @@ CREATE INDEX visitas_usuario_idx   ON public.visitas (fi_usuario_id);
 
 
 -- ============================================================================
--- 17.X  TRIGGERS de auditoría para las nuevas tablas
+-- 17.X  TRIGGERS con columnas de actualización funcionales
 -- ============================================================================
 
-CREATE TRIGGER trg_empleados_touch_modif            BEFORE UPDATE ON rrhh.empleados            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_actas_admin_touch_modif          BEFORE UPDATE ON rrhh.actas_administrativas FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
 CREATE TRIGGER trg_nomina_touch_actualiz            BEFORE UPDATE ON public.nomina             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
 CREATE TRIGGER trg_vacaciones_touch_actualiz        BEFORE UPDATE ON public.vacaciones         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_actualizacion();
-CREATE TRIGGER trg_ventas_touch_modif               BEFORE UPDATE ON public.ventas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_lista_espera_touch_modif         BEFORE UPDATE ON public.lista_espera       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_alimentacion_touch_modif         BEFORE UPDATE ON public.alimentacion       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_banos_touch_modif                BEFORE UPDATE ON public.banos              FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_biometrias_touch_modif           BEFORE UPDATE ON public.biometrias         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_insumos_touch_modif              BEFORE UPDATE ON public.insumos            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_inv_alev_touch_modif             BEFORE UPDATE ON public.inventario_alevines FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_medicamentos_touch_modif         BEFORE UPDATE ON public.medicamentos       FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_parametros_touch_modif           BEFORE UPDATE ON public.parametros         FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_plagas_touch_modif               BEFORE UPDATE ON public.plagas             FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_recambios_touch_modif            BEFORE UPDATE ON public.recambios          FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-CREATE TRIGGER trg_visitas_touch_modif              BEFORE UPDATE ON public.visitas            FOR EACH ROW EXECUTE FUNCTION public.fn_touch_fecha_modificacion();
-
--- Triggers con columnas de nombre distinto
 CREATE TRIGGER trg_proveedores_touch_updated_at     BEFORE UPDATE ON public.proveedores        FOR EACH ROW EXECUTE FUNCTION public.fn_touch_updated_at();
 CREATE TRIGGER trg_caja_ahorro_touch_actualizado    BEFORE UPDATE ON public.caja_ahorro_resumen FOR EACH ROW EXECUTE FUNCTION public.fn_touch_actualizado();
 
