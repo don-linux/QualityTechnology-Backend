@@ -33,7 +33,7 @@ class LoteController {
     static async getInstalaciones(req, res) {
         try {
 
-            const granja = loteModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
 
             const instalaciones = await loteModel.getInstalacionesByGranja(granja);
 
@@ -56,7 +56,7 @@ class LoteController {
 
         try {
 
-            const granja = loteModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
 
             const data = await loteModel.getInstalacionesFromReproductores(granja);
 
@@ -79,7 +79,7 @@ class LoteController {
 
         try {
 
-            const granja = loteModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
 
             const lotes = await loteModel.getByGranja(granja);
 
@@ -129,8 +129,6 @@ class LoteController {
                 return res.status(400).json({ error: errorValidacion });
             }
 
-            const granjaFinal = loteModel.normalizarGranja(fc_granja);
-
             const huevosFinal = huevos_ml ?? huevos ?? 0;
 
             await loteModel.create({
@@ -141,7 +139,7 @@ class LoteController {
                 ovadas,
                 alevines_inicial,
                 no_lote,
-                fc_granja: granjaFinal,
+                fc_granja,
                 observacion,
                 mortalidad,
                 fi_usuario_id: req.user.usuario_id
@@ -193,8 +191,6 @@ class LoteController {
                 return res.status(400).json({ error: errorValidacion });
             }
 
-            const granjaFinal = loteModel.normalizarGranja(fc_granja);
-
             await loteModel.update(id, {
                 fecha,
                 familia,
@@ -203,7 +199,7 @@ class LoteController {
                 ovadas,
                 alevines_inicial,
                 no_lote,
-                fc_granja: granjaFinal,
+                fc_granja,
                 observacion,
                 mortalidad
             });

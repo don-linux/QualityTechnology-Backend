@@ -1,14 +1,6 @@
 import pool from "../db.js";
 
 class BitacoraBiometriaModel {
-    static normalizarGranja(g) {
-        if (!g) return null;
-        g = g.toLowerCase().trim();
-        if (g.includes("med")) return "Granja Acuícola Medellin";
-        if (g.includes("ceiba")) return "Granja Acuícola La Ceiba";
-        return null;
-    }
-
     static async getEmpleadosActivos() {
         const result = await pool.query(`
             SELECT

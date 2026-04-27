@@ -38,7 +38,7 @@ class RecepcionInsumoModel {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
             [fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
                 fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
-                fc_verifico, fc_observaciones, fi_usuario_id, ubicacion || "medellin"]
+                fc_verifico, fc_observaciones, fi_usuario_id, ubicacion || null]
         );
     }
 
@@ -57,7 +57,7 @@ class RecepcionInsumoModel {
        WHERE fi_id=$12`,
             [fd_fecha, fc_proveedor, fc_producto, fc_lote, fc_cantidad,
                 fc_unidad_medida, fc_condiciones_entrega, fc_encargado_entrega,
-                fc_verifico, fc_observaciones, ubicacion || "medellin", id]
+                fc_verifico, fc_observaciones, ubicacion || null, id]
         );
     }
 

@@ -38,7 +38,7 @@ class PiletaController {
 
     static async getOrigen(req, res) {
         try {
-            const granja = piletaModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
             const origenes = await origenModel.getOrigen(granja);
             res.json(origenes);
         } catch (err) {
@@ -50,7 +50,7 @@ class PiletaController {
 static async getDestino(req, res) {
     try {
 
-        const granja = piletaModel.normalizarGranja(req.params.granja);
+        const granja = req.params.granja;
 
         const destino = await origenModel.getDestino(granja);
 
@@ -69,7 +69,7 @@ static async getDestino(req, res) {
 
     static async getLotes(req, res) {
         try {
-            const granja = piletaModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
             const lotes = await piletaModel.getLotesByGranja(granja);
             res.json(lotes);
         } catch (err) {
@@ -80,7 +80,7 @@ static async getDestino(req, res) {
 
     static async getInventario(req, res) {
         try {
-            const granja = piletaModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
             const inventario = await piletaModel.getInventario(granja);
             res.json(inventario);
         } catch (err) {
@@ -91,7 +91,7 @@ static async getDestino(req, res) {
 
     static async getLotePorInst(req, res) {
         try {
-            const granja = piletaModel.normalizarGranja(req.params.granja);
+            const granja = req.params.granja;
             const lote = await piletaModel.getLotePorInstalacion(
                 req.params.inst,
                 granja

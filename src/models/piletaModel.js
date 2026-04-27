@@ -1,15 +1,6 @@
 import pool from "../db.js";
 
 class PiletaModel {
-
-    static normalizarGranja(granja) {
-        if (!granja) return "Granja Acuícola Medellin";
-        const g = granja.toLowerCase();
-        if (g.includes("med")) return "Granja Acuícola Medellin";
-        if (g.includes("ceib")) return "Granja Acuícola La Ceiba";
-        return "Granja Acuícola Medellin";
-    }
-
     /* =====================================================
        LOTES
     ===================================================== */

@@ -19,7 +19,7 @@ class BitacoraVisitaModel {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `,
             [fd_fecha, fc_nombre_completo, fc_origen, fc_motivo, fc_observaciones,
-                fc_foto_identificacion, fd_entrada, fd_salida, fi_usuario_id, ubicacion || "medellin"]
+                fc_foto_identificacion, fd_entrada, fd_salida, fi_usuario_id, ubicacion || null]
         );
     }
 
@@ -39,7 +39,7 @@ class BitacoraVisitaModel {
       `,
             [fd_fecha, fc_nombre_completo, fc_origen, fc_motivo, fc_observaciones,
                 fc_foto_identificacion, fd_entrada, fd_salida, fi_usuario_id,
-                ubicacion || "medellin", id]
+                ubicacion || null, id]
         );
     }
 

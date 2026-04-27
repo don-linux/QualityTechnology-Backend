@@ -14,8 +14,7 @@ class InstalacionController {
     static async getByGranja(req, res) {
         const { granja } = req.params;
         try {
-            const granjaNormalizada = instalacionModel.normalizarGranja(granja);
-            const instalaciones = await instalacionModel.getByGranja(granjaNormalizada);
+            const instalaciones = await instalacionModel.getByGranja(granja);
             res.json(instalaciones);
         } catch (err) {
             console.error("Error al obtener instalaciones por granja:", err);
@@ -26,10 +25,9 @@ class InstalacionController {
     static async create(req, res) {
         const { nombre_instalacion, tipo_instalacion, fc_granja, estado, largo, ancho, altura, material } = req.body;
         try {
-            const granjaFinal = instalacionModel.normalizarGranja(fc_granja);
             const estadoFinal = estado || "vacia";
             await instalacionModel.create({
-                nombre_instalacion, tipo_instalacion, fc_granja: granjaFinal,
+                nombre_instalacion, tipo_instalacion, fc_granja,
                 estado: estadoFinal, largo, ancho, altura, material,
                 fi_usuario_id: req.user.usuario_id
             });
@@ -44,10 +42,9 @@ class InstalacionController {
         const { id } = req.params;
         const { nombre_instalacion, tipo_instalacion, fc_granja, estado, largo, ancho, altura, material } = req.body;
         try {
-            const granjaFinal = instalacionModel.normalizarGranja(fc_granja);
             const estadoFinal = estado || "vacia";
             const updated = await instalacionModel.update(id, {
-                nombre_instalacion, tipo_instalacion, fc_granja: granjaFinal,
+                nombre_instalacion, tipo_instalacion, fc_granja,
                 estado: estadoFinal, largo, ancho, altura, material
             });
             if (!updated) return res.status(404).json({ message: "Instalación no encontrada." });
@@ -72,8 +69,7 @@ class InstalacionController {
     static async getByTipo(req, res) {
         const { tipo, granja } = req.params;
         try {
-            const granjaNormalizada = instalacionModel.normalizarGranja(granja);
-            const instalaciones = await instalacionModel.getByTipoAndGranja(tipo, granjaNormalizada);
+            const instalaciones = await instalacionModel.getByTipoAndGranja(tipo, granja);
             res.json(instalaciones);
         } catch (err) {
             console.error("Error al obtener instalaciones por tipo:", err);

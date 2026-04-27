@@ -37,7 +37,7 @@ class BitacoraPlagaModel {
          fc_observaciones, fc_verifico, unidad_produccion, ubicacion, fi_usuario_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
             [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
-                fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", fi_usuario_id]
+                fc_observaciones, fc_verifico, unidad_produccion, ubicacion || null, fi_usuario_id]
         );
     }
 
@@ -54,7 +54,7 @@ class BitacoraPlagaModel {
         unidad_produccion=$9, ubicacion=$10
        WHERE fi_id=$11`,
             [fd_fecha, fc_num_trampa, tipo_trampa, fc_hallazgo, fc_malla, fc_veneno,
-                fc_observaciones, fc_verifico, unidad_produccion, ubicacion || "medellin", id]
+                fc_observaciones, fc_verifico, unidad_produccion, ubicacion || null, id]
         );
     }
 

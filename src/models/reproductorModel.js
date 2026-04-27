@@ -72,8 +72,7 @@ class ReproductorModel {
           fn_machos, fn_hembras, fc_ratio,
           fc_linea, fc_familia, fc_observacion
         ) VALUES (
-          $1, $2, $3, $4, $5,
-          COALESCE(NULLIF($6,''),'Granja Acuícola Medellin'),
+          $1, $2, $3, $4, $5, $6,
           $7, $8, $9, $10, $11, $12
         ) RETURNING fi_reproductor_id`,
         [

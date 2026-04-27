@@ -5,7 +5,7 @@ const MAX_OBSERVACION = 500;
 class EngordaController {
   static async getByGranja(req, res) {
     try {
-      const granja = engordaModel.normalizarGranja(req.params.granja);
+      const granja = req.params.granja;
       const inventario = await engordaModel.getByGranja(granja);
       res.json(inventario);
     } catch (err) {
@@ -26,7 +26,7 @@ class EngordaController {
       const { fi_usuario_id, ...rest } = req.body;
       const body = {
         ...rest,
-        fc_granja: engordaModel.normalizarGranja(req.body.fc_granja),
+        fc_granja: req.body.fc_granja,
         fi_usuario_id: req.user.usuario_id,
       };
       const result = await engordaModel.createOrUpdate(body);

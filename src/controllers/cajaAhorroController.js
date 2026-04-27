@@ -13,7 +13,7 @@ class CajaAhorroController {
 
   static async create(req, res) {
     try {
-      const { categoria, granja = "Ceiba" } = req.body;
+      const { categoria, granja } = req.body;
       const registro = await cajaAhorroModel.create(categoria, granja);
       res.json(registro);
     } catch (err) {

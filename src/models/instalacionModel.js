@@ -1,14 +1,6 @@
 import pool from "../db.js";
 
 class InstalacionModel {
-    static normalizarGranja(valor) {
-        if (!valor) return "Granja Acuícola Medellin";
-        const texto = valor.toLowerCase();
-        if (texto.includes("medell")) return "Granja Acuícola Medellin";
-        if (texto.includes("ceiba")) return "Granja Acuícola La Ceiba";
-        return "Granja Acuícola Medellin";
-    }
-
     static async getAll() {
         const result = await pool.query(`
       SELECT 

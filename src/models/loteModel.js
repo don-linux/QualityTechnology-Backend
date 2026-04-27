@@ -1,18 +1,6 @@
 import pool from "../db.js";
 
 class LoteModel {
-
-    static normalizarGranja(valor) {
-        if (!valor) return "Granja Acuícola Medellin";
-
-        const v = valor.toLowerCase();
-
-        if (v.includes("medell")) return "Granja Acuícola Medellin";
-        if (v.includes("ceib")) return "Granja Acuícola La Ceiba";
-
-        return "Granja Acuícola Medellin";
-    }
-
     /* =====================================================
         INSTALACIONES
     ====================================================== */

@@ -1,19 +1,8 @@
 import pool from "../db.js";
 
 class OrigenModel {
-
-    static normalizarGranja(granja) {
-        if (!granja) return "Granja Acuícola Medellin";
-        const g = granja.toLowerCase();
-        if (g.includes("med")) return "Granja Acuícola Medellin";
-        if (g.includes("ceib")) return "Granja Acuícola La Ceiba";
-        return "Granja Acuícola Medellin";
-    }
-
     static async getOrigen(granja) {
         try {
-            const granjaFinal = this.normalizarGranja(granja);
-
             const result = await pool.query(
                 `
                 SELECT 
@@ -28,7 +17,7 @@ class OrigenModel {
                 WHERE LOWER(i.fc_granja) = LOWER($1)
                 ORDER BY i.nombre_instalacion ASC
                 `,
-                [granjaFinal]
+                [granja]
             );
 
             return result.rows;
@@ -41,8 +30,6 @@ class OrigenModel {
 
     static async getDestino(granja) {
         try {
-            const granjaFinal = this.normalizarGranja(granja);
-
             const result = await pool.query(
                 `
                 SELECT fi_instalacion_id, nombre_instalacion
@@ -51,7 +38,7 @@ class OrigenModel {
                 AND LOWER(estado) = 'vacia'
                 ORDER BY nombre_instalacion ASC
                 `,
-                [granjaFinal]
+                [granja]
             );
 
             return result.rows;

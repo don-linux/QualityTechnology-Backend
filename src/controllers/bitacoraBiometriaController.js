@@ -28,8 +28,7 @@ class BitacoraBiometriaController {
 
     static async getByGranja(req, res) {
         try {
-            const granja = bitacoraBiometriaModel.normalizarGranja(req.params.granja);
-            if (!granja) return res.status(400).json({ error: "Granja inválida" });
+            const { granja } = req.params;
 
             const result = await bitacoraBiometriaModel.getByGranja(granja);
             res.json(result);
@@ -66,9 +65,6 @@ class BitacoraBiometriaController {
                 return res.status(400).json({ error: errorTexto });
             }
 
-            const granjaFinal = bitacoraBiometriaModel.normalizarGranja(ubicacion);
-            if (!granjaFinal) return res.status(400).json({ error: "Granja inválida" });
-
             const pesoProm = fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
                 ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
                 : 0;
@@ -79,7 +75,7 @@ class BitacoraBiometriaController {
                 fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados,
                 fn_peso_promedio: pesoProm, fc_observaciones, fc_encargado,
                 fi_instalacion_id, fi_lote_id, tipo: tipoUpper, fi_usuario_id,
-                fc_granja: granjaFinal, ubicacion
+                fc_granja: ubicacion, ubicacion
             });
 
             if (fi_instalacion_id) {
