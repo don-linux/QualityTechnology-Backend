@@ -51,6 +51,9 @@ import tipoDocumentoRoutes from "./src/routes/tipoDocumentoRoutes.js";
 import documentoEmpleadoRoutes from "./src/routes/documentoEmpleadoRoutes.js";
 import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 
+// Ubicaciones
+import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
+
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
 import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
@@ -141,6 +144,7 @@ app.use("/documentos-empleado", documentoEmpleadoRoutes);
 app.use("/actas-administrativas", actaAdministrativaRoutes);
 
 //Seguridad - Roles y Módulos
+app.use("/ubicaciones", ubicacionRoutes);
 app.use("/modulos", modulosRoutes);
 app.use("/roles-modulos", rolesModulosRoutes);
 

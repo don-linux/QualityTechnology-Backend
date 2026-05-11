@@ -1809,7 +1809,8 @@ WITH modulos_base (nombre, ruta, activo) AS (
         ('Departamentos',     '/departamentos',     true),
         ('Modulos',           '/modulos',           true),
         ('Roles Modulos',     '/roles-modulos',     true),
-        ('Unidades de Negocio', '/unidades-negocio', true)
+        ('Unidades de Negocio', '/unidades-negocio', true),
+        ('Ubicaciones',         '/ubicaciones',      true)
 )
 INSERT INTO modulos (nombre, ruta, activo)
 SELECT nombre, ruta, activo FROM modulos_base
