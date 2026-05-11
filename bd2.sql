@@ -187,6 +187,24 @@ CREATE INDEX observaciones_usuario_idx ON observaciones (usuario_id);
 CREATE INDEX observaciones_fecha_idx   ON observaciones (fecha DESC);
 
 COMMENT ON TABLE observaciones IS
+
+-- ============================================================================
+-- 1.7  UBICACIONES (granjas fisicas)
+-- ============================================================================
+CREATE TABLE ubicaciones (
+    ubicacion_id  INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre        VARCHAR(150)  NOT NULL,
+    direccion     VARCHAR(300),
+    descripcion   VARCHAR(500),
+    activo        BOOLEAN       NOT NULL DEFAULT TRUE,
+    CONSTRAINT ubicaciones_nombre_uk UNIQUE (nombre)
+);
+
+CREATE INDEX ubicaciones_activo_idx ON ubicaciones (activo);
+
+COMMENT ON TABLE ubicaciones IS
+'Granjas fisicas. Reemplaza los VARCHAR granja/ubicacion eliminando CHECK hardcodeados.';
+
 'Tabla centralizada de notas y responsable de operación. Referenciada mediante
  observacion_id (FK nullable SET NULL) desde todas las entidades operativas.';
 
@@ -208,7 +226,7 @@ CREATE TABLE instalaciones (
     metros_cubicos          numeric(12,2)  GENERATED ALWAYS AS (largo * ancho * altura) STORED,
     tipo_instalacion        varchar(20)    NOT NULL,
     estado                  varchar(20)    NOT NULL DEFAULT 'vacia',
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
 
     CONSTRAINT instalaciones_largo_chk   CHECK (largo  > 0),
@@ -218,16 +236,17 @@ CREATE TABLE instalaciones (
         CHECK (tipo_instalacion IN ('Alevinaje', 'Reproductores', 'Engorda')),
     CONSTRAINT instalaciones_estado_chk
         CHECK (estado IN ('vacia', 'ocupada')),
-    CONSTRAINT instalaciones_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
-    CONSTRAINT instalaciones_nombre_granja_uk
-        UNIQUE (nombre_instalacion, granja),
+    CONSTRAINT instalaciones_nombre_uk
+        UNIQUE (nombre_instalacion, ubicacion_id),
     CONSTRAINT instalaciones_usuario_fk
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id)
-        ON DELETE RESTRICT ON UPDATE CASCADE
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT instalaciones_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX instalaciones_granja_idx  ON instalaciones (granja);
+CREATE INDEX instalaciones_ubicacion_idx  ON instalaciones (ubicacion_id);
 CREATE INDEX instalaciones_tipo_idx    ON instalaciones (tipo_instalacion);
 CREATE INDEX instalaciones_usuario_idx ON instalaciones (usuario_id);
 
@@ -259,7 +278,7 @@ CREATE TABLE reproductores (
     familia              varchar(20),
     fecha_siembra        date,
     fecha_biometria      date,
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
 
     observacion_id    INTEGER,
@@ -267,8 +286,6 @@ CREATE TABLE reproductores (
     CONSTRAINT reproductores_machos_chk  CHECK (machos  >= 0),
     CONSTRAINT reproductores_hembras_chk CHECK (hembras >= 0),
     CONSTRAINT reproductores_talla_chk   CHECK (talla IS NULL OR talla > 0),
-    CONSTRAINT reproductores_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
     CONSTRAINT reproductores_instalacion_fk
         FOREIGN KEY (instalacion_id) REFERENCES instalaciones (instalacion_id)
         ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -277,11 +294,14 @@ CREATE TABLE reproductores (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT reproductores_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT reproductores_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX reproductores_instalacion_idx ON reproductores (instalacion_id);
-CREATE INDEX reproductores_granja_idx      ON reproductores (granja);
+CREATE INDEX reproductores_ubicacion_idx      ON reproductores (ubicacion_id);
 CREATE INDEX reproductores_familia_idx     ON reproductores (familia);
 
 COMMENT ON TABLE  reproductores IS
@@ -315,7 +335,7 @@ CREATE TABLE lotes (
                                     ELSE 0
                                 END
                             ) STORED,
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
 
     observacion_id    INTEGER,
@@ -325,8 +345,6 @@ CREATE TABLE lotes (
     CONSTRAINT lotes_mortalidad_chk       CHECK (mortalidad       >= 0),
     CONSTRAINT lotes_mortalidad_limit_chk CHECK (mortalidad       <= alevines_inicial),
     CONSTRAINT lotes_no_lote_chk          CHECK (no_lote ~ '^[A-Z0-9-]+$'),
-    CONSTRAINT lotes_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
     CONSTRAINT lotes_no_lote_uk
         UNIQUE (no_lote),
     CONSTRAINT lotes_instalacion_fk
@@ -337,11 +355,14 @@ CREATE TABLE lotes (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT lotes_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT lotes_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX lotes_instalacion_idx ON lotes (instalacion_id);
-CREATE INDEX lotes_granja_idx      ON lotes (granja);
+CREATE INDEX lotes_ubicacion_idx      ON lotes (ubicacion_id);
 CREATE INDEX lotes_fecha_idx       ON lotes (fecha);
 
 COMMENT ON TABLE  lotes IS
@@ -367,15 +388,13 @@ CREATE TABLE piletas (
     talla_gr                numeric(14,2),
     fecha_siembra        date           NOT NULL DEFAULT CURRENT_DATE,
     fecha_ultima_biometria date         NOT NULL DEFAULT CURRENT_DATE,
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
 
     observacion_id    INTEGER,
 
     CONSTRAINT piletas_cantidad_chk CHECK (cantidad >= 0),
     CONSTRAINT piletas_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
-    CONSTRAINT piletas_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
     CONSTRAINT piletas_instalacion_uk
         UNIQUE (instalacion_id),
     CONSTRAINT piletas_instalacion_fk
@@ -389,11 +408,14 @@ CREATE TABLE piletas (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT piletas_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT piletas_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX piletas_lote_idx    ON piletas (lote_id);
-CREATE INDEX piletas_granja_idx  ON piletas (granja);
+CREATE INDEX piletas_ubicacion_idx  ON piletas (ubicacion_id);
 CREATE INDEX piletas_usuario_idx ON piletas (usuario_id);
 
 COMMENT ON TABLE  piletas IS
@@ -417,15 +439,13 @@ CREATE TABLE engorda (
     talla_gr                numeric(10,2),
     fecha_siembra        date,
     fecha_biometria      date,
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
 
     observacion_id    INTEGER,
 
     CONSTRAINT engorda_cantidad_chk CHECK (cantidad > 0),
     CONSTRAINT engorda_talla_chk    CHECK (talla_gr IS NULL OR talla_gr > 0),
-    CONSTRAINT engorda_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
     CONSTRAINT engorda_instalacion_fk
         FOREIGN KEY (instalacion_id) REFERENCES instalaciones (instalacion_id)
         ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -437,12 +457,15 @@ CREATE TABLE engorda (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT engorda_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT engorda_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX engorda_instalacion_idx ON engorda (instalacion_id);
 CREATE INDEX engorda_lote_idx        ON engorda (lote_id);
-CREATE INDEX engorda_granja_idx      ON engorda (granja);
+CREATE INDEX engorda_ubicacion_idx      ON engorda (ubicacion_id);
 
 COMMENT ON TABLE  engorda IS
     'Estado vigente de cada instalación de engorda. El histórico está en trazabilidad_engorda.';
@@ -588,7 +611,7 @@ CREATE TABLE trazabilidad_alevinaje (
     origen_externo          text,
     tipo_movimiento         varchar(20)    NOT NULL DEFAULT 'TRASLADO',
     cantidad                bigint         NOT NULL,
-    granja               varchar(100)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     usuario_id           integer        NOT NULL,
     fecha_movimiento     date           NOT NULL DEFAULT CURRENT_DATE,
 
@@ -597,8 +620,6 @@ CREATE TABLE trazabilidad_alevinaje (
     CONSTRAINT traza_alev_cantidad_chk CHECK (cantidad > 0),
     CONSTRAINT traza_alev_tipo_chk
         CHECK (tipo_movimiento IN ('TRASLADO', 'SIEMBRA', 'MORTALIDAD')),
-    CONSTRAINT traza_alev_granja_chk
-        CHECK (granja IN ('Granja Acuícola Medellin', 'Granja Acuícola La Ceiba')),
     CONSTRAINT traza_alev_origen_chk CHECK (
         pileta_origen     IS NOT NULL
      OR instalacion_origen IS NOT NULL
@@ -628,7 +649,10 @@ CREATE TABLE trazabilidad_alevinaje (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT trazabilidad_alevinaje_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT trazabilidad_alevinaje_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX traza_alev_pileta_origen_idx       ON trazabilidad_alevinaje (pileta_origen);
@@ -637,7 +661,7 @@ CREATE INDEX traza_alev_instalacion_origen_idx  ON trazabilidad_alevinaje (insta
 CREATE INDEX traza_alev_instalacion_destino_idx ON trazabilidad_alevinaje (instalacion_destino);
 CREATE INDEX traza_alev_lote_idx                ON trazabilidad_alevinaje (lote_id);
 CREATE INDEX traza_alev_fecha_idx               ON trazabilidad_alevinaje (fecha_movimiento DESC);
-CREATE INDEX traza_alev_granja_idx              ON trazabilidad_alevinaje (granja);
+CREATE INDEX traza_alev_ubicacion_idx              ON trazabilidad_alevinaje (ubicacion_id);
 
 COMMENT ON TABLE trazabilidad_alevinaje IS
     'Histórico de movimientos de alevinaje (traslados, siembras, mortalidad).';
@@ -938,7 +962,7 @@ COMMENT ON TABLE vacaciones IS
 CREATE TABLE caja_ahorro_resumen (
     caja_ahorro_id   INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     categoria        VARCHAR(100)   NOT NULL,
-    granja           VARCHAR(50)    NOT NULL DEFAULT 'Ceiba',
+    ubicacion_id         INTEGER        NOT NULL,
 
     enero       NUMERIC(12,2) NOT NULL DEFAULT 0,
     febrero     NUMERIC(12,2) NOT NULL DEFAULT 0,
@@ -962,16 +986,19 @@ CREATE TABLE caja_ahorro_resumen (
 
     actualizado TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT caja_ahorro_categoria_granja_uq UNIQUE (categoria, granja),
+    CONSTRAINT caja_ahorro_categoria_ubicacion_uq UNIQUE (categoria, ubicacion_id),
 
     CONSTRAINT caja_ahorro_montos_no_negativos
         CHECK (enero>=0 AND febrero>=0 AND marzo>=0 AND abril>=0
            AND mayo>=0  AND junio>=0   AND julio>=0 AND agosto>=0
-           AND septiembre>=0 AND octubre>=0 AND noviembre>=0 AND diciembre>=0)
+           AND septiembre>=0 AND octubre>=0 AND noviembre>=0 AND diciembre>=0),
+    CONSTRAINT caja_ahorro_resumen_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX caja_ahorro_categoria_idx ON caja_ahorro_resumen (categoria);
-CREATE INDEX caja_ahorro_granja_idx    ON caja_ahorro_resumen (granja);
+CREATE INDEX caja_ahorro_ubicacion_idx    ON caja_ahorro_resumen (ubicacion_id);
 
 COMMENT ON TABLE caja_ahorro_resumen IS
 'Resumen anual (12 meses) del fondo de caja de ahorro. Una fila por
@@ -1115,18 +1142,21 @@ CREATE TABLE lista_espera (
     encargado_venta      VARCHAR(200),
     unidad_produccion    VARCHAR(200),
     uap_asignada         VARCHAR(200),
-    granja_asignada      VARCHAR(200),
+    ubicacion_id         INTEGER,
     hora_embolsado       VARCHAR(20),
     hora_entrega         VARCHAR(20),
 
     CONSTRAINT lista_espera_cantidad_positiva   CHECK (cantidad > 0),
     CONSTRAINT lista_espera_precio_no_negativo
-        CHECK (precio_venta IS NULL OR precio_venta >= 0)
+        CHECK (precio_venta IS NULL OR precio_venta >= 0),
+    CONSTRAINT lista_espera_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE SET NULL
 );
 
 CREATE INDEX lista_espera_fecha_entrega_idx ON lista_espera (fecha_entrega);
 CREATE INDEX lista_espera_cliente_idx       ON lista_espera (cliente);
-CREATE INDEX lista_espera_granja_idx        ON lista_espera (granja_asignada);
+CREATE INDEX lista_espera_granja_idx        ON lista_espera (ubicacion_id);
 
 COMMENT ON TABLE lista_espera IS
 'Pedidos confirmados pendientes de entrega. Al concretarse la entrega se
@@ -1169,7 +1199,7 @@ COMMENT ON TABLE cuentas IS
 
 CREATE TABLE flujo_caja (
     movimiento_id      INTEGER        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    granja             VARCHAR(50)    NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha              DATE           NOT NULL,
     ingreso            NUMERIC(12,2)  NOT NULL DEFAULT 0,
     egreso             NUMERIC(12,2)  NOT NULL DEFAULT 0,
@@ -1191,10 +1221,13 @@ CREATE TABLE flujo_caja (
         CHECK (estatus IS NULL
                OR estatus IN ('REPOSICION','LIQUIDADO','ADEUDO','PARCIAL')),
     CONSTRAINT flujo_caja_mes_formato
-        CHECK (mes IS NULL OR mes ~ '^[0-9]{4}-[0-9]{2}$')
+        CHECK (mes IS NULL OR mes ~ '^[0-9]{4}-[0-9]{2}$'),
+    CONSTRAINT flujo_caja_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX flujo_caja_granja_idx    ON flujo_caja (granja);
+CREATE INDEX flujo_caja_ubicacion_idx    ON flujo_caja (ubicacion_id);
 CREATE INDEX flujo_caja_fecha_idx     ON flujo_caja (fecha DESC);
 CREATE INDEX flujo_caja_cuenta_idx    ON flujo_caja (cuenta);
 CREATE INDEX flujo_caja_categoria_idx ON flujo_caja (categoria);
@@ -1210,16 +1243,17 @@ COMMENT ON TABLE flujo_caja IS
 
 CREATE OR REPLACE VIEW vw_tesoreria_general AS
 SELECT
-    granja,
-    mes,
-    categoria,
-    SUM(ingreso)                   AS total_ingreso,
-    SUM(egreso)                    AS total_egreso,
-    SUM(ingreso - egreso)       AS saldo_neto
-FROM flujo_caja
-WHERE ingreso IS NOT NULL OR egreso IS NOT NULL
-GROUP BY granja, mes, categoria
-ORDER BY granja, mes, categoria;
+    u.nombre                          AS granja,
+    fc.mes,
+    fc.categoria,
+    SUM(fc.ingreso)                   AS total_ingreso,
+    SUM(fc.egreso)                    AS total_egreso,
+    SUM(fc.ingreso - fc.egreso)       AS saldo_neto
+FROM flujo_caja fc
+JOIN ubicaciones u ON u.ubicacion_id = fc.ubicacion_id
+WHERE fc.ingreso IS NOT NULL OR fc.egreso IS NOT NULL
+GROUP BY u.nombre, fc.mes, fc.categoria
+ORDER BY u.nombre, fc.mes, fc.categoria;
 
 COMMENT ON VIEW vw_tesoreria_general IS
 'Agregado mensual de flujo_caja por granja y categoría. Consumido por
@@ -1282,7 +1316,7 @@ COMMENT ON TABLE lote_movimientos IS
 
 CREATE TABLE alimentacion (
     id                      INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                  VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha                   DATE,
     mes                     VARCHAR(20),
     num_instalacion         INTEGER,
@@ -1310,10 +1344,13 @@ CREATE TABLE alimentacion (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT alimentacion_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT alimentacion_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX alimentacion_ubicacion_idx ON alimentacion (ubicacion);
+CREATE INDEX alimentacion_ubicacion_idx ON alimentacion (ubicacion_id);
 CREATE INDEX alimentacion_fecha_idx     ON alimentacion (fecha DESC);
 CREATE INDEX alimentacion_usuario_idx   ON alimentacion (usuario_id);
 
@@ -1322,7 +1359,7 @@ CREATE INDEX alimentacion_usuario_idx   ON alimentacion (usuario_id);
 
 CREATE TABLE banos (
     id                  INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion              VARCHAR(50)  NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha               DATE         NOT NULL,
     tipo_banio          VARCHAR(20),
     regadera            VARCHAR(100),
@@ -1335,10 +1372,13 @@ CREATE TABLE banos (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT banos_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT banos_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX banos_ubicacion_idx ON banos (ubicacion);
+CREATE INDEX banos_ubicacion_idx ON banos (ubicacion_id);
 CREATE INDEX banos_fecha_idx     ON banos (fecha DESC);
 CREATE INDEX banos_usuario_idx   ON banos (usuario_id);
 
@@ -1350,11 +1390,10 @@ CREATE INDEX banos_usuario_idx   ON banos (usuario_id);
 
 CREATE TABLE biometrias (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     instalacion_id        INTEGER,
     reproductor_id        INTEGER,
     tipo                     VARCHAR(20),
-    granja                VARCHAR(100),
     fecha                 DATE          NOT NULL,
     peso_total_gramos     NUMERIC(12,3),
     organismos_muestreados INTEGER,
@@ -1382,10 +1421,13 @@ CREATE TABLE biometrias (
         FOREIGN KEY (usuario_id)     REFERENCES usuarios (usuario_id)          ON DELETE SET NULL,
     CONSTRAINT biometrias_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
+        ON DELETE SET NULL,
+    CONSTRAINT biometrias_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
         ON DELETE SET NULL
 );
 
-CREATE INDEX biometrias_ubicacion_idx    ON biometrias (ubicacion);
+CREATE INDEX biometrias_ubicacion_idx    ON biometrias (ubicacion_id);
 CREATE INDEX biometrias_instalacion_idx  ON biometrias (instalacion_id);
 CREATE INDEX biometrias_reproductor_idx  ON biometrias (reproductor_id);
 CREATE INDEX biometrias_fecha_idx        ON biometrias (fecha DESC);
@@ -1397,7 +1439,7 @@ CREATE INDEX biometrias_usuario_idx      ON biometrias (usuario_id);
 
 CREATE TABLE insumos (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha                 DATE          NOT NULL,
     cantidad_udm          VARCHAR(100),
     num_lote              VARCHAR(100),
@@ -1412,10 +1454,13 @@ CREATE TABLE insumos (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT insumos_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT insumos_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX insumos_ubicacion_idx ON insumos (ubicacion);
+CREATE INDEX insumos_ubicacion_idx ON insumos (ubicacion_id);
 CREATE INDEX insumos_fecha_idx     ON insumos (fecha DESC);
 CREATE INDEX insumos_usuario_idx   ON insumos (usuario_id);
 
@@ -1424,7 +1469,7 @@ CREATE INDEX insumos_usuario_idx   ON insumos (usuario_id);
 
 CREATE TABLE inventario_alevines (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     num_instalacion       INTEGER,
     lote                  VARCHAR(100),
     cantidad              INTEGER,
@@ -1446,10 +1491,13 @@ CREATE TABLE inventario_alevines (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT inventario_alevines_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT inventario_alevines_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX inv_alev_ubicacion_idx ON inventario_alevines (ubicacion);
+CREATE INDEX inv_alev_ubicacion_idx ON inventario_alevines (ubicacion_id);
 CREATE INDEX inv_alev_lote_idx      ON inventario_alevines (lote);
 CREATE INDEX inv_alev_usuario_idx   ON inventario_alevines (usuario_id);
 
@@ -1458,7 +1506,7 @@ CREATE INDEX inv_alev_usuario_idx   ON inventario_alevines (usuario_id);
 
 CREATE TABLE medicamentos (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha_hora            TIMESTAMP(6)  NOT NULL,
     num_estanque          INTEGER,
     diagnosis             VARCHAR(500),
@@ -1478,10 +1526,13 @@ CREATE TABLE medicamentos (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT medicamentos_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT medicamentos_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX medicamentos_ubicacion_idx ON medicamentos (ubicacion);
+CREATE INDEX medicamentos_ubicacion_idx ON medicamentos (ubicacion_id);
 CREATE INDEX medicamentos_fecha_idx     ON medicamentos (fecha_hora DESC);
 CREATE INDEX medicamentos_usuario_idx   ON medicamentos (usuario_id);
 
@@ -1490,7 +1541,7 @@ CREATE INDEX medicamentos_usuario_idx   ON medicamentos (usuario_id);
 
 CREATE TABLE parametros (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     fecha                 DATE          NOT NULL,
     num_estanque          INTEGER,
     oxigeno               NUMERIC(8,3),
@@ -1518,10 +1569,13 @@ CREATE TABLE parametros (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT parametros_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT parametros_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX parametros_ubicacion_idx ON parametros (ubicacion);
+CREATE INDEX parametros_ubicacion_idx ON parametros (ubicacion_id);
 CREATE INDEX parametros_fecha_idx     ON parametros (fecha DESC);
 CREATE INDEX parametros_usuario_idx   ON parametros (usuario_id);
 
@@ -1530,7 +1584,7 @@ CREATE INDEX parametros_usuario_idx   ON parametros (usuario_id);
 
 CREATE TABLE plagas (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(100),
+    ubicacion_id         INTEGER,
     unidad_produccion        VARCHAR(100),
     fecha                 DATE          NOT NULL,
     num_trampa            VARCHAR(100),
@@ -1547,10 +1601,13 @@ CREATE TABLE plagas (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT plagas_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
+        ON DELETE SET NULL,
+    CONSTRAINT plagas_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
         ON DELETE SET NULL
 );
 
-CREATE INDEX plagas_ubicacion_idx ON plagas (ubicacion);
+CREATE INDEX plagas_ubicacion_idx ON plagas (ubicacion_id);
 CREATE INDEX plagas_fecha_idx     ON plagas (fecha DESC);
 CREATE INDEX plagas_usuario_idx   ON plagas (usuario_id);
 
@@ -1563,7 +1620,7 @@ CREATE INDEX plagas_usuario_idx   ON plagas (usuario_id);
 
 CREATE TABLE recambios (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50)   NOT NULL,
+    ubicacion_id         INTEGER        NOT NULL,
     mes                   VARCHAR(20),
     num_instalacion       INTEGER,
     fecha1                DATE,
@@ -1586,10 +1643,13 @@ CREATE TABLE recambios (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT recambios_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    CONSTRAINT recambios_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
+        ON DELETE RESTRICT
 );
 
-CREATE INDEX recambios_ubicacion_idx ON recambios (ubicacion);
+CREATE INDEX recambios_ubicacion_idx ON recambios (ubicacion_id);
 CREATE INDEX recambios_mes_idx       ON recambios (mes);
 CREATE INDEX recambios_usuario_idx   ON recambios (usuario_id);
 
@@ -1598,7 +1658,7 @@ CREATE INDEX recambios_usuario_idx   ON recambios (usuario_id);
 
 CREATE TABLE recepcion_insumos (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50),
+    ubicacion_id         INTEGER,
     fecha                 DATE          NOT NULL,
     proveedor             VARCHAR(100),
     producto              VARCHAR(255),
@@ -1619,10 +1679,13 @@ CREATE TABLE recepcion_insumos (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT recepcion_insumos_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
+        ON DELETE SET NULL,
+    CONSTRAINT recepcion_insumos_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
         ON DELETE SET NULL
 );
 
-CREATE INDEX recepcion_ubicacion_idx  ON recepcion_insumos (ubicacion);
+CREATE INDEX recepcion_ubicacion_idx  ON recepcion_insumos (ubicacion_id);
 CREATE INDEX recepcion_fecha_idx      ON recepcion_insumos (fecha DESC);
 CREATE INDEX recepcion_proveedor_idx  ON recepcion_insumos (proveedor);
 CREATE INDEX recepcion_usuario_idx    ON recepcion_insumos (usuario_id);
@@ -1632,7 +1695,7 @@ CREATE INDEX recepcion_usuario_idx    ON recepcion_insumos (usuario_id);
 
 CREATE TABLE visitas (
     id                    INTEGER       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ubicacion                VARCHAR(50),
+    ubicacion_id         INTEGER,
     fecha                 DATE          NOT NULL,
     entrada               TIME(6),
     salida                TIME(6),
@@ -1651,10 +1714,13 @@ CREATE TABLE visitas (
         FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id) ON DELETE SET NULL,
     CONSTRAINT visitas_observacion_fk
         FOREIGN KEY (observacion_id) REFERENCES observaciones (observacion_id)
+        ON DELETE SET NULL,
+    CONSTRAINT visitas_ubicacion_fk
+        FOREIGN KEY (ubicacion_id) REFERENCES ubicaciones (ubicacion_id)
         ON DELETE SET NULL
 );
 
-CREATE INDEX visitas_ubicacion_idx ON visitas (ubicacion);
+CREATE INDEX visitas_ubicacion_idx ON visitas (ubicacion_id);
 CREATE INDEX visitas_fecha_idx     ON visitas (fecha DESC);
 CREATE INDEX visitas_usuario_idx   ON visitas (usuario_id);
 
@@ -1675,6 +1741,13 @@ CREATE TRIGGER trg_caja_ahorro_touch_actualizado    BEFORE UPDATE ON caja_ahorro
 -- Seguros de re-ejecutar: todos los INSERT usan ON CONFLICT DO NOTHING/UPDATE.
 -- Al final se sincronizan las secuencias de identidad con el máximo insertado.
 -- ============================================================================
+
+
+-- Ubicaciones (granjas fisicas)
+INSERT INTO ubicaciones (nombre, descripcion) VALUES
+    ('Granja Acuicola Medellin', 'Granja acuicola ubicada en Medellin'),
+    ('Granja Acuicola La Ceiba',  'Granja acuicola ubicada en La Ceiba')
+ON CONFLICT (nombre) DO NOTHING;
 
 -- Rol raíz
 INSERT INTO roles (rol_id, nombre, es_root)
