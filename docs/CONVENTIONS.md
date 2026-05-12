@@ -1,10 +1,10 @@
 # Conventions
 
 ## Technology baseline
-- Runtime: Bun
+- Runtime: Node.js
 - Language and module system: JavaScript with ES modules
 - Web framework: Express 5
-- Database driver: `pg`
+- Data access: Prisma (`src/prisma.js`) for newer modules and `pg` (via `src/db.js` / `src/models/**`) where legacy SQL access remains.
 - API documentation source: `swagger.yaml`
 
 ## Project structure

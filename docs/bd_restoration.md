@@ -41,7 +41,7 @@ After this reset, re-import `db.sql` or the legacy SQL file you intend to use.
 If you need to reseed security modules and root-role module assignments after the schema is present and the database is reachable through the configured `PG*` variables, run:
 
 ```bash
-bun seed.js
+node seed.js
 ```
 
 ## Unverified Historical Context

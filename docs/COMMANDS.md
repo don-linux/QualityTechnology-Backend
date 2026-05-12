@@ -1,32 +1,39 @@
 # Commands
 
-Only commands verified from repository files are listed here. Use Bun for project scripts and one-off JavaScript execution.
+Only commands verified from repository files are listed here. Use Node.js (`node`) for entrypoints and npm for installs and scripts from `package.json`.
 
 ## Prerequisites
-- Bun must be available locally.
+- Node.js must be available locally (use a recent LTS that supports `node --watch`; the dev container image targets Node 24).
 - PostgreSQL connection variables are read from `PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`, and `PGDATABASE`.
 - The app also reads `PORT`, `FRONTEND_URL`, and `JWT_SECRET`.
 - `BACKEND_URL` exists in `.env.example`, but its runtime usage was not verified in the JavaScript source.
+- Dependencies are pinned with `package-lock.json`; use reproducible installs with `npm ci` when installing from scratch for CI/production-style flows.
 
 ## Local development
 
 ### Install dependencies
 ```bash
-bun install
+npm install
 ```
-Verified from the Docker startup commands, which run Bun installs before starting the app.
+Verified against `docker/dev/compose.yaml` (`npm install` before `npm run dev`).
+
+After schema changes involving Prisma, regenerate the client:
+
+```bash
+npm run prisma:generate
+```
 
 ### Start in watch mode
 ```bash
-bun run dev
+npm run dev
 ```
-Source: `package.json` -> `dev` -> `bun --watch index.mjs`
+Source: `package.json` -> `dev` -> `node --watch index.mjs`
 
 ### Start without watch mode
 ```bash
-bun run start
+npm run start
 ```
-Source: `package.json` -> `start` -> `bun index.mjs`
+Source: `package.json` -> `start` -> `node index.mjs`
 
 ## Docker
 
@@ -35,7 +42,7 @@ Source: `package.json` -> `start` -> `bun index.mjs`
 docker compose -f docker/dev/compose.yaml up --build
 ```
 - Starts the Express app and a Postgres 18 container.
-- The Express service runs `bun install && bun run dev`.
+- The Express service runs `npm install && npm run dev`.
 - `db.sql` is mounted into Postgres initialization.
 - The compose file references variables shown in `docker/dev/.env.example`.
 
@@ -44,18 +51,28 @@ docker compose -f docker/dev/compose.yaml up --build
 docker compose -f docker/prod/compose.yaml up --build
 ```
 - Starts the Express container only.
-- The container runs `bun install --frozen-lockfile || bun install && bun run start`.
+- The Docker image installs with `npm ci`, runs `npx prisma generate`, prunes dev dependencies, and starts via `CMD ["node", "index.mjs"]`; see `docker/prod/Dockerfile`.
 - The compose file references variables shown in `docker/prod/.env.example`.
 
 ## Database bootstrap
 
-### Seed security modules and root-role assignments
+### Seed security modules and root-role assignments (legacy script)
+
+When a repository-level `seed.js` exists for this purpose, run it with Node using the configured `PG*` variables:
+
 ```bash
-bun seed.js
+node seed.js
 ```
-- Seeds `seguridad.modulos`.
-- Assigns all modules to roles where `fb_es_root = true`.
-- Uses the same PostgreSQL environment variables as `src/db.js`.
+
+Otherwise use the project's current tooling (Prisma/API) for data setup.
+
+## Prisma CLI (from package.json)
+
+- `npm run prisma:generate` — generate Prisma Client after schema changes (`prisma/schema.prisma`).
+- `npm run prisma:migrate` — development migrations.
+- `npm run prisma:deploy` — deploy migrations (typical CI/production migrations).
+- `npm run prisma:studio` — open Prisma Studio.
+- `npm run prisma:format` — format schema file.
 
 ## Notes about environment files
 - `.env.example` currently documents the main local runtime variables.
@@ -64,6 +81,6 @@ bun seed.js
 - `NODE_ENV` is checked by `index.mjs` to disable `/api-docs` in production, but it is not declared in the root `.env.example`.
 
 ## Commands not verified
-- No `bun test` command was found in `package.json`.
-- No lint, format, build, or migration script was found in `package.json`.
+- No `npm test` script was found in `package.json`.
+- No lint, format, or build script was found in `package.json` beyond Prisma tooling.
 - No CI workflow command set was found under `.github/workflows/`.
