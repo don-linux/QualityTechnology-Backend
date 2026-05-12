@@ -1,6 +1,12 @@
 import prisma from "../prisma.js";
 import { serializeInventarioAlevin } from "../utils/serializers.js";
-import { resolverUbicacion, resolverOCrearUbicacion } from "../utils/ubicacion.js";
+import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
+import { crearObservacionSiHay } from "../utils/observacion.js";
+
+// InventarioAlevin en el schema actual reemplaza `numInstalacion` por
+// `pileta_id` y `lote` por `lote_nombre`. El usuarioId pasa por @map a
+// usuario_id como antes. Los aliases viejos (fn_num_instalacion, fc_lote)
+// se siguen aceptando en el body para compatibilidad con el frontend.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -27,22 +33,11 @@ function toDateOrNull(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-async function crearObservacionSiHay(tx, texto, usuarioId) {
-  if (texto === undefined || texto === null || String(texto).trim() === "") return null;
-  const obs = await tx.observacion.create({
-    data: {
-      observacion: String(texto).slice(0, 500),
-      usuarioId: usuarioId ?? null,
-    },
-  });
-  return obs.observacionId;
-}
-
 class AlevinController {
   static async getAll(req, res) {
     try {
       const alevines = await prisma.inventarioAlevin.findMany({
-        include: { ubicacion: true, observacion: true },
+        include: { ubicacion: true, observacion: true, piletas: true },
         orderBy: { id: "desc" },
       });
       res.json(alevines.map(serializeInventarioAlevin));
@@ -66,10 +61,10 @@ class AlevinController {
         return tx.inventarioAlevin.create({
           data: {
             ubicacionId: ubicacion.ubicacionId,
-            numInstalacion: toInt(req.body.fn_num_instalacion),
-            lote: pick(req.body, "fc_lote", "lote") ?? null,
-            cantidad: toInt(req.body.fn_cantidad),
-            talla: toDecimal(req.body.fn_talla),
+            pileta_id: toInt(pick(req.body, "pileta_id", "fn_num_instalacion")),
+            lote_nombre: pick(req.body, "lote_nombre", "fc_lote", "lote") ?? null,
+            cantidad: toInt(req.body.fn_cantidad ?? req.body.cantidad),
+            talla: toDecimal(req.body.fn_talla ?? req.body.talla),
             fechaSiembra: toDateOrNull(pick(req.body, "fd_fecha_siembra", "fecha_siembra")),
             fechaSalidaHormonado: toDateOrNull(
               pick(req.body, "fd_fecha_salida_hormonado", "fecha_salida_hormonado")
@@ -77,7 +72,7 @@ class AlevinController {
             usuarioId,
             observacionId: obsId,
           },
-          include: { ubicacion: true, observacion: true },
+          include: { ubicacion: true, observacion: true, piletas: true },
         });
       });
 
@@ -100,18 +95,23 @@ class AlevinController {
         if (!ubicacion) return res.status(400).json({ error: "ubicacion/granja invalida" });
         updateData.ubicacionId = ubicacion.ubicacionId;
       }
-      if (req.body.fn_num_instalacion !== undefined) updateData.numInstalacion = toInt(req.body.fn_num_instalacion);
-      if (req.body.fc_lote !== undefined) updateData.lote = req.body.fc_lote ?? null;
-      if (req.body.fn_cantidad !== undefined) updateData.cantidad = toInt(req.body.fn_cantidad);
-      if (req.body.fn_talla !== undefined) updateData.talla = toDecimal(req.body.fn_talla);
-      const fs = toDateOrNull(pick(req.body, "fd_fecha_siembra", "fecha_siembra"));
-      if (fs !== null && pick(req.body, "fd_fecha_siembra", "fecha_siembra") !== undefined) {
-        updateData.fechaSiembra = fs;
+      const piletaIn = pick(req.body, "pileta_id", "fn_num_instalacion");
+      if (piletaIn !== undefined) updateData.pileta_id = toInt(piletaIn);
+
+      const loteIn = pick(req.body, "lote_nombre", "fc_lote", "lote");
+      if (loteIn !== undefined) updateData.lote_nombre = loteIn ?? null;
+
+      if (req.body.fn_cantidad !== undefined || req.body.cantidad !== undefined) {
+        updateData.cantidad = toInt(req.body.fn_cantidad ?? req.body.cantidad);
       }
-      const fsh = toDateOrNull(pick(req.body, "fd_fecha_salida_hormonado", "fecha_salida_hormonado"));
-      if (fsh !== null && pick(req.body, "fd_fecha_salida_hormonado", "fecha_salida_hormonado") !== undefined) {
-        updateData.fechaSalidaHormonado = fsh;
+      if (req.body.fn_talla !== undefined || req.body.talla !== undefined) {
+        updateData.talla = toDecimal(req.body.fn_talla ?? req.body.talla);
       }
+      const fs = pick(req.body, "fd_fecha_siembra", "fecha_siembra");
+      if (fs !== undefined) updateData.fechaSiembra = toDateOrNull(fs);
+
+      const fsh = pick(req.body, "fd_fecha_salida_hormonado", "fecha_salida_hormonado");
+      if (fsh !== undefined) updateData.fechaSalidaHormonado = toDateOrNull(fsh);
 
       const actualizado = await prisma.$transaction(async (tx) => {
         const obsTexto = pick(req.body, "fc_observacion", "observacion");
@@ -122,7 +122,7 @@ class AlevinController {
         return tx.inventarioAlevin.update({
           where: { id },
           data: updateData,
-          include: { ubicacion: true, observacion: true },
+          include: { ubicacion: true, observacion: true, piletas: true },
         });
       });
 

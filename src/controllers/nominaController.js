@@ -1,6 +1,12 @@
 import prisma from "../prisma.js";
 import { serializeNomina } from "../utils/serializers.js";
 
+// El schema actual de Nomina conserva: empleadoId, periodo, sueldo_bruto,
+// descuentos, sueldo_neto, fechaPago, observaciones. Los campos extendidos
+// del API anterior (bono, deuda, anticipo, nombre_empleado, usuario_id) ya
+// no existen; se aceptan en el body pero solo `descuento` se mapea a
+// `descuentos` y `total` a `sueldo_neto`.
+
 function pick(body, ...keys) {
   for (const key of keys) {
     if (body[key] !== undefined) return body[key];
@@ -15,24 +21,29 @@ function toDecimal(value, fallback = 0) {
 
 function parseNominaBody(body) {
   return {
-    nombreEmpleado: pick(body, "nombre_empleado", "fc_nombre_empleado"),
     empleadoId: pick(body, "empleado_id", "fi_empleado_id"),
+    periodo: pick(body, "periodo", "fc_periodo"),
+    sueldoBruto: pick(body, "sueldo_bruto", "fn_sueldo_bruto"),
+    descuentos: pick(body, "descuentos", "descuento", "fn_descuento"),
+    sueldoNeto: pick(body, "sueldo_neto", "total", "fn_total"),
     fechaPago: pick(body, "fecha_pago", "fd_fecha_pago"),
-    total: pick(body, "total", "fn_total"),
-    bono: pick(body, "bono", "fn_bono"),
-    deuda: pick(body, "deuda", "fn_deuda"),
-    descuento: pick(body, "descuento", "fn_descuento"),
-    anticipo: pick(body, "anticipo", "fn_anticipo"),
-    usuarioId: pick(body, "usuario_id", "fi_usuario_id"),
+    observaciones: pick(body, "observaciones", "fc_observaciones"),
   };
 }
+
+const nominaInclude = { empleado: true };
 
 class NominaController {
   static async getAll(req, res) {
     try {
       const where = {};
       if (req.query.nombre) {
-        where.nombreEmpleado = { contains: String(req.query.nombre), mode: "insensitive" };
+        where.empleado = {
+          OR: [
+            { nombre: { contains: String(req.query.nombre), mode: "insensitive" } },
+            { apellidoPaterno: { contains: String(req.query.nombre), mode: "insensitive" } },
+          ],
+        };
       }
       if (req.query.fecha) {
         where.fechaPago = new Date(`${req.query.fecha}T00:00:00Z`);
@@ -40,7 +51,8 @@ class NominaController {
 
       const nominas = await prisma.nomina.findMany({
         where,
-        orderBy: [{ fechaPago: "desc" }, { nombreEmpleado: "asc" }],
+        include: nominaInclude,
+        orderBy: [{ fechaPago: "desc" }, { id: "desc" }],
       });
       res.json(nominas.map(serializeNomina));
     } catch (err) {
@@ -51,27 +63,33 @@ class NominaController {
 
   static async create(req, res) {
     const data = parseNominaBody(req.body);
-    if (!data.nombreEmpleado) {
-      return res.status(400).json({ error: "nombre_empleado es obligatorio" });
+    if (!data.empleadoId) {
+      return res.status(400).json({ error: "empleado_id es obligatorio" });
     }
+    if (!data.periodo) {
+      return res.status(400).json({ error: "periodo es obligatorio" });
+    }
+    if (!data.fechaPago) {
+      return res.status(400).json({ error: "fecha_pago es obligatorio" });
+    }
+
     try {
       const nomina = await prisma.nomina.create({
         data: {
-          nombreEmpleado: data.nombreEmpleado,
-          ...(data.empleadoId ? { empleadoId: Number(data.empleadoId) } : {}),
-          ...(data.fechaPago ? { fechaPago: new Date(`${data.fechaPago}T00:00:00Z`) } : {}),
-          total: toDecimal(data.total),
-          bono: toDecimal(data.bono),
-          deuda: toDecimal(data.deuda),
-          descuento: toDecimal(data.descuento),
-          anticipo: toDecimal(data.anticipo),
-          ...(data.usuarioId ? { usuarioId: Number(data.usuarioId) } : {}),
+          empleadoId: Number(data.empleadoId),
+          periodo: String(data.periodo),
+          sueldo_bruto: toDecimal(data.sueldoBruto),
+          descuentos: toDecimal(data.descuentos),
+          sueldo_neto: toDecimal(data.sueldoNeto),
+          fechaPago: new Date(`${data.fechaPago}T00:00:00Z`),
+          ...(data.observaciones !== undefined ? { observaciones: data.observaciones || null } : {}),
         },
+        include: nominaInclude,
       });
       res.status(201).json(serializeNomina(nomina));
     } catch (err) {
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Empleado o usuario invalido" });
+        return res.status(400).json({ error: "Empleado invalido" });
       }
       console.error("Error al registrar nomina:", err);
       res.status(500).json({ error: "Error al registrar nomina" });
@@ -83,15 +101,13 @@ class NominaController {
     const data = parseNominaBody(req.body);
 
     const updateData = {};
-    if (data.nombreEmpleado !== undefined) updateData.nombreEmpleado = data.nombreEmpleado;
-    if (data.empleadoId !== undefined) updateData.empleadoId = data.empleadoId ? Number(data.empleadoId) : null;
+    if (data.empleadoId !== undefined) updateData.empleadoId = Number(data.empleadoId);
+    if (data.periodo !== undefined) updateData.periodo = String(data.periodo);
+    if (data.sueldoBruto !== undefined) updateData.sueldo_bruto = toDecimal(data.sueldoBruto);
+    if (data.descuentos !== undefined) updateData.descuentos = toDecimal(data.descuentos);
+    if (data.sueldoNeto !== undefined) updateData.sueldo_neto = toDecimal(data.sueldoNeto);
     if (data.fechaPago !== undefined) updateData.fechaPago = new Date(`${data.fechaPago}T00:00:00Z`);
-    if (data.total !== undefined) updateData.total = toDecimal(data.total);
-    if (data.bono !== undefined) updateData.bono = toDecimal(data.bono);
-    if (data.deuda !== undefined) updateData.deuda = toDecimal(data.deuda);
-    if (data.descuento !== undefined) updateData.descuento = toDecimal(data.descuento);
-    if (data.anticipo !== undefined) updateData.anticipo = toDecimal(data.anticipo);
-    if (data.usuarioId !== undefined) updateData.usuarioId = data.usuarioId ? Number(data.usuarioId) : null;
+    if (data.observaciones !== undefined) updateData.observaciones = data.observaciones || null;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: "Nada que actualizar" });
@@ -99,8 +115,9 @@ class NominaController {
 
     try {
       const nomina = await prisma.nomina.update({
-        where: { nominaId: Number(id) },
+        where: { id: Number(id) },
         data: updateData,
+        include: nominaInclude,
       });
       res.json(serializeNomina(nomina));
     } catch (err) {
@@ -115,7 +132,7 @@ class NominaController {
   static async delete(req, res) {
     const { id } = req.params;
     try {
-      await prisma.nomina.delete({ where: { nominaId: Number(id) } });
+      await prisma.nomina.delete({ where: { id: Number(id) } });
       res.json({ mensaje: "Registro eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") {

@@ -4,9 +4,6 @@ import { serializeTipoDocumento } from "../utils/serializers.js";
 function getNombre(body) {
   return body.nombre ?? body.fc_nombre;
 }
-function getObligatorio(body) {
-  return body.obligatorio ?? body.fb_obligatorio;
-}
 function getActivo(body) {
   return body.activo ?? body.fb_activo;
 }
@@ -15,7 +12,7 @@ class TipoDocumentoController {
   static async getAll(req, res) {
     try {
       const tipos = await prisma.tipoDocumento.findMany({
-        orderBy: { tipoDocumentoId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(tipos.map(serializeTipoDocumento));
     } catch (err) {
@@ -27,7 +24,7 @@ class TipoDocumentoController {
   static async getActivos(req, res) {
     try {
       const tipos = await prisma.tipoDocumento.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         orderBy: { nombre: "asc" },
       });
       res.json(tipos.map(serializeTipoDocumento));
@@ -39,16 +36,12 @@ class TipoDocumentoController {
 
   static async create(req, res) {
     const nombre = getNombre(req.body);
-    const obligatorio = getObligatorio(req.body);
     if (!nombre || !String(nombre).trim()) {
       return res.status(400).json({ error: "El nombre es obligatorio" });
     }
     try {
       const tipo = await prisma.tipoDocumento.create({
-        data: {
-          nombre: String(nombre).trim(),
-          obligatorio: Boolean(obligatorio),
-        },
+        data: { nombre: String(nombre).trim() },
       });
       res.status(201).json({
         mensaje: "Tipo de documento creado correctamente",
@@ -66,7 +59,6 @@ class TipoDocumentoController {
   static async update(req, res) {
     const { id } = req.params;
     const nombre = getNombre(req.body);
-    const obligatorio = getObligatorio(req.body);
     const activo = getActivo(req.body);
 
     if (!nombre || !String(nombre).trim()) {
@@ -75,11 +67,10 @@ class TipoDocumentoController {
 
     try {
       const tipo = await prisma.tipoDocumento.update({
-        where: { tipoDocumentoId: Number(id) },
+        where: { id: Number(id) },
         data: {
           nombre: String(nombre).trim(),
-          ...(obligatorio !== undefined ? { obligatorio: Boolean(obligatorio) } : {}),
-          ...(activo !== undefined ? { activo: Boolean(activo) } : {}),
+          ...(activo !== undefined ? { esta_activo: Boolean(activo) } : {}),
         },
       });
       res.json({

@@ -1,11 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeCajaAhorroResumen } from "../utils/serializers.js";
-import { resolverUbicacion } from "../utils/ubicacion.js";
 
-const MESES = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
+// El modelo caja_ahorro del schema actual es un registro de movimiento
+// individual (granja, categoria, concepto, monto, fecha) y NO tiene el
+// resumen mensual (enero..diciembre) del modelo previo. Los endpoints
+// mantienen las rutas, pero internamente operan sobre el nuevo modelo.
 
 function toDecimal(value, fallback = 0) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -13,17 +12,27 @@ function toDecimal(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function toInt(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 class CajaAhorroController {
   static async getByGranja(req, res) {
     try {
-      const ubicacion = await resolverUbicacion(req.params.granja);
-      if (!ubicacion) {
-        return res.status(404).json({ error: "Granja/ubicacion no encontrada" });
+      const granja = String(req.params.granja ?? "").trim();
+      if (!granja) {
+        return res.status(404).json({ error: "Granja no encontrada" });
       }
-      const registros = await prisma.cajaAhorroResumen.findMany({
-        where: { ubicacionId: ubicacion.ubicacionId },
-        include: { ubicacion: true },
-        orderBy: { cajaAhorroId: "asc" },
+      const registros = await prisma.caja_ahorro.findMany({
+        where: { granja: { equals: granja, mode: "insensitive" } },
+        orderBy: { id: "asc" },
       });
       res.json(registros.map(serializeCajaAhorroResumen));
     } catch (err) {
@@ -34,70 +43,56 @@ class CajaAhorroController {
 
   static async create(req, res) {
     try {
-      const { categoria } = req.body;
-      const granjaInput = req.body.granja ?? req.body.ubicacion_id ?? req.body.fc_granja;
+      const categoria = req.body.categoria ?? req.body.fc_categoria;
+      const granja = req.body.granja ?? req.body.fc_granja;
       if (!categoria || !String(categoria).trim()) {
         return res.status(400).json({ error: "categoria es obligatoria" });
       }
-      const ubicacion = await resolverUbicacion(granjaInput);
-      if (!ubicacion) {
-        return res.status(400).json({ error: "granja/ubicacion invalida o no encontrada" });
+      if (!granja || !String(granja).trim()) {
+        return res.status(400).json({ error: "granja es obligatoria" });
       }
-      const registro = await prisma.cajaAhorroResumen.create({
+      const registro = await prisma.caja_ahorro.create({
         data: {
+          granja: String(granja).trim(),
           categoria: String(categoria).trim(),
-          ubicacionId: ubicacion.ubicacionId,
+          concepto: req.body.concepto ?? null,
+          monto: toDecimal(req.body.monto, 0),
+          fecha: toDateOrNull(req.body.fecha),
         },
-        include: { ubicacion: true },
       });
       res.status(201).json(serializeCajaAhorroResumen(registro));
     } catch (err) {
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe esa categoria para la ubicacion" });
-      }
-      console.error("Error al crear categoria:", err);
-      res.status(500).json({ error: "Error al crear categoria" });
+      console.error("Error al crear registro:", err);
+      res.status(500).json({ error: "Error al crear registro" });
     }
   }
 
   static async update(req, res) {
-    const { id } = req.params;
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
     try {
       const updateData = {};
       if (req.body.categoria !== undefined) updateData.categoria = String(req.body.categoria);
       if (req.body.fc_categoria !== undefined) updateData.categoria = String(req.body.fc_categoria);
-
-      const granjaInput = req.body.granja ?? req.body.ubicacion_id ?? req.body.fc_granja;
-      if (granjaInput !== undefined) {
-        const ubicacion = await resolverUbicacion(granjaInput);
-        if (!ubicacion) {
-          return res.status(400).json({ error: "granja/ubicacion invalida" });
-        }
-        updateData.ubicacionId = ubicacion.ubicacionId;
-      }
-
-      for (const mes of MESES) {
-        if (req.body[mes] !== undefined) {
-          updateData[mes] = toDecimal(req.body[mes]);
-        }
-      }
+      if (req.body.granja !== undefined) updateData.granja = String(req.body.granja);
+      if (req.body.fc_granja !== undefined) updateData.granja = String(req.body.fc_granja);
+      if (req.body.concepto !== undefined) updateData.concepto = req.body.concepto ?? null;
+      if (req.body.monto !== undefined) updateData.monto = toDecimal(req.body.monto, 0);
+      if (req.body.fecha !== undefined) updateData.fecha = toDateOrNull(req.body.fecha);
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "Nada que actualizar" });
       }
 
-      const registro = await prisma.cajaAhorroResumen.update({
-        where: { cajaAhorroId: Number(id) },
+      const registro = await prisma.caja_ahorro.update({
+        where: { id },
         data: updateData,
-        include: { ubicacion: true },
       });
       res.json({ mensaje: "Actualizado correctamente", registro: serializeCajaAhorroResumen(registro) });
     } catch (err) {
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe esa categoria para la ubicacion" });
       }
       console.error("Error al actualizar:", err);
       res.status(500).json({ error: "Error al actualizar" });
@@ -105,9 +100,10 @@ class CajaAhorroController {
   }
 
   static async delete(req, res) {
-    const { id } = req.params;
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
     try {
-      await prisma.cajaAhorroResumen.delete({ where: { cajaAhorroId: Number(id) } });
+      await prisma.caja_ahorro.delete({ where: { id } });
       res.json({ mensaje: "Eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") {
@@ -120,12 +116,12 @@ class CajaAhorroController {
 
   static async deleteByGranja(req, res) {
     try {
-      const ubicacion = await resolverUbicacion(req.query.granja ?? req.query.ubicacion_id);
-      if (!ubicacion) {
-        return res.status(400).json({ error: "granja/ubicacion invalida" });
+      const granja = String(req.query.granja ?? "").trim();
+      if (!granja) {
+        return res.status(400).json({ error: "granja es obligatoria" });
       }
-      const result = await prisma.cajaAhorroResumen.deleteMany({
-        where: { ubicacionId: ubicacion.ubicacionId },
+      const result = await prisma.caja_ahorro.deleteMany({
+        where: { granja: { equals: granja, mode: "insensitive" } },
       });
       res.json({ mensaje: "Eliminados todos los registros", eliminados: result.count });
     } catch (err) {

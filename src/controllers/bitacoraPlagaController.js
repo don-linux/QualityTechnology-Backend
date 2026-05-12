@@ -80,12 +80,12 @@ class BitacoraPlagaController {
             ubicacionId,
             unidadProduccion: payload.unidad_produccion || null,
             fecha: payload.fd_fecha ? new Date(payload.fd_fecha) : new Date(),
-            numTrampa: payload.fc_num_trampa || null,
+            numero_trampa: payload.fc_num_trampa || null,
             tipoTrampa: payload.tipo_trampa || null,
             hallazgo: payload.fc_hallazgo || null,
             malla: payload.fc_malla || null,
             veneno: payload.fc_veneno || null,
-            verifico: payload.fc_verifico || null,
+            verificador: payload.fc_verifico || null,
             usuarioId: usuarioId,
             observacionId,
           },
@@ -143,7 +143,7 @@ class BitacoraPlagaController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId,
         });
@@ -157,18 +157,18 @@ class BitacoraPlagaController {
                 ? payload.unidad_produccion || null
                 : existing.unidadProduccion,
             fecha: payload.fd_fecha ? new Date(payload.fd_fecha) : existing.fecha,
-            numTrampa:
+            numero_trampa:
               payload.fc_num_trampa !== undefined
                 ? payload.fc_num_trampa || null
-                : existing.numTrampa,
+                : existing.numero_trampa,
             tipoTrampa:
               payload.tipo_trampa !== undefined ? payload.tipo_trampa || null : existing.tipoTrampa,
             hallazgo:
               payload.fc_hallazgo !== undefined ? payload.fc_hallazgo || null : existing.hallazgo,
             malla: payload.fc_malla !== undefined ? payload.fc_malla || null : existing.malla,
             veneno: payload.fc_veneno !== undefined ? payload.fc_veneno || null : existing.veneno,
-            verifico:
-              payload.fc_verifico !== undefined ? payload.fc_verifico || null : existing.verifico,
+            verificador:
+              payload.fc_verifico !== undefined ? payload.fc_verifico || null : existing.verificador,
             observacionId,
           },
         });

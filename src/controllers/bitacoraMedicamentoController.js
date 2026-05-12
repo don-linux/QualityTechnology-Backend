@@ -101,7 +101,7 @@ class BitacoraMedicamentoController {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
           texto: fc_observaciones ?? null,
-          responsable: fc_responsable ?? null,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
@@ -109,12 +109,13 @@ class BitacoraMedicamentoController {
           data: {
             ubicacionId: u.ubicacionId,
             fechaHora: new Date(fd_fecha_hora),
-            numEstanque: Math.trunc(numEstanque),
-            diagnosis: fc_diagnosis || null,
+            numero_estanque: Math.trunc(numEstanque),
+            diagnostico: fc_diagnosis || null,
             tratamiento: fc_tratamiento || null,
             dosis: fc_dosis || null,
             formaAplicacion: fc_forma_aplicacion || null,
             fechaUltimaDosis: fd_fecha_ultima_dosis ? new Date(fd_fecha_ultima_dosis) : null,
+            responsable: fc_responsable || null,
             usuarioId: fi_usuario_id,
             observacionId,
           },
@@ -169,17 +170,13 @@ class BitacoraMedicamentoController {
       const texto =
         fc_observaciones !== undefined
           ? fc_observaciones
-          : existing.observacion?.observacion ?? null;
-      const responsable =
-        fc_responsable !== undefined
-          ? fc_responsable
-          : existing.observacion?.responsable ?? null;
+          : existing.observacion?.comentario ?? null;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto,
-          responsable,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
@@ -188,11 +185,11 @@ class BitacoraMedicamentoController {
           data: {
             ubicacionId: u.ubicacionId,
             fechaHora: fd_fecha_hora ? new Date(fd_fecha_hora) : existing.fechaHora,
-            numEstanque:
+            numero_estanque:
               BitacoraMedicamentoController.parseNum(fn_num_estanque) != null
                 ? Math.trunc(BitacoraMedicamentoController.parseNum(fn_num_estanque))
-                : existing.numEstanque,
-            diagnosis: fc_diagnosis !== undefined ? fc_diagnosis || null : existing.diagnosis,
+                : existing.numero_estanque,
+            diagnostico: fc_diagnosis !== undefined ? fc_diagnosis || null : existing.diagnostico,
             tratamiento:
               fc_tratamiento !== undefined ? fc_tratamiento || null : existing.tratamiento,
             dosis: fc_dosis !== undefined ? fc_dosis || null : existing.dosis,
@@ -203,6 +200,7 @@ class BitacoraMedicamentoController {
             fechaUltimaDosis: fd_fecha_ultima_dosis
               ? new Date(fd_fecha_ultima_dosis)
               : existing.fechaUltimaDosis,
+            responsable: fc_responsable !== undefined ? fc_responsable || null : existing.responsable,
             observacionId,
           },
         });

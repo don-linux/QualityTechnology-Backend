@@ -26,7 +26,7 @@ function validarPayload(body) {
 
 async function unidadActivaPorNombre(nombre) {
   return prisma.unidadNegocio.findFirst({
-    where: { nombre: String(nombre), activo: true },
+    where: { nombre: String(nombre), esta_activo: true },
   });
 }
 
@@ -34,7 +34,7 @@ class CuentaController {
   static async getAll(req, res) {
     try {
       const cuentas = await prisma.cuenta.findMany({
-        orderBy: { cuentaId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(cuentas.map(serializeCuenta));
     } catch (err) {
@@ -46,7 +46,7 @@ class CuentaController {
   static async getActivos(req, res) {
     try {
       const cuentas = await prisma.cuenta.findMany({
-        where: { activo: true },
+        where: { esta_activa: true },
         orderBy: { nombre: "asc" },
       });
       res.json(cuentas.map(serializeCuenta));
@@ -73,11 +73,11 @@ class CuentaController {
 
       const cuenta = await prisma.cuenta.create({
         data: {
-          udn: String(fc_udn),
+          unidad_negocio: String(fc_udn),
           nombre: String(fc_nombre),
           numeroCuenta: fc_numero_cuenta ?? null,
           banco: bancoTrim || null,
-          tipo: String(fc_tipo),
+          tipo_cuenta: String(fc_tipo),
         },
       });
       res.status(201).json({
@@ -112,13 +112,13 @@ class CuentaController {
       }
 
       const cuenta = await prisma.cuenta.update({
-        where: { cuentaId: id },
+        where: { id },
         data: {
-          udn: String(fc_udn),
+          unidad_negocio: String(fc_udn),
           nombre: String(fc_nombre),
           numeroCuenta: fc_numero_cuenta ?? null,
           banco: bancoTrim || null,
-          tipo: String(fc_tipo),
+          tipo_cuenta: String(fc_tipo),
         },
       });
       res.json({
@@ -141,8 +141,8 @@ class CuentaController {
 
     try {
       const cuenta = await prisma.cuenta.update({
-        where: { cuentaId: id },
-        data: { activo: true },
+        where: { id },
+        data: { esta_activa: true },
       });
       res.json({
         mensaje: "Cuenta activada correctamente",
@@ -161,8 +161,8 @@ class CuentaController {
 
     try {
       const cuenta = await prisma.cuenta.update({
-        where: { cuentaId: id },
-        data: { activo: false },
+        where: { id },
+        data: { esta_activa: false },
       });
       res.json({
         mensaje: "Cuenta desactivada correctamente",

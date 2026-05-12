@@ -72,7 +72,7 @@ class BitacoraParametroController {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
           texto: fc_observaciones ?? null,
-          responsable: fc_responsable ?? null,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
@@ -80,7 +80,8 @@ class BitacoraParametroController {
           data: {
             ubicacionId: u.ubicacionId,
             fecha: new Date(fd_fecha),
-            numEstanque: Math.trunc(numEstanque),
+            numero_estanque: Math.trunc(numEstanque),
+            responsable: fc_responsable || null,
             oxigeno:
               BitacoraParametroController.parseNum(fn_oxigeno) != null
                 ? String(BitacoraParametroController.parseNum(fn_oxigeno))
@@ -155,17 +156,13 @@ class BitacoraParametroController {
       const texto =
         fc_observaciones !== undefined
           ? fc_observaciones
-          : existing.observacion?.observacion ?? null;
-      const responsable =
-        fc_responsable !== undefined
-          ? fc_responsable
-          : existing.observacion?.responsable ?? null;
+          : existing.observacion?.comentario ?? null;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto,
-          responsable,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
@@ -181,12 +178,12 @@ class BitacoraParametroController {
           data: {
             ubicacionId: u.ubicacionId,
             fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
-            numEstanque:
+            numero_estanque:
               fn_num_estanque !== undefined && fn_num_estanque !== ""
                 ? Math.trunc(BitacoraParametroController.parseNum(fn_num_estanque))
                 : fn_num_estanque === ""
                   ? null
-                  : existing.numEstanque,
+                  : existing.numero_estanque,
             oxigeno: decStr(fn_oxigeno) !== undefined ? decStr(fn_oxigeno) : existing.oxigeno,
             temperatura:
               decStr(fn_temperatura) !== undefined ? decStr(fn_temperatura) : existing.temperatura,
@@ -194,6 +191,7 @@ class BitacoraParametroController {
             amonio: decStr(fn_amonio) !== undefined ? decStr(fn_amonio) : existing.amonio,
             nitritos: decStr(fn_nitritos) !== undefined ? decStr(fn_nitritos) : existing.nitritos,
             nitratos: decStr(fn_nitratos) !== undefined ? decStr(fn_nitratos) : existing.nitratos,
+            responsable: fc_responsable !== undefined ? fc_responsable || null : existing.responsable,
             observacionId,
           },
         });

@@ -1,6 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeListaEspera, serializeVenta } from "../utils/serializers.js";
-import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
+
+// El schema actual reduce ListaEspera a (cliente_id, cliente_nombre,
+// cantidad_peces, precio_unitario, notas, estatus). Los campos antiguos
+// (fecha_entrega, talla, lugar_entrega, encargado_venta, unidad_produccion,
+// uap_asignada, ubicacion_id, horas) ya no existen y se ignoran.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -10,8 +14,9 @@ function pick(body, ...keys) {
 }
 
 function toInt(value) {
+  if (value === undefined || value === null || value === "") return null;
   const n = Number(value);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  return Number.isInteger(n) ? n : null;
 }
 
 function toDecimal(value) {
@@ -20,49 +25,18 @@ function toDecimal(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function toDateOrNull(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function inferirEmpresa(granjaNombre) {
-  const g = String(granjaNombre || "").toLowerCase();
-  if (g.includes("ceiba")) return "CEIBA";
-  if (g.includes("med")) return "MEDELLIN";
-  return "QUALITY";
-}
-
-async function buildPayloadFromBody(body) {
-  const cantidad = toDecimal(body.fn_cantidad);
-  if (cantidad === null) {
-    throw new Error("fn_cantidad es obligatorio");
+function buildPayloadFromBody(body) {
+  const clienteNombre = pick(body, "cliente_nombre", "fc_cliente", "cliente");
+  if (!clienteNombre) {
+    throw new Error("cliente_nombre es obligatorio");
   }
-  const fechaEntrega = toDateOrNull(body.fd_fecha_entrega);
-  if (!fechaEntrega) {
-    throw new Error("fd_fecha_entrega es obligatorio");
-  }
-
-  let ubicacionId = null;
-  const granjaInput = pick(body, "fc_granja_asignada", "granja", "ubicacion_id", "ubicacionId");
-  if (granjaInput !== undefined) {
-    const u = await resolverOCrearUbicacion(granjaInput);
-    if (u) ubicacionId = u.ubicacionId;
-  }
-
   return {
-    fechaEntrega,
-    talla: pick(body, "fc_talla", "talla") ?? null,
-    cantidad,
-    precioVenta: toDecimal(pick(body, "fn_precio_venta", "precio_venta")),
-    cliente: pick(body, "fc_cliente", "cliente") ?? null,
-    lugarEntrega: pick(body, "fc_lugar_entrega", "lugar_entrega") ?? null,
-    encargadoVenta: pick(body, "fc_encargado_venta", "encargado_venta") ?? null,
-    unidadProduccion: pick(body, "fc_unidad_produccion", "unidad_produccion") ?? null,
-    uapAsignada: pick(body, "fc_uap_asignada", "uap_asignada") ?? null,
-    ubicacionId,
-    horaEmbolsado: pick(body, "fc_hora_embolsado", "hora_embolsado") ?? null,
-    horaEntrega: pick(body, "fc_hora_entrega", "hora_entrega") ?? null,
+    cliente_id: toInt(pick(body, "cliente_id", "fi_cliente_id")),
+    cliente_nombre: String(clienteNombre),
+    cantidad_peces: toInt(pick(body, "cantidad_peces", "fn_cantidad", "cantidad")),
+    precio_unitario: toDecimal(pick(body, "precio_unitario", "fn_precio_venta", "precio_venta")),
+    notas: pick(body, "notas", "fc_notas", "fc_observaciones") ?? null,
+    estatus: pick(body, "estatus", "fc_estatus") ?? "PENDIENTE",
   };
 }
 
@@ -70,8 +44,8 @@ class ListaEsperaController {
   static async getAll(req, res) {
     try {
       const lista = await prisma.listaEspera.findMany({
-        include: { ubicacion: true },
-        orderBy: { listaId: "desc" },
+        include: { clientes: true },
+        orderBy: { id: "desc" },
       });
       res.json(lista.map(serializeListaEspera));
     } catch (err) {
@@ -82,10 +56,10 @@ class ListaEsperaController {
 
   static async create(req, res) {
     try {
-      const data = await buildPayloadFromBody(req.body);
+      const data = buildPayloadFromBody(req.body);
       const creado = await prisma.listaEspera.create({
         data,
-        include: { ubicacion: true },
+        include: { clientes: true },
       });
       res.status(201).json(serializeListaEspera(creado));
     } catch (err) {
@@ -98,9 +72,9 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
-      const data = await buildPayloadFromBody(req.body);
+      const data = buildPayloadFromBody(req.body);
       await prisma.listaEspera.update({
-        where: { listaId: id },
+        where: { id },
         data,
       });
       res.sendStatus(200);
@@ -115,7 +89,7 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
-      await prisma.listaEspera.delete({ where: { listaId: id } });
+      await prisma.listaEspera.delete({ where: { id } });
       res.sendStatus(204);
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
@@ -130,37 +104,31 @@ class ListaEsperaController {
 
     try {
       const venta = await prisma.$transaction(async (tx) => {
-        const lista = await tx.listaEspera.findUnique({
-          where: { listaId: id },
-          include: { ubicacion: true },
-        });
+        const lista = await tx.listaEspera.findUnique({ where: { id } });
         if (!lista) return null;
 
-        const cantidad = Math.trunc(Number(lista.cantidad) || 0);
-        const precio = Number(lista.precioVenta) || 0;
+        const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
+        const precio = Number(lista.precio_unitario) || 0;
         const total = cantidad * precio;
-        const granjaNombre = lista.ubicacion?.nombre ?? "";
-        const empresa = inferirEmpresa(granjaNombre);
-        const tipoVenta = lista.uapAsignada === "ALEVIN" ? "ALEVINES" : (lista.uapAsignada ?? "");
 
         const ventaNueva = await tx.venta.create({
           data: {
             folio: `LE-${id}`,
-            fechaVenta: lista.fechaEntrega,
-            cliente: lista.cliente ?? "",
-            tipoVenta,
-            cantidadVendida: cantidad,
-            precioVenta: precio,
+            fecha: new Date(),
+            cliente_nombre: lista.cliente_nombre,
+            tipoVenta: "ALEVINES",
+            cantidad,
+            precio_unitario: precio,
             montoTotal: total,
-            abonado: 0,
-            adeudo: total,
+            monto_abonado: 0,
             estadoPago: "ADEUDO",
-            empresa,
-            encargadoVenta: lista.encargadoVenta ?? null,
+            empresa: "QUALITY",
+            vendedor_nombre: null,
+            usuario_id: req.user.usuario_id,
           },
         });
 
-        await tx.listaEspera.delete({ where: { listaId: id } });
+        await tx.listaEspera.delete({ where: { id } });
         return ventaNueva;
       });
 
@@ -168,7 +136,7 @@ class ListaEsperaController {
 
       res.json({
         mensaje: "Convertido en venta real correctamente",
-        venta_id: venta.ventaId,
+        venta_id: venta.id,
         data: serializeVenta(venta),
       });
     } catch (err) {

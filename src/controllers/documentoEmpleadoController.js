@@ -14,7 +14,7 @@ function sendInlineFile(res, doc) {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "Archivo no encontrado en disco" });
   }
-  const safeName = encodeURIComponent(doc.nombreOriginal);
+  const safeName = encodeURIComponent(doc.nombre_archivo);
   res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${safeName}`);
   return res.sendFile(filePath);
 }
@@ -29,29 +29,34 @@ function deletePhysicalFile(doc) {
 export async function getEmpleadoIdByUsuario(usuarioId) {
   const empleado = await prisma.empleado.findFirst({
     where: { usuarioId: Number(usuarioId) },
-    select: { empleadoId: true },
+    select: { id: true },
   });
-  return empleado?.empleadoId ?? null;
+  return empleado?.id ?? null;
 }
 
-async function upsertDocumento({ empleadoId, tipoDocumentoId, rutaArchivo, nombreOriginal }) {
-  return prisma.documentoEmpleado.upsert({
+// El schema actual no garantiza unicidad (empleado_id, tipo_documento_id),
+// asi que reemplazamos el upsert por "buscar + crear o actualizar".
+async function upsertDocumento({ empleadoId, tipoDocumentoId, rutaArchivo, nombreArchivo }) {
+  const existing = await prisma.documentoEmpleado.findFirst({
     where: {
-      empleadoId_tipoDocumentoId: {
-        empleadoId: Number(empleadoId),
-        tipoDocumentoId: Number(tipoDocumentoId),
-      },
+      empleadoId: Number(empleadoId),
+      tipoDocumentoId: Number(tipoDocumentoId),
     },
-    create: {
+  });
+
+  if (existing) {
+    return prisma.documentoEmpleado.update({
+      where: { id: existing.id },
+      data: { rutaArchivo, nombre_archivo: nombreArchivo },
+      include: tipoDocumentoInclude,
+    });
+  }
+  return prisma.documentoEmpleado.create({
+    data: {
       empleadoId: Number(empleadoId),
       tipoDocumentoId: Number(tipoDocumentoId),
       rutaArchivo,
-      nombreOriginal,
-    },
-    update: {
-      rutaArchivo,
-      nombreOriginal,
-      fechaCarga: new Date(),
+      nombre_archivo: nombreArchivo,
     },
     include: tipoDocumentoInclude,
   });
@@ -90,7 +95,7 @@ class DocumentoEmpleadoController {
         empleadoId,
         tipoDocumentoId,
         rutaArchivo,
-        nombreOriginal: req.file.originalname,
+        nombreArchivo: req.file.originalname,
       });
       res.status(201).json({
         mensaje: "Documento subido correctamente",
@@ -109,7 +114,7 @@ class DocumentoEmpleadoController {
     const { documentoId } = req.params;
     try {
       const doc = await prisma.documentoEmpleado.findUnique({
-        where: { documentoId: Number(documentoId) },
+        where: { id: Number(documentoId) },
       });
       if (!doc) return res.status(404).json({ error: "Documento no encontrado" });
 
@@ -117,7 +122,7 @@ class DocumentoEmpleadoController {
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: "Archivo no encontrado en disco" });
       }
-      res.download(filePath, doc.nombreOriginal);
+      res.download(filePath, doc.nombre_archivo);
     } catch (err) {
       console.error("Error al descargar documento:", err);
       res.status(500).json({ error: "Error al descargar documento" });
@@ -128,7 +133,7 @@ class DocumentoEmpleadoController {
     const { documentoId } = req.params;
     try {
       const doc = await prisma.documentoEmpleado.findUnique({
-        where: { documentoId: Number(documentoId) },
+        where: { id: Number(documentoId) },
       });
       if (!doc) return res.status(404).json({ error: "Documento no encontrado" });
       return sendInlineFile(res, doc);
@@ -142,7 +147,7 @@ class DocumentoEmpleadoController {
     const { documentoId } = req.params;
     try {
       const doc = await prisma.documentoEmpleado.delete({
-        where: { documentoId: Number(documentoId) },
+        where: { id: Number(documentoId) },
       });
       deletePhysicalFile(doc);
       res.json({ mensaje: "Documento eliminado correctamente" });
@@ -194,7 +199,7 @@ class DocumentoEmpleadoController {
         empleadoId,
         tipoDocumentoId,
         rutaArchivo,
-        nombreOriginal: req.file.originalname,
+        nombreArchivo: req.file.originalname,
       });
       res.status(201).json({
         mensaje: "Documento subido correctamente",
@@ -211,7 +216,7 @@ class DocumentoEmpleadoController {
     try {
       const doc = await prisma.documentoEmpleado.findFirst({
         where: {
-          documentoId: Number(documentoId),
+          id: Number(documentoId),
           empleado: { usuarioId: Number(req.user.usuario_id) },
         },
       });
@@ -228,7 +233,7 @@ class DocumentoEmpleadoController {
     try {
       const doc = await prisma.documentoEmpleado.findFirst({
         where: {
-          documentoId: Number(documentoId),
+          id: Number(documentoId),
           empleado: { usuarioId: Number(req.user.usuario_id) },
         },
       });
@@ -238,7 +243,7 @@ class DocumentoEmpleadoController {
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: "Archivo no encontrado en disco" });
       }
-      res.download(filePath, doc.nombreOriginal);
+      res.download(filePath, doc.nombre_archivo);
     } catch (err) {
       console.error("Error al descargar mi documento:", err);
       res.status(500).json({ error: "Error al descargar documento" });
@@ -250,13 +255,13 @@ class DocumentoEmpleadoController {
     try {
       const doc = await prisma.documentoEmpleado.findFirst({
         where: {
-          documentoId: Number(documentoId),
+          id: Number(documentoId),
           empleado: { usuarioId: Number(req.user.usuario_id) },
         },
       });
       if (!doc) return res.status(404).json({ error: "Documento no encontrado" });
 
-      await prisma.documentoEmpleado.delete({ where: { documentoId: doc.documentoId } });
+      await prisma.documentoEmpleado.delete({ where: { id: doc.id } });
       deletePhysicalFile(doc);
       res.json({ mensaje: "Documento eliminado correctamente" });
     } catch (err) {

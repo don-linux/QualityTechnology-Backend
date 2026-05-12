@@ -10,7 +10,7 @@ class UbicacionController {
   static async getAll(req, res) {
     try {
       const ubicaciones = await prisma.ubicacion.findMany({
-        orderBy: { ubicacionId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(ubicaciones.map(serializeUbicacion));
     } catch (err) {
@@ -21,13 +21,14 @@ class UbicacionController {
 
   static async getActivos(req, res) {
     try {
+      // La tabla `ubicacion` no tiene columna esta_activo en el schema actual,
+      // asi que devolvemos todas como "activas" hasta que se introduzca el flag.
       const ubicaciones = await prisma.ubicacion.findMany({
-        where: { activo: true },
         orderBy: { nombre: "asc" },
-        select: { ubicacionId: true, nombre: true },
+        select: { id: true, nombre: true },
       });
       res.json(
-        ubicaciones.map((u) => ({ ubicacion_id: u.ubicacionId, nombre: u.nombre }))
+        ubicaciones.map((u) => ({ ubicacion_id: u.id, nombre: u.nombre }))
       );
     } catch (err) {
       console.error("Error al obtener ubicaciones activas:", err);
@@ -39,7 +40,7 @@ class UbicacionController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
-      const ubicacion = await prisma.ubicacion.findUnique({ where: { ubicacionId: id } });
+      const ubicacion = await prisma.ubicacion.findUnique({ where: { id } });
       if (!ubicacion) return res.status(404).json({ error: "Ubicacion no encontrada" });
       res.json(serializeUbicacion(ubicacion));
     } catch (err) {
@@ -49,7 +50,7 @@ class UbicacionController {
   }
 
   static async create(req, res) {
-    const { nombre, direccion, descripcion } = req.body;
+    const { nombre, direccion } = req.body;
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
     try {
@@ -57,7 +58,6 @@ class UbicacionController {
         data: {
           nombre: String(nombre).trim(),
           direccion: direccion ?? null,
-          descripcion: descripcion ?? null,
         },
       });
       res.status(201).json({
@@ -76,16 +76,15 @@ class UbicacionController {
   static async update(req, res) {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
-    const { nombre, direccion, descripcion } = req.body;
+    const { nombre, direccion } = req.body;
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
     try {
       const ubicacion = await prisma.ubicacion.update({
-        where: { ubicacionId: id },
+        where: { id },
         data: {
           nombre: String(nombre).trim(),
           direccion: direccion ?? null,
-          descripcion: descripcion ?? null,
         },
       });
       res.json({
@@ -103,41 +102,18 @@ class UbicacionController {
   }
 
   static async activate(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-    try {
-      const ubicacion = await prisma.ubicacion.update({
-        where: { ubicacionId: id },
-        data: { activo: true },
-      });
-      res.json({
-        mensaje: "Ubicacion activada correctamente",
-        ubicacion: serializeUbicacion(ubicacion),
-      });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Ubicacion no encontrada" });
-      console.error("Error al activar ubicacion:", err);
-      res.status(500).json({ error: "Error al activar ubicacion" });
-    }
+    // La tabla `ubicacion` no tiene flag esta_activo en el schema actual.
+    res.status(501).json({
+      error:
+        "La tabla ubicacion no soporta estado activo/inactivo. Agrega la columna esta_activo en el schema si necesitas esta funcionalidad.",
+    });
   }
 
   static async deactivate(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-    try {
-      const ubicacion = await prisma.ubicacion.update({
-        where: { ubicacionId: id },
-        data: { activo: false },
-      });
-      res.json({
-        mensaje: "Ubicacion desactivada correctamente",
-        ubicacion: serializeUbicacion(ubicacion),
-      });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Ubicacion no encontrada" });
-      console.error("Error al desactivar ubicacion:", err);
-      res.status(500).json({ error: "Error al desactivar ubicacion" });
-    }
+    res.status(501).json({
+      error:
+        "La tabla ubicacion no soporta estado activo/inactivo. Agrega la columna esta_activo en el schema si necesitas esta funcionalidad.",
+    });
   }
 }
 

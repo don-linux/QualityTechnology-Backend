@@ -9,7 +9,7 @@ class PuestoController {
   static async getAll(req, res) {
     try {
       const puestos = await prisma.puesto.findMany({
-        orderBy: { puestoId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(puestos.map(serializePuesto));
     } catch (err) {
@@ -21,7 +21,7 @@ class PuestoController {
   static async getActivos(req, res) {
     try {
       const puestos = await prisma.puesto.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         orderBy: { nombre: "asc" },
       });
       res.json(puestos.map(serializePuesto));
@@ -61,7 +61,7 @@ class PuestoController {
     }
     try {
       const puesto = await prisma.puesto.update({
-        where: { puestoId: Number(id) },
+        where: { id: Number(id) },
         data: { nombre: String(nombre).trim() },
       });
       res.json({
@@ -84,8 +84,8 @@ class PuestoController {
     const { id } = req.params;
     try {
       const puesto = await prisma.puesto.update({
-        where: { puestoId: Number(id) },
-        data: { activo: true },
+        where: { id: Number(id) },
+        data: { esta_activo: true },
       });
       res.json({
         mensaje: "Puesto activado correctamente",
@@ -104,8 +104,8 @@ class PuestoController {
     const { id } = req.params;
     try {
       const puesto = await prisma.puesto.update({
-        where: { puestoId: Number(id) },
-        data: { activo: false },
+        where: { id: Number(id) },
+        data: { esta_activo: false },
       });
       res.json({
         mensaje: "Puesto desactivado correctamente",

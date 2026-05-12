@@ -3,9 +3,10 @@ import fs from "node:fs";
 import prisma from "../prisma.js";
 import { serializeActaAdministrativa } from "../utils/serializers.js";
 
-function isValidDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
+// El schema actual de ActaAdministrativa solo conserva descripcion, ruta y
+// nombre del archivo. El campo "fecha" se sustituye por created_at y "motivo"
+// se mapea a "descripcion". Aceptamos ambos alias en el body para no romper
+// el frontend existente.
 
 function getFilePath(acta) {
   return path.resolve("." + acta.rutaArchivo);
@@ -16,7 +17,7 @@ function sendInlineFile(res, acta) {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "Archivo no encontrado en disco" });
   }
-  const safeName = encodeURIComponent(acta.nombreOriginal);
+  const safeName = encodeURIComponent(acta.nombre_archivo);
   res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${safeName}`);
   return res.sendFile(filePath);
 }
@@ -34,7 +35,7 @@ class ActaAdministrativaController {
     try {
       const actas = await prisma.actaAdministrativa.findMany({
         where: { empleadoId: Number(empleadoId) },
-        orderBy: [{ fecha: "desc" }, { actaId: "desc" }],
+        orderBy: [{ created_at: "desc" }, { id: "desc" }],
       });
       res.json(actas.map(serializeActaAdministrativa));
     } catch (err) {
@@ -45,14 +46,10 @@ class ActaAdministrativaController {
 
   static async upload(req, res) {
     const { empleadoId } = req.params;
-    const motivo = req.body.motivo ?? req.body.fc_motivo;
-    const fecha = req.body.fecha ?? req.body.fd_fecha;
+    const descripcion = req.body.descripcion ?? req.body.motivo ?? req.body.fc_motivo;
 
-    if (!motivo || !String(motivo).trim()) {
-      return res.status(400).json({ error: "El motivo es obligatorio" });
-    }
-    if (!fecha || !isValidDate(fecha)) {
-      return res.status(400).json({ error: "fecha debe tener formato YYYY-MM-DD" });
+    if (!descripcion || !String(descripcion).trim()) {
+      return res.status(400).json({ error: "La descripcion (motivo) es obligatoria" });
     }
     if (!req.file) {
       return res.status(400).json({ error: "No se proporciono archivo" });
@@ -63,10 +60,9 @@ class ActaAdministrativaController {
       const acta = await prisma.actaAdministrativa.create({
         data: {
           empleadoId: Number(empleadoId),
-          motivo: String(motivo).trim(),
-          fecha: new Date(`${fecha}T00:00:00Z`),
+          descripcion: String(descripcion).trim(),
           rutaArchivo,
-          nombreOriginal: req.file.originalname,
+          nombre_archivo: req.file.originalname,
         },
       });
       res.status(201).json({
@@ -86,7 +82,7 @@ class ActaAdministrativaController {
     const { actaId } = req.params;
     try {
       const acta = await prisma.actaAdministrativa.findUnique({
-        where: { actaId: Number(actaId) },
+        where: { id: Number(actaId) },
       });
       if (!acta) return res.status(404).json({ error: "Acta administrativa no encontrada" });
       return sendInlineFile(res, acta);
@@ -100,7 +96,7 @@ class ActaAdministrativaController {
     const { actaId } = req.params;
     try {
       const acta = await prisma.actaAdministrativa.findUnique({
-        where: { actaId: Number(actaId) },
+        where: { id: Number(actaId) },
       });
       if (!acta) return res.status(404).json({ error: "Acta administrativa no encontrada" });
 
@@ -108,7 +104,7 @@ class ActaAdministrativaController {
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: "Archivo no encontrado en disco" });
       }
-      res.download(filePath, acta.nombreOriginal);
+      res.download(filePath, acta.nombre_archivo);
     } catch (err) {
       console.error("Error al descargar acta administrativa:", err);
       res.status(500).json({ error: "Error al descargar acta administrativa" });
@@ -119,7 +115,7 @@ class ActaAdministrativaController {
     const { actaId } = req.params;
     try {
       const acta = await prisma.actaAdministrativa.delete({
-        where: { actaId: Number(actaId) },
+        where: { id: Number(actaId) },
       });
       deletePhysicalFile(acta);
       res.json({ mensaje: "Acta administrativa eliminada correctamente" });

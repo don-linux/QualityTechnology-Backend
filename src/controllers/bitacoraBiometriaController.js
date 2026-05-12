@@ -1,21 +1,32 @@
 import prisma from "../prisma.js";
-import { resolverOCrearUbicacion, resolverUbicacion } from "../utils/ubicacion.js";
-import {
-  actualizarFechaBiometriaPorInstalacion,
-  obtenerInfoBiometriaPorInstalacion,
-  guardarObservacion,
-  listarEmpleadosActivosBitacora,
-} from "../utils/bitacoraHelpers.js";
+import { listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
 import { serializeBiometria } from "../utils/serializers.js";
+
+// El schema actual de Biometria se relaciona directamente con Pileta
+// (`pileta_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
+// directa. Tampoco existen los campos `tipo`, `observacionId` ni
+// `instalacionId`. Conservamos las rutas y traducimos el body antiguo al
+// nuevo modelo: `fi_instalacion_id` se ignora; se requiere `pileta_id`.
 
 const MAX_FC_OBSERVACIONES = 500;
 const MAX_FC_ENCARGADO = 100;
 
 const bitacoraInclude = {
-  ubicacion: true,
-  instalacion: true,
-  observacion: true,
+  piletas: { include: { ubicacion: true } },
 };
+
+function pick(body, ...keys) {
+  for (const k of keys) {
+    if (body[k] !== undefined && body[k] !== null && body[k] !== "") return body[k];
+  }
+  return undefined;
+}
+
+function toInt(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  return Number.isInteger(n) ? n : null;
+}
 
 const validarTextosBiometria = (body) => {
   const obsLen = body.fc_observaciones == null ? 0 : String(body.fc_observaciones).length;
@@ -28,22 +39,6 @@ const validarTextosBiometria = (body) => {
   }
   return null;
 };
-
-async function resolverUbicacionIdBiometria(ubicacion, fiInstalacionId) {
-  const instalacionId = fiInstalacionId ? Number(fiInstalacionId) : null;
-  if (ubicacion?.trim()) {
-    const u = await resolverOCrearUbicacion(ubicacion);
-    return u?.ubicacionId ?? null;
-  }
-  if (instalacionId && Number.isFinite(instalacionId)) {
-    const inst = await prisma.instalacion.findUnique({
-      where: { instalacionId },
-      select: { ubicacionId: true },
-    });
-    return inst?.ubicacionId ?? null;
-  }
-  return null;
-}
 
 class BitacoraBiometriaController {
   static async getAll(req, res) {
@@ -61,14 +56,14 @@ class BitacoraBiometriaController {
 
   static async getByGranja(req, res) {
     try {
-      const { granja } = req.params;
-      const u = await resolverUbicacion(granja);
-      const where = u
-        ? { ubicacionId: u.ubicacionId }
-        : { ubicacion: { nombre: String(granja).trim() } };
-
+      const granja = String(req.params.granja ?? "").trim();
+      if (!granja) return res.json([]);
       const rows = await prisma.biometria.findMany({
-        where,
+        where: {
+          piletas: {
+            ubicacion: { nombre: { equals: granja, mode: "insensitive" } },
+          },
+        },
         include: bitacoraInclude,
         orderBy: { fecha: "desc" },
       });
@@ -90,16 +85,7 @@ class BitacoraBiometriaController {
 
   static async create(req, res) {
     try {
-      const {
-        fd_fecha,
-        fn_peso_total_gramos,
-        fn_organismos_muestreados,
-        fc_observaciones,
-        fc_encargado,
-        fi_instalacion_id,
-        tipo,
-        ubicacion,
-      } = req.body;
+      const { fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fc_encargado } = req.body;
       const fi_usuario_id = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
@@ -107,79 +93,41 @@ class BitacoraBiometriaController {
         return res.status(400).json({ error: errorTexto });
       }
 
-      const ubicacionId = await resolverUbicacionIdBiometria(ubicacion, fi_instalacion_id);
-      if (!ubicacionId) {
-        return res.status(400).json({ error: "ubicacion es requerido" });
+      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      if (!piletaId) {
+        return res.status(400).json({ error: "pileta_id es obligatorio en el schema actual" });
       }
-
-      const instalacionId =
-        fi_instalacion_id != null && fi_instalacion_id !== ""
-          ? Number(fi_instalacion_id)
-          : null;
 
       const pesoProm =
         fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
           ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
           : 0;
 
-      const tipoUpper = tipo ? String(tipo).toUpperCase() : null;
+      const fecha = fd_fecha ? new Date(fd_fecha) : new Date();
 
-      let reproductorId = null;
-      if (tipoUpper === "REPRODUCTORES") {
-        const whereRepro = {};
-        if (instalacionId && Number.isFinite(instalacionId)) {
-          whereRepro.instalacionId = instalacionId;
-        } else {
-          whereRepro.ubicacionId = ubicacionId;
-        }
-        const r = await prisma.reproductor.findFirst({ where: whereRepro });
-        if (!r) {
-          return res.status(400).json({
-            error:
-              "Para tipo REPRODUCTORES se requiere un registro de reproductor en la instalación o ubicación.",
-          });
-        }
-        reproductorId = r.reproductorId;
-      }
-
-      const id = await prisma.$transaction(async (tx) => {
-        const observacionId = await guardarObservacion(tx, {
-          observacionIdExistente: null,
-          texto: fc_observaciones,
-          responsable: null,
+      const row = await prisma.biometria.create({
+        data: {
+          pileta_id: piletaId,
+          fecha,
+          pesoTotalGramos:
+            fn_peso_total_gramos === "" || fn_peso_total_gramos == null
+              ? null
+              : String(fn_peso_total_gramos),
+          organismosMuestreados:
+            fn_organismos_muestreados === "" || fn_organismos_muestreados == null
+              ? null
+              : Number(fn_organismos_muestreados),
+          pesoPromedio: pesoProm,
+          encargado: fc_encargado || null,
           usuarioId: fi_usuario_id,
-        });
-
-        const row = await tx.biometria.create({
-          data: {
-            ubicacionId,
-            instalacionId: instalacionId && Number.isFinite(instalacionId) ? instalacionId : null,
-            reproductorId,
-            tipo: tipoUpper,
-            fecha: new Date(fd_fecha),
-            pesoTotalGramos:
-              fn_peso_total_gramos === "" || fn_peso_total_gramos == null
-                ? null
-                : String(fn_peso_total_gramos),
-            organismosMuestreados:
-              fn_organismos_muestreados === "" || fn_organismos_muestreados == null
-                ? null
-                : Number(fn_organismos_muestreados),
-            pesoPromedio: pesoProm,
-            encargado: fc_encargado || null,
-            usuarioId: fi_usuario_id,
-            observacionId,
-          },
-        });
-        return row.id;
+        },
       });
 
-      if (instalacionId && Number.isFinite(instalacionId)) {
-        await actualizarFechaBiometriaPorInstalacion(instalacionId, fd_fecha);
-      }
-
-      res.json({ message: "Biometría registrada", id });
+      res.json({ message: "Biometría registrada", id: row.id });
     } catch (err) {
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Pileta invalida" });
+      }
       console.error("POST /biometrias Error:", err);
       res.status(500).json({ error: "Error creando biometría" });
     }
@@ -187,132 +135,69 @@ class BitacoraBiometriaController {
 
   static async update(req, res) {
     try {
-      const {
-        fd_fecha,
-        fn_peso_total_gramos,
-        fn_organismos_muestreados,
-        fc_observaciones,
-        fc_encargado,
-        fi_instalacion_id,
-        tipo,
-        ubicacion,
-      } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const id = toInt(req.params.id);
+      if (!id) return res.status(400).json({ error: "id invalido" });
 
-      if (!ubicacion || !ubicacion.trim()) {
-        return res.status(400).json({ error: "ubicacion es requerido" });
-      }
+      const { fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fc_encargado } = req.body;
+      const fi_usuario_id = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
       if (errorTexto) {
         return res.status(400).json({ error: errorTexto });
       }
 
-      const ubicacionId = await resolverUbicacionIdBiometria(ubicacion, fi_instalacion_id);
-      if (!ubicacionId) {
-        return res.status(400).json({ error: "ubicacion es requerido" });
+      const updateData = {};
+      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      if (piletaId !== null) updateData.pileta_id = piletaId;
+
+      if (fd_fecha !== undefined) updateData.fecha = new Date(fd_fecha);
+      if (fn_peso_total_gramos !== undefined) {
+        updateData.pesoTotalGramos =
+          fn_peso_total_gramos === "" || fn_peso_total_gramos == null
+            ? null
+            : String(fn_peso_total_gramos);
       }
-
-      const instalacionId =
-        fi_instalacion_id != null && fi_instalacion_id !== ""
-          ? Number(fi_instalacion_id)
-          : null;
-
-      const pesoProm =
-        fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
-          ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
-          : 0;
-
-      const tipoUpper = tipo ? String(tipo).toUpperCase() : null;
-
-      let reproductorId = null;
-      if (tipoUpper === "REPRODUCTORES") {
-        const whereRepro = {};
-        if (instalacionId && Number.isFinite(instalacionId)) {
-          whereRepro.instalacionId = instalacionId;
-        } else {
-          whereRepro.ubicacionId = ubicacionId;
-        }
-        const r = await prisma.reproductor.findFirst({ where: whereRepro });
-        if (!r) {
-          return res.status(400).json({
-            error:
-              "Para tipo REPRODUCTORES se requiere un registro de reproductor en la instalación o ubicación.",
-          });
-        }
-        reproductorId = r.reproductorId;
+      if (fn_organismos_muestreados !== undefined) {
+        updateData.organismosMuestreados =
+          fn_organismos_muestreados === "" || fn_organismos_muestreados == null
+            ? null
+            : Number(fn_organismos_muestreados);
       }
+      if (
+        fn_peso_total_gramos !== undefined &&
+        fn_organismos_muestreados !== undefined &&
+        fn_peso_total_gramos > 0 &&
+        fn_organismos_muestreados > 0
+      ) {
+        updateData.pesoPromedio = Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados);
+      }
+      if (fc_encargado !== undefined) updateData.encargado = fc_encargado || null;
+      updateData.usuarioId = fi_usuario_id;
 
-      const id = Number(req.params.id);
-      const existing = await prisma.biometria.findUnique({
+      await prisma.biometria.update({
         where: { id },
-        include: { observacion: true },
+        data: updateData,
       });
-      if (!existing) {
-        return res.status(404).json({ error: "Biometría no encontrada" });
-      }
-
-      await prisma.$transaction(async (tx) => {
-        const observacionId = await guardarObservacion(tx, {
-          observacionIdExistente: existing.observacionId,
-          texto:
-            fc_observaciones !== undefined
-              ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
-          responsable: null,
-          usuarioId: fi_usuario_id,
-        });
-
-        await tx.biometria.update({
-          where: { id },
-          data: {
-            ubicacionId,
-            instalacionId: instalacionId && Number.isFinite(instalacionId) ? instalacionId : null,
-            reproductorId,
-            tipo: tipoUpper,
-            fecha: new Date(fd_fecha),
-            pesoTotalGramos:
-              fn_peso_total_gramos === "" || fn_peso_total_gramos == null
-                ? null
-                : String(fn_peso_total_gramos),
-            organismosMuestreados:
-              fn_organismos_muestreados === "" || fn_organismos_muestreados == null
-                ? null
-                : Number(fn_organismos_muestreados),
-            pesoPromedio: pesoProm,
-            encargado: fc_encargado || null,
-            usuarioId: fi_usuario_id,
-            observacionId,
-          },
-        });
-      });
-
-      if (instalacionId && Number.isFinite(instalacionId)) {
-        await actualizarFechaBiometriaPorInstalacion(instalacionId, fd_fecha);
-      }
 
       res.json({ message: "Biometría actualizada" });
     } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Biometría no encontrada" });
       console.error("PUT /biometrias Error:", err);
       res.status(500).json({ error: "Error actualizando biometría" });
     }
   }
 
   static async getInfo(req, res) {
-    try {
-      const { instalacion } = req.params;
-      const info = await obtenerInfoBiometriaPorInstalacion(instalacion);
-      if (!info) return res.json({ tipo: null });
-      res.json(info);
-    } catch (err) {
-      console.error("Error en /info biometrías:", err);
-      res.status(500).json({ error: "Error obteniendo información automática" });
-    }
+    // El schema actual no permite resolver biometria por instalacion: la
+    // relacion directa es con Pileta. Quien necesite info debe consultar
+    // por pileta_id.
+    res.json({ tipo: null });
   }
 
   static async delete(req, res) {
     try {
-      const id = Number(req.params.id);
+      const id = toInt(req.params.id);
+      if (!id) return res.status(400).json({ error: "id invalido" });
       try {
         await prisma.biometria.delete({ where: { id } });
       } catch (e) {

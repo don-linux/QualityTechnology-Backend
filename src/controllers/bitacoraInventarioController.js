@@ -53,7 +53,7 @@ class BitacoraInventarioController {
         await tx.inventarioAlevin.create({
           data: {
             ubicacionId: u.ubicacionId,
-            numInstalacion:
+            pileta_id:
               BitacoraInventarioController.parseNum(fn_num_instalacion) != null
                 ? Math.trunc(BitacoraInventarioController.parseNum(fn_num_instalacion))
                 : null,
@@ -65,7 +65,7 @@ class BitacoraInventarioController {
               BitacoraInventarioController.parseNum(fn_talla) != null
                 ? String(BitacoraInventarioController.parseNum(fn_talla))
                 : null,
-            lote: fc_lote || null,
+            lote_nombre: fc_lote || null,
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             fechaSalidaHormonado: fd_fecha_salida_hormonado
               ? new Date(fd_fecha_salida_hormonado)
@@ -120,7 +120,7 @@ class BitacoraInventarioController {
           texto:
             fc_observacion !== undefined
               ? fc_observacion
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId: fi_usuario_id,
         });
@@ -129,7 +129,7 @@ class BitacoraInventarioController {
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            numInstalacion:
+            pileta_id:
               BitacoraInventarioController.parseNum(fn_num_instalacion) != null
                 ? Math.trunc(BitacoraInventarioController.parseNum(fn_num_instalacion))
                 : null,
@@ -141,7 +141,7 @@ class BitacoraInventarioController {
               BitacoraInventarioController.parseNum(fn_talla) != null
                 ? String(BitacoraInventarioController.parseNum(fn_talla))
                 : null,
-            lote: fc_lote || null,
+            lote_nombre: fc_lote || null,
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             fechaSalidaHormonado: fd_fecha_salida_hormonado
               ? new Date(fd_fecha_salida_hormonado)

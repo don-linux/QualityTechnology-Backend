@@ -74,27 +74,28 @@ class BitacoraRecambioController {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
           texto: fc_observaciones ?? null,
-          responsable: fc_responsable ?? null,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
         await tx.recambio.create({
           data: {
             ubicacionId: u.ubicacionId,
-            mes: fc_mes || null,
-            numInstalacion: parseOptInt(fn_num_instalacion),
-            fecha1: parseOptDate(fd_fecha1),
-            tipo1: fc_tipo1 || null,
-            fecha2: parseOptDate(fd_fecha2),
-            tipo2: fc_tipo2 || null,
-            fecha3: parseOptDate(fd_fecha3),
-            tipo3: fc_tipo3 || null,
-            fecha4: parseOptDate(fd_fecha4),
-            tipo4: fc_tipo4 || null,
-            fecha5: parseOptDate(fd_fecha5),
-            tipo5: fc_tipo5 || null,
-            fecha6: parseOptDate(fd_fecha6),
-            tipo6: fc_tipo6 || null,
+            mes_periodo: fc_mes || null,
+            pileta_id: parseOptInt(fn_num_instalacion),
+            fecha_1: parseOptDate(fd_fecha1),
+            tipo_1: fc_tipo1 || null,
+            fecha_2: parseOptDate(fd_fecha2),
+            tipo_2: fc_tipo2 || null,
+            fecha_3: parseOptDate(fd_fecha3),
+            tipo_3: fc_tipo3 || null,
+            fecha_4: parseOptDate(fd_fecha4),
+            tipo_4: fc_tipo4 || null,
+            fecha_5: parseOptDate(fd_fecha5),
+            tipo_5: fc_tipo5 || null,
+            fecha_6: parseOptDate(fd_fecha6),
+            tipo_6: fc_tipo6 || null,
+            responsable: fc_responsable || null,
             usuarioId: fi_usuario_id,
             observacionId,
           },
@@ -151,17 +152,13 @@ class BitacoraRecambioController {
       const texto =
         fc_observaciones !== undefined
           ? fc_observaciones
-          : existing.observacion?.observacion ?? null;
-      const responsable =
-        fc_responsable !== undefined
-          ? fc_responsable
-          : existing.observacion?.responsable ?? null;
+          : existing.observacion?.comentario ?? null;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto,
-          responsable,
+          responsable: null,
           usuarioId: fi_usuario_id,
         });
 
@@ -169,23 +166,24 @@ class BitacoraRecambioController {
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            mes: fc_mes !== undefined ? fc_mes || null : existing.mes,
-            numInstalacion:
+            mes_periodo: fc_mes !== undefined ? fc_mes || null : existing.mes_periodo,
+            pileta_id:
               fn_num_instalacion !== undefined
                 ? parseOptInt(fn_num_instalacion)
-                : existing.numInstalacion,
-            fecha1: fd_fecha1 !== undefined ? parseOptDate(fd_fecha1) : existing.fecha1,
-            tipo1: fc_tipo1 !== undefined ? fc_tipo1 || null : existing.tipo1,
-            fecha2: fd_fecha2 !== undefined ? parseOptDate(fd_fecha2) : existing.fecha2,
-            tipo2: fc_tipo2 !== undefined ? fc_tipo2 || null : existing.tipo2,
-            fecha3: fd_fecha3 !== undefined ? parseOptDate(fd_fecha3) : existing.fecha3,
-            tipo3: fc_tipo3 !== undefined ? fc_tipo3 || null : existing.tipo3,
-            fecha4: fd_fecha4 !== undefined ? parseOptDate(fd_fecha4) : existing.fecha4,
-            tipo4: fc_tipo4 !== undefined ? fc_tipo4 || null : existing.tipo4,
-            fecha5: fd_fecha5 !== undefined ? parseOptDate(fd_fecha5) : existing.fecha5,
-            tipo5: fc_tipo5 !== undefined ? fc_tipo5 || null : existing.tipo5,
-            fecha6: fd_fecha6 !== undefined ? parseOptDate(fd_fecha6) : existing.fecha6,
-            tipo6: fc_tipo6 !== undefined ? fc_tipo6 || null : existing.tipo6,
+                : existing.pileta_id,
+            fecha_1: fd_fecha1 !== undefined ? parseOptDate(fd_fecha1) : existing.fecha_1,
+            tipo_1: fc_tipo1 !== undefined ? fc_tipo1 || null : existing.tipo_1,
+            fecha_2: fd_fecha2 !== undefined ? parseOptDate(fd_fecha2) : existing.fecha_2,
+            tipo_2: fc_tipo2 !== undefined ? fc_tipo2 || null : existing.tipo_2,
+            fecha_3: fd_fecha3 !== undefined ? parseOptDate(fd_fecha3) : existing.fecha_3,
+            tipo_3: fc_tipo3 !== undefined ? fc_tipo3 || null : existing.tipo_3,
+            fecha_4: fd_fecha4 !== undefined ? parseOptDate(fd_fecha4) : existing.fecha_4,
+            tipo_4: fc_tipo4 !== undefined ? fc_tipo4 || null : existing.tipo_4,
+            fecha_5: fd_fecha5 !== undefined ? parseOptDate(fd_fecha5) : existing.fecha_5,
+            tipo_5: fc_tipo5 !== undefined ? fc_tipo5 || null : existing.tipo_5,
+            fecha_6: fd_fecha6 !== undefined ? parseOptDate(fd_fecha6) : existing.fecha_6,
+            tipo_6: fc_tipo6 !== undefined ? fc_tipo6 || null : existing.tipo_6,
+            responsable: fc_responsable !== undefined ? fc_responsable || null : existing.responsable,
             observacionId,
           },
         });

@@ -95,7 +95,7 @@ class BitacoraInsumoController {
             ubicacionId: u.ubicacionId,
             fecha: fd_fecha ? new Date(fd_fecha) : new Date(),
             cantidadUdm: fc_cantidad_udm || null,
-            numLote: fc_num_lote || null,
+            numero_lote: fc_num_lote || null,
             descripcion: fc_descripcion || null,
             encargadoEntrega: fc_encargado_entrega || null,
             encargadoRecepcion: fc_encargado_recepcion || null,
@@ -153,7 +153,7 @@ class BitacoraInsumoController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId: fi_usuario_id,
         });
@@ -164,7 +164,7 @@ class BitacoraInsumoController {
             ubicacionId: u.ubicacionId,
             fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
             cantidadUdm: fc_cantidad_udm || null,
-            numLote: fc_num_lote || null,
+            numero_lote: fc_num_lote || null,
             descripcion: fc_descripcion || null,
             encargadoEntrega: fc_encargado_entrega || null,
             encargadoRecepcion: fc_encargado_recepcion || null,

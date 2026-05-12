@@ -2,6 +2,12 @@ import prisma from "../prisma.js";
 import { serializeFlujoCaja } from "../utils/serializers.js";
 import { resolverOCrearUbicacion, resolverUbicacion } from "../utils/ubicacion.js";
 
+// FlujoCaja en el schema actual renombra `cuenta` -> `cuenta_nombre` y `mes`
+// -> `mes_periodo`. Los campos `noproyecto` y `factura` ya no existen y se
+// ignoran. La vista `vw_tesoreria_general` que consume getTesoreriaByGranja
+// puede no existir; el endpoint mantiene el contrato pero quien lo invoque
+// recibira lo que la vista exponga (si esta presente).
+
 function toDecimal(value) {
   if (value === undefined || value === null || value === "") return null;
   const n = Number(value);
@@ -29,10 +35,10 @@ class FlujoCajaController {
   static async getClientes(req, res) {
     try {
       const clientes = await prisma.cliente.findMany({
-        select: { razonSocial: true },
-        orderBy: { razonSocial: "asc" },
+        select: { nombre: true },
+        orderBy: { nombre: "asc" },
       });
-      res.json(clientes.map((c) => ({ nombre: c.razonSocial })));
+      res.json(clientes.map((c) => ({ nombre: c.nombre })));
     } catch (err) {
       console.error("Error al obtener clientes:", err);
       res.status(500).json({ error: "Error al obtener clientes" });
@@ -42,10 +48,10 @@ class FlujoCajaController {
   static async getProveedores(req, res) {
     try {
       const proveedores = await prisma.proveedor.findMany({
-        select: { razonSocial: true },
-        orderBy: { razonSocial: "asc" },
+        select: { nombre: true },
+        orderBy: { nombre: "asc" },
       });
-      res.json(proveedores.map((p) => ({ nombre: p.razonSocial })));
+      res.json(proveedores.map((p) => ({ nombre: p.nombre })));
     } catch (err) {
       console.error("Error al obtener proveedores:", err);
       res.status(500).json({ error: "Error al obtener proveedores" });
@@ -103,7 +109,6 @@ class FlujoCajaController {
         fc_categoria,
         fc_subcategoria,
         fc_beneficiario,
-        fc_noproyecto,
         fc_estatus,
       } = req.body;
 
@@ -117,7 +122,7 @@ class FlujoCajaController {
       const egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
 
       const cuenta = await prisma.cuenta.findFirst({
-        where: { nombre: String(fc_cuenta ?? ""), activo: true },
+        where: { nombre: String(fc_cuenta ?? ""), esta_activa: true },
       });
       if (!cuenta) {
         return res.status(400).json({ error: "La cuenta seleccionada no existe." });
@@ -136,7 +141,6 @@ class FlujoCajaController {
         saldoActual += ingreso;
       }
 
-      const facturaPath = req.file ? `/uploads/facturas/${req.file.filename}` : null;
       const mes = calcularMes(fd_fecha);
 
       const movimiento = await prisma.$transaction(async (tx) => {
@@ -147,19 +151,18 @@ class FlujoCajaController {
             ingreso,
             egreso,
             descripcion: fc_descripcion ?? null,
-            cuenta: fc_cuenta ?? null,
+            cuenta_nombre: fc_cuenta ?? null,
             categoria: fc_categoria ?? null,
             subcategoria: fc_subcategoria ?? null,
             beneficiario: fc_beneficiario ?? null,
-            noproyecto: fc_noproyecto ?? null,
-            factura: facturaPath,
             estatus: fc_estatus ?? null,
-            mes,
+            mes_periodo: mes,
+            usuario_id: req.user.usuario_id,
           },
           include: { ubicacion: true },
         });
         await tx.cuenta.update({
-          where: { cuentaId: cuenta.cuentaId },
+          where: { id: cuenta.id },
           data: { saldoActual },
         });
         return creado;
@@ -189,8 +192,6 @@ class FlujoCajaController {
         fc_categoria,
         fc_subcategoria,
         fc_beneficiario,
-        fc_noproyecto,
-        fc_factura,
         fc_estatus,
       } = req.body;
 
@@ -203,7 +204,7 @@ class FlujoCajaController {
       const fechaParsed = toDateOrNull(fd_fecha);
       if (fechaParsed) {
         updateData.fecha = fechaParsed;
-        updateData.mes = calcularMes(fd_fecha);
+        updateData.mes_periodo = calcularMes(fd_fecha);
       }
       if (req.body.fn_ingreso !== undefined) {
         updateData.ingreso = Math.max(toDecimal(req.body.fn_ingreso) ?? 0, 0);
@@ -212,16 +213,14 @@ class FlujoCajaController {
         updateData.egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
       }
       if (fc_descripcion !== undefined) updateData.descripcion = fc_descripcion ?? null;
-      if (fc_cuenta !== undefined) updateData.cuenta = fc_cuenta ?? null;
+      if (fc_cuenta !== undefined) updateData.cuenta_nombre = fc_cuenta ?? null;
       if (fc_categoria !== undefined) updateData.categoria = fc_categoria ?? null;
       if (fc_subcategoria !== undefined) updateData.subcategoria = fc_subcategoria ?? null;
       if (fc_beneficiario !== undefined) updateData.beneficiario = fc_beneficiario ?? null;
-      if (fc_noproyecto !== undefined) updateData.noproyecto = fc_noproyecto ?? null;
-      if (fc_factura !== undefined) updateData.factura = fc_factura ?? null;
       if (fc_estatus !== undefined) updateData.estatus = fc_estatus ?? null;
 
       const movimiento = await prisma.flujoCaja.update({
-        where: { movimientoId: id },
+        where: { id },
         data: updateData,
         include: { ubicacion: true },
       });
@@ -238,7 +237,7 @@ class FlujoCajaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.flujoCaja.delete({ where: { movimientoId: id } });
+      await prisma.flujoCaja.delete({ where: { id } });
       res.sendStatus(204);
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Movimiento no encontrado" });

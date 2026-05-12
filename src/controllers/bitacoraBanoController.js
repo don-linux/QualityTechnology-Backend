@@ -104,7 +104,7 @@ class BitacoraBanoController {
             fecha: new Date(fd_fecha),
             tipoBanio: fc_tipo_banio,
             regadera: fc_regadera || null,
-            realizo: fc_realizo || null,
+            realizado_por: fc_realizo || null,
             usuarioId: fi_usuario_id,
             observacionId,
           },
@@ -160,7 +160,7 @@ class BitacoraBanoController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId: fi_usuario_id,
         });
@@ -172,7 +172,7 @@ class BitacoraBanoController {
             fecha: new Date(fd_fecha),
             tipoBanio: fc_tipo_banio,
             regadera: fc_regadera || null,
-            realizo: fc_realizo || null,
+            realizado_por: fc_realizo || null,
             observacionId,
           },
         });

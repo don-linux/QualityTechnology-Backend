@@ -9,7 +9,7 @@ class DepartamentoController {
   static async getAll(req, res) {
     try {
       const departamentos = await prisma.departamento.findMany({
-        orderBy: { departamentoId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(departamentos.map(serializeDepartamento));
     } catch (err) {
@@ -21,7 +21,7 @@ class DepartamentoController {
   static async getActivos(req, res) {
     try {
       const departamentos = await prisma.departamento.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         orderBy: { nombre: "asc" },
       });
       res.json(departamentos.map(serializeDepartamento));
@@ -61,7 +61,7 @@ class DepartamentoController {
     }
     try {
       const departamento = await prisma.departamento.update({
-        where: { departamentoId: Number(id) },
+        where: { id: Number(id) },
         data: { nombre: String(nombre).trim() },
       });
       res.json({
@@ -84,8 +84,8 @@ class DepartamentoController {
     const { id } = req.params;
     try {
       const departamento = await prisma.departamento.update({
-        where: { departamentoId: Number(id) },
-        data: { activo: true },
+        where: { id: Number(id) },
+        data: { esta_activo: true },
       });
       res.json({
         mensaje: "Departamento activado correctamente",
@@ -104,8 +104,8 @@ class DepartamentoController {
     const { id } = req.params;
     try {
       const departamento = await prisma.departamento.update({
-        where: { departamentoId: Number(id) },
-        data: { activo: false },
+        where: { id: Number(id) },
+        data: { esta_activo: false },
       });
       res.json({
         mensaje: "Departamento desactivado correctamente",

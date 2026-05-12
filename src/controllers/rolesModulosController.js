@@ -3,7 +3,7 @@ import { invalidarCacheRbac } from "../middleware/rbacMiddleware.js";
 import { serializeModulo, serializeRolModulo } from "../utils/serializers.js";
 
 async function asegurarNoRoot(rolId) {
-  const rol = await prisma.rol.findUnique({ where: { rolId: Number(rolId) } });
+  const rol = await prisma.rol.findUnique({ where: { id: Number(rolId) } });
   if (!rol) {
     const err = new Error("Rol no encontrado");
     err.status = 404;
@@ -21,7 +21,7 @@ class RolesModulosController {
   static async getModulosByRol(req, res) {
     const { rolId } = req.params;
     try {
-      const rol = await prisma.rol.findUnique({ where: { rolId: Number(rolId) } });
+      const rol = await prisma.rol.findUnique({ where: { id: Number(rolId) } });
       if (!rol) {
         return res.status(404).json({ error: "Rol no encontrado" });
       }
@@ -29,7 +29,7 @@ class RolesModulosController {
       let modulos;
       if (rol.esRoot) {
         modulos = await prisma.modulo.findMany({
-          where: { activo: true },
+          where: { esta_activo: true },
           orderBy: { nombre: "asc" },
         });
       } else {

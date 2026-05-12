@@ -1,13 +1,20 @@
 import prisma from "../prisma.js";
 
+// Helpers compartidos por los controllers de bitacora. El schema actual
+// retiro `responsable` y `instalacionId` de varios modelos; aqui guardamos
+// la observacion solo con `comentario` y `usuario_id`. Las funciones que
+// actualizaban fecha de biometria por instalacion quedan como no-op porque
+// la relacion Pileta/Engorda/Reproductor -> Instalacion ya no existe.
+
 /**
- * Lista empleados activos con el mismo contrato que el frontend esperaba (fi_empleado_id, fc_nombre_completo).
+ * Lista empleados activos con el mismo contrato que el frontend esperaba
+ * (fi_empleado_id, fc_nombre_completo).
  */
 export async function listarEmpleadosActivosBitacora() {
   const rows = await prisma.empleado.findMany({
-    where: { activo: true },
+    where: { esta_activo: true },
     select: {
-      empleadoId: true,
+      id: true,
       nombre: true,
       apellidoPaterno: true,
       apellidoMaterno: true,
@@ -15,13 +22,15 @@ export async function listarEmpleadosActivosBitacora() {
     orderBy: [{ nombre: "asc" }, { apellidoPaterno: "asc" }],
   });
   return rows.map((e) => ({
-    fi_empleado_id: e.empleadoId,
+    fi_empleado_id: e.id,
     fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno].filter(Boolean).join(" "),
   }));
 }
 
 /**
- * Persiste texto / responsable en `observaciones`. Si ambos quedan vacíos devuelve null (desvincular).
+ * Persiste texto/responsable en `observacion`. El modelo nuevo solo tiene
+ * `comentario` y `usuario_id`, asi que el responsable se concatena al texto
+ * cuando ambos vienen. Si quedan vacios devuelve null (desvincular).
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
  */
 export async function guardarObservacion(tx, { observacionIdExistente, texto, responsable, usuarioId }) {
@@ -34,13 +43,20 @@ export async function guardarObservacion(tx, { observacionIdExistente, texto, re
     return null;
   }
 
+  const comentario = [
+    respTrim ? `Responsable: ${respTrim}` : null,
+    obsTrim,
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 500);
+
   if (observacionIdExistente) {
     await tx.observacion.update({
-      where: { observacionId: observacionIdExistente },
+      where: { id: observacionIdExistente },
       data: {
-        observacion: obsTrim,
-        responsable: respTrim,
-        ...(usuarioId !== undefined ? { usuarioId } : {}),
+        comentario,
+        ...(usuarioId !== undefined ? { usuario_id: usuarioId } : {}),
       },
     });
     return observacionIdExistente;
@@ -48,113 +64,30 @@ export async function guardarObservacion(tx, { observacionIdExistente, texto, re
 
   const row = await tx.observacion.create({
     data: {
-      observacion: obsTrim,
-      responsable: respTrim,
-      usuarioId: usuarioId ?? null,
+      comentario,
+      usuario_id: usuarioId ?? null,
     },
   });
-  return row.observacionId;
+  return row.id;
 }
 
-export async function actualizarFechaBiometriaPorInstalacion(instalacionId, fecha) {
-  const id = Number(instalacionId);
-  if (!Number.isFinite(id)) return;
-
-  const inst = await prisma.instalacion.findUnique({
-    where: { instalacionId: id },
-    select: { tipoInstalacion: true },
-  });
-  if (!inst) return;
-
-  const fechaDate = fecha instanceof Date ? fecha : new Date(fecha);
-  if (Number.isNaN(fechaDate.getTime())) return;
-
-  if (inst.tipoInstalacion === "Alevinaje") {
-    await prisma.pileta.updateMany({
-      where: { instalacionId: id },
-      data: { fechaUltimaBiometria: fechaDate },
-    });
-  } else if (inst.tipoInstalacion === "Engorda") {
-    await prisma.engorda.updateMany({
-      where: { instalacionId: id },
-      data: { fechaBiometria: fechaDate },
-    });
-  } else if (inst.tipoInstalacion === "Reproductores") {
-    await prisma.reproductor.updateMany({
-      where: { instalacionId: id },
-      data: { fechaBiometria: fechaDate },
-    });
-  }
+/**
+ * No-op tras el rediseno del schema: Pileta/Engorda/Reproductor ya no se
+ * relacionan directamente con Instalacion, por lo que no hay propagacion
+ * automatica de fecha de biometria por instalacion. Se conserva la firma
+ * para minimizar cambios en los controllers.
+ */
+export async function actualizarFechaBiometriaPorInstalacion() {
+  return;
 }
 
-export async function obtenerInfoBiometriaPorInstalacion(instalacionIdRaw) {
-  const instalacionId = Number(instalacionIdRaw);
-  if (!Number.isFinite(instalacionId)) return null;
-
-  const inst = await prisma.instalacion.findUnique({
-    where: { instalacionId },
-    select: { tipoInstalacion: true },
-  });
-  if (!inst) return null;
-
-  const tipo = inst.tipoInstalacion;
-
-  if (tipo === "Reproductores") {
-    const r = await prisma.reproductor.findFirst({
-      where: { instalacionId },
-      select: {
-        cantidad: true,
-        talla: true,
-        fechaSiembra: true,
-        fechaBiometria: true,
-      },
-    });
-    if (!r) return { tipo, fi_lote_id: null };
-    return {
-      tipo,
-      fi_lote_id: null,
-      cantidad: r.cantidad,
-      talla: r.talla != null ? Number(r.talla) : null,
-      fecha_siembra: r.fechaSiembra,
-      fecha_biometria: r.fechaBiometria,
-    };
-  }
-
-  if (tipo === "Alevinaje") {
-    const p = await prisma.pileta.findFirst({
-      where: { instalacionId },
-      include: { lote: true },
-    });
-    if (!p) return { tipo, fi_lote_id: null };
-    return {
-      tipo,
-      fi_lote_id: p.loteId,
-      no_lote: p.lote?.noLote ?? null,
-      cantidad: Number(p.cantidad),
-      talla: p.tallaGr != null ? Number(p.tallaGr) : null,
-      fecha_siembra: p.fechaSiembra,
-      fecha_biometria: p.fechaUltimaBiometria,
-    };
-  }
-
-  if (tipo === "Engorda") {
-    const e = await prisma.engorda.findFirst({
-      where: { instalacionId },
-      include: { lote: true },
-    });
-    if (!e) return { tipo, fi_lote_id: null };
-    return {
-      tipo,
-      fi_lote_id: e.loteId,
-      no_lote: e.lote?.noLote ?? null,
-      cantidad: e.cantidad,
-      talla: e.tallaGr != null ? Number(e.tallaGr) : null,
-      fecha_siembra: e.fechaSiembra,
-      fecha_biometria: e.fechaBiometria,
-    };
-  }
-
-  return { tipo };
+/**
+ * Tras el rediseno, no existe `tipoInstalacion` ni una relacion clara
+ * Instalacion -> Pileta/Engorda/Reproductor. Devolvemos null para indicar
+ * que la informacion no esta disponible.
+ */
+export async function obtenerInfoBiometriaPorInstalacion() {
+  return null;
 }
 
 export function parseTimeOrNull(value) {

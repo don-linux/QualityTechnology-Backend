@@ -51,11 +51,11 @@ class BitacoraVisitaController {
           data: {
             ubicacionId,
             fecha: req.body.fd_fecha ? new Date(req.body.fd_fecha) : new Date(),
-            entrada: parseTimeOrNull(req.body.fd_entrada),
-            salida: parseTimeOrNull(req.body.fd_salida),
+            hora_entrada: parseTimeOrNull(req.body.fd_entrada),
+            hora_salida: parseTimeOrNull(req.body.fd_salida),
             nombreCompleto: req.body.fc_nombre_completo || null,
-            origen: req.body.fc_origen || null,
-            motivo: req.body.fc_motivo || null,
+            procedencia: req.body.fc_origen || null,
+            motivo: req.body.fc_motivo || "",
             fotoIdentificacion: req.file ? req.file.path : req.body.fc_foto_identificacion || null,
             usuarioId,
             observacionId,
@@ -110,7 +110,7 @@ class BitacoraVisitaController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId,
         });
@@ -120,22 +120,22 @@ class BitacoraVisitaController {
           data: {
             ubicacionId,
             fecha: req.body.fd_fecha ? new Date(req.body.fd_fecha) : existing.fecha,
-            entrada:
+            hora_entrada:
               req.body.fd_entrada !== undefined
                 ? parseTimeOrNull(req.body.fd_entrada)
-                : existing.entrada,
-            salida:
+                : existing.hora_entrada,
+            hora_salida:
               req.body.fd_salida !== undefined
                 ? parseTimeOrNull(req.body.fd_salida)
-                : existing.salida,
+                : existing.hora_salida,
             nombreCompleto:
               req.body.fc_nombre_completo !== undefined
                 ? req.body.fc_nombre_completo || null
                 : existing.nombreCompleto,
-            origen:
-              req.body.fc_origen !== undefined ? req.body.fc_origen || null : existing.origen,
+            procedencia:
+              req.body.fc_origen !== undefined ? req.body.fc_origen || null : existing.procedencia,
             motivo:
-              req.body.fc_motivo !== undefined ? req.body.fc_motivo || null : existing.motivo,
+              req.body.fc_motivo !== undefined ? req.body.fc_motivo || existing.motivo : existing.motivo,
             fotoIdentificacion: req.file
               ? req.file.path
               : req.body.fc_foto_identificacion !== undefined

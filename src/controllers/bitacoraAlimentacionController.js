@@ -77,7 +77,7 @@ class BitacoraAlimentacionController {
           data: {
             ubicacionId: u.ubicacionId,
             mes: fc_mes || null,
-            numInstalacion: parseOptInt(fn_num_instalacion),
+            pileta_id: parseOptInt(fn_num_instalacion),
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             origenAlevines: fc_origen_alevines || null,
             fecha: fd_fecha ? new Date(fd_fecha) : null,
@@ -85,7 +85,7 @@ class BitacoraAlimentacionController {
             totalAlimentoKg: parseOptDecimal(fn_total_alimento_kg),
             mortalidad: parseOptInt(fn_mortalidad),
             recambioAgua: fc_recambio_agua || null,
-            tempAgua: parseOptDecimal(fn_temp_agua),
+            temperatura_agua: parseOptDecimal(fn_temp_agua),
             amonio: parseOptDecimal(fn_amonio),
             ph: parseOptDecimal(fn_ph),
             usuarioId: fi_usuario_id,
@@ -151,7 +151,7 @@ class BitacoraAlimentacionController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId: fi_usuario_id,
         });
@@ -161,7 +161,7 @@ class BitacoraAlimentacionController {
           data: {
             ubicacionId: u.ubicacionId,
             mes: fc_mes || null,
-            numInstalacion: parseOptInt(fn_num_instalacion),
+            pileta_id: parseOptInt(fn_num_instalacion),
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             origenAlevines: fc_origen_alevines || null,
             fecha: fd_fecha ? new Date(fd_fecha) : null,
@@ -169,7 +169,7 @@ class BitacoraAlimentacionController {
             totalAlimentoKg: parseOptDecimal(fn_total_alimento_kg),
             mortalidad: parseOptInt(fn_mortalidad),
             recambioAgua: fc_recambio_agua || null,
-            tempAgua: parseOptDecimal(fn_temp_agua),
+            temperatura_agua: parseOptDecimal(fn_temp_agua),
             amonio: parseOptDecimal(fn_amonio),
             ph: parseOptDecimal(fn_ph),
             usuarioId: fi_usuario_id,

@@ -2,7 +2,7 @@ import prisma from "../prisma.js";
 
 /**
  * Resuelve un parametro de "granja" (id numerico o nombre) a una ubicacion
- * registrada en la tabla `ubicaciones`. Compatibilidad con el frontend que
+ * registrada en la tabla `ubicacion`. Compatibilidad con el frontend que
  * sigue enviando `granja` como string (Ej. "GRANJA SUR").
  *
  * @param {string|number|null|undefined} granjaParam
@@ -15,12 +15,12 @@ export async function resolverUbicacion(granjaParam) {
 
   const asNumber = Number(trimmed);
   if (Number.isInteger(asNumber) && asNumber > 0) {
-    const u = await prisma.ubicacion.findUnique({ where: { ubicacionId: asNumber } });
-    if (u) return { ubicacionId: u.ubicacionId, nombre: u.nombre };
+    const u = await prisma.ubicacion.findUnique({ where: { id: asNumber } });
+    if (u) return { ubicacionId: u.id, nombre: u.nombre };
   }
 
   const u = await prisma.ubicacion.findUnique({ where: { nombre: trimmed } });
-  return u ? { ubicacionId: u.ubicacionId, nombre: u.nombre } : null;
+  return u ? { ubicacionId: u.id, nombre: u.nombre } : null;
 }
 
 /**
@@ -36,7 +36,7 @@ export async function resolverOCrearUbicacion(granjaParam) {
   if (!trimmed) return null;
 
   const creada = await prisma.ubicacion.create({
-    data: { nombre: trimmed, activo: true },
+    data: { nombre: trimmed },
   });
-  return { ubicacionId: creada.ubicacionId, nombre: creada.nombre };
+  return { ubicacionId: creada.id, nombre: creada.nombre };
 }

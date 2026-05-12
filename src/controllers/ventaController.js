@@ -1,5 +1,12 @@
 import prisma from "../prisma.js";
 import { serializeVenta } from "../utils/serializers.js";
+import { crearObservacionSiHay } from "../utils/observacion.js";
+
+// Venta en el schema actual renombra varios campos: cliente -> cliente_nombre,
+// cantidadVendida -> cantidad, precioVenta -> precio_unitario, abonado ->
+// monto_abonado, encargadoVenta -> vendedor_nombre, fechaVenta -> fecha,
+// usuarioId -> usuario_id (campo JS directo, sin @map). monto_adeudo se
+// calcula en la DB. Aceptamos los aliases fc_/fn_/fd_ por compatibilidad.
 
 function sanitize(value) {
   if (!value) return 0;
@@ -24,25 +31,14 @@ function calcularEstado(total, abonado) {
   return "PAGADO";
 }
 
-async function crearObservacionSiHay(tx, texto, usuarioId) {
-  if (texto === undefined || texto === null || String(texto).trim() === "") return null;
-  const obs = await tx.observacion.create({
-    data: {
-      observacion: String(texto).slice(0, 500),
-      usuarioId: usuarioId ?? null,
-    },
-  });
-  return obs.observacionId;
-}
-
 class VentaController {
   static async getClientes(req, res) {
     try {
       const clientes = await prisma.cliente.findMany({
-        select: { clienteId: true, razonSocial: true },
-        orderBy: { razonSocial: "asc" },
+        select: { id: true, nombre: true },
+        orderBy: { nombre: "asc" },
       });
-      res.json(clientes.map((c) => ({ id: c.clienteId, nombre: c.razonSocial })));
+      res.json(clientes.map((c) => ({ id: c.id, nombre: c.nombre })));
     } catch (err) {
       console.error("Error al obtener clientes:", err);
       res.status(500).json({ error: err.message });
@@ -58,9 +54,9 @@ class VentaController {
       }
 
       const empleados = await prisma.empleado.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         select: {
-          empleadoId: true,
+          id: true,
           nombre: true,
           apellidoPaterno: true,
           apellidoMaterno: true,
@@ -68,7 +64,7 @@ class VentaController {
       });
       const result = empleados
         .map((e) => ({
-          id: e.empleadoId,
+          id: e.id,
           nombre: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
             .filter(Boolean)
             .join(" "),
@@ -85,7 +81,7 @@ class VentaController {
     try {
       const ventas = await prisma.venta.findMany({
         include: { observacion: true },
-        orderBy: [{ fechaVenta: "desc" }, { ventaId: "desc" }],
+        orderBy: [{ fecha: "desc" }, { id: "desc" }],
       });
       res.json(ventas.map(serializeVenta));
     } catch (err) {
@@ -106,38 +102,45 @@ class VentaController {
         fc_empresa,
       } = req.body;
 
-      const cantidadVendida = sanitize(req.body.fn_cantidad_vendida);
-      const precioVenta = sanitize(req.body.fn_precio_venta);
-      const abonado = sanitize(req.body.fn_abonado);
+      const clienteNombre = req.body.cliente_nombre ?? fc_cliente;
+      const empresa = req.body.empresa ?? fc_empresa;
+      const tipoVenta = req.body.tipo_venta ?? fc_tipo_venta;
+      const vendedor = req.body.vendedor_nombre ?? fc_encargado_venta;
+      const folio = req.body.folio ?? fc_folio;
+      const fechaIn = req.body.fecha ?? fd_fecha_venta;
+      const observaciones = req.body.observaciones ?? fc_observaciones;
 
-      if (!fc_cliente) return res.status(400).json({ error: "Cliente obligatorio" });
-      if (!fc_encargado_venta) return res.status(400).json({ error: "Encargado obligatorio" });
-      if (cantidadVendida <= 0 || precioVenta <= 0) {
-        return res.status(400).json({ error: "Cantidad o precio invalidos" });
+      const cantidad = sanitize(req.body.cantidad ?? req.body.fn_cantidad_vendida);
+      const precioUnitario = sanitize(req.body.precio_unitario ?? req.body.fn_precio_venta);
+      const montoAbonado = sanitize(req.body.monto_abonado ?? req.body.fn_abonado);
+
+      if (!clienteNombre) return res.status(400).json({ error: "cliente_nombre obligatorio" });
+      if (!empresa) return res.status(400).json({ error: "empresa obligatoria" });
+      if (cantidad <= 0 || precioUnitario <= 0) {
+        return res.status(400).json({ error: "cantidad o precio_unitario invalidos" });
       }
 
-      const fechaVenta = toDateOrNull(fd_fecha_venta) ?? new Date();
-      const montoTotal = cantidadVendida * precioVenta;
-      const estadoPago = calcularEstado(montoTotal, abonado);
-      const adeudo = Math.max(montoTotal - abonado, 0);
+      const fecha = toDateOrNull(fechaIn) ?? new Date();
+      const montoTotal = cantidad * precioUnitario;
+      const estadoPago = calcularEstado(montoTotal, montoAbonado);
 
       const venta = await prisma.$transaction(async (tx) => {
-        const obsId = await crearObservacionSiHay(tx, fc_observaciones, req.user.usuario_id);
+        const obsId = await crearObservacionSiHay(tx, observaciones, req.user.usuario_id);
         return tx.venta.create({
           data: {
-            folio: fc_folio ?? null,
-            fechaVenta,
-            cliente: String(fc_cliente),
-            tipoVenta: String(fc_tipo_venta ?? ""),
-            cantidadVendida,
-            precioVenta,
+            folio: folio ?? null,
+            fecha,
+            cliente_nombre: String(clienteNombre),
+            tipoVenta: String(tipoVenta ?? ""),
+            cantidad,
+            precio_unitario: precioUnitario,
             montoTotal,
-            abonado,
-            adeudo,
+            monto_abonado: montoAbonado,
             estadoPago,
-            empresa: String(fc_empresa ?? ""),
-            encargadoVenta: fc_encargado_venta ?? null,
+            empresa: String(empresa),
+            vendedor_nombre: vendedor ?? null,
             observacionId: obsId,
+            usuario_id: req.user.usuario_id,
           },
           include: { observacion: true },
         });
@@ -158,45 +161,40 @@ class VentaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const {
-        fc_folio,
-        fd_fecha_venta,
-        fc_cliente,
-        fc_tipo_venta,
-        fc_encargado_venta,
-        fc_observaciones,
-        fc_empresa,
-      } = req.body;
+      const cantidad = sanitize(req.body.cantidad ?? req.body.fn_cantidad_vendida);
+      const precioUnitario = sanitize(req.body.precio_unitario ?? req.body.fn_precio_venta);
+      const montoAbonado = sanitize(req.body.monto_abonado ?? req.body.fn_abonado);
+      const montoTotal = cantidad * precioUnitario;
+      const estadoPago = calcularEstado(montoTotal, montoAbonado);
 
-      const cantidadVendida = sanitize(req.body.fn_cantidad_vendida);
-      const precioVenta = sanitize(req.body.fn_precio_venta);
-      const abonado = sanitize(req.body.fn_abonado);
-
-      const montoTotal = cantidadVendida * precioVenta;
-      const estadoPago = calcularEstado(montoTotal, abonado);
-      const adeudo = Math.max(montoTotal - abonado, 0);
+      const folio = req.body.folio ?? req.body.fc_folio;
+      const fechaIn = req.body.fecha ?? req.body.fd_fecha_venta;
+      const clienteNombre = req.body.cliente_nombre ?? req.body.fc_cliente;
+      const tipoVenta = req.body.tipo_venta ?? req.body.fc_tipo_venta;
+      const vendedor = req.body.vendedor_nombre ?? req.body.fc_encargado_venta;
+      const empresa = req.body.empresa ?? req.body.fc_empresa;
+      const observaciones = req.body.observaciones ?? req.body.fc_observaciones;
 
       const venta = await prisma.$transaction(async (tx) => {
         const updateData = {
-          folio: fc_folio ?? null,
-          fechaVenta: toDateOrNull(fd_fecha_venta) ?? undefined,
-          cliente: fc_cliente ?? undefined,
-          tipoVenta: fc_tipo_venta ?? undefined,
-          cantidadVendida,
-          precioVenta,
+          folio: folio ?? null,
+          fecha: toDateOrNull(fechaIn) ?? undefined,
+          cliente_nombre: clienteNombre ?? undefined,
+          tipoVenta: tipoVenta ?? undefined,
+          cantidad,
+          precio_unitario: precioUnitario,
           montoTotal,
-          abonado,
-          adeudo,
+          monto_abonado: montoAbonado,
           estadoPago,
-          empresa: fc_empresa ?? undefined,
-          encargadoVenta: fc_encargado_venta ?? null,
+          empresa: empresa ?? undefined,
+          vendedor_nombre: vendedor ?? null,
         };
-        if (fc_observaciones !== undefined) {
-          const obsId = await crearObservacionSiHay(tx, fc_observaciones, req.user.usuario_id);
+        if (observaciones !== undefined) {
+          const obsId = await crearObservacionSiHay(tx, observaciones, req.user.usuario_id);
           if (obsId) updateData.observacionId = obsId;
         }
         return tx.venta.update({
-          where: { ventaId: id },
+          where: { id },
           data: updateData,
           include: { observacion: true },
         });
@@ -215,7 +213,7 @@ class VentaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.venta.delete({ where: { ventaId: id } });
+      await prisma.venta.delete({ where: { id } });
       res.json({ mensaje: "Venta eliminada" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Venta no encontrada" });

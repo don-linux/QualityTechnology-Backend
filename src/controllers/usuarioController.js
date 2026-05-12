@@ -70,7 +70,7 @@ class UsuarioController {
     try {
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-      const rol = await prisma.rol.findUnique({ where: { rolId: Number(rol_id) } });
+      const rol = await prisma.rol.findUnique({ where: { id: Number(rol_id) } });
       if (!rol) {
         return res.status(400).json({ error: "Rol no encontrado" });
       }
@@ -79,30 +79,31 @@ class UsuarioController {
         const usuario = await tx.usuario.create({
           data: {
             nombre,
-            contrasena: hashedPassword,
+            password: hashedPassword,
             rolId: Number(rol_id),
           },
         });
 
         if (!rol.esRoot) {
-          if (!nombre_empleado || !apellido_paterno || !apellido_materno || !departamento_id) {
+          if (!nombre_empleado || !apellido_paterno || !departamento_id) {
             throw Object.assign(
               new Error(
-                "Para roles no-root se requiere: nombre_empleado, apellido_paterno, apellido_materno, departamento_id"
+                "Para roles no-root se requiere: nombre_empleado, apellido_paterno, departamento_id"
               ),
               { status: 400 }
             );
           }
 
+          // unidad_negocio_id ya no existe en el modelo Empleado del schema actual
+          // y se ignora si llega en el body.
           await tx.empleado.create({
             data: {
-              usuarioId: usuario.usuarioId,
+              usuarioId: usuario.id,
               nombre: nombre_empleado,
               apellidoPaterno: apellido_paterno,
-              apellidoMaterno: apellido_materno,
+              apellidoMaterno: apellido_materno ?? null,
               departamentoId: Number(departamento_id),
               puestoId: puesto_id ? Number(puesto_id) : null,
-              unidadNegocioId: unidad_negocio_id ? Number(unidad_negocio_id) : null,
             },
           });
         }
@@ -135,10 +136,10 @@ class UsuarioController {
       const data = {};
       if (nombre !== undefined) data.nombre = nombre;
       if (rol_id !== undefined) data.rolId = Number(rol_id);
-      if (password) data.contrasena = await bcrypt.hash(password, BCRYPT_ROUNDS);
+      if (password) data.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
       const usuario = await prisma.usuario.update({
-        where: { usuarioId: Number(id) },
+        where: { id: Number(id) },
         data,
       });
 
@@ -162,8 +163,8 @@ class UsuarioController {
     const { id } = req.params;
     try {
       const usuario = await prisma.usuario.update({
-        where: { usuarioId: Number(id) },
-        data: { activo: false },
+        where: { id: Number(id) },
+        data: { esta_activo: false },
       });
       await revokeAllByUser(id);
       res.json({ mensaje: "Usuario desactivado correctamente", usuario: serializeUsuario(usuario) });
@@ -180,8 +181,8 @@ class UsuarioController {
     const { id } = req.params;
     try {
       const usuario = await prisma.usuario.update({
-        where: { usuarioId: Number(id) },
-        data: { activo: true },
+        where: { id: Number(id) },
+        data: { esta_activo: true },
       });
       res.json({ mensaje: "Usuario activado correctamente", usuario: serializeUsuario(usuario) });
     } catch (err) {

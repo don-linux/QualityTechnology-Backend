@@ -17,7 +17,7 @@ class UnidadNegocioController {
   static async getAll(req, res) {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
-        orderBy: { unidadNegocioId: "asc" },
+        orderBy: { id: "asc" },
       });
       res.json(unidades.map(serializeUnidadNegocioFull));
     } catch (err) {
@@ -29,7 +29,7 @@ class UnidadNegocioController {
   static async getActivos(req, res) {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         orderBy: { nombre: "asc" },
       });
       res.json(unidades.map(serializeUnidadNegocioFull));
@@ -68,7 +68,7 @@ class UnidadNegocioController {
 
     try {
       const unidad = await prisma.unidadNegocio.update({
-        where: { unidadNegocioId: id },
+        where: { id },
         data: { nombre: String(nombre) },
       });
       res.json({
@@ -91,8 +91,8 @@ class UnidadNegocioController {
 
     try {
       const unidad = await prisma.unidadNegocio.update({
-        where: { unidadNegocioId: id },
-        data: { activo: true },
+        where: { id },
+        data: { esta_activo: true },
       });
       res.json({
         mensaje: "Unidad de negocio activada correctamente",
@@ -111,8 +111,8 @@ class UnidadNegocioController {
 
     try {
       const unidad = await prisma.unidadNegocio.update({
-        where: { unidadNegocioId: id },
-        data: { activo: false },
+        where: { id },
+        data: { esta_activo: false },
       });
       res.json({
         mensaje: "Unidad de negocio desactivada correctamente",

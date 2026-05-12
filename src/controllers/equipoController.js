@@ -4,6 +4,12 @@ import {
   serializeMantenimiento,
 } from "../utils/serializers.js";
 
+// El schema actual simplifica Equipo (nombre, tipo, marca, modelo, serial,
+// estado, observaciones) y Mantenimiento (descripcion, fecha, costo,
+// responsable). Los campos del API previo (fecha_compra, costo en equipo,
+// ubicacion, proximo_mantenimiento, notas, tipo y estado_post en
+// mantenimiento) ya no existen y se ignoran si vienen en el body.
+
 function pick(body, ...keys) {
   for (const k of keys) {
     if (body[k] !== undefined && body[k] !== null && body[k] !== "") return body[k];
@@ -29,21 +35,13 @@ function toDateOrNull(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function appendResponsable(notas, responsable) {
-  const r = responsable === undefined || responsable === null ? "" : String(responsable).trim();
-  if (!r) return notas ?? null;
-  const base = (notas ?? "").trim();
-  const prefix = base ? `${base}\n` : "";
-  return `${prefix}Responsable: ${r}`;
-}
-
 class EquipoController {
   static async getEmpleados(req, res) {
     try {
       const empleados = await prisma.empleado.findMany({
-        where: { activo: true },
+        where: { esta_activo: true },
         select: {
-          empleadoId: true,
+          id: true,
           nombre: true,
           apellidoPaterno: true,
           apellidoMaterno: true,
@@ -51,7 +49,7 @@ class EquipoController {
       });
       const result = empleados
         .map((e) => ({
-          fi_empleado_id: e.empleadoId,
+          fi_empleado_id: e.id,
           fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
             .filter(Boolean)
             .join(" "),
@@ -70,8 +68,7 @@ class EquipoController {
       if (!usuarioId) return res.json([]);
       const equipos = await prisma.equipo.findMany({
         where: { usuarioId },
-        include: { observacion: true },
-        orderBy: { equipoId: "desc" },
+        orderBy: { id: "desc" },
       });
       res.json(equipos.map(serializeEquipo));
     } catch (err) {
@@ -83,12 +80,7 @@ class EquipoController {
   static async create(req, res) {
     try {
       const nombre = pick(req.body, "fc_nombre", "nombre");
-      if (!nombre) return res.status(400).json({ error: "fc_nombre es obligatorio" });
-
-      const notas = appendResponsable(
-        pick(req.body, "fc_notas", "notas"),
-        pick(req.body, "fc_responsable", "responsable")
-      );
+      if (!nombre) return res.status(400).json({ error: "nombre es obligatorio" });
 
       const creado = await prisma.equipo.create({
         data: {
@@ -96,17 +88,11 @@ class EquipoController {
           marca: pick(req.body, "fc_marca", "marca") ?? null,
           modelo: pick(req.body, "fc_modelo", "modelo") ?? null,
           tipo: pick(req.body, "fc_tipo", "tipo") ?? null,
-          fechaCompra: toDateOrNull(pick(req.body, "fd_fecha_compra", "fecha_compra")),
-          costo: toDecimal(pick(req.body, "fn_costo", "costo")),
+          serial: pick(req.body, "serial", "fc_serial") ?? null,
           estado: pick(req.body, "fc_estado", "estado") ?? "Operativo",
-          ubicacion: pick(req.body, "fc_ubicacion", "ubicacion") ?? null,
-          proximoMantenimiento: toDateOrNull(
-            pick(req.body, "fd_proximo_mantenimiento", "proximo_mantenimiento")
-          ),
-          notas,
+          observaciones: pick(req.body, "observaciones", "fc_observaciones", "fc_notas", "notas") ?? null,
           usuarioId: req.user.usuario_id,
         },
-        include: { observacion: true },
       });
 
       res.status(201).json(serializeEquipo(creado));
@@ -133,42 +119,25 @@ class EquipoController {
       if (req.body.fc_tipo !== undefined || req.body.tipo !== undefined) {
         updateData.tipo = pick(req.body, "fc_tipo", "tipo") ?? null;
       }
-      if (req.body.fd_fecha_compra !== undefined || req.body.fecha_compra !== undefined) {
-        updateData.fechaCompra = toDateOrNull(pick(req.body, "fd_fecha_compra", "fecha_compra"));
-      }
-      if (req.body.fn_costo !== undefined || req.body.costo !== undefined) {
-        updateData.costo = toDecimal(pick(req.body, "fn_costo", "costo"));
+      if (req.body.serial !== undefined || req.body.fc_serial !== undefined) {
+        updateData.serial = pick(req.body, "serial", "fc_serial") ?? null;
       }
       if (req.body.fc_estado !== undefined || req.body.estado !== undefined) {
         updateData.estado = pick(req.body, "fc_estado", "estado") ?? "Operativo";
       }
-      if (req.body.fc_ubicacion !== undefined || req.body.ubicacion !== undefined) {
-        updateData.ubicacion = pick(req.body, "fc_ubicacion", "ubicacion") ?? null;
-      }
       if (
-        req.body.fd_proximo_mantenimiento !== undefined ||
-        req.body.proximo_mantenimiento !== undefined
-      ) {
-        updateData.proximoMantenimiento = toDateOrNull(
-          pick(req.body, "fd_proximo_mantenimiento", "proximo_mantenimiento")
-        );
-      }
-      if (
+        req.body.observaciones !== undefined ||
+        req.body.fc_observaciones !== undefined ||
         req.body.fc_notas !== undefined ||
-        req.body.notas !== undefined ||
-        req.body.fc_responsable !== undefined ||
-        req.body.responsable !== undefined
+        req.body.notas !== undefined
       ) {
-        updateData.notas = appendResponsable(
-          pick(req.body, "fc_notas", "notas"),
-          pick(req.body, "fc_responsable", "responsable")
-        );
+        updateData.observaciones =
+          pick(req.body, "observaciones", "fc_observaciones", "fc_notas", "notas") ?? null;
       }
 
       const actualizado = await prisma.equipo.update({
-        where: { equipoId: id },
+        where: { id },
         data: updateData,
-        include: { observacion: true },
       });
 
       res.json(serializeEquipo(actualizado));
@@ -184,7 +153,7 @@ class EquipoController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.equipo.delete({ where: { equipoId: id } });
+      await prisma.equipo.delete({ where: { id } });
       res.json({ mensaje: "Equipo eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Equipo no encontrado" });
@@ -193,16 +162,13 @@ class EquipoController {
     }
   }
 
-  /* =========================================================
-     MANTENIMIENTOS
-  ========================================================= */
+  // ===== Mantenimientos =====
   static async getMantenimientos(req, res) {
     try {
       const equipoId = toInt(req.params.equipo_id);
       if (!equipoId) return res.json([]);
       const mantenimientos = await prisma.mantenimiento.findMany({
         where: { equipoId },
-        include: { observacion: true },
         orderBy: { fecha: "desc" },
       });
       res.json(mantenimientos.map(serializeMantenimiento));
@@ -219,36 +185,28 @@ class EquipoController {
 
       const fecha = toDateOrNull(pick(req.body, "fd_fecha", "fecha"));
       if (!fecha) {
-        return res.status(400).json({ error: "fd_fecha es obligatorio" });
+        return res.status(400).json({ error: "fecha es obligatoria" });
       }
-
-      const descripcion = (() => {
-        const base = pick(req.body, "fc_descripcion", "descripcion") ?? "";
-        const responsable = pick(req.body, "fc_responsable", "responsable");
-        if (responsable) {
-          const prefijo = base ? `${base}\n` : "";
-          return `${prefijo}Responsable: ${responsable}`;
-        }
-        return base || null;
-      })();
+      const descripcion = pick(req.body, "fc_descripcion", "descripcion");
+      if (!descripcion) {
+        return res.status(400).json({ error: "descripcion es obligatoria" });
+      }
 
       const creado = await prisma.mantenimiento.create({
         data: {
           equipoId,
           fecha,
-          tipo: pick(req.body, "fc_tipo", "tipo") ?? "Preventivo",
-          descripcion,
-          costo: toDecimal(pick(req.body, "fn_costo", "costo")) ?? 0,
-          estadoPost: pick(req.body, "fc_estado_post", "estado_post") ?? null,
-          proximoMantenimiento: toDateOrNull(
-            pick(req.body, "fd_proximo_mantenimiento", "proximo_mantenimiento")
-          ),
+          descripcion: String(descripcion),
+          costo: toDecimal(pick(req.body, "fn_costo", "costo")),
+          responsable: pick(req.body, "fc_responsable", "responsable") ?? null,
         },
-        include: { observacion: true },
       });
 
       res.status(201).json(serializeMantenimiento(creado));
     } catch (err) {
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Equipo invalido" });
+      }
       console.error("Error al registrar mantenimiento:", err);
       res.status(500).json({ error: "Error al registrar mantenimiento" });
     }
@@ -263,43 +221,19 @@ class EquipoController {
       const fecha = toDateOrNull(pick(req.body, "fd_fecha", "fecha"));
       if (fecha) updateData.fecha = fecha;
 
-      if (req.body.fc_tipo !== undefined || req.body.tipo !== undefined) {
-        updateData.tipo = pick(req.body, "fc_tipo", "tipo") ?? "Preventivo";
-      }
-      if (
-        req.body.fc_descripcion !== undefined ||
-        req.body.descripcion !== undefined ||
-        req.body.fc_responsable !== undefined ||
-        req.body.responsable !== undefined
-      ) {
-        const base = pick(req.body, "fc_descripcion", "descripcion") ?? "";
-        const responsable = pick(req.body, "fc_responsable", "responsable");
-        if (responsable) {
-          const prefijo = base ? `${base}\n` : "";
-          updateData.descripcion = `${prefijo}Responsable: ${responsable}`;
-        } else {
-          updateData.descripcion = base || null;
-        }
+      if (req.body.fc_descripcion !== undefined || req.body.descripcion !== undefined) {
+        updateData.descripcion = String(pick(req.body, "fc_descripcion", "descripcion") ?? "");
       }
       if (req.body.fn_costo !== undefined || req.body.costo !== undefined) {
-        updateData.costo = toDecimal(pick(req.body, "fn_costo", "costo")) ?? 0;
+        updateData.costo = toDecimal(pick(req.body, "fn_costo", "costo"));
       }
-      if (req.body.fc_estado_post !== undefined || req.body.estado_post !== undefined) {
-        updateData.estadoPost = pick(req.body, "fc_estado_post", "estado_post") ?? null;
-      }
-      if (
-        req.body.fd_proximo_mantenimiento !== undefined ||
-        req.body.proximo_mantenimiento !== undefined
-      ) {
-        updateData.proximoMantenimiento = toDateOrNull(
-          pick(req.body, "fd_proximo_mantenimiento", "proximo_mantenimiento")
-        );
+      if (req.body.fc_responsable !== undefined || req.body.responsable !== undefined) {
+        updateData.responsable = pick(req.body, "fc_responsable", "responsable") ?? null;
       }
 
       const actualizado = await prisma.mantenimiento.update({
-        where: { mantenimientoId: id },
+        where: { id },
         data: updateData,
-        include: { observacion: true },
       });
       res.json(serializeMantenimiento(actualizado));
     } catch (err) {
@@ -314,7 +248,7 @@ class EquipoController {
     if (!id) return res.status(400).json({ error: "mantenimiento_id invalido" });
 
     try {
-      await prisma.mantenimiento.delete({ where: { mantenimientoId: id } });
+      await prisma.mantenimiento.delete({ where: { id } });
       res.json({ mensaje: "Mantenimiento eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Mantenimiento no encontrado" });

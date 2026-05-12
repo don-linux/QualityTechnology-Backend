@@ -15,7 +15,7 @@ class ModulosController {
   static async getById(req, res) {
     const { id } = req.params;
     try {
-      const modulo = await prisma.modulo.findUnique({ where: { moduloId: Number(id) } });
+      const modulo = await prisma.modulo.findUnique({ where: { id: Number(id) } });
       if (!modulo) {
         return res.status(404).json({ message: "Modulo no encontrado" });
       }

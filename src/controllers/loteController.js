@@ -1,10 +1,12 @@
 import prisma from "../prisma.js";
 import { serializeLote } from "../utils/serializers.js";
-import { resolverUbicacion, resolverOCrearUbicacion } from "../utils/ubicacion.js";
 
-const MAX_NUMERICO = 15;
-const MAX_OBSERVACION = 500;
-const REGEX_DECIMAL = /^\d+(\.\d+)?$/;
+// El modelo Lote del schema actual solo conserva: nombre, instalacionId,
+// familia, fecha_ingreso, cantidad, estatus. Los campos antiguos
+// (no_lote, huevos_ml, ovadas, alevines_inicial, mortalidad, ubicacionId,
+// usuarioId, observacionId) ya no existen. Tampoco existen los modelos
+// `LoteMovimiento`, `TrazaAlevinaje`, `TrazaEngorda`. Los endpoints que
+// dependen de esos modelos viejos devuelven 501.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -19,153 +21,54 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-function toDecimal(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
 function toDateOrNull(value) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function validarCamposLote({ huevos_ml, huevos, observacion }) {
-  const valorHuevos = huevos_ml ?? huevos;
-  if (valorHuevos !== undefined && valorHuevos !== null && valorHuevos !== "") {
-    const valor = String(valorHuevos);
-    if (valor.length > MAX_NUMERICO) {
-      return `Los huevos no pueden superar los ${MAX_NUMERICO} caracteres.`;
-    }
-    if (!REGEX_DECIMAL.test(valor)) {
-      return "Los huevos deben ser un numero (puede incluir decimales).";
-    }
-  }
-  if (observacion && observacion.length > MAX_OBSERVACION) {
-    return `La observacion no puede superar los ${MAX_OBSERVACION} caracteres.`;
-  }
-  return null;
-}
-
-async function crearObservacionSiHay(tx, texto, usuarioId) {
-  if (texto === undefined || texto === null || String(texto).trim() === "") return null;
-  const obs = await tx.observacion.create({
-    data: {
-      observacion: String(texto).slice(0, 500),
-      usuarioId: usuarioId ?? null,
-    },
-  });
-  return obs.observacionId;
-}
+const loteInclude = { instalacion: true };
 
 class LoteController {
-  static async getInstalaciones(req, res) {
+  static async getAll(req, res) {
     try {
-      const ubicacion = await resolverUbicacion(req.params.granja);
-      if (!ubicacion) return res.json([]);
-      const instalaciones = await prisma.instalacion.findMany({
-        where: { ubicacionId: ubicacion.ubicacionId },
-        orderBy: { nombreInstalacion: "asc" },
-        select: { instalacionId: true, nombreInstalacion: true },
-      });
-      res.json(
-        instalaciones.map((i) => ({
-          fi_instalacion_id: i.instalacionId,
-          nombre_instalacion: i.nombreInstalacion,
-        }))
-      );
-    } catch (err) {
-      console.error("Error al obtener instalaciones:", err);
-      res.status(500).json({ error: "Error obteniendo instalaciones" });
-    }
-  }
-
-  static async getInstalacionesReproductores(req, res) {
-    try {
-      const ubicacion = await resolverUbicacion(req.params.granja);
-      if (!ubicacion) return res.json([]);
-      const instalaciones = await prisma.instalacion.findMany({
-        where: {
-          ubicacionId: ubicacion.ubicacionId,
-          reproductores: { some: {} },
-        },
-        orderBy: { nombreInstalacion: "asc" },
-        select: { instalacionId: true, nombreInstalacion: true },
-      });
-      res.json(
-        instalaciones.map((i) => ({
-          fi_instalacion_id: i.instalacionId,
-          nombre_instalacion: i.nombreInstalacion,
-        }))
-      );
-    } catch (err) {
-      console.error("Error obteniendo instalaciones de reproductores:", err);
-      res.status(500).json({ error: "Error obteniendo instalaciones de reproductores" });
-    }
-  }
-
-  static async getByGranja(req, res) {
-    try {
-      const ubicacion = await resolverUbicacion(req.params.granja);
-      if (!ubicacion) return res.json([]);
       const lotes = await prisma.lote.findMany({
-        where: { ubicacionId: ubicacion.ubicacionId },
-        include: { instalacion: true, ubicacion: true, observacion: true },
-        orderBy: { fecha: "desc" },
+        include: loteInclude,
+        orderBy: { id: "desc" },
       });
       res.json(lotes.map(serializeLote));
     } catch (err) {
-      console.error("Error al obtener lotes por granja:", err);
-      res.status(500).json({ error: "Error obteniendo lotes por granja" });
+      console.error("Error al obtener lotes:", err);
+      res.status(500).json({ error: "Error al obtener lotes" });
     }
   }
 
   static async create(req, res) {
     try {
-      const error = validarCamposLote(req.body);
-      if (error) return res.status(400).json({ error });
+      const nombre = pick(req.body, "nombre", "no_lote", "noLote");
+      const instalacionId = toInt(pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id"));
+      const familia = pick(req.body, "familia");
+      const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso", "fecha", "fd_fecha"));
+      const cantidad = toInt(pick(req.body, "cantidad", "alevines_inicial"));
+      const estatus = pick(req.body, "estatus");
 
-      const instalacionId = toInt(pick(req.body, "fc_instalacion_id", "fi_instalacion_id", "instalacion_id"));
+      if (!nombre) {
+        return res.status(400).json({ error: "nombre (o no_lote) es obligatorio" });
+      }
       if (!instalacionId) {
-        return res.status(400).json({ error: "Debe seleccionar una instalacion" });
-      }
-      const noLote = pick(req.body, "no_lote", "noLote");
-      if (!noLote) {
-        return res.status(400).json({ error: "no_lote es obligatorio" });
+        return res.status(400).json({ error: "instalacion_id es obligatorio" });
       }
 
-      const granjaInput = pick(req.body, "fc_granja", "granja", "ubicacion_id", "ubicacionId");
-      const ubicacion = await resolverOCrearUbicacion(granjaInput);
-      if (!ubicacion) {
-        return res.status(400).json({ error: "granja/ubicacion invalida" });
-      }
-
-      const huevos = toDecimal(pick(req.body, "huevos_ml", "huevos"));
-      const fecha = toDateOrNull(pick(req.body, "fecha", "fd_fecha")) || new Date();
-      const ovadas = toInt(req.body.ovadas, 0) ?? 0;
-      const alevinesInicial = toInt(req.body.alevines_inicial, 0) ?? 0;
-      const mortalidad = toInt(req.body.mortalidad, 0) ?? 0;
-      const familia = pick(req.body, "familia") ?? "";
-
-      const creado = await prisma.$transaction(async (tx) => {
-        const obsId = await crearObservacionSiHay(tx, req.body.observacion, req.user.usuario_id);
-        return tx.lote.create({
-          data: {
-            instalacionId,
-            fecha,
-            familia: String(familia),
-            noLote: String(noLote),
-            huevosMl: huevos,
-            ovadas,
-            alevinesInicial,
-            mortalidad,
-            ubicacionId: ubicacion.ubicacionId,
-            usuarioId: req.user.usuario_id,
-            observacionId: obsId,
-          },
-          include: { instalacion: true, ubicacion: true, observacion: true },
-        });
+      const creado = await prisma.lote.create({
+        data: {
+          nombre: String(nombre),
+          instalacionId,
+          familia: familia ? String(familia) : null,
+          ...(fechaIngreso ? { fecha_ingreso: fechaIngreso } : {}),
+          ...(cantidad !== null ? { cantidad } : {}),
+          ...(estatus ? { estatus: String(estatus) } : {}),
+        },
+        include: loteInclude,
       });
 
       res.status(201).json({
@@ -174,8 +77,8 @@ class LoteController {
         data: serializeLote(creado),
       });
     } catch (err) {
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un lote registrado con ese numero ('no_lote')." });
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Instalacion invalida" });
       }
       console.error("Error al registrar lote:", err);
       res.status(500).json({ error: "Error al registrar lote" });
@@ -187,47 +90,29 @@ class LoteController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const error = validarCamposLote(req.body);
-      if (error) return res.status(400).json({ error });
-
       const updateData = {};
+      const nombre = pick(req.body, "nombre", "no_lote", "noLote");
+      if (nombre !== undefined) updateData.nombre = String(nombre);
 
-      const instalacionId = toInt(pick(req.body, "fc_instalacion_id", "fi_instalacion_id", "instalacion_id"));
+      const instalacionId = toInt(pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id"));
       if (instalacionId !== null) updateData.instalacionId = instalacionId;
 
-      const noLote = pick(req.body, "no_lote", "noLote");
-      if (noLote !== undefined) updateData.noLote = String(noLote);
-
       const familia = pick(req.body, "familia");
-      if (familia !== undefined) updateData.familia = String(familia);
+      if (familia !== undefined) updateData.familia = familia ? String(familia) : null;
 
-      const fecha = toDateOrNull(pick(req.body, "fecha", "fd_fecha"));
-      if (fecha) updateData.fecha = fecha;
+      const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso", "fecha", "fd_fecha"));
+      if (fechaIngreso) updateData.fecha_ingreso = fechaIngreso;
 
-      if (req.body.huevos_ml !== undefined || req.body.huevos !== undefined) {
-        updateData.huevosMl = toDecimal(pick(req.body, "huevos_ml", "huevos"));
-      }
-      if (req.body.ovadas !== undefined) updateData.ovadas = toInt(req.body.ovadas, 0) ?? 0;
-      if (req.body.mortalidad !== undefined) updateData.mortalidad = toInt(req.body.mortalidad, 0) ?? 0;
-      if (req.body.alevines_inicial !== undefined) updateData.alevinesInicial = toInt(req.body.alevines_inicial, 0) ?? 0;
+      const cantidadIn = pick(req.body, "cantidad", "alevines_inicial");
+      if (cantidadIn !== undefined) updateData.cantidad = toInt(cantidadIn);
 
-      const granjaInput = pick(req.body, "fc_granja", "granja", "ubicacion_id", "ubicacionId");
-      if (granjaInput !== undefined) {
-        const ubicacion = await resolverOCrearUbicacion(granjaInput);
-        if (!ubicacion) return res.status(400).json({ error: "granja/ubicacion invalida" });
-        updateData.ubicacionId = ubicacion.ubicacionId;
-      }
+      const estatus = pick(req.body, "estatus");
+      if (estatus !== undefined) updateData.estatus = estatus ? String(estatus) : null;
 
-      const lote = await prisma.$transaction(async (tx) => {
-        if (req.body.observacion !== undefined) {
-          const obsId = await crearObservacionSiHay(tx, req.body.observacion, req.user.usuario_id);
-          if (obsId) updateData.observacionId = obsId;
-        }
-        return tx.lote.update({
-          where: { loteId: id },
-          data: updateData,
-          include: { instalacion: true, ubicacion: true, observacion: true },
-        });
+      const lote = await prisma.lote.update({
+        where: { id },
+        data: updateData,
+        include: loteInclude,
       });
 
       res.json({
@@ -237,9 +122,6 @@ class LoteController {
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Lote no encontrado" });
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un lote registrado con ese numero ('no_lote')." });
-      }
       console.error("Error al actualizar lote:", err);
       res.status(500).json({ error: "Error al actualizar lote" });
     }
@@ -250,55 +132,30 @@ class LoteController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.pileta.updateMany({
-          where: { loteId: id },
-          data: { loteId: null },
-        });
-        await tx.loteMovimiento.deleteMany({ where: { loteId: id } });
-        await tx.trazaAlevinaje.deleteMany({ where: { loteId: id } });
-
-        const engordas = await tx.engorda.findMany({
-          where: { loteId: id },
-          select: { engordaId: true },
-        });
-        const engordaIds = engordas.map((e) => e.engordaId);
-        if (engordaIds.length > 0) {
-          await tx.trazaEngorda.deleteMany({
-            where: {
-              OR: [
-                { engordaOrigen: { in: engordaIds } },
-                { engordaDestino: { in: engordaIds } },
-              ],
-            },
-          });
-          await tx.alimento.deleteMany({ where: { engordaId: { in: engordaIds } } });
-        }
-        await tx.engorda.deleteMany({ where: { loteId: id } });
-        await tx.lote.delete({ where: { loteId: id } });
-      });
-
-      res.json({
-        success: true,
-        message: "Lote eliminado correctamente y sus modulos en cascada",
-      });
+      await prisma.lote.delete({ where: { id } });
+      res.json({ success: true, message: "Lote eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Lote no encontrado" });
-      console.error("Error al eliminar lote en cascada:", err);
+      if (err.code === "P2003") {
+        return res.status(409).json({
+          error: "No se puede eliminar el lote porque tiene registros asociados.",
+        });
+      }
+      console.error("Error al eliminar lote:", err);
       res.status(500).json({ error: "Error al eliminar lote" });
     }
   }
 
   static async getByInstalacion(req, res) {
     try {
-      const id = toInt(req.params.id);
-      if (!id) return res.json([]);
+      const instalacionId = toInt(req.params.id);
+      if (!instalacionId) return res.json([]);
       const lotes = await prisma.lote.findMany({
-        where: { instalacionId: id },
-        orderBy: { loteId: "desc" },
-        select: { loteId: true, noLote: true },
+        where: { instalacionId },
+        orderBy: { id: "desc" },
+        select: { id: true, nombre: true },
       });
-      res.json(lotes.map((l) => ({ fi_lote_id: l.loteId, no_lote: l.noLote })));
+      res.json(lotes.map((l) => ({ fi_lote_id: l.id, no_lote: l.nombre })));
     } catch (err) {
       console.error("Error al obtener lotes por instalacion:", err);
       res.status(500).json({ error: "Error al obtener lotes por instalacion" });
@@ -309,15 +166,48 @@ class LoteController {
     try {
       const instalacionId = toInt(req.params.instalacionId);
       if (!instalacionId) return res.json(null);
-      const reproductor = await prisma.reproductor.findFirst({
-        where: { instalacionId },
+      const lote = await prisma.lote.findFirst({
+        where: { instalacionId, familia: { not: null } },
         select: { familia: true },
       });
-      if (!reproductor) return res.json(null);
-      res.json({ familia: reproductor.familia });
+      if (!lote) return res.json(null);
+      res.json({ familia: lote.familia });
     } catch (error) {
       console.error("Error cargando familia:", error);
       res.status(500).json({ error: "Error cargando familia" });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Endpoints heredados que requieren rediseno
+  // ---------------------------------------------------------------------------
+  static async getInstalaciones(req, res) {
+    res.status(501).json({
+      error: "Endpoint pendiente de rediseno: instalacion ya no tiene ubicacion_id como FK.",
+    });
+  }
+
+  static async getInstalacionesReproductores(req, res) {
+    res.status(501).json({
+      error: "Endpoint pendiente de rediseno: instalacion ya no tiene relacion directa con reproductores.",
+    });
+  }
+
+  static async getByGranja(req, res) {
+    try {
+      const granja = String(req.params.granja ?? "").trim();
+      if (!granja) return res.json([]);
+      const lotes = await prisma.lote.findMany({
+        where: {
+          instalacion: { granja: { equals: granja, mode: "insensitive" } },
+        },
+        include: loteInclude,
+        orderBy: { id: "desc" },
+      });
+      res.json(lotes.map(serializeLote));
+    } catch (err) {
+      console.error("Error al obtener lotes por granja:", err);
+      res.status(500).json({ error: "Error obteniendo lotes por granja" });
     }
   }
 }

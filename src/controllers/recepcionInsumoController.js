@@ -90,14 +90,14 @@ class RecepcionInsumoController {
           data: {
             ubicacionId,
             fecha: fd_fecha ? new Date(fd_fecha) : new Date(),
-            proveedor: fc_proveedor || null,
+            proveedor_nombre: fc_proveedor || null,
             producto: fc_producto || null,
             unidadMedida: fc_unidad_medida || null,
             cantidad: String(cantidad),
-            lote: fc_lote || null,
+            numero_lote: fc_lote || null,
             condicionesEntrega: fc_condiciones_entrega || null,
             encargadoEntrega: fc_encargado_entrega || null,
-            verifico: fc_verifico || null,
+            verificador: fc_verifico || null,
             usuarioId: fi_usuario_id,
             observacionId,
           },
@@ -170,7 +170,7 @@ class RecepcionInsumoController {
           texto:
             fc_observaciones !== undefined
               ? fc_observaciones
-              : existing.observacion?.observacion ?? null,
+              : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId: fi_usuario_id,
         });
@@ -180,12 +180,13 @@ class RecepcionInsumoController {
           data: {
             ubicacionId,
             fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
-            proveedor: fc_proveedor !== undefined ? fc_proveedor || null : existing.proveedor,
+            proveedor_nombre:
+              fc_proveedor !== undefined ? fc_proveedor || null : existing.proveedor_nombre,
             producto: fc_producto !== undefined ? fc_producto || null : existing.producto,
             unidadMedida:
               fc_unidad_medida !== undefined ? fc_unidad_medida || null : existing.unidadMedida,
             cantidad: String(cantidad),
-            lote: fc_lote !== undefined ? fc_lote || null : existing.lote,
+            numero_lote: fc_lote !== undefined ? fc_lote || null : existing.numero_lote,
             condicionesEntrega:
               fc_condiciones_entrega !== undefined
                 ? fc_condiciones_entrega || null
@@ -194,7 +195,7 @@ class RecepcionInsumoController {
               fc_encargado_entrega !== undefined
                 ? fc_encargado_entrega || null
                 : existing.encargadoEntrega,
-            verifico: fc_verifico !== undefined ? fc_verifico || null : existing.verifico,
+            verificador: fc_verifico !== undefined ? fc_verifico || null : existing.verificador,
             observacionId,
           },
         });
