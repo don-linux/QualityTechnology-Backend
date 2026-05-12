@@ -4,8 +4,8 @@
   "type": "module",
   "main": "index.mjs",
   "scripts": {
-    "start": "bun index.mjs",
-    "dev": "bun --watch index.mjs",
+    "start": "node index.mjs",
+    "dev": "node --watch index.mjs",
     "db:reset": "docker compose -f docker/dev/compose.yaml down -v && docker compose -f docker/dev/compose.yaml up -d",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
