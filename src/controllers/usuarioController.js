@@ -13,12 +13,12 @@ const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 10;
 const JWT_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || "8h";
 
 async function getModulosForRol(rolId) {
-  const rol = await prisma.rol.findUnique({ where: { rolId: Number(rolId) } });
+  const rol = await prisma.rol.findUnique({ where: { id: Number(rolId) } });
   if (!rol) return [];
 
   if (rol.esRoot) {
     const modulos = await prisma.modulo.findMany({
-      where: { activo: true },
+      where: { esta_activo: true },
       orderBy: { nombre: "asc" },
     });
     return modulos.map(serializeModulo);
@@ -212,13 +212,13 @@ class UsuarioController {
         return res.status(401).json({ error: "Credenciales invalidas" });
       }
 
-      const passwordMatch = await bcrypt.compare(password, usuario.contrasena);
+      const passwordMatch = await bcrypt.compare(password, usuario.password);
       if (!passwordMatch) {
         console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
         return res.status(401).json({ error: "Credenciales invalidas" });
       }
 
-      if (!usuario.activo) {
+      if (!usuario.esta_activo) {
         console.warn(`[LOGIN] Cuenta deshabilitada: "${nombre}" — IP: ${req.ip}`);
         return res.status(403).json({ error: "Cuenta deshabilitada. Contacte al administrador." });
       }
@@ -227,7 +227,7 @@ class UsuarioController {
 
       const token = jwt.sign(
         {
-          usuario_id: usuario.usuarioId,
+          usuario_id: usuario.id,
           rol_id: usuario.rolId,
           rol: usuario.rol.nombre,
           nombre: usuario.nombre,
@@ -236,14 +236,14 @@ class UsuarioController {
         { expiresIn: JWT_EXPIRES_IN }
       );
 
-      const refreshToken = await createRefreshToken(usuario.usuarioId);
+      const refreshToken = await createRefreshToken(usuario.id);
 
       res.json({
         mensaje: "Inicio de sesion exitoso",
         token,
         refreshToken,
         usuario: {
-          id: usuario.usuarioId,
+          id: usuario.id,
           nombre: usuario.nombre,
           rol: usuario.rol.nombre,
         },
@@ -271,7 +271,7 @@ class UsuarioController {
 
       const newAccessToken = jwt.sign(
         {
-          usuario_id: tokenData.usuarioId,
+          usuario_id: tokenData.id,
           rol_id: tokenData.rolId,
           rol: tokenData.rolNombre,
           nombre: tokenData.nombre,
@@ -280,7 +280,7 @@ class UsuarioController {
         { expiresIn: JWT_EXPIRES_IN }
       );
 
-      const newRefreshToken = await createRefreshToken(tokenData.usuarioId);
+      const newRefreshToken = await createRefreshToken(tokenData.id);
 
       res.json({
         mensaje: "Token renovado exitosamente",

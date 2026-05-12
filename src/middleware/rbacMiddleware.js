@@ -5,12 +5,12 @@ const cache = new Map();
 const CACHE_TTL_MS = Number(process.env.RBAC_CACHE_TTL_MS) || 2 * 60 * 1000;
 
 async function getModulosByRol(rolId) {
-  const rol = await prisma.rol.findUnique({ where: { rolId: Number(rolId) } });
+  const rol = await prisma.rol.findUnique({ where: { id: Number(rolId) } });
   if (!rol) return [];
 
   if (rol.esRoot) {
     const modulos = await prisma.modulo.findMany({
-      where: { activo: true },
+      where: { esta_activo: true },
       orderBy: { nombre: "asc" },
     });
     return modulos.map(serializeModulo);

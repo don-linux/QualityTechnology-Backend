@@ -9,11 +9,11 @@ function generate() {
 
 export async function createRefreshToken(usuarioId) {
   const token = generate();
-  const expiracion = new Date();
-  expiracion.setDate(expiracion.getDate() + REFRESH_TOKEN_DAYS);
+  const fecha_expiracion = new Date();
+  fecha_expiracion.setDate(fecha_expiracion.getDate() + REFRESH_TOKEN_DAYS);
 
   await prisma.refreshToken.create({
-    data: { usuarioId, token, expiracion },
+    data: { usuarioId, token, fecha_expiracion },
   });
   return token;
 }
@@ -22,9 +22,9 @@ export async function findValidAndRevoke(token) {
   const stored = await prisma.refreshToken.findFirst({
     where: {
       token,
-      revocado: false,
-      expiracion: { gt: new Date() },
-      usuario: { activo: true },
+      es_revocado: false,
+      fecha_expiracion: { gt: new Date() },
+      usuario: { esta_activo: true },
     },
     include: {
       usuario: { include: { rol: true } },
@@ -34,13 +34,13 @@ export async function findValidAndRevoke(token) {
   if (!stored) return null;
 
   await prisma.refreshToken.update({
-    where: { tokenId: stored.tokenId },
-    data: { revocado: true },
+    where: { id: stored.id },
+    data: { es_revocado: true },
   });
 
   return {
-    tokenId: stored.tokenId,
-    usuarioId: stored.usuario.usuarioId,
+    tokenId: stored.id,
+    id: stored.usuario.id,
     nombre: stored.usuario.nombre,
     rolId: stored.usuario.rolId,
     rolNombre: stored.usuario.rol.nombre,
@@ -50,21 +50,21 @@ export async function findValidAndRevoke(token) {
 export async function revokeRefreshToken(token) {
   await prisma.refreshToken.updateMany({
     where: { token },
-    data: { revocado: true },
+    data: { es_revocado: true },
   });
 }
 
 export async function revokeAllByUser(usuarioId) {
   await prisma.refreshToken.updateMany({
     where: { usuarioId: Number(usuarioId) },
-    data: { revocado: true },
+    data: { es_revocado: true },
   });
 }
 
 export async function cleanupExpired() {
   await prisma.refreshToken.deleteMany({
     where: {
-      OR: [{ expiracion: { lt: new Date() } }, { revocado: true }],
+      OR: [{ fecha_expiracion: { lt: new Date() } }, { es_revocado: true }],
     },
   });
 }

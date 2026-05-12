@@ -36,7 +36,7 @@ class RolController {
       const { id } = req.params;
       const { nombre, es_root } = req.body;
       const rol = await prisma.rol.update({
-        where: { rolId: Number(id) },
+        where: { id: Number(id) },
         data: {
           ...(nombre !== undefined ? { nombre: String(nombre).trim() } : {}),
           ...(es_root !== undefined ? { esRoot: Boolean(es_root) } : {}),
@@ -58,7 +58,7 @@ class RolController {
   static async delete(req, res) {
     try {
       const { id } = req.params;
-      await prisma.rol.delete({ where: { rolId: Number(id) } });
+      await prisma.rol.delete({ where: { id: Number(id) } });
       res.sendStatus(204);
     } catch (err) {
       if (err.code === "P2025") {

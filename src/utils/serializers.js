@@ -6,7 +6,7 @@
 export function serializeRol(rol) {
   if (!rol) return null;
   return {
-    rol_id: rol.rolId,
+    rol_id: rol.id,
     nombre: rol.nombre,
     es_root: rol.esRoot,
   };
@@ -15,21 +15,21 @@ export function serializeRol(rol) {
 export function serializeModulo(modulo) {
   if (!modulo) return null;
   return {
-    modulo_id: modulo.moduloId,
+    modulo_id: modulo.id,
     nombre: modulo.nombre,
     ruta: modulo.ruta,
-    activo: modulo.activo,
+    activo: modulo.esta_activo,
   };
 }
 
 export function serializeUsuario(usuario) {
   if (!usuario) return null;
   return {
-    usuario_id: usuario.usuarioId,
+    usuario_id: usuario.id,
     nombre: usuario.nombre,
     rol_id: usuario.rolId,
     empresa_id: usuario.empresaId ?? null,
-    activo: usuario.activo,
+    activo: usuario.esta_activo,
   };
 }
 
