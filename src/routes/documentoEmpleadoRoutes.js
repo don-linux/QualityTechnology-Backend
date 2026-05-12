@@ -2,22 +2,28 @@ import express from "express";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
-import DocumentoEmpleadoController from "../controllers/documentoEmpleadoController.js";
+import DocumentoEmpleadoController, { getEmpleadoIdByUsuario } from "../controllers/documentoEmpleadoController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import rbacMiddleware from "../middleware/rbacMiddleware.js";
-import DocumentoEmpleadoModel from "../models/documentoEmpleadoModel.js";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 const storage = multer.diskStorage({
     destination: async (req, _file, cb) => {
-        let empleadoId = req.params.empleadoId;
-        if (!empleadoId) {
-            empleadoId = await DocumentoEmpleadoModel.getEmpleadoIdByUsuario(req.user.usuario_id);
+        try {
+            let empleadoId = req.params.empleadoId;
+            if (!empleadoId) {
+                empleadoId = await getEmpleadoIdByUsuario(req.user.usuario_id);
+            }
+            if (!empleadoId) {
+                return cb(new Error("Empleado no encontrado"));
+            }
+            const dir = path.resolve(`./uploads/expedientes/${empleadoId}`);
+            fs.mkdirSync(dir, { recursive: true });
+            cb(null, dir);
+        } catch (err) {
+            cb(err);
         }
-        const dir = path.resolve(`./uploads/expedientes/${empleadoId}`);
-        fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
     },
     filename: (_req, file, cb) => {
         const unique = Date.now() + "-" + Math.round(Math.random() * 1e6);
