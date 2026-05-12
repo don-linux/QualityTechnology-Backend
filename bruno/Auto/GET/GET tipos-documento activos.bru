@@ -1,0 +1,14 @@
+meta {
+  name: GET tipos-documento activos
+  type: http
+  seq: 53
+}
+
+get {
+  url: {{baseUrl}}/api/tipos-documento/activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

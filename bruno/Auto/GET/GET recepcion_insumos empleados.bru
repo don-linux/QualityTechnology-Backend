@@ -1,0 +1,14 @@
+meta {
+  name: GET recepcion_insumos empleados
+  type: http
+  seq: 79
+}
+
+get {
+  url: {{baseUrl}}/api/recepcion_insumos/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

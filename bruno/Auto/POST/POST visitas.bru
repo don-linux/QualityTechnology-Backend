@@ -1,19 +1,19 @@
 meta {
   name: POST visitas
   type: http
-  seq: 40
+  seq: 41
 }
 
 post {
-  url: {{baseUrl}}/visitas
-  body: json
+  url: {{baseUrl}}/api/visitas
+  body: multipartForm
 }
 
 headers {
-  Content-Type: application/json
+  Content-Type: multipart/form-data
   Authorization: Bearer {{token}}
 }
 
-body:json {
-  {}
+body:multipart-form {
+  fc_foto_identificacion: @file()
 }

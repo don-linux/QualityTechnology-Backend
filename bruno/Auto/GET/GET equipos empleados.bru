@@ -1,0 +1,14 @@
+meta {
+  name: GET equipos empleados
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/api/equipos/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

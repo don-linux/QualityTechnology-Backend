@@ -1,0 +1,19 @@
+meta {
+  name: PATCH unidades-negocio {id} activate
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{baseUrl}}/api/unidades-negocio/{{id}}/activate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

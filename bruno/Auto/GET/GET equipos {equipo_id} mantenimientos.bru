@@ -1,17 +1,14 @@
 meta {
   name: GET equipos {equipo_id} mantenimientos
   type: http
-  seq: 15
+  seq: 29
 }
 
 get {
-  url: {{baseUrl}}/equipos/{{equipo_id}}/mantenimientos
+  url: {{baseUrl}}/api/equipos/{{equipo_id}}/mantenimientos
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

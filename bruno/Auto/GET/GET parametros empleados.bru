@@ -1,0 +1,14 @@
+meta {
+  name: GET parametros empleados
+  type: http
+  seq: 84
+}
+
+get {
+  url: {{baseUrl}}/api/parametros/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

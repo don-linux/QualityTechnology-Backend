@@ -1,0 +1,19 @@
+meta {
+  name: PUT empleados mi-perfil
+  type: http
+  seq: 17
+}
+
+put {
+  url: {{baseUrl}}/api/empleados/mi-perfil
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

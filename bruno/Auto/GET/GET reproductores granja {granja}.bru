@@ -1,17 +1,14 @@
 meta {
   name: GET reproductores granja {granja}
   type: http
-  seq: 49
+  seq: 21
 }
 
 get {
-  url: {{baseUrl}}/reproductores/granja/{{granja}}
+  url: {{baseUrl}}/api/reproductores/granja/{{granja}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

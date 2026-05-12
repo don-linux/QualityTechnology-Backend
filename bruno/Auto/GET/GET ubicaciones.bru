@@ -1,0 +1,14 @@
+meta {
+  name: GET ubicaciones
+  type: http
+  seq: 67
+}
+
+get {
+  url: {{baseUrl}}/api/ubicaciones
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

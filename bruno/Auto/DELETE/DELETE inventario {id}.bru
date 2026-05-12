@@ -1,17 +1,14 @@
 meta {
   name: DELETE inventario {id}
   type: http
-  seq: 25
+  seq: 47
 }
 
 delete {
-  url: {{baseUrl}}/inventario/{{id}}
+  url: {{baseUrl}}/api/inventario/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

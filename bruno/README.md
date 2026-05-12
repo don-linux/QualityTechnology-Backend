@@ -9,12 +9,15 @@
 4. Copia el token de la respuesta y pégalo en la variable `token` del ambiente.
 5. Ejecuta endpoints protegidos.
 
+> Todas las rutas viven detrás del prefijo `/api` (montado en `index.mjs`). Los únicos endpoints sin prefijo son la raíz `/` (health) y `/api-docs` (Swagger UI fuera de producción).
+
 ## Variables de ambiente
 
-- `baseUrl`: URL del backend
+- `baseUrl`: URL del backend (sin `/api`)
 - `token`: JWT Bearer para rutas protegidas
 - `username`, `password`: credenciales para login
 - `granja`, `listaId`, `rolId`, `moduloId`: parámetros reutilizables
+- `clienteId`, `proveedorId`, `ventaId`, `movimientoId`, `cuentaNombre`, `fiUsuarioId`, `runTag`, `invalidToken`: variables auxiliares para los flujos de Rondas
 
 ## Nota
 
@@ -22,19 +25,25 @@ La colección está organizada para pruebas funcionales rápidas y smoke. Puedes
 
 ## Carpeta `Auto` (generada)
 
-Se agregó una carpeta `Auto/` con requests generados automáticamente desde el reporte de validación actual.
+Carpeta `Auto/` con un request por cada endpoint montado en `index.mjs` (incluye bitácoras, RRHH, ubicaciones, unidades de negocio, documentos de empleado y actas administrativas).
 
-- Total generado: **184 requests**
-- Organización: `Auto/GET`, `Auto/POST`, `Auto/PUT`, `Auto/DELETE`
-- Los endpoints protegidos ya incluyen:
-   - `Authorization: Bearer {{token}}`
+- Total: **234 requests**
+- Organización por método: `Auto/GET` (90), `Auto/POST` (46), `Auto/PUT` (36), `Auto/PATCH` (14), `Auto/DELETE` (48)
+- Los endpoints protegidos ya incluyen `Authorization: Bearer {{token}}`. Las rutas públicas (`POST /api/usuarios/login` y `POST /api/usuarios/refresh`) no envían el header.
+- Los uploads multipart se generan con `body:multipart-form` y un campo `@file()` placeholder:
+   - `POST /api/flujo-caja` (`facturaFile`)
+   - `POST /api/visitas` y `PUT /api/visitas/:id` (`fc_foto_identificacion`)
+   - `POST /api/documentos-empleado/mis-documentos/upload` y `POST /api/documentos-empleado/:empleadoId/upload` (`archivo`)
+   - `POST /api/actas-administrativas/:empleadoId/upload` (`archivo`)
+- Los parámetros de ruta usan placeholders del environment, p. ej. `{{granja}}`, `{{id}}`, `{{empleadoId}}`.
 
 ### Recomendación de uso
 
 1. Ejecuta `Auth/Login`.
 2. Copia el token al environment (`token`).
 3. Prueba primero los `GET` de `Auto/GET`.
-4. Para `POST/PUT`, ajusta el `body` según el módulo antes de ejecutar.
+4. Para `POST/PUT/PATCH`, ajusta el `body` según el módulo antes de ejecutar.
+5. Para uploads multipart, sustituye `@file()` por la ruta real del archivo en tu equipo.
 
 ## Carpeta `Rondas`
 

@@ -1,11 +1,11 @@
 meta {
   name: PUT cuentas {id}
   type: http
-  seq: 7
+  seq: 15
 }
 
 put {
-  url: {{baseUrl}}/cuentas/{{id}}
+  url: {{baseUrl}}/api/cuentas/{{id}}
   body: json
 }
 
@@ -15,11 +15,5 @@ headers {
 }
 
 body:json {
-  {
-    "fc_udn": "Quality Technology",
-    "fc_nombre": "Cuenta principal QT",
-    "fc_numero_cuenta": "0000-1234-5678",
-    "fc_banco": "BBVA",
-    "fc_tipo": "Cheques"
-  }
+  {}
 }

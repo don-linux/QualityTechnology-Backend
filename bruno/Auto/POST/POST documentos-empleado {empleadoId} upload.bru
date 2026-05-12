@@ -1,0 +1,19 @@
+meta {
+  name: POST documentos-empleado {empleadoId} upload
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/api/documentos-empleado/{{empleadoId}}/upload
+  body: multipartForm
+}
+
+headers {
+  Content-Type: multipart/form-data
+  Authorization: Bearer {{token}}
+}
+
+body:multipart-form {
+  archivo: @file()
+}

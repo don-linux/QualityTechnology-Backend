@@ -1,0 +1,14 @@
+meta {
+  name: GET piletas destino {granja}
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/piletas/destino/{{granja}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

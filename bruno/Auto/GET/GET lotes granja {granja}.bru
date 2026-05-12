@@ -1,17 +1,14 @@
 meta {
   name: GET lotes granja {granja}
   type: http
-  seq: 28
+  seq: 18
 }
 
 get {
-  url: {{baseUrl}}/lotes/granja/{{granja}}
+  url: {{baseUrl}}/api/lotes/granja/{{granja}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,17 +1,14 @@
 meta {
   name: DELETE recepcion_insumos {id}
   type: http
-  seq: 41
+  seq: 35
 }
 
 delete {
-  url: {{baseUrl}}/recepcion_insumos/{{id}}
+  url: {{baseUrl}}/api/recepcion_insumos/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

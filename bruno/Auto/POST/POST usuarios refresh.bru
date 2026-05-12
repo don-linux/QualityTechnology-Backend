@@ -1,0 +1,18 @@
+meta {
+  name: POST usuarios refresh
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/usuarios/refresh
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}

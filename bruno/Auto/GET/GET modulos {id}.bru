@@ -1,17 +1,14 @@
 meta {
   name: GET modulos {id}
   type: http
-  seq: 38
+  seq: 4
 }
 
 get {
-  url: {{baseUrl}}/modulos/{{id}}
+  url: {{baseUrl}}/api/modulos/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

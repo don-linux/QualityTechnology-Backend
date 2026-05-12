@@ -1,17 +1,14 @@
 meta {
   name: DELETE alimentacion {id}
   type: http
-  seq: 33
+  seq: 31
 }
 
 delete {
-  url: {{baseUrl}}/alimentacion/{{id}}
+  url: {{baseUrl}}/api/alimentacion/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

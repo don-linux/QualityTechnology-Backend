@@ -1,0 +1,14 @@
+meta {
+  name: GET lotes familia-por-instalacion {instalacionId}
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/lotes/familia-por-instalacion/{{instalacionId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

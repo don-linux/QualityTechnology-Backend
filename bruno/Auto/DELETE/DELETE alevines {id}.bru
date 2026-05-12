@@ -1,17 +1,14 @@
 meta {
   name: DELETE alevines {id}
   type: http
-  seq: 1
+  seq: 11
 }
 
 delete {
-  url: {{baseUrl}}/alevines/{{id}}
+  url: {{baseUrl}}/api/alevines/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,0 +1,19 @@
+meta {
+  name: POST actas-administrativas {empleadoId} upload
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{baseUrl}}/api/actas-administrativas/{{empleadoId}}/upload
+  body: multipartForm
+}
+
+headers {
+  Content-Type: multipart/form-data
+  Authorization: Bearer {{token}}
+}
+
+body:multipart-form {
+  archivo: @file()
+}

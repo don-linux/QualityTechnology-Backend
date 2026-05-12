@@ -1,0 +1,19 @@
+meta {
+  name: POST puestos
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/api/puestos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

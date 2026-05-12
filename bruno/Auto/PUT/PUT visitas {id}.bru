@@ -1,19 +1,19 @@
 meta {
   name: PUT visitas {id}
   type: http
-  seq: 34
+  seq: 31
 }
 
 put {
-  url: {{baseUrl}}/visitas/{{id}}
-  body: json
+  url: {{baseUrl}}/api/visitas/{{id}}
+  body: multipartForm
 }
 
 headers {
-  Content-Type: application/json
+  Content-Type: multipart/form-data
   Authorization: Bearer {{token}}
 }
 
-body:json {
-  {}
+body:multipart-form {
+  fc_foto_identificacion: @file()
 }

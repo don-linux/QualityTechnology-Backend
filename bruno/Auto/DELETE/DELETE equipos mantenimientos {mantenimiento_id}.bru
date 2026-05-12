@@ -1,17 +1,14 @@
 meta {
   name: DELETE equipos mantenimientos {mantenimiento_id}
   type: http
-  seq: 14
+  seq: 13
 }
 
 delete {
-  url: {{baseUrl}}/equipos/mantenimientos/{{mantenimiento_id}}
+  url: {{baseUrl}}/api/equipos/mantenimientos/{{mantenimiento_id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

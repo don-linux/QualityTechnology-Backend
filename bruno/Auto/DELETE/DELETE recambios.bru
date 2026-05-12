@@ -1,17 +1,14 @@
 meta {
   name: DELETE recambios
   type: http
-  seq: 30
+  seq: 46
 }
 
 delete {
-  url: {{baseUrl}}/recambios
+  url: {{baseUrl}}/api/recambios
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

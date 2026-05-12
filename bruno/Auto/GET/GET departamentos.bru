@@ -1,17 +1,14 @@
 meta {
   name: GET departamentos
   type: http
-  seq: 10
+  seq: 48
 }
 
 get {
-  url: {{baseUrl}}/departamentos
+  url: {{baseUrl}}/api/departamentos
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

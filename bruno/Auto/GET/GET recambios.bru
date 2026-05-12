@@ -1,17 +1,14 @@
 meta {
   name: GET recambios
   type: http
-  seq: 35
+  seq: 89
 }
 
 get {
-  url: {{baseUrl}}/recambios
+  url: {{baseUrl}}/api/recambios
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,17 +1,14 @@
 meta {
   name: GET flujo-caja tesoreria {granja}
   type: http
-  seq: 23
+  seq: 39
 }
 
 get {
-  url: {{baseUrl}}/flujo-caja/tesoreria/{{granja}}
+  url: {{baseUrl}}/api/flujo-caja/tesoreria/{{granja}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

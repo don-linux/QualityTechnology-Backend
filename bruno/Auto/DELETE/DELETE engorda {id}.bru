@@ -1,17 +1,14 @@
 meta {
   name: DELETE engorda {id}
   type: http
-  seq: 12
+  seq: 8
 }
 
 delete {
-  url: {{baseUrl}}/engorda/{{id}}
+  url: {{baseUrl}}/api/engorda/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

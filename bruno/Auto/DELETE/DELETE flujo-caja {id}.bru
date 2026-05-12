@@ -5,13 +5,10 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/flujo-caja/{{id}}
+  url: {{baseUrl}}/api/flujo-caja/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

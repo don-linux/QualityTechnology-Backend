@@ -1,0 +1,19 @@
+meta {
+  name: PUT puestos {id}
+  type: http
+  seq: 20
+}
+
+put {
+  url: {{baseUrl}}/api/puestos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

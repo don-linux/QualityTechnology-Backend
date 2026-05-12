@@ -1,0 +1,14 @@
+meta {
+  name: GET documentos-empleado mis-documentos download {documentoId}
+  type: http
+  seq: 56
+}
+
+get {
+  url: {{baseUrl}}/api/documentos-empleado/mis-documentos/download/{{documentoId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
