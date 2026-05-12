@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeCajaAhorroResumen } from "../utils/serializers.js";
+import { resolverUbicacion } from "../utils/ubicacion.js";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -10,25 +11,6 @@ function toDecimal(value, fallback = 0) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-/**
- * Resuelve `:granja` que puede llegar como id numerico o como nombre de la
- * ubicacion. Retorna { ubicacionId, nombre } o null si no existe.
- */
-async function resolverUbicacion(granjaParam) {
-  if (granjaParam === undefined || granjaParam === null) return null;
-  const trimmed = String(granjaParam).trim();
-  if (!trimmed) return null;
-
-  const asNumber = Number(trimmed);
-  if (Number.isInteger(asNumber) && asNumber > 0) {
-    const u = await prisma.ubicacion.findUnique({ where: { ubicacionId: asNumber } });
-    if (u) return { ubicacionId: u.ubicacionId, nombre: u.nombre };
-  }
-
-  const u = await prisma.ubicacion.findUnique({ where: { nombre: trimmed } });
-  return u ? { ubicacionId: u.ubicacionId, nombre: u.nombre } : null;
 }
 
 class CajaAhorroController {

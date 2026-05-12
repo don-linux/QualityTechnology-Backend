@@ -181,6 +181,274 @@ export function serializeVacacion(v) {
   };
 }
 
+// ============================================================================
+// Operaciones
+// ============================================================================
+
+function toNumberSafe(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "bigint") return Number(value);
+  return value;
+}
+
+export function serializeInstalacion(i) {
+  if (!i) return null;
+  return {
+    fi_instalacion_id: i.instalacionId,
+    instalacion_id: i.instalacionId,
+    nombre_instalacion: i.nombreInstalacion,
+    tipo_instalacion: i.tipoInstalacion,
+    estado: i.estado,
+    largo: i.largo,
+    ancho: i.ancho,
+    altura: i.altura,
+    material: i.material,
+    metros_cubicos: i.metrosCubicos,
+    ubicacion_id: i.ubicacionId,
+    fc_granja: i.ubicacion?.nombre ?? null,
+    usuario_id: i.usuarioId,
+  };
+}
+
+export function serializeReproductor(r) {
+  if (!r) return null;
+  return {
+    fi_reproductor_id: r.reproductorId,
+    reproductor_id: r.reproductorId,
+    fi_instalacion_id: r.instalacionId,
+    instalacion_id: r.instalacionId,
+    nombre_instalacion: r.instalacion?.nombreInstalacion ?? null,
+    fn_machos: r.machos,
+    fn_hembras: r.hembras,
+    fn_cantidad: r.cantidad ?? (Number(r.machos || 0) + Number(r.hembras || 0)),
+    fn_talla: r.talla,
+    fc_ratio: r.ratio,
+    fc_linea: r.linea,
+    fc_familia: r.familia,
+    fd_fecha_siembra: r.fechaSiembra,
+    fd_fecha_biometria: r.fechaBiometria,
+    ubicacion_id: r.ubicacionId,
+    fc_granja: r.ubicacion?.nombre ?? null,
+    fi_usuario_id: r.usuarioId,
+    fc_observacion: r.observacion?.observacion ?? null,
+    observacion_id: r.observacionId ?? null,
+  };
+}
+
+export function serializeLote(l) {
+  if (!l) return null;
+  return {
+    fi_lote_id: l.loteId,
+    lote_id: l.loteId,
+    no_lote: l.noLote,
+    fd_fecha: l.fecha,
+    fecha: l.fecha,
+    familia: l.familia,
+    fi_instalacion_id: l.instalacionId,
+    fc_instalacion_id: l.instalacionId,
+    instalacion_id: l.instalacionId,
+    nombre_instalacion: l.instalacion?.nombreInstalacion ?? null,
+    huevos_ml: l.huevosMl,
+    ovadas: l.ovadas,
+    alevines_inicial: l.alevinesInicial,
+    mortalidad: l.mortalidad,
+    mortalidad_porcentaje: l.mortalidadPorcentaje,
+    ubicacion_id: l.ubicacionId,
+    fc_granja: l.ubicacion?.nombre ?? null,
+    fi_usuario_id: l.usuarioId,
+    observacion: l.observacion?.observacion ?? null,
+    observacion_id: l.observacionId ?? null,
+  };
+}
+
+export function serializePileta(p) {
+  if (!p) return null;
+  return {
+    fi_pileta_id: p.piletaId,
+    pileta_id: p.piletaId,
+    fi_instalacion_id: p.instalacionId,
+    instalacion_id: p.instalacionId,
+    nombre_instalacion: p.instalacion?.nombreInstalacion ?? null,
+    fi_lote_id: p.loteId,
+    lote_id: p.loteId,
+    no_lote: p.lote?.noLote ?? null,
+    cantidad: toNumberSafe(p.cantidad),
+    talla_gr: p.tallaGr,
+    fd_fecha_siembra: p.fechaSiembra,
+    fecha_siembra: p.fechaSiembra,
+    fd_fecha_ultima_biometria: p.fechaUltimaBiometria,
+    fecha_ultima_biometria: p.fechaUltimaBiometria,
+    ubicacion_id: p.ubicacionId,
+    fc_granja: p.ubicacion?.nombre ?? null,
+    fi_usuario_id: p.usuarioId,
+    observacion: p.observacion?.observacion ?? null,
+    observacion_id: p.observacionId ?? null,
+  };
+}
+
+export function serializeEngorda(e) {
+  if (!e) return null;
+  return {
+    fi_engorda_id: e.engordaId,
+    engorda_id: e.engordaId,
+    fi_instalacion_id: e.instalacionId,
+    instalacion_id: e.instalacionId,
+    destino_nombre: e.instalacion?.nombreInstalacion ?? null,
+    fi_lote_id: e.loteId,
+    no_lote: e.lote?.noLote ?? null,
+    cantidad: e.cantidad,
+    talla_gr: e.tallaGr,
+    fd_fecha_siembra: e.fechaSiembra,
+    fecha_siembra: e.fechaSiembra,
+    fd_fecha_biometria: e.fechaBiometria,
+    fecha_biometria: e.fechaBiometria,
+    ubicacion_id: e.ubicacionId,
+    fc_granja: e.ubicacion?.nombre ?? null,
+    fi_usuario_id: e.usuarioId,
+    observacion: e.observacion?.observacion ?? null,
+    observacion_id: e.observacionId ?? null,
+  };
+}
+
+export function serializeEquipo(eq) {
+  if (!eq) return null;
+  return {
+    fi_equipo_id: eq.equipoId,
+    equipo_id: eq.equipoId,
+    fc_nombre: eq.nombre,
+    fc_marca: eq.marca,
+    fc_modelo: eq.modelo,
+    fc_tipo: eq.tipo,
+    fd_fecha_compra: eq.fechaCompra,
+    fn_costo: eq.costo,
+    fc_estado: eq.estado,
+    fc_ubicacion: eq.ubicacion,
+    fc_responsable: null,
+    fd_proximo_mantenimiento: eq.proximoMantenimiento,
+    fc_notas: eq.notas,
+    fi_usuario_id: eq.usuarioId,
+    observacion: eq.observacion?.observacion ?? null,
+    observacion_id: eq.observacionId ?? null,
+  };
+}
+
+export function serializeMantenimiento(m) {
+  if (!m) return null;
+  return {
+    fi_mantenimiento_id: m.mantenimientoId,
+    mantenimiento_id: m.mantenimientoId,
+    fi_equipo_id: m.equipoId,
+    fd_fecha: m.fecha,
+    fc_tipo: m.tipo,
+    fc_descripcion: m.descripcion,
+    fn_costo: m.costo,
+    fc_estado_post: m.estadoPost,
+    fd_proximo_mantenimiento: m.proximoMantenimiento,
+    observacion: m.observacion?.observacion ?? null,
+    observacion_id: m.observacionId ?? null,
+  };
+}
+
+export function serializeAlimento(a) {
+  if (!a) return null;
+  return {
+    fi_alimento_id: a.alimentoId,
+    alimento_id: a.alimentoId,
+    fi_pileta_id: a.piletaId,
+    fi_engorda_id: a.engordaId,
+    fi_reproductor_id: a.reproductorId,
+    particula_mm: a.particulaMm,
+    alimento_dia: a.alimentoDia,
+    porcion: a.porcion,
+    gasto_alimento: a.gastoAlimento,
+    fi_usuario_id: a.usuarioId,
+    pileta_nombre: a.pileta?.instalacion?.nombreInstalacion ?? null,
+    engorda_instalacion: a.engorda?.instalacion?.nombreInstalacion ?? null,
+    reproductor_instalacion: a.reproductor?.instalacion?.nombreInstalacion ?? null,
+    usuario_nombre: a.usuario?.nombre ?? null,
+  };
+}
+
+export function serializeInventarioAlevin(a) {
+  if (!a) return null;
+  return {
+    fi_id: a.id,
+    id: a.id,
+    ubicacion_id: a.ubicacionId,
+    ubicacion: a.ubicacion?.nombre ?? null,
+    fn_num_instalacion: a.numInstalacion,
+    fc_lote: a.lote,
+    fn_cantidad: a.cantidad,
+    fn_talla: a.talla,
+    fc_observacion: a.observacion?.observacion ?? null,
+    observacion_id: a.observacionId ?? null,
+    fd_fecha_siembra: a.fechaSiembra,
+    fd_fecha_salida_hormonado: a.fechaSalidaHormonado,
+    fi_usuario_id: a.usuarioId,
+  };
+}
+
+export function serializeTrazaAlevinaje(t) {
+  if (!t) return null;
+  return {
+    fi_movimiento_id: t.movimientoId,
+    movimiento_id: t.movimientoId,
+    fi_pileta_origen: t.piletaOrigen,
+    fi_pileta_destino: t.piletaDestino,
+    fi_instalacion_origen: t.instalacionOrigen,
+    fi_instalacion_destino: t.instalacionDestino,
+    fi_lote_id: t.loteId,
+    origen_externo: t.origenExterno,
+    tipo_movimiento: t.tipoMovimiento,
+    cantidad: toNumberSafe(t.cantidad),
+    fd_fecha_movimiento: t.fechaMovimiento,
+    fecha_movimiento: t.fechaMovimiento,
+    fi_usuario_id: t.usuarioId,
+    ubicacion_id: t.ubicacionId,
+    observacion: t.observacion?.observacion ?? null,
+    observacion_id: t.observacionId ?? null,
+    origen_nombre: t.instalacionOrig?.nombreInstalacion ?? t.origenExterno ?? null,
+    destino_nombre: t.instalacionDest?.nombreInstalacion ?? null,
+  };
+}
+
+export function serializeTrazaEngorda(t) {
+  if (!t) return null;
+  return {
+    fi_movimiento_id: t.movimientoId,
+    movimiento_id: t.movimientoId,
+    fi_engorda_origen: t.engordaOrigen,
+    fi_engorda_destino: t.engordaDestino,
+    cantidad_trasladada: t.cantidadTrasladada,
+    fd_fecha_movimiento: t.fechaMovimiento,
+    fecha_movimiento: t.fechaMovimiento,
+    fi_usuario_id: t.usuarioId,
+    observacion: t.observacion?.observacion ?? null,
+    observacion_id: t.observacionId ?? null,
+    origen_nombre: t.origen?.instalacion?.nombreInstalacion ?? "Siembra Lote",
+    destino_nombre: t.destino?.instalacion?.nombreInstalacion ?? null,
+  };
+}
+
+export function serializeTrazaReproductor(t) {
+  if (!t) return null;
+  return {
+    fi_movimiento_id: t.movimientoId,
+    movimiento_id: t.movimientoId,
+    fi_repro_origen: t.reproOrigen,
+    fi_repro_destino: t.reproDestino,
+    origen_texto: t.origenTexto,
+    origen: t.origen?.instalacion?.nombreInstalacion ?? t.origenTexto ?? null,
+    destino: t.destino?.instalacion?.nombreInstalacion ?? null,
+    cantidad_trasladada: t.cantidadTrasladada,
+    fd_fecha_movimiento: t.fechaMovimiento,
+    fecha_movimiento: t.fechaMovimiento,
+    fi_usuario_id: t.usuarioId,
+    observacion: t.observacion?.observacion ?? null,
+    observacion_id: t.observacionId ?? null,
+  };
+}
+
 export function serializeCajaAhorroResumen(c) {
   if (!c) return null;
   return {
