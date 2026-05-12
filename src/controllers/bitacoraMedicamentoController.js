@@ -1,135 +1,241 @@
-import bitacoraMedicamentoModel from "../models/bitacoraMedicamentoModel.js";
+import prisma from "../prisma.js";
+import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
+import { guardarObservacion, listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
+import { serializeMedicamento } from "../utils/serializers.js";
 
 const LIMITES_MEDICAMENTOS_TEXTO = {
-    fc_diagnosis: 500,
-    fc_tratamiento: 500,
-    fc_dosis: 100,
+  fc_diagnosis: 500,
+  fc_tratamiento: 500,
+  fc_dosis: 100,
+  fc_forma_aplicacion: 100,
+  fc_responsable: 100,
 };
 
 const validarLongitudesMedicamentos = (body) => {
-    const etiquetas = {
-        fc_diagnosis: "El diagnóstico",
-        fc_tratamiento: "El tratamiento",
-        fc_dosis: "La dosis",
-    };
-    for (const [campo, max] of Object.entries(LIMITES_MEDICAMENTOS_TEXTO)) {
-        const len = body[campo] == null ? 0 : String(body[campo]).length;
-        if (len > max) {
-            return `${etiquetas[campo]} no puede superar los ${max} caracteres.`;
-        }
+  const etiquetas = {
+    fc_diagnosis: "El diagnóstico",
+    fc_tratamiento: "El tratamiento",
+    fc_dosis: "La dosis",
+    fc_forma_aplicacion: "La forma de aplicación",
+    fc_responsable: "El responsable",
+  };
+  for (const [campo, max] of Object.entries(LIMITES_MEDICAMENTOS_TEXTO)) {
+    const len = body[campo] == null ? 0 : String(body[campo]).length;
+    if (len > max) {
+      return `${etiquetas[campo]} no puede superar los ${max} caracteres.`;
     }
-    return null;
+  }
+  return null;
 };
 
+const inc = { ubicacion: true, observacion: true };
+
 class BitacoraMedicamentoController {
-    static parseNum(v) {
-        return v === "" || v == null ? null : Number(v);
+  static parseNum(v) {
+    return v === "" || v == null ? null : Number(v);
+  }
+
+  static async getAll(req, res) {
+    try {
+      const rows = await prisma.medicamento.findMany({
+        include: inc,
+        orderBy: { fechaHora: "desc" },
+      });
+      res.json(rows.map(serializeMedicamento));
+    } catch (err) {
+      console.error("Error en GET /medicamentos:", err.message);
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    static async getAll(req, res) {
-        try {
-            const result = await bitacoraMedicamentoModel.getAll();
-            res.json(result);
-        } catch (err) {
-            console.error("Error en GET /medicamentos:", err.message);
-            res.status(500).json({ error: err.message });
-        }
+  static async getEmpleados(req, res) {
+    try {
+      const empleados = await listarEmpleadosActivosBitacora();
+      res.json(empleados);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    static async getEmpleados(req, res) {
-        try {
-            const empleados = await bitacoraMedicamentoModel.getEmpleadosActivos();
-            res.json(empleados);
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
+  static async create(req, res) {
+    try {
+      const {
+        fd_fecha_hora,
+        fn_num_estanque,
+        fc_diagnosis,
+        fc_tratamiento,
+        fc_dosis,
+        fc_forma_aplicacion,
+        fd_fecha_ultima_dosis,
+        fc_responsable,
+        fc_observaciones,
+      } = req.body;
+      const fi_usuario_id = req.user.usuario_id;
+
+      if (!fd_fecha_hora) {
+        return res.status(400).json({ error: "La fecha es obligatoria (fd_fecha_hora)" });
+      }
+      if (!fn_num_estanque) {
+        return res.status(400).json({ error: "El número de estanque es obligatorio" });
+      }
+
+      const numEstanque = BitacoraMedicamentoController.parseNum(fn_num_estanque);
+      if (numEstanque == null || Number.isNaN(numEstanque)) {
+        return res.status(400).json({ error: "fn_num_estanque debe ser numérico" });
+      }
+
+      const { ubicacion } = req.body;
+      if (!ubicacion || !ubicacion.trim()) {
+        return res.status(400).json({ error: "ubicacion es requerido" });
+      }
+
+      const errorLongitud = validarLongitudesMedicamentos(req.body);
+      if (errorLongitud) {
+        return res.status(400).json({ error: errorLongitud });
+      }
+
+      const u = await resolverOCrearUbicacion(ubicacion);
+      if (!u) return res.status(400).json({ error: "ubicacion inválida" });
+
+      await prisma.$transaction(async (tx) => {
+        const observacionId = await guardarObservacion(tx, {
+          observacionIdExistente: null,
+          texto: fc_observaciones ?? null,
+          responsable: fc_responsable ?? null,
+          usuarioId: fi_usuario_id,
+        });
+
+        await tx.medicamento.create({
+          data: {
+            ubicacionId: u.ubicacionId,
+            fechaHora: new Date(fd_fecha_hora),
+            numEstanque: Math.trunc(numEstanque),
+            diagnosis: fc_diagnosis || null,
+            tratamiento: fc_tratamiento || null,
+            dosis: fc_dosis || null,
+            formaAplicacion: fc_forma_aplicacion || null,
+            fechaUltimaDosis: fd_fecha_ultima_dosis ? new Date(fd_fecha_ultima_dosis) : null,
+            usuarioId: fi_usuario_id,
+            observacionId,
+          },
+        });
+      });
+
+      res.json({ message: "Registro agregado correctamente" });
+    } catch (err) {
+      console.error("Error en POST /medicamentos:", err.message);
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    static async create(req, res) {
-        try {
-            const {
-                fd_fecha_hora, fn_num_estanque, fc_diagnosis, fc_tratamiento,
-                fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis, fc_responsable
-            } = req.body;
-            const fi_usuario_id = req.user.usuario_id;
+  static async update(req, res) {
+    try {
+      const {
+        fd_fecha_hora,
+        fn_num_estanque,
+        fc_diagnosis,
+        fc_tratamiento,
+        fc_dosis,
+        fc_forma_aplicacion,
+        fd_fecha_ultima_dosis,
+        fc_responsable,
+        fc_observaciones,
+      } = req.body;
 
-            if (!fd_fecha_hora) throw new Error("La fecha es obligatoria (fd_fecha_hora)");
-            if (!fn_num_estanque) throw new Error("El número de estanque es obligatorio");
+      const { ubicacion } = req.body;
+      if (!ubicacion || !ubicacion.trim()) {
+        return res.status(400).json({ error: "ubicacion es requerido" });
+      }
 
-            const numEstanque = BitacoraMedicamentoController.parseNum(fn_num_estanque);
-            if (isNaN(numEstanque)) throw new Error("fn_num_estanque debe ser numérico");
+      const errorLongitud = validarLongitudesMedicamentos(req.body);
+      if (errorLongitud) {
+        return res.status(400).json({ error: errorLongitud });
+      }
 
-            const { ubicacion } = req.body;
-            if (!ubicacion || !ubicacion.trim()) {
-                return res.status(400).json({ error: "ubicacion es requerido" });
-            }
+      const u = await resolverOCrearUbicacion(ubicacion);
+      if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
-            const errorLongitud = validarLongitudesMedicamentos(req.body);
-            if (errorLongitud) {
-                return res.status(400).json({ error: errorLongitud });
-            }
+      const id = Number(req.params.id);
+      const existing = await prisma.medicamento.findUnique({
+        where: { id },
+        include: { observacion: true },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: "Registro no encontrado" });
+      }
 
-            await bitacoraMedicamentoModel.create({
-                fd_fecha_hora, fn_num_estanque: numEstanque, fc_diagnosis, fc_tratamiento,
-                fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis, fc_responsable,
-                ubicacion, fi_usuario_id
-            });
+      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
 
-            res.json({ message: "Registro agregado correctamente" });
-        } catch (err) {
-            console.error("Error en POST /medicamentos:", err.message);
-            res.status(500).json({ error: err.message });
-        }
+      const texto =
+        fc_observaciones !== undefined
+          ? fc_observaciones
+          : existing.observacion?.observacion ?? null;
+      const responsable =
+        fc_responsable !== undefined
+          ? fc_responsable
+          : existing.observacion?.responsable ?? null;
+
+      await prisma.$transaction(async (tx) => {
+        const observacionId = await guardarObservacion(tx, {
+          observacionIdExistente: existing.observacionId,
+          texto,
+          responsable,
+          usuarioId: fi_usuario_id,
+        });
+
+        await tx.medicamento.update({
+          where: { id },
+          data: {
+            ubicacionId: u.ubicacionId,
+            fechaHora: fd_fecha_hora ? new Date(fd_fecha_hora) : existing.fechaHora,
+            numEstanque:
+              BitacoraMedicamentoController.parseNum(fn_num_estanque) != null
+                ? Math.trunc(BitacoraMedicamentoController.parseNum(fn_num_estanque))
+                : existing.numEstanque,
+            diagnosis: fc_diagnosis !== undefined ? fc_diagnosis || null : existing.diagnosis,
+            tratamiento:
+              fc_tratamiento !== undefined ? fc_tratamiento || null : existing.tratamiento,
+            dosis: fc_dosis !== undefined ? fc_dosis || null : existing.dosis,
+            formaAplicacion:
+              fc_forma_aplicacion !== undefined
+                ? fc_forma_aplicacion || null
+                : existing.formaAplicacion,
+            fechaUltimaDosis: fd_fecha_ultima_dosis
+              ? new Date(fd_fecha_ultima_dosis)
+              : existing.fechaUltimaDosis,
+            observacionId,
+          },
+        });
+      });
+
+      res.json({ message: "Registro actualizado correctamente" });
+    } catch (err) {
+      console.error("Error en PUT /medicamentos:", err.message);
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    static async update(req, res) {
-        try {
-            const {
-                fd_fecha_hora, fn_num_estanque, fc_diagnosis, fc_tratamiento,
-                fc_dosis, fc_forma_aplicacion, fd_fecha_ultima_dosis, fc_responsable
-            } = req.body;
-
-            const { ubicacion } = req.body;
-            if (!ubicacion || !ubicacion.trim()) {
-                return res.status(400).json({ error: "ubicacion es requerido" });
-            }
-
-            const errorLongitud = validarLongitudesMedicamentos(req.body);
-            if (errorLongitud) {
-                return res.status(400).json({ error: errorLongitud });
-            }
-
-            await bitacoraMedicamentoModel.update(req.params.id, {
-                fd_fecha_hora, fn_num_estanque: BitacoraMedicamentoController.parseNum(fn_num_estanque),
-                fc_diagnosis, fc_tratamiento, fc_dosis, fc_forma_aplicacion,
-                fd_fecha_ultima_dosis, fc_responsable, ubicacion
-            });
-
-            res.json({ message: "Registro actualizado correctamente" });
-        } catch (err) {
-            console.error("Error en PUT /medicamentos:", err.message);
-            res.status(500).json({ error: err.message });
-        }
+  static async delete(req, res) {
+    try {
+      await prisma.medicamento.delete({ where: { id: Number(req.params.id) } });
+      res.json({ message: "Registro eliminado" });
+    } catch (err) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Registro no encontrado" });
+      }
+      console.error("Error en DELETE /medicamentos:", err.message);
+      res.status(500).json({ error: err.message });
     }
+  }
 
-    static async delete(req, res) {
-        try {
-            await bitacoraMedicamentoModel.delete(req.params.id);
-            res.json({ message: "Registro eliminado" });
-        } catch (err) {
-            console.error("Error en DELETE /medicamentos:", err.message);
-            res.status(500).json({ error: err.message });
-        }
+  static async deleteAll(req, res) {
+    try {
+      await prisma.medicamento.deleteMany();
+      res.json({ message: "Todos los registros eliminados" });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    static async deleteAll(req, res) {
-        try {
-            await bitacoraMedicamentoModel.deleteAll();
-            res.json({ message: "Todos los registros eliminados" });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    }
+  }
 }
 
 export default BitacoraMedicamentoController;

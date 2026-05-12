@@ -185,7 +185,7 @@ export function serializeVacacion(v) {
 // Operaciones
 // ============================================================================
 
-function toNumberSafe(value) {
+export function toNumberSafe(value) {
   if (value === null || value === undefined) return null;
   if (typeof value === "bigint") return Number(value);
   return value;
@@ -622,5 +622,218 @@ export function serializeCajaAhorroResumen(c) {
     diciembre: c.diciembre,
     total: c.total,
     actualizado: c.actualizado,
+  };
+}
+
+// ============================================================================
+// Bitácoras (bd2.sql / Prisma)
+// ============================================================================
+
+export function serializeBiometria(b) {
+  if (!b) return null;
+  return {
+    fi_id: b.id,
+    fd_fecha: b.fecha,
+    fn_peso_total_gramos: toNumberSafe(b.pesoTotalGramos),
+    fn_organismos_muestreados: b.organismosMuestreados,
+    fn_peso_promedio: toNumberSafe(b.pesoPromedio),
+    fc_observaciones: b.observacion?.observacion ?? null,
+    fc_encargado: b.encargado,
+    fi_instalacion_id: b.instalacionId,
+    fi_lote_id: null,
+    tipo: b.tipo,
+    fi_usuario_id: b.usuarioId,
+    ubicacion: b.ubicacion?.nombre ?? null,
+    ubicacion_id: b.ubicacionId,
+    instalacion_nombre: b.instalacion?.nombreInstalacion ?? null,
+    observacion_id: b.observacionId ?? null,
+    reproductor_id: b.reproductorId ?? null,
+  };
+}
+
+export function serializeAlimentacion(a) {
+  if (!a) return null;
+  return {
+    fi_id: a.id,
+    fc_mes: a.mes,
+    fn_num_instalacion: a.numInstalacion,
+    fn_peso_promedio_entrada: toNumberSafe(a.pesoPromedioEntrada),
+    fd_fecha_siembra: a.fechaSiembra,
+    fc_origen_alevines: a.origenAlevines,
+    fd_fecha: a.fecha,
+    fn_total_alimento_kg: toNumberSafe(a.totalAlimentoKg),
+    fn_mortalidad: a.mortalidad,
+    fc_recambio_agua: a.recambioAgua,
+    fn_temp_agua: toNumberSafe(a.tempAgua),
+    fn_amonio: toNumberSafe(a.amonio),
+    fn_ph: toNumberSafe(a.ph),
+    fc_observaciones: a.observacion?.observacion ?? null,
+    observacion_id: a.observacionId ?? null,
+    fi_usuario_id: a.usuarioId,
+    ubicacion: a.ubicacion?.nombre ?? null,
+    ubicacion_id: a.ubicacionId,
+  };
+}
+
+export function serializeBano(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fc_tipo_banio: row.tipoBanio,
+    fc_regadera: row.regadera,
+    fc_realizo: row.realizo,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeBitacoraInsumo(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fc_cantidad_udm: row.cantidadUdm,
+    fc_num_lote: row.numLote,
+    fc_descripcion: row.descripcion,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fc_encargado_entrega: row.encargadoEntrega,
+    fc_encargado_recepcion: row.encargadoRecepcion,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeParametro(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fn_num_estanque: row.numEstanque,
+    fn_oxigeno: toNumberSafe(row.oxigeno),
+    fn_temperatura: toNumberSafe(row.temperatura),
+    fn_ph: toNumberSafe(row.ph),
+    fn_amonio: toNumberSafe(row.amonio),
+    fn_nitritos: toNumberSafe(row.nitritos),
+    fn_nitratos: toNumberSafe(row.nitratos),
+    fc_responsable: row.observacion?.responsable ?? null,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeMedicamento(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha_hora: row.fechaHora,
+    fn_num_estanque: row.numEstanque,
+    fc_diagnosis: row.diagnosis,
+    fc_tratamiento: row.tratamiento,
+    fc_dosis: row.dosis,
+    fc_forma_aplicacion: row.formaAplicacion,
+    fd_fecha_ultima_dosis: row.fechaUltimaDosis,
+    fc_responsable: row.observacion?.responsable ?? null,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializePlaga(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fc_num_trampa: row.numTrampa,
+    tipo_trampa: row.tipoTrampa,
+    fc_tipo_trampa: row.tipoTrampa,
+    fc_hallazgo: row.hallazgo,
+    fc_malla: row.malla,
+    fc_veneno: row.veneno,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fc_verifico: row.verifico,
+    unidad_produccion: row.unidadProduccion,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeRecambio(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fc_mes: row.mes,
+    fn_num_instalacion: row.numInstalacion,
+    fd_fecha1: row.fecha1,
+    fc_tipo1: row.tipo1,
+    fd_fecha2: row.fecha2,
+    fc_tipo2: row.tipo2,
+    fd_fecha3: row.fecha3,
+    fc_tipo3: row.tipo3,
+    fd_fecha4: row.fecha4,
+    fc_tipo4: row.tipo4,
+    fd_fecha5: row.fecha5,
+    fc_tipo5: row.tipo5,
+    fd_fecha6: row.fecha6,
+    fc_tipo6: row.tipo6,
+    fc_responsable: row.observacion?.responsable ?? null,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeVisita(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fd_entrada: row.entrada,
+    fd_salida: row.salida,
+    fc_nombre_completo: row.nombreCompleto,
+    fc_origen: row.origen,
+    fc_motivo: row.motivo,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fc_foto_identificacion: row.fotoIdentificacion,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+  };
+}
+
+export function serializeRecepcionInsumo(row) {
+  if (!row) return null;
+  return {
+    fi_id: row.id,
+    fd_fecha: row.fecha,
+    fc_proveedor: row.proveedor,
+    fc_producto: row.producto,
+    fc_unidad_medida: row.unidadMedida,
+    fc_cantidad: toNumberSafe(row.cantidad),
+    fc_lote: row.lote,
+    fc_condiciones_entrega: row.condicionesEntrega,
+    fc_encargado_entrega: row.encargadoEntrega,
+    fc_verifico: row.verifico,
+    fc_observaciones: row.observacion?.observacion ?? null,
+    observacion_id: row.observacionId ?? null,
+    fi_usuario_id: row.usuarioId,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
   };
 }
