@@ -9,6 +9,7 @@
     "db:reset": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml down -v && docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml up -d",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:repair-migration-history": "prisma db execute --schema prisma/schema.prisma --file scripts/truncate-prisma-migrations.sql && prisma migrate diff --from-empty --to-schema-datasource prisma/schema.prisma --script -o prisma/migrations/20260512120000_baseline/migration.sql && prisma migrate resolve --applied 20260512120000_baseline && prisma generate",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:baseline-resolve": "prisma migrate resolve --applied 20260512120000_baseline",
     "prisma:studio": "prisma studio",

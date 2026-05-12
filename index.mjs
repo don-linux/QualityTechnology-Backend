@@ -164,7 +164,7 @@ import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
 app.use("/uploads", authStaticMiddleware, express.static("uploads"));
 
 app.get("/", (req, res) => {
-  res.json({ message: "Backend de Quality Technology jalando" });
+  res.json({ message: "Backend 2.0, de Quality Technology trabajando satisfactoriamente" });
 });
 
 // Iniciar servidor
