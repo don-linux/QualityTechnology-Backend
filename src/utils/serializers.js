@@ -449,6 +449,158 @@ export function serializeTrazaReproductor(t) {
   };
 }
 
+// ============================================================================
+// Ventas / Finanzas / Catalogos
+// ============================================================================
+
+export function serializeCliente(c) {
+  if (!c) return null;
+  const ejecutivo = c.ejecutivo
+    ? [c.ejecutivo.nombre, c.ejecutivo.apellidoPaterno, c.ejecutivo.apellidoMaterno]
+        .filter(Boolean)
+        .join(" ")
+    : null;
+  return {
+    fi_cliente_id: c.clienteId,
+    cliente_id: c.clienteId,
+    fc_razon_social: c.razonSocial,
+    fc_rfc: c.rfc,
+    fi_unidad_negocio_id: c.unidadNegocioId,
+    unidad_negocio_nombre: c.unidadNegocio?.nombre ?? null,
+    fc_nombre_contacto: c.nombreContacto,
+    fc_telefono: c.telefono,
+    fc_correo: c.correo,
+    fc_localidad: c.localidad,
+    fc_estado: c.estado,
+    fi_ejecutivo_empleado_id: c.ejecutivoEmpleadoId,
+    ejecutivo_nombre: ejecutivo,
+    fi_usuario_id: c.usuarioId,
+  };
+}
+
+export function serializeProveedor(p) {
+  if (!p) return null;
+  return {
+    fi_proveedor_id: p.proveedorId,
+    proveedor_id: p.proveedorId,
+    fc_razon_social: p.razonSocial,
+    fc_rfc: p.rfc,
+    fc_producto_servicio: p.productoServicio,
+    fi_unidad_negocio_id: p.unidadNegocioId,
+    unidad_negocio_nombre: p.unidadNegocio?.nombre ?? null,
+    fc_nombre_contacto: p.nombreContacto,
+    fc_telefono: p.telefono,
+    fc_correo: p.correo,
+    fc_localidad: p.localidad,
+    fc_estado: p.estado,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  };
+}
+
+export function serializeVenta(v) {
+  if (!v) return null;
+  return {
+    fi_venta_id: v.ventaId,
+    venta_id: v.ventaId,
+    fc_folio: v.folio,
+    fd_fecha_venta: v.fechaVenta,
+    fc_cliente: v.cliente,
+    fc_tipo_venta: v.tipoVenta,
+    fn_cantidad_vendida: v.cantidadVendida,
+    fn_precio_venta: v.precioVenta,
+    fn_monto_total: v.montoTotal,
+    fn_abonado: v.abonado,
+    fn_adeudo: v.adeudo,
+    fc_estado_pago: v.estadoPago,
+    fc_empresa: v.empresa,
+    fc_encargado_venta: v.encargadoVenta,
+    fc_observaciones: v.observacion?.observacion ?? null,
+    observacion_id: v.observacionId ?? null,
+  };
+}
+
+export function serializeListaEspera(l) {
+  if (!l) return null;
+  return {
+    fi_lista_id: l.listaId,
+    lista_id: l.listaId,
+    fd_fecha_entrega: l.fechaEntrega,
+    fc_talla: l.talla,
+    fn_cantidad: l.cantidad,
+    fn_precio_venta: l.precioVenta,
+    fc_cliente: l.cliente,
+    fc_lugar_entrega: l.lugarEntrega,
+    fc_encargado_venta: l.encargadoVenta,
+    fc_unidad_produccion: l.unidadProduccion,
+    fc_uap_asignada: l.uapAsignada,
+    fc_granja_asignada: l.ubicacion?.nombre ?? null,
+    ubicacion_id: l.ubicacionId,
+    fc_hora_embolsado: l.horaEmbolsado,
+    fc_hora_entrega: l.horaEntrega,
+  };
+}
+
+export function serializeCuenta(c) {
+  if (!c) return null;
+  return {
+    fi_cuenta_id: c.cuentaId,
+    cuenta_id: c.cuentaId,
+    fc_udn: c.udn,
+    fc_nombre: c.nombre,
+    fc_numero_cuenta: c.numeroCuenta,
+    fc_banco: c.banco,
+    fc_tipo: c.tipo,
+    fn_saldo_actual: c.saldoActual,
+    fb_activo: c.activo,
+    activo: c.activo,
+  };
+}
+
+export function serializeFlujoCaja(f) {
+  if (!f) return null;
+  return {
+    fi_movimiento_id: f.movimientoId,
+    movimiento_id: f.movimientoId,
+    fc_granja: f.ubicacion?.nombre ?? null,
+    ubicacion_id: f.ubicacionId,
+    fd_fecha: f.fecha,
+    fn_ingreso: f.ingreso,
+    fn_egreso: f.egreso,
+    fc_descripcion: f.descripcion,
+    fc_cuenta: f.cuenta,
+    fc_categoria: f.categoria,
+    fc_subcategoria: f.subcategoria,
+    fc_beneficiario: f.beneficiario,
+    fc_noproyecto: f.noproyecto,
+    fc_factura: f.factura,
+    fc_estatus: f.estatus,
+    fc_mes: f.mes,
+  };
+}
+
+export function serializeUnidadNegocioFull(u) {
+  if (!u) return null;
+  return {
+    fi_unidad_negocio_id: u.unidadNegocioId,
+    unidad_negocio_id: u.unidadNegocioId,
+    fc_nombre: u.nombre,
+    fb_activo: u.activo,
+    activo: u.activo,
+  };
+}
+
+export function serializeUbicacion(u) {
+  if (!u) return null;
+  return {
+    ubicacion_id: u.ubicacionId,
+    nombre: u.nombre,
+    direccion: u.direccion,
+    descripcion: u.descripcion,
+    activo: u.activo,
+  };
+}
+
 export function serializeCajaAhorroResumen(c) {
   if (!c) return null;
   return {

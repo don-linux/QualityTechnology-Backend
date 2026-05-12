@@ -1,4 +1,5 @@
-import proveedorModel from "../models/proveedorModel.js";
+import prisma from "../prisma.js";
+import { serializeProveedor } from "../utils/serializers.js";
 
 const REQUIRED_FIELDS = [
   "fc_razon_social",
@@ -44,19 +45,19 @@ async function buildProveedorPayload(body) {
   }
 
   if (payload.fc_rfc.length > 20) {
-    return { error: "fc_rfc debe tener máximo 20 caracteres" };
+    return { error: "fc_rfc debe tener maximo 20 caracteres" };
   }
-
   if (!PHONE_RE.test(payload.fc_telefono)) {
-    return { error: "fc_telefono debe contener solo números y máximo 10 dígitos" };
+    return { error: "fc_telefono debe contener solo numeros y maximo 10 digitos" };
   }
-
   if (!EMAIL_RE.test(payload.fc_correo)) {
-    return { error: "fc_correo debe tener formato de correo electrónico válido" };
+    return { error: "fc_correo debe tener formato de correo electronico valido" };
   }
 
-  const unidadActiva = await proveedorModel.unidadNegocioActivaExists(payload.fi_unidad_negocio_id);
-  if (!unidadActiva) {
+  const unidad = await prisma.unidadNegocio.findUnique({
+    where: { unidadNegocioId: payload.fi_unidad_negocio_id },
+  });
+  if (!unidad || !unidad.activo) {
     return { error: "fi_unidad_negocio_id debe corresponder a una unidad de negocio activa" };
   }
 
@@ -66,8 +67,11 @@ async function buildProveedorPayload(body) {
 class ProveedorController {
   static async getAll(req, res) {
     try {
-      const proveedores = await proveedorModel.getAll();
-      res.json(proveedores);
+      const proveedores = await prisma.proveedor.findMany({
+        include: { unidadNegocio: true },
+        orderBy: [{ razonSocial: "asc" }, { proveedorId: "asc" }],
+      });
+      res.json(proveedores.map(serializeProveedor));
     } catch (err) {
       console.error("Error al obtener proveedores:", err);
       res.status(500).json({ error: "Error al obtener proveedores" });
@@ -79,8 +83,21 @@ class ProveedorController {
       const { error, payload } = await buildProveedorPayload(req.body);
       if (error) return res.status(400).json({ error });
 
-      const proveedor = await proveedorModel.create(payload);
-      res.status(201).json(proveedor);
+      const proveedor = await prisma.proveedor.create({
+        data: {
+          razonSocial: payload.fc_razon_social,
+          rfc: payload.fc_rfc,
+          productoServicio: payload.fc_producto_servicio,
+          unidadNegocioId: payload.fi_unidad_negocio_id,
+          nombreContacto: payload.fc_nombre_contacto,
+          telefono: payload.fc_telefono,
+          correo: payload.fc_correo,
+          localidad: payload.fc_localidad,
+          estado: payload.fc_estado,
+        },
+        include: { unidadNegocio: true },
+      });
+      res.status(201).json(serializeProveedor(proveedor));
     } catch (err) {
       console.error("Error al crear proveedor:", err);
       res.status(500).json({ error: "Error al crear proveedor" });
@@ -88,33 +105,46 @@ class ProveedorController {
   }
 
   static async update(req, res) {
-    try {
-      const id = parseRequiredId(req.params.id);
-      if (!id) return res.status(400).json({ error: "ID de proveedor inválido" });
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID de proveedor invalido" });
 
+    try {
       const { error, payload } = await buildProveedorPayload(req.body);
       if (error) return res.status(400).json({ error });
 
-      const proveedor = await proveedorModel.update(id, payload);
-      if (!proveedor) return res.status(404).json({ error: "Proveedor no encontrado" });
-
-      res.json(proveedor);
+      const proveedor = await prisma.proveedor.update({
+        where: { proveedorId: id },
+        data: {
+          razonSocial: payload.fc_razon_social,
+          rfc: payload.fc_rfc,
+          productoServicio: payload.fc_producto_servicio,
+          unidadNegocioId: payload.fi_unidad_negocio_id,
+          nombreContacto: payload.fc_nombre_contacto,
+          telefono: payload.fc_telefono,
+          correo: payload.fc_correo,
+          localidad: payload.fc_localidad,
+          estado: payload.fc_estado,
+          updatedAt: new Date(),
+        },
+        include: { unidadNegocio: true },
+      });
+      res.json(serializeProveedor(proveedor));
     } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Proveedor no encontrado" });
       console.error("Error al actualizar proveedor:", err);
       res.status(500).json({ error: "Error al actualizar proveedor" });
     }
   }
 
   static async delete(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID de proveedor invalido" });
+
     try {
-      const id = parseRequiredId(req.params.id);
-      if (!id) return res.status(400).json({ error: "ID de proveedor inválido" });
-
-      const deleted = await proveedorModel.delete(id);
-      if (!deleted) return res.status(404).json({ error: "Proveedor no encontrado" });
-
+      await prisma.proveedor.delete({ where: { proveedorId: id } });
       res.sendStatus(204);
     } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Proveedor no encontrado" });
       console.error("Error al eliminar proveedor:", err);
       res.status(500).json({ error: "Error al eliminar proveedor" });
     }
