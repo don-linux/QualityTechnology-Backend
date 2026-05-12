@@ -5,6 +5,9 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["views"]
+  // Include musl alongside native so Alpine-based images and glibc dev hosts
+  // both get a matching query engine after `prisma generate`.
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
