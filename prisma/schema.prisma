@@ -1,0 +1,1208 @@
+// Quality Technology - Prisma schema
+// Generado a partir de bd2.sql. Modelo equivalente para PostgreSQL.
+// Las tablas que NO viven en `public` se mapean explícitamente con @@schema.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "seguridad", "rrhh"]
+}
+
+// ============================================================================
+// 1.5 Auth / Seguridad
+// ============================================================================
+
+model Rol {
+  rolId    Int     @id @default(autoincrement()) @map("rol_id")
+  nombre   String  @unique(map: "roles_nombre_uk") @db.VarChar(50)
+  esRoot   Boolean @default(false) @map("es_root")
+
+  usuarios     Usuario[]
+  rolesModulos RolModulo[]
+
+  @@map("roles")
+  @@schema("public")
+}
+
+model Usuario {
+  usuarioId    Int     @id @default(autoincrement()) @map("usuario_id")
+  nombre       String  @unique(map: "usuarios_nombre_uk") @db.VarChar(100)
+  contrasena   String  @map("contraseña") @db.VarChar(255)
+  rolId        Int     @map("rol_id")
+  empresaId    Int?    @map("empresa_id")
+  activo       Boolean @default(true)
+
+  rol            Rol             @relation(fields: [rolId], references: [rolId], onDelete: Restrict, onUpdate: Cascade)
+  refreshTokens  RefreshToken[]
+  empleados      Empleado[]
+  observaciones  Observacion[]
+  instalaciones  Instalacion[]
+  reproductores  Reproductor[]
+  lotes          Lote[]
+  piletas        Pileta[]
+  engorda        Engorda[]
+  equipos        Equipo[]
+  alimentos      Alimento[]
+  trazaAlevinaje TrazaAlevinaje[]
+  trazaEngorda   TrazaEngorda[]
+  trazaRepro     TrazaReproductor[]
+  ventas         Cliente[]
+  alimentacion   Alimentacion[]
+  banos          Bano[]
+  biometrias     Biometria[]
+  insumos        Insumo[]
+  inventarioAlevines InventarioAlevin[]
+  medicamentos   Medicamento[]
+  parametros     Parametro[]
+  plagas         Plaga[]
+  recambios      Recambio[]
+  recepcionInsumos RecepcionInsumo[]
+  visitas        Visita[]
+  nominas        Nomina[]
+  loteMovimientos LoteMovimiento[]
+
+  @@index([rolId], map: "usuarios_rol_idx")
+  @@map("usuarios")
+  @@schema("public")
+}
+
+model Modulo {
+  moduloId Int     @id @default(autoincrement()) @map("modulo_id")
+  nombre   String  @unique(map: "modulos_nombre_uk") @db.VarChar(50)
+  ruta     String  @unique(map: "modulos_ruta_uk") @db.VarChar(100)
+  activo   Boolean @default(true)
+
+  rolesModulos RolModulo[]
+
+  @@map("modulos")
+  @@schema("public")
+}
+
+model RolModulo {
+  rolId    Int @map("rol_id")
+  moduloId Int @map("modulo_id")
+
+  rol    Rol    @relation(fields: [rolId], references: [rolId], onDelete: Cascade, onUpdate: Cascade)
+  modulo Modulo @relation(fields: [moduloId], references: [moduloId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([rolId, moduloId], map: "roles_modulos_pk")
+  @@map("roles_modulos")
+  @@schema("public")
+}
+
+model RefreshToken {
+  tokenId    Int      @id @default(autoincrement()) @map("token_id")
+  usuarioId  Int      @map("usuario_id")
+  token      String   @unique(map: "refresh_tokens_token_uk") @db.VarChar(255)
+  expiracion DateTime @db.Timestamp(6)
+  revocado   Boolean  @default(false)
+  creacion   DateTime @default(now()) @db.Timestamp(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([usuarioId], map: "refresh_tokens_usuario_idx")
+  @@map("refresh_tokens")
+  @@schema("public")
+}
+
+// ============================================================================
+// RRHH catalogos
+// ============================================================================
+
+model Puesto {
+  puestoId Int     @id @default(autoincrement()) @map("puesto_id")
+  nombre   String  @unique(map: "puestos_nombre_uk") @db.VarChar(120)
+  activo   Boolean @default(true)
+
+  empleados Empleado[]
+
+  @@map("puestos")
+  @@schema("public")
+}
+
+model Departamento {
+  departamentoId Int     @id @default(autoincrement()) @map("departamento_id")
+  nombre         String  @unique(map: "departamentos_nombre_uk") @db.VarChar(80)
+  activo         Boolean @default(true)
+
+  empleados Empleado[]
+
+  @@map("departamentos")
+  @@schema("public")
+}
+
+model TipoDocumento {
+  tipoDocumentoId Int     @id @default(autoincrement()) @map("tipo_documento_id")
+  nombre          String  @unique(map: "tipos_documento_nombre_uk") @db.VarChar(80)
+  obligatorio     Boolean @default(false)
+  activo          Boolean @default(true)
+
+  documentos DocumentoEmpleado[]
+
+  @@map("tipos_documento")
+  @@schema("public")
+}
+
+model UnidadNegocio {
+  unidadNegocioId Int     @id @default(autoincrement()) @map("unidad_negocio_id")
+  nombre          String  @unique(map: "unidades_negocio_nombre_uk") @db.VarChar(100)
+  activo          Boolean @default(true)
+
+  empleados   Empleado[]
+  clientes    Cliente[]
+  proveedores Proveedor[]
+
+  @@map("unidades_negocio")
+  @@schema("public")
+}
+
+// ============================================================================
+// 1.6 Observaciones
+// ============================================================================
+
+model Observacion {
+  observacionId Int      @id @default(autoincrement()) @map("observacion_id")
+  observacion   String?  @db.VarChar(500)
+  responsable   String?  @db.VarChar(100)
+  usuarioId     Int?     @map("usuario_id")
+  fecha         DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+
+  usuario       Usuario? @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+
+  reproductores  Reproductor[]
+  lotes          Lote[]
+  piletas        Pileta[]
+  engorda        Engorda[]
+  equipos        Equipo[]
+  mantenimientos Mantenimiento[]
+  trazaAlevinaje TrazaAlevinaje[]
+  trazaEngorda   TrazaEngorda[]
+  trazaRepro     TrazaReproductor[]
+  ventas         Venta[]
+  alimentacion   Alimentacion[]
+  banos          Bano[]
+  biometrias     Biometria[]
+  insumos        Insumo[]
+  inventarioAlevines InventarioAlevin[]
+  medicamentos   Medicamento[]
+  parametros     Parametro[]
+  plagas         Plaga[]
+  recambios      Recambio[]
+  recepcionInsumos RecepcionInsumo[]
+  visitas        Visita[]
+  loteMovimientos LoteMovimiento[]
+
+  @@index([usuarioId], map: "observaciones_usuario_idx")
+  @@index([fecha(sort: Desc)], map: "observaciones_fecha_idx")
+  @@map("observaciones")
+  @@schema("public")
+}
+
+// ============================================================================
+// 1.7 Ubicaciones
+// ============================================================================
+
+model Ubicacion {
+  ubicacionId Int     @id @default(autoincrement()) @map("ubicacion_id")
+  nombre      String  @unique(map: "ubicaciones_nombre_uk") @db.VarChar(150)
+  direccion   String? @db.VarChar(300)
+  descripcion String? @db.VarChar(500)
+  activo      Boolean @default(true)
+
+  instalaciones  Instalacion[]
+  reproductores  Reproductor[]
+  lotes          Lote[]
+  piletas        Pileta[]
+  engorda        Engorda[]
+  trazaAlevinaje TrazaAlevinaje[]
+  cajaAhorro     CajaAhorroResumen[]
+  listaEspera    ListaEspera[]
+  flujoCaja      FlujoCaja[]
+  alimentacion   Alimentacion[]
+  banos          Bano[]
+  biometrias     Biometria[]
+  insumos        Insumo[]
+  inventarioAlevines InventarioAlevin[]
+  medicamentos   Medicamento[]
+  parametros     Parametro[]
+  plagas         Plaga[]
+  recambios      Recambio[]
+  recepcionInsumos RecepcionInsumo[]
+  visitas        Visita[]
+
+  @@index([activo], map: "ubicaciones_activo_idx")
+  @@map("ubicaciones")
+  @@schema("public")
+}
+
+// ============================================================================
+// 2. Instalaciones
+// ============================================================================
+
+model Instalacion {
+  instalacionId    Int      @id @default(autoincrement()) @map("instalacion_id")
+  nombreInstalacion String  @map("nombre_instalacion") @db.VarChar(100)
+  largo            Decimal  @db.Decimal(10, 2)
+  ancho            Decimal  @db.Decimal(10, 2)
+  altura           Decimal  @db.Decimal(10, 2)
+  material         String   @db.VarChar(100)
+  metrosCubicos    Decimal? @map("metros_cubicos") @db.Decimal(12, 2)
+  tipoInstalacion  String   @map("tipo_instalacion") @db.VarChar(20)
+  estado           String   @default("vacia") @db.VarChar(20)
+  ubicacionId      Int      @map("ubicacion_id")
+  usuarioId        Int      @map("usuario_id")
+
+  ubicacion      Ubicacion @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario        Usuario   @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  reproductores  Reproductor[]
+  lotes          Lote[]
+  piletas        Pileta[]
+  engorda        Engorda[]
+  trazaAlevOrig  TrazaAlevinaje[] @relation("traza_alev_inst_origen")
+  trazaAlevDest  TrazaAlevinaje[] @relation("traza_alev_inst_destino")
+  biometrias     Biometria[]
+
+  @@unique([nombreInstalacion, ubicacionId], map: "instalaciones_nombre_uk")
+  @@index([ubicacionId], map: "instalaciones_ubicacion_idx")
+  @@index([tipoInstalacion], map: "instalaciones_tipo_idx")
+  @@index([usuarioId], map: "instalaciones_usuario_idx")
+  @@map("instalaciones")
+  @@schema("public")
+}
+
+// ============================================================================
+// 3. Reproductores
+// ============================================================================
+
+model Reproductor {
+  reproductorId   Int       @id @default(autoincrement()) @map("reproductor_id")
+  instalacionId   Int       @map("instalacion_id")
+  machos          Int       @default(0)
+  hembras         Int       @default(0)
+  cantidad        Int?
+  talla           Decimal?  @db.Decimal(10, 2)
+  ratio           String?   @db.VarChar(10)
+  linea           String?   @db.VarChar(50)
+  familia         String?   @db.VarChar(20)
+  fechaSiembra    DateTime? @map("fecha_siembra") @db.Date
+  fechaBiometria  DateTime? @map("fecha_biometria") @db.Date
+  ubicacionId     Int       @map("ubicacion_id")
+  usuarioId       Int       @map("usuario_id")
+  observacionId   Int?      @map("observacion_id")
+
+  instalacion    Instalacion  @relation(fields: [instalacionId], references: [instalacionId], onDelete: Restrict, onUpdate: Cascade)
+  ubicacion      Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario        Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion    Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+  alimentos      Alimento[]
+  trazaOrigen    TrazaReproductor[] @relation("traza_repro_origen")
+  trazaDestino   TrazaReproductor[] @relation("traza_repro_destino")
+  biometrias     Biometria[]
+
+  @@index([instalacionId], map: "reproductores_instalacion_idx")
+  @@index([ubicacionId], map: "reproductores_ubicacion_idx")
+  @@index([familia], map: "reproductores_familia_idx")
+  @@map("reproductores")
+  @@schema("public")
+}
+
+// ============================================================================
+// 4. Lotes
+// ============================================================================
+
+model Lote {
+  loteId                Int       @id @default(autoincrement()) @map("lote_id")
+  instalacionId         Int       @map("instalacion_id")
+  fecha                 DateTime  @db.Date
+  familia               String    @db.VarChar(50)
+  noLote                String    @unique(map: "lotes_no_lote_uk") @map("no_lote") @db.VarChar(50)
+  huevosMl              Decimal?  @map("huevos_ml") @db.Decimal(10, 2)
+  ovadas                Int       @default(0)
+  alevinesInicial       Int       @map("alevines_inicial")
+  mortalidad            Int       @default(0)
+  mortalidadPorcentaje  Decimal?  @map("mortalidad_porcentaje") @db.Decimal(6, 2)
+  ubicacionId           Int       @map("ubicacion_id")
+  usuarioId             Int       @map("usuario_id")
+  observacionId         Int?      @map("observacion_id")
+
+  instalacion   Instalacion  @relation(fields: [instalacionId], references: [instalacionId], onDelete: Restrict, onUpdate: Cascade)
+  ubicacion     Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario       Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion   Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+  piletas       Pileta[]
+  engorda       Engorda[]
+  trazaAlevinaje TrazaAlevinaje[]
+  movimientos   LoteMovimiento[]
+
+  @@index([instalacionId], map: "lotes_instalacion_idx")
+  @@index([ubicacionId], map: "lotes_ubicacion_idx")
+  @@index([fecha], map: "lotes_fecha_idx")
+  @@map("lotes")
+  @@schema("public")
+}
+
+// ============================================================================
+// 5. Piletas
+// ============================================================================
+
+model Pileta {
+  piletaId             Int       @id @default(autoincrement()) @map("pileta_id")
+  instalacionId        Int       @unique(map: "piletas_instalacion_uk") @map("instalacion_id")
+  loteId               Int?      @map("lote_id")
+  cantidad             BigInt    @default(0)
+  tallaGr              Decimal?  @map("talla_gr") @db.Decimal(14, 2)
+  fechaSiembra         DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_siembra") @db.Date
+  fechaUltimaBiometria DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_ultima_biometria") @db.Date
+  ubicacionId          Int       @map("ubicacion_id")
+  usuarioId            Int       @map("usuario_id")
+  observacionId        Int?      @map("observacion_id")
+
+  instalacion    Instalacion  @relation(fields: [instalacionId], references: [instalacionId], onDelete: Restrict, onUpdate: Cascade)
+  lote           Lote?        @relation(fields: [loteId], references: [loteId], onDelete: SetNull, onUpdate: Cascade)
+  ubicacion      Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario        Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion    Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+  alimentos      Alimento[]
+  trazaOrigen    TrazaAlevinaje[] @relation("traza_alev_pileta_origen")
+  trazaDestino   TrazaAlevinaje[] @relation("traza_alev_pileta_destino")
+
+  @@index([loteId], map: "piletas_lote_idx")
+  @@index([ubicacionId], map: "piletas_ubicacion_idx")
+  @@index([usuarioId], map: "piletas_usuario_idx")
+  @@map("piletas")
+  @@schema("public")
+}
+
+// ============================================================================
+// 6. Engorda
+// ============================================================================
+
+model Engorda {
+  engordaId       Int       @id @default(autoincrement()) @map("engorda_id")
+  instalacionId   Int       @map("instalacion_id")
+  loteId          Int       @map("lote_id")
+  cantidad        Int
+  tallaGr         Decimal?  @map("talla_gr") @db.Decimal(10, 2)
+  fechaSiembra    DateTime? @map("fecha_siembra") @db.Date
+  fechaBiometria  DateTime? @map("fecha_biometria") @db.Date
+  ubicacionId     Int       @map("ubicacion_id")
+  usuarioId       Int       @map("usuario_id")
+  observacionId   Int?      @map("observacion_id")
+
+  instalacion   Instalacion  @relation(fields: [instalacionId], references: [instalacionId], onDelete: Restrict, onUpdate: Cascade)
+  lote          Lote         @relation(fields: [loteId], references: [loteId], onDelete: Restrict, onUpdate: Cascade)
+  ubicacion     Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario       Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion   Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+  alimentos     Alimento[]
+  trazaOrigen   TrazaEngorda[] @relation("traza_eng_origen")
+  trazaDestino  TrazaEngorda[] @relation("traza_eng_destino")
+
+  @@index([instalacionId], map: "engorda_instalacion_idx")
+  @@index([loteId], map: "engorda_lote_idx")
+  @@index([ubicacionId], map: "engorda_ubicacion_idx")
+  @@map("engorda")
+  @@schema("public")
+}
+
+// ============================================================================
+// 7. Equipos / 8. Mantenimientos
+// ============================================================================
+
+model Equipo {
+  equipoId            Int       @id @default(autoincrement()) @map("equipo_id")
+  nombre              String    @db.VarChar(150)
+  marca               String?   @db.VarChar(100)
+  modelo              String?   @db.VarChar(100)
+  tipo                String?   @db.VarChar(100)
+  fechaCompra         DateTime? @map("fecha_compra") @db.Date
+  costo               Decimal?  @db.Decimal(12, 2)
+  estado              String    @default("Operativo") @db.VarChar(50)
+  ubicacion           String?   @db.VarChar(150)
+  proximoMantenimiento DateTime? @map("proximo_mantenimiento") @db.Date
+  notas               String?
+  usuarioId           Int       @map("usuario_id")
+  observacionId       Int?      @map("observacion_id")
+
+  usuario        Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion    Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+  mantenimientos Mantenimiento[]
+
+  @@index([usuarioId], map: "equipos_usuario_idx")
+  @@index([estado], map: "equipos_estado_idx")
+  @@map("equipos")
+  @@schema("public")
+}
+
+model Mantenimiento {
+  mantenimientoId      Int       @id @default(autoincrement()) @map("mantenimiento_id")
+  equipoId             Int       @map("equipo_id")
+  fecha                DateTime  @db.Date
+  tipo                 String    @default("Preventivo") @db.VarChar(50)
+  descripcion          String?
+  costo                Decimal   @default(0) @db.Decimal(12, 2)
+  estadoPost           String?   @map("estado_post") @db.VarChar(50)
+  proximoMantenimiento DateTime? @map("proximo_mantenimiento") @db.Date
+  observacionId        Int?      @map("observacion_id")
+
+  equipo      Equipo       @relation(fields: [equipoId], references: [equipoId], onDelete: Cascade, onUpdate: Cascade)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([equipoId], map: "mantenimientos_equipo_idx")
+  @@index([fecha], map: "mantenimientos_fecha_idx")
+  @@map("mantenimientos")
+  @@schema("public")
+}
+
+// ============================================================================
+// 9. Alimentos
+// ============================================================================
+
+model Alimento {
+  alimentoId     Int      @id @default(autoincrement()) @map("alimento_id")
+  piletaId       Int?     @map("pileta_id")
+  engordaId      Int?     @map("engorda_id")
+  reproductorId  Int?     @map("reproductor_id")
+  particulaMm    Decimal? @map("particula_mm") @db.Decimal(10, 2)
+  alimentoDia    Decimal? @map("alimento_dia") @db.Decimal(10, 3)
+  porcion        Decimal? @db.Decimal(10, 3)
+  gastoAlimento  Decimal? @map("gasto_alimento") @db.Decimal(12, 2)
+  usuarioId      Int      @map("usuario_id")
+
+  pileta      Pileta?      @relation(fields: [piletaId], references: [piletaId], onDelete: Cascade, onUpdate: Cascade)
+  engorda     Engorda?     @relation(fields: [engordaId], references: [engordaId], onDelete: Cascade, onUpdate: Cascade)
+  reproductor Reproductor? @relation(fields: [reproductorId], references: [reproductorId], onDelete: Cascade, onUpdate: Cascade)
+  usuario     Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([piletaId], map: "alimentos_pileta_idx")
+  @@index([engordaId], map: "alimentos_engorda_idx")
+  @@index([reproductorId], map: "alimentos_reproductor_idx")
+  @@index([usuarioId], map: "alimentos_usuario_idx")
+  @@map("alimentos")
+  @@schema("public")
+}
+
+// ============================================================================
+// 10. Trazabilidad - Alevinaje
+// ============================================================================
+
+model TrazaAlevinaje {
+  movimientoId       Int       @id @default(autoincrement()) @map("movimiento_id")
+  piletaOrigen       Int?      @map("pileta_origen")
+  piletaDestino      Int?      @map("pileta_destino")
+  instalacionOrigen  Int?      @map("instalacion_origen")
+  instalacionDestino Int?      @map("instalacion_destino")
+  loteId             Int?      @map("lote_id")
+  origenExterno      String?   @map("origen_externo")
+  tipoMovimiento     String    @default("TRASLADO") @map("tipo_movimiento") @db.VarChar(20)
+  cantidad           BigInt
+  ubicacionId        Int       @map("ubicacion_id")
+  usuarioId          Int       @map("usuario_id")
+  fechaMovimiento    DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_movimiento") @db.Date
+  observacionId      Int?      @map("observacion_id")
+
+  piletaOrig       Pileta?      @relation("traza_alev_pileta_origen", fields: [piletaOrigen], references: [piletaId], onDelete: SetNull, onUpdate: Cascade)
+  piletaDest       Pileta?      @relation("traza_alev_pileta_destino", fields: [piletaDestino], references: [piletaId], onDelete: SetNull, onUpdate: Cascade)
+  instalacionOrig  Instalacion? @relation("traza_alev_inst_origen", fields: [instalacionOrigen], references: [instalacionId], onDelete: SetNull, onUpdate: Cascade)
+  instalacionDest  Instalacion? @relation("traza_alev_inst_destino", fields: [instalacionDestino], references: [instalacionId], onDelete: SetNull, onUpdate: Cascade)
+  lote             Lote?        @relation(fields: [loteId], references: [loteId], onDelete: SetNull, onUpdate: Cascade)
+  usuario          Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  ubicacion        Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  observacion      Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([piletaOrigen], map: "traza_alev_pileta_origen_idx")
+  @@index([piletaDestino], map: "traza_alev_pileta_destino_idx")
+  @@index([instalacionOrigen], map: "traza_alev_instalacion_origen_idx")
+  @@index([instalacionDestino], map: "traza_alev_instalacion_destino_idx")
+  @@index([loteId], map: "traza_alev_lote_idx")
+  @@index([fechaMovimiento(sort: Desc)], map: "traza_alev_fecha_idx")
+  @@index([ubicacionId], map: "traza_alev_ubicacion_idx")
+  @@map("trazabilidad_alevinaje")
+  @@schema("public")
+}
+
+// ============================================================================
+// 11. Trazabilidad - Engorda
+// ============================================================================
+
+model TrazaEngorda {
+  movimientoId       Int      @id @default(autoincrement()) @map("movimiento_id")
+  engordaOrigen      Int?     @map("engorda_origen")
+  engordaDestino     Int?     @map("engorda_destino")
+  cantidadTrasladada Int      @map("cantidad_trasladada")
+  usuarioId          Int      @map("usuario_id")
+  fechaMovimiento    DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_movimiento") @db.Date
+  observacionId      Int?     @map("observacion_id")
+
+  origen      Engorda?     @relation("traza_eng_origen", fields: [engordaOrigen], references: [engordaId], onDelete: SetNull, onUpdate: Cascade)
+  destino     Engorda?     @relation("traza_eng_destino", fields: [engordaDestino], references: [engordaId], onDelete: SetNull, onUpdate: Cascade)
+  usuario     Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([engordaOrigen], map: "traza_eng_origen_idx")
+  @@index([engordaDestino], map: "traza_eng_destino_idx")
+  @@index([fechaMovimiento(sort: Desc)], map: "traza_eng_fecha_idx")
+  @@map("trazabilidad_engorda")
+  @@schema("public")
+}
+
+// ============================================================================
+// 12. Trazabilidad - Reproductores
+// ============================================================================
+
+model TrazaReproductor {
+  movimientoId       Int      @id @default(autoincrement()) @map("movimiento_id")
+  reproOrigen        Int?     @map("repro_origen")
+  reproDestino       Int?     @map("repro_destino")
+  origenTexto        String?  @map("origen_texto") @db.VarChar(150)
+  cantidadTrasladada Int?     @map("cantidad_trasladada")
+  usuarioId          Int      @map("usuario_id")
+  fechaMovimiento    DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_movimiento") @db.Date
+  observacionId      Int?     @map("observacion_id")
+
+  origen      Reproductor? @relation("traza_repro_origen", fields: [reproOrigen], references: [reproductorId], onDelete: SetNull, onUpdate: Cascade)
+  destino     Reproductor? @relation("traza_repro_destino", fields: [reproDestino], references: [reproductorId], onDelete: SetNull, onUpdate: Cascade)
+  usuario     Usuario      @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict, onUpdate: Cascade)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([reproOrigen], map: "traza_repro_origen_idx")
+  @@index([reproDestino], map: "traza_repro_destino_idx")
+  @@index([fechaMovimiento(sort: Desc)], map: "traza_repro_fecha_idx")
+  @@map("trazabilidad_reproductores")
+  @@schema("public")
+}
+
+// ============================================================================
+// 13. RRHH transaccional
+// ============================================================================
+
+model Empleado {
+  empleadoId             Int       @id @default(autoincrement()) @map("empleado_id")
+  usuarioId              Int?      @map("usuario_id")
+  departamentoId         Int       @map("departamento_id")
+  puestoId               Int?      @map("puesto_id")
+  unidadNegocioId        Int?      @map("unidad_negocio_id")
+  nombre                 String    @db.VarChar(60)
+  apellidoPaterno        String    @map("apellido_paterno") @db.VarChar(60)
+  apellidoMaterno        String    @map("apellido_materno") @db.VarChar(60)
+  genero                 String?   @db.VarChar(20)
+  fechaNacimiento        DateTime? @map("fecha_nacimiento") @db.Date
+  estado                 String?   @db.VarChar(50)
+  ciudad                 String?   @db.VarChar(60)
+  calle                  String?   @db.VarChar(120)
+  codigoPostal           String?   @map("codigo_postal") @db.VarChar(10)
+  referencias            String?   @db.VarChar(255)
+  comentariosAdicionales String?   @map("comentarios_adicionales")
+  fechaContratacion      DateTime? @map("fecha_contratacion") @db.Date
+  uniformes              Int       @default(0)
+  activo                 Boolean   @default(true)
+  fechaAlta              DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_alta") @db.Date
+  fechaBaja              DateTime? @map("fecha_baja") @db.Date
+
+  usuario        Usuario?       @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  departamento   Departamento   @relation(fields: [departamentoId], references: [departamentoId], onDelete: Restrict)
+  puesto         Puesto?        @relation(fields: [puestoId], references: [puestoId], onDelete: SetNull)
+  unidadNegocio  UnidadNegocio? @relation(fields: [unidadNegocioId], references: [unidadNegocioId], onDelete: SetNull)
+  documentos     DocumentoEmpleado[]
+  actas          ActaAdministrativa[]
+  nominas        Nomina[]
+  vacaciones    Vacacion[]
+  clientes       Cliente[] @relation("cliente_ejecutivo")
+
+  @@index([departamentoId], map: "empleados_departamento_idx")
+  @@index([puestoId], map: "empleados_puesto_idx")
+  @@index([unidadNegocioId], map: "empleados_unidad_negocio_idx")
+  @@index([usuarioId], map: "empleados_usuario_idx")
+  @@index([activo], map: "empleados_activo_idx")
+  @@index([apellidoPaterno, apellidoMaterno], map: "empleados_apellidos_idx")
+  @@map("empleados")
+  @@schema("public")
+}
+
+model DocumentoEmpleado {
+  documentoId     Int      @id @default(autoincrement()) @map("documento_id")
+  empleadoId      Int      @map("empleado_id")
+  tipoDocumentoId Int      @map("tipo_documento_id")
+  rutaArchivo     String   @map("ruta_archivo") @db.VarChar(500)
+  nombreOriginal  String   @map("nombre_original") @db.VarChar(255)
+  fechaCarga      DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_carga") @db.Date
+
+  empleado      Empleado      @relation(fields: [empleadoId], references: [empleadoId], onDelete: Cascade)
+  tipoDocumento TipoDocumento @relation(fields: [tipoDocumentoId], references: [tipoDocumentoId], onDelete: Restrict)
+
+  @@unique([empleadoId, tipoDocumentoId], map: "doc_emp_unico")
+  @@index([empleadoId], map: "doc_emp_empleado_idx")
+  @@index([tipoDocumentoId], map: "doc_emp_tipo_idx")
+  @@map("documentos_empleado")
+  @@schema("public")
+}
+
+model ActaAdministrativa {
+  actaId         Int      @id @default(autoincrement()) @map("acta_id")
+  empleadoId     Int      @map("empleado_id")
+  motivo         String
+  fecha          DateTime @db.Date
+  rutaArchivo    String   @map("ruta_archivo") @db.VarChar(500)
+  nombreOriginal String   @map("nombre_original") @db.VarChar(255)
+
+  empleado Empleado @relation(fields: [empleadoId], references: [empleadoId], onDelete: Cascade)
+
+  @@index([empleadoId], map: "actas_admin_empleado_idx")
+  @@index([fecha(sort: Desc)], map: "actas_admin_fecha_idx")
+  @@map("actas_administrativas")
+  @@schema("public")
+}
+
+model Nomina {
+  nominaId           Int      @id @default(autoincrement()) @map("nomina_id")
+  empleadoId         Int?     @map("empleado_id")
+  nombreEmpleado     String   @map("nombre_empleado") @db.VarChar(120)
+  fechaPago          DateTime @default(dbgenerated("CURRENT_DATE")) @map("fecha_pago") @db.Date
+  total              Decimal  @default(0) @db.Decimal(10, 2)
+  bono               Decimal  @default(0) @db.Decimal(10, 2)
+  deuda              Decimal  @default(0) @db.Decimal(10, 2)
+  descuento          Decimal  @default(0) @db.Decimal(10, 2)
+  anticipo           Decimal  @default(0) @db.Decimal(10, 2)
+  usuarioId          Int?     @map("usuario_id")
+  fechaActualizacion DateTime @default(now()) @map("fecha_actualizacion") @db.Timestamp(6)
+
+  empleado Empleado? @relation(fields: [empleadoId], references: [empleadoId], onDelete: SetNull)
+  usuario  Usuario?  @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+
+  @@index([empleadoId], map: "nomina_empleado_idx")
+  @@index([fechaPago(sort: Desc)], map: "nomina_fecha_pago_idx")
+  @@index([usuarioId], map: "nomina_usuario_idx")
+  @@map("nomina")
+  @@schema("public")
+}
+
+model Vacacion {
+  vacacionId            Int      @id @default(autoincrement()) @map("vacacion_id")
+  empleadoId            Int?     @map("empleado_id")
+  nombreEmpleado        String   @map("nombre_empleado") @db.VarChar(120)
+  departamento          String?  @db.VarChar(80)
+  inicioPeriodo         DateTime @map("inicio_periodo") @db.Date
+  finPeriodo            DateTime @map("fin_periodo") @db.Date
+  diasTrabajados        Int      @default(0) @map("dias_trabajados")
+  vacacionesV           Int      @default(0) @map("vacaciones_v")
+  enfermedadE           Int      @default(0) @map("enfermedad_e")
+  maternidadM           Int      @default(0) @map("maternidad_m")
+  permisoParcialPp      Int      @default(0) @map("permiso_parcial_pp")
+  permisoTotalPt        Int      @default(0) @map("permiso_total_pt")
+  inasistenciasI        Int      @default(0) @map("inasistencias_i")
+  vacacionesAnio        Int      @default(0) @map("vacaciones_anio")
+  diasPrevios           Int      @default(0) @map("dias_previos")
+  vacacionesDisponibles Int      @default(0) @map("vacaciones_disponibles")
+  vacacionesDisfrutadas Int      @default(0) @map("vacaciones_disfrutadas")
+  asistencia            String   @default("Asistió") @db.VarChar(50)
+  fechaActualizacion    DateTime @default(now()) @map("fecha_actualizacion") @db.Timestamp(6)
+
+  empleado Empleado? @relation(fields: [empleadoId], references: [empleadoId], onDelete: SetNull)
+
+  @@index([empleadoId], map: "vacaciones_empleado_idx")
+  @@index([inicioPeriodo, finPeriodo], map: "vacaciones_periodo_idx")
+  @@map("vacaciones")
+  @@schema("public")
+}
+
+model CajaAhorroResumen {
+  cajaAhorroId Int      @id @default(autoincrement()) @map("caja_ahorro_id")
+  categoria    String   @db.VarChar(100)
+  ubicacionId  Int      @map("ubicacion_id")
+  enero        Decimal  @default(0) @db.Decimal(12, 2)
+  febrero      Decimal  @default(0) @db.Decimal(12, 2)
+  marzo        Decimal  @default(0) @db.Decimal(12, 2)
+  abril        Decimal  @default(0) @db.Decimal(12, 2)
+  mayo         Decimal  @default(0) @db.Decimal(12, 2)
+  junio        Decimal  @default(0) @db.Decimal(12, 2)
+  julio        Decimal  @default(0) @db.Decimal(12, 2)
+  agosto       Decimal  @default(0) @db.Decimal(12, 2)
+  septiembre   Decimal  @default(0) @db.Decimal(12, 2)
+  octubre      Decimal  @default(0) @db.Decimal(12, 2)
+  noviembre    Decimal  @default(0) @db.Decimal(12, 2)
+  diciembre    Decimal  @default(0) @db.Decimal(12, 2)
+  total        Decimal? @db.Decimal(14, 2)
+  actualizado  DateTime @default(now()) @db.Timestamp(6)
+
+  ubicacion Ubicacion @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+
+  @@unique([categoria, ubicacionId], map: "caja_ahorro_categoria_ubicacion_uq")
+  @@index([categoria], map: "caja_ahorro_categoria_idx")
+  @@index([ubicacionId], map: "caja_ahorro_ubicacion_idx")
+  @@map("caja_ahorro_resumen")
+  @@schema("public")
+}
+
+// ============================================================================
+// 14. Ventas / CRM
+// ============================================================================
+
+model Cliente {
+  clienteId           Int     @id @default(autoincrement()) @map("cliente_id")
+  razonSocial         String  @map("razon_social") @db.VarChar(150)
+  rfc                 String? @db.VarChar(20)
+  unidadNegocioId     Int     @map("unidad_negocio_id")
+  nombreContacto      String? @map("nombre_contacto") @db.VarChar(150)
+  telefono            String? @db.VarChar(10)
+  correo              String? @db.VarChar(255)
+  localidad           String? @db.VarChar(100)
+  estado              String? @db.VarChar(100)
+  ejecutivoEmpleadoId Int     @map("ejecutivo_empleado_id")
+  usuarioId           Int     @map("usuario_id")
+
+  unidadNegocio UnidadNegocio @relation(fields: [unidadNegocioId], references: [unidadNegocioId], onDelete: Restrict)
+  ejecutivo     Empleado      @relation("cliente_ejecutivo", fields: [ejecutivoEmpleadoId], references: [empleadoId], onDelete: Restrict)
+  usuario       Usuario       @relation(fields: [usuarioId], references: [usuarioId], onDelete: Restrict)
+
+  @@index([razonSocial], map: "clientes_razon_idx")
+  @@index([rfc], map: "clientes_rfc_idx")
+  @@index([localidad], map: "clientes_localidad_idx")
+  @@index([unidadNegocioId], map: "clientes_udn_idx")
+  @@index([ejecutivoEmpleadoId], map: "clientes_ejecutivo_idx")
+  @@index([usuarioId], map: "clientes_usuario_idx")
+  @@map("clientes")
+  @@schema("public")
+}
+
+model Proveedor {
+  proveedorId      Int      @id @default(autoincrement()) @map("proveedor_id")
+  razonSocial      String   @map("razon_social") @db.VarChar(150)
+  rfc              String   @db.VarChar(20)
+  productoServicio String   @map("producto_servicio") @db.VarChar(255)
+  unidadNegocioId  Int      @map("unidad_negocio_id")
+  nombreContacto   String   @map("nombre_contacto") @db.VarChar(150)
+  telefono         String   @db.VarChar(10)
+  correo           String   @db.VarChar(255)
+  localidad        String   @db.VarChar(100)
+  estado           String   @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  unidadNegocio UnidadNegocio @relation(fields: [unidadNegocioId], references: [unidadNegocioId], onDelete: Restrict)
+
+  @@index([razonSocial], map: "proveedores_razon_social_idx")
+  @@index([rfc], map: "proveedores_rfc_idx")
+  @@index([localidad], map: "proveedores_localidad_idx")
+  @@index([unidadNegocioId], map: "proveedores_udn_idx")
+  @@map("proveedores")
+  @@schema("public")
+}
+
+model Venta {
+  ventaId         Int      @id @default(autoincrement()) @map("venta_id")
+  folio           String?  @db.VarChar(50)
+  fechaVenta      DateTime @map("fecha_venta") @db.Date
+  cliente         String   @db.VarChar(150)
+  tipoVenta       String   @map("tipo_venta") @db.VarChar(50)
+  cantidadVendida Int      @map("cantidad_vendida")
+  precioVenta     Decimal  @map("precio_venta") @db.Decimal(10, 2)
+  montoTotal      Decimal  @map("monto_total") @db.Decimal(12, 2)
+  abonado         Decimal  @default(0) @db.Decimal(12, 2)
+  adeudo          Decimal? @db.Decimal(12, 2)
+  estadoPago      String   @default("ADEUDO") @map("estado_pago") @db.VarChar(20)
+  empresa         String
+  encargadoVenta  String?  @map("encargado_venta")
+  observacionId   Int?     @map("observacion_id")
+
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([cliente], map: "ventas_cliente_idx")
+  @@index([fechaVenta(sort: Desc)], map: "ventas_fecha_idx")
+  @@index([estadoPago], map: "ventas_estado_pago_idx")
+  @@index([empresa], map: "ventas_empresa_idx")
+  @@map("ventas")
+  @@schema("public")
+}
+
+model ListaEspera {
+  listaId          Int      @id @default(autoincrement()) @map("lista_id")
+  fechaEntrega     DateTime @map("fecha_entrega") @db.Date
+  talla            String?  @db.VarChar(50)
+  cantidad         Decimal  @db.Decimal(12, 2)
+  precioVenta      Decimal? @map("precio_venta") @db.Decimal(12, 2)
+  cliente          String?  @db.VarChar(200)
+  lugarEntrega     String?  @map("lugar_entrega") @db.VarChar(200)
+  encargadoVenta   String?  @map("encargado_venta") @db.VarChar(200)
+  unidadProduccion String?  @map("unidad_produccion") @db.VarChar(200)
+  uapAsignada      String?  @map("uap_asignada") @db.VarChar(200)
+  ubicacionId      Int?     @map("ubicacion_id")
+  horaEmbolsado    String?  @map("hora_embolsado") @db.VarChar(20)
+  horaEntrega      String?  @map("hora_entrega") @db.VarChar(20)
+
+  ubicacion Ubicacion? @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: SetNull)
+
+  @@index([fechaEntrega], map: "lista_espera_fecha_entrega_idx")
+  @@index([cliente], map: "lista_espera_cliente_idx")
+  @@index([ubicacionId], map: "lista_espera_granja_idx")
+  @@map("lista_espera")
+  @@schema("public")
+}
+
+// ============================================================================
+// 15. Finanzas
+// ============================================================================
+
+model Cuenta {
+  cuentaId     Int     @id @default(autoincrement()) @map("cuenta_id")
+  udn          String  @db.VarChar(100)
+  nombre       String  @db.VarChar(100)
+  numeroCuenta String? @map("numero_cuenta") @db.VarChar(50)
+  banco        String? @db.VarChar(150)
+  tipo         String  @db.VarChar(20)
+  saldoActual  Decimal @default(0) @map("saldo_actual") @db.Decimal(15, 2)
+  activo       Boolean @default(true)
+
+  @@unique([nombre, udn], map: "cuentas_nombre_udn_uq")
+  @@index([udn], map: "cuentas_udn_idx")
+  @@index([activo], map: "cuentas_activo_idx")
+  @@index([nombre], map: "cuentas_nombre_idx")
+  @@map("cuentas")
+  @@schema("public")
+}
+
+model FlujoCaja {
+  movimientoId Int      @id @default(autoincrement()) @map("movimiento_id")
+  ubicacionId  Int      @map("ubicacion_id")
+  fecha        DateTime @db.Date
+  ingreso      Decimal  @default(0) @db.Decimal(12, 2)
+  egreso       Decimal  @default(0) @db.Decimal(12, 2)
+  descripcion  String?  @db.VarChar(200)
+  cuenta       String?  @db.VarChar(50)
+  categoria    String?  @db.VarChar(100)
+  subcategoria String?  @db.VarChar(100)
+  beneficiario String?  @db.VarChar(100)
+  noproyecto   String?  @db.VarChar(50)
+  factura      String?  @db.VarChar(50)
+  estatus      String?  @db.VarChar(20)
+  mes          String?  @db.VarChar(7)
+  equilibrar   Decimal? @db.Decimal(12, 2)
+
+  ubicacion Ubicacion @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+
+  @@index([ubicacionId], map: "flujo_caja_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "flujo_caja_fecha_idx")
+  @@index([cuenta], map: "flujo_caja_cuenta_idx")
+  @@index([categoria], map: "flujo_caja_categoria_idx")
+  @@index([mes], map: "flujo_caja_mes_idx")
+  @@index([estatus], map: "flujo_caja_estatus_idx")
+  @@map("flujo_caja")
+  @@schema("public")
+}
+
+// ============================================================================
+// 16. Lote movimientos
+// ============================================================================
+
+model LoteMovimiento {
+  movId          Int       @id @default(autoincrement()) @map("mov_id")
+  loteId         Int       @map("lote_id")
+  tipoMovimiento String    @map("tipo_movimiento") @db.VarChar(20)
+  cantidad       Int
+  talla          Decimal?  @db.Decimal(5, 2)
+  fecha          DateTime  @db.Date
+  destino        String?   @db.VarChar(100)
+  usuarioId      Int?      @map("usuario_id")
+  observacionId  Int?      @map("observacion_id")
+
+  lote        Lote         @relation(fields: [loteId], references: [loteId], onDelete: Cascade)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([loteId], map: "lote_mov_lote_idx")
+  @@index([fecha(sort: Desc)], map: "lote_mov_fecha_idx")
+  @@index([tipoMovimiento], map: "lote_mov_tipo_idx")
+  @@index([usuarioId], map: "lote_mov_usuario_idx")
+  @@map("lote_movimientos")
+  @@schema("public")
+}
+
+// ============================================================================
+// 17. Bitacoras
+// ============================================================================
+
+model Alimentacion {
+  id                  Int       @id @default(autoincrement())
+  ubicacionId         Int       @map("ubicacion_id")
+  fecha               DateTime? @db.Date
+  mes                 String?   @db.VarChar(20)
+  numInstalacion      Int?      @map("num_instalacion")
+  fechaSiembra        DateTime? @map("fecha_siembra") @db.Date
+  origenAlevines      String?   @map("origen_alevines") @db.VarChar(200)
+  pesoPromedioEntrada Decimal?  @map("peso_promedio_entrada") @db.Decimal(12, 3)
+  totalAlimentoKg     Decimal?  @map("total_alimento_kg") @db.Decimal(12, 3)
+  mortalidad          Int?
+  recambioAgua        String?   @map("recambio_agua") @db.VarChar(50)
+  tempAgua            Decimal?  @map("temp_agua") @db.Decimal(6, 2)
+  amonio              Decimal?  @db.Decimal(10, 4)
+  ph                  Decimal?  @db.Decimal(5, 2)
+  usuarioId           Int?      @map("usuario_id")
+  observacionId       Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "alimentacion_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "alimentacion_fecha_idx")
+  @@index([usuarioId], map: "alimentacion_usuario_idx")
+  @@map("alimentacion")
+  @@schema("public")
+}
+
+model Bano {
+  id            Int      @id @default(autoincrement())
+  ubicacionId   Int      @map("ubicacion_id")
+  fecha         DateTime @db.Date
+  tipoBanio     String?  @map("tipo_banio") @db.VarChar(20)
+  regadera      String?  @db.VarChar(100)
+  realizo       String?  @db.VarChar(100)
+  usuarioId     Int?     @map("usuario_id")
+  observacionId Int?     @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "banos_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "banos_fecha_idx")
+  @@index([usuarioId], map: "banos_usuario_idx")
+  @@map("banos")
+  @@schema("public")
+}
+
+model Biometria {
+  id                    Int       @id @default(autoincrement())
+  ubicacionId           Int       @map("ubicacion_id")
+  instalacionId         Int?      @map("instalacion_id")
+  reproductorId         Int?      @map("reproductor_id")
+  tipo                  String?   @db.VarChar(20)
+  fecha                 DateTime  @db.Date
+  pesoTotalGramos       Decimal?  @map("peso_total_gramos") @db.Decimal(12, 3)
+  organismosMuestreados Int?      @map("organismos_muestreados")
+  pesoPromedio          Decimal?  @map("peso_promedio") @db.Decimal(10, 3)
+  encargado             String?   @db.VarChar(100)
+  usuarioId             Int?      @map("usuario_id")
+  observacionId         Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: SetNull)
+  instalacion Instalacion? @relation(fields: [instalacionId], references: [instalacionId], onDelete: SetNull)
+  reproductor Reproductor? @relation(fields: [reproductorId], references: [reproductorId], onDelete: SetNull)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "biometrias_ubicacion_idx")
+  @@index([instalacionId], map: "biometrias_instalacion_idx")
+  @@index([reproductorId], map: "biometrias_reproductor_idx")
+  @@index([fecha(sort: Desc)], map: "biometrias_fecha_idx")
+  @@index([tipo], map: "biometrias_tipo_idx")
+  @@index([usuarioId], map: "biometrias_usuario_idx")
+  @@map("biometrias")
+  @@schema("public")
+}
+
+model Insumo {
+  id                  Int      @id @default(autoincrement())
+  ubicacionId         Int      @map("ubicacion_id")
+  fecha               DateTime @db.Date
+  cantidadUdm         String?  @map("cantidad_udm") @db.VarChar(100)
+  numLote             String?  @map("num_lote") @db.VarChar(100)
+  descripcion         String?  @db.VarChar(300)
+  encargadoEntrega    String?  @map("encargado_entrega") @db.VarChar(100)
+  encargadoRecepcion  String?  @map("encargado_recepcion") @db.VarChar(100)
+  usuarioId           Int?     @map("usuario_id")
+  observacionId       Int?     @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "insumos_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "insumos_fecha_idx")
+  @@index([usuarioId], map: "insumos_usuario_idx")
+  @@map("insumos")
+  @@schema("public")
+}
+
+model InventarioAlevin {
+  id                   Int       @id @default(autoincrement())
+  ubicacionId          Int       @map("ubicacion_id")
+  numInstalacion       Int?      @map("num_instalacion")
+  lote                 String?   @db.VarChar(100)
+  cantidad             Int?
+  talla                Decimal?  @db.Decimal(10, 2)
+  fechaSiembra         DateTime? @map("fecha_siembra") @db.Date
+  fechaSalidaHormonado DateTime? @map("fecha_salida_hormonado") @db.Date
+  usuarioId            Int?      @map("usuario_id")
+  observacionId        Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "inv_alev_ubicacion_idx")
+  @@index([lote], map: "inv_alev_lote_idx")
+  @@index([usuarioId], map: "inv_alev_usuario_idx")
+  @@map("inventario_alevines")
+  @@schema("public")
+}
+
+model Medicamento {
+  id               Int       @id @default(autoincrement())
+  ubicacionId      Int       @map("ubicacion_id")
+  fechaHora        DateTime  @map("fecha_hora") @db.Timestamp(6)
+  numEstanque      Int?      @map("num_estanque")
+  diagnosis        String?   @db.VarChar(500)
+  tratamiento      String?   @db.VarChar(500)
+  dosis            String?   @db.VarChar(100)
+  formaAplicacion  String?   @map("forma_aplicacion") @db.VarChar(100)
+  fechaUltimaDosis DateTime? @map("fecha_ultima_dosis") @db.Date
+  usuarioId        Int?      @map("usuario_id")
+  observacionId    Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "medicamentos_ubicacion_idx")
+  @@index([fechaHora(sort: Desc)], map: "medicamentos_fecha_idx")
+  @@index([usuarioId], map: "medicamentos_usuario_idx")
+  @@map("medicamentos")
+  @@schema("public")
+}
+
+model Parametro {
+  id            Int      @id @default(autoincrement())
+  ubicacionId   Int      @map("ubicacion_id")
+  fecha         DateTime @db.Date
+  numEstanque   Int?     @map("num_estanque")
+  oxigeno       Decimal? @db.Decimal(8, 3)
+  temperatura   Decimal? @db.Decimal(6, 2)
+  ph            Decimal? @db.Decimal(5, 2)
+  amonio        Decimal? @db.Decimal(10, 4)
+  nitritos      Decimal? @db.Decimal(10, 4)
+  nitratos      Decimal? @db.Decimal(10, 4)
+  usuarioId     Int?     @map("usuario_id")
+  observacionId Int?     @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "parametros_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "parametros_fecha_idx")
+  @@index([usuarioId], map: "parametros_usuario_idx")
+  @@map("parametros")
+  @@schema("public")
+}
+
+model Plaga {
+  id               Int      @id @default(autoincrement())
+  ubicacionId      Int?     @map("ubicacion_id")
+  unidadProduccion String?  @map("unidad_produccion") @db.VarChar(100)
+  fecha            DateTime @db.Date
+  numTrampa        String?  @map("num_trampa") @db.VarChar(100)
+  tipoTrampa       String?  @map("tipo_trampa") @db.VarChar(100)
+  hallazgo         String?  @db.VarChar(500)
+  malla            String?  @db.VarChar(200)
+  veneno           String?  @db.VarChar(100)
+  verifico         String?  @db.VarChar(100)
+  usuarioId        Int?     @map("usuario_id")
+  observacionId    Int?     @map("observacion_id")
+
+  ubicacion   Ubicacion?   @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: SetNull)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "plagas_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "plagas_fecha_idx")
+  @@index([usuarioId], map: "plagas_usuario_idx")
+  @@map("plagas")
+  @@schema("public")
+}
+
+model Recambio {
+  id             Int       @id @default(autoincrement())
+  ubicacionId    Int       @map("ubicacion_id")
+  mes            String?   @db.VarChar(20)
+  numInstalacion Int?      @map("num_instalacion")
+  fecha1         DateTime? @db.Date
+  tipo1          String?   @db.VarChar(30)
+  fecha2         DateTime? @db.Date
+  tipo2          String?   @db.VarChar(30)
+  fecha3         DateTime? @db.Date
+  tipo3          String?   @db.VarChar(30)
+  fecha4         DateTime? @db.Date
+  tipo4          String?   @db.VarChar(30)
+  fecha5         DateTime? @db.Date
+  tipo5          String?   @db.VarChar(30)
+  fecha6         DateTime? @db.Date
+  tipo6          String?   @db.VarChar(30)
+  usuarioId      Int?      @map("usuario_id")
+  observacionId  Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion    @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: Restrict)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "recambios_ubicacion_idx")
+  @@index([mes], map: "recambios_mes_idx")
+  @@index([usuarioId], map: "recambios_usuario_idx")
+  @@map("recambios")
+  @@schema("public")
+}
+
+model RecepcionInsumo {
+  id                 Int      @id @default(autoincrement())
+  ubicacionId        Int?     @map("ubicacion_id")
+  fecha              DateTime @db.Date
+  proveedor          String?  @db.VarChar(100)
+  producto           String?  @db.VarChar(255)
+  unidadMedida       String?  @map("unidad_medida") @db.VarChar(255)
+  cantidad           Decimal? @db.Decimal(15, 2)
+  lote               String?  @db.VarChar(100)
+  condicionesEntrega String?  @map("condiciones_entrega") @db.VarChar(150)
+  encargadoEntrega   String?  @map("encargado_entrega") @db.VarChar(100)
+  verifico           String?  @db.VarChar(100)
+  usuarioId          Int?     @map("usuario_id")
+  observacionId      Int?     @map("observacion_id")
+
+  ubicacion   Ubicacion?   @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: SetNull)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "recepcion_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "recepcion_fecha_idx")
+  @@index([proveedor], map: "recepcion_proveedor_idx")
+  @@index([usuarioId], map: "recepcion_usuario_idx")
+  @@map("recepcion_insumos")
+  @@schema("public")
+}
+
+model Visita {
+  id                 Int       @id @default(autoincrement())
+  ubicacionId        Int?      @map("ubicacion_id")
+  fecha              DateTime  @db.Date
+  entrada            DateTime? @db.Time(6)
+  salida             DateTime? @db.Time(6)
+  nombreCompleto     String?   @map("nombre_completo") @db.VarChar(200)
+  origen             String?   @db.VarChar(200)
+  motivo             String?   @db.VarChar(300)
+  fotoIdentificacion String?   @map("foto_identificacion") @db.VarChar(200)
+  usuarioId          Int?      @map("usuario_id")
+  observacionId      Int?      @map("observacion_id")
+
+  ubicacion   Ubicacion?   @relation(fields: [ubicacionId], references: [ubicacionId], onDelete: SetNull)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+  observacion Observacion? @relation(fields: [observacionId], references: [observacionId], onDelete: SetNull)
+
+  @@index([ubicacionId], map: "visitas_ubicacion_idx")
+  @@index([fecha(sort: Desc)], map: "visitas_fecha_idx")
+  @@index([usuarioId], map: "visitas_usuario_idx")
+  @@map("visitas")
+  @@schema("public")
+}

@@ -6,13 +6,19 @@
   "scripts": {
     "start": "bun index.mjs",
     "dev": "bun --watch index.mjs",
-    "db:reset": "docker compose -f docker/dev/compose.yaml down -v && docker compose -f docker/dev/compose.yaml up -d"
+    "db:reset": "docker compose -f docker/dev/compose.yaml down -v && docker compose -f docker/dev/compose.yaml up -d",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -24,5 +30,7 @@
     "swagger-ui-express": "^5.0.1",
     "yaml": "^2.8.3"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  }
 }

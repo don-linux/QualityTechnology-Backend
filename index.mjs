@@ -97,56 +97,71 @@ app.use(
 // Para leer JSON en las peticiones
 app.use(express.json());
 
-// Registrar rutas
-app.use("/roles", rolRoutes);
-app.use("/usuarios", usuarioRoutes);
-app.use("/piletas", piletaRoutes);
-app.use("/instalaciones", instalacionRoutes);
-app.use("/lotes", loteRoutes);
-app.use("/reproductores", reproductorRoutes);
-app.use("/engorda", engordaRoutes);
-app.use("/clientes", clienteRoutes);
-app.use("/ventas", ventaRoutes);
-app.use("/alimentos", alimentoRoutes);
-app.use("/alevines", alevinRoutes);
-app.use("/lista-espera", listaEsperaRoutes);
-app.use("/equipos", equipoRoutes);
-app.use("/nomina", nominaRoutes);
-app.use("/vacaciones", vacacionRoutes);
-app.use("/caja-ahorro", cajaAhorroRoutes);
-app.use("/proveedores", proveedorRoutes);
-app.use("/flujo-caja", flujoCajaRoutes);
-app.use("/tesoreria", tesoreriaRoutes);
-app.use("/cuentas", cuentaRoutes);
-app.use("/unidades-negocio", unidadNegocioRoutes);
-import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
-app.use("/uploads", authStaticMiddleware, express.static("uploads"));
+// ============================================================================
+// Router con prefijo /api
+// ============================================================================
+const api = express.Router();
+
+// Core / Seguridad
+api.use("/roles", rolRoutes);
+api.use("/usuarios", usuarioRoutes);
+api.use("/modulos", modulosRoutes);
+api.use("/roles-modulos", rolesModulosRoutes);
+
+// Operaciones
+api.use("/piletas", piletaRoutes);
+api.use("/instalaciones", instalacionRoutes);
+api.use("/lotes", loteRoutes);
+api.use("/reproductores", reproductorRoutes);
+api.use("/engorda", engordaRoutes);
+api.use("/alimentos", alimentoRoutes);
+api.use("/alevines", alevinRoutes);
+api.use("/equipos", equipoRoutes);
+
+// Ventas / CRM
+api.use("/clientes", clienteRoutes);
+api.use("/ventas", ventaRoutes);
+api.use("/lista-espera", listaEsperaRoutes);
+api.use("/proveedores", proveedorRoutes);
+
+// Finanzas
+api.use("/flujo-caja", flujoCajaRoutes);
+api.use("/tesoreria", tesoreriaRoutes);
+api.use("/cuentas", cuentaRoutes);
+api.use("/caja-ahorro", cajaAhorroRoutes);
+
+// RRHH
+api.use("/empleados", empleadoRoutes);
+api.use("/departamentos", departamentoRoutes);
+api.use("/puestos", puestoRoutes);
+api.use("/tipos-documento", tipoDocumentoRoutes);
+api.use("/documentos-empleado", documentoEmpleadoRoutes);
+api.use("/actas-administrativas", actaAdministrativaRoutes);
+api.use("/nomina", nominaRoutes);
+api.use("/vacaciones", vacacionRoutes);
+
+// Catalogos
+api.use("/unidades-negocio", unidadNegocioRoutes);
+api.use("/ubicaciones", ubicacionRoutes);
 
 // Bitácoras
-app.use("/biometrias", bitacoraBiometriaRoutes);
-app.use("/plagas", bitacoraPlagaRoutes);
-app.use("/alimentacion", bitacoraAlimentacionRoutes);
-app.use("/insumos", bitacoraInsumoRoutes);
-app.use("/recepcion_insumos", recepcionInsumoRoutes);
-app.use("/visitas", bitacoraVisitaRoutes);
-app.use("/banos", bitacoraBanoRoutes);
-app.use("/parametros", bitacoraParametroRoutes);
-app.use("/medicamentos", bitacoraMedicamentoRoutes);
-app.use("/recambios", bitacoraRecambioRoutes);
-app.use("/inventario", bitacoraInventarioRoutes);
+api.use("/biometrias", bitacoraBiometriaRoutes);
+api.use("/plagas", bitacoraPlagaRoutes);
+api.use("/alimentacion", bitacoraAlimentacionRoutes);
+api.use("/insumos", bitacoraInsumoRoutes);
+api.use("/recepcion_insumos", recepcionInsumoRoutes);
+api.use("/visitas", bitacoraVisitaRoutes);
+api.use("/banos", bitacoraBanoRoutes);
+api.use("/parametros", bitacoraParametroRoutes);
+api.use("/medicamentos", bitacoraMedicamentoRoutes);
+api.use("/recambios", bitacoraRecambioRoutes);
+api.use("/inventario", bitacoraInventarioRoutes);
 
-// rrhh
-app.use("/empleados", empleadoRoutes);
-app.use("/departamentos", departamentoRoutes);
-app.use("/puestos", puestoRoutes);
-app.use("/tipos-documento", tipoDocumentoRoutes);
-app.use("/documentos-empleado", documentoEmpleadoRoutes);
-app.use("/actas-administrativas", actaAdministrativaRoutes);
+app.use("/api", api);
 
-//Seguridad - Roles y Módulos
-app.use("/ubicaciones", ubicacionRoutes);
-app.use("/modulos", modulosRoutes);
-app.use("/roles-modulos", rolesModulosRoutes);
+// Servir archivos estaticos protegidos (fuera del prefijo /api por ser recurso)
+import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
+app.use("/uploads", authStaticMiddleware, express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend de Quality Technology jalando" });

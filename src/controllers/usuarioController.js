@@ -1,241 +1,309 @@
 import jwt from "jsonwebtoken";
-import usuarioModel from "../models/usuarioModel.js";
-import RolesModulosModel from "../models/RolesModulosModel.js";
-import RefreshTokenModel from "../models/refreshTokenModel.js";
-import pool from "../db.js";
 import bcrypt from "bcryptjs";
+import prisma from "../prisma.js";
+import { serializeUsuario, serializeModulo } from "../utils/serializers.js";
+import {
+  createRefreshToken,
+  findValidAndRevoke,
+  revokeRefreshToken,
+  revokeAllByUser,
+} from "../services/refreshTokenService.js";
+
+const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 10;
+const JWT_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || "8h";
+
+async function getModulosForRol(rolId) {
+  const rol = await prisma.rol.findUnique({ where: { rolId: Number(rolId) } });
+  if (!rol) return [];
+
+  if (rol.esRoot) {
+    const modulos = await prisma.modulo.findMany({
+      where: { activo: true },
+      orderBy: { nombre: "asc" },
+    });
+    return modulos.map(serializeModulo);
+  }
+
+  const relaciones = await prisma.rolModulo.findMany({
+    where: { rolId: Number(rolId) },
+    include: { modulo: true },
+    orderBy: { modulo: { nombre: "asc" } },
+  });
+  return relaciones.map((r) => serializeModulo(r.modulo));
+}
 
 class UsuarioController {
-    static async getAll(req, res) {
-        try {
-            const usuarios = await usuarioModel.getAll();
-            res.json(usuarios);
-        } catch (err) {
-            console.error("Error al obtener usuarios:", err);
-            res.status(500).json({ error: "Error al obtener usuarios" });
-        }
+  static async getAll(req, res) {
+    try {
+      const usuarios = await prisma.usuario.findMany({
+        orderBy: { nombre: "asc" },
+      });
+      res.json(usuarios.map(serializeUsuario));
+    } catch (err) {
+      console.error("Error al obtener usuarios:", err);
+      res.status(500).json({ error: "Error al obtener usuarios" });
+    }
+  }
+
+  static async create(req, res) {
+    const {
+      nombre,
+      contraseña,
+      contrasena,
+      rol_id,
+      departamento_id,
+      puesto_id,
+      unidad_negocio_id,
+      nombre_empleado,
+      apellido_paterno,
+      apellido_materno,
+    } = req.body;
+
+    const password = contraseña || contrasena;
+
+    if (!nombre || !password || !rol_id) {
+      return res.status(400).json({
+        error: "Faltan datos obligatorios (nombre, contraseña, rol_id)",
+      });
     }
 
-    static async create(req, res) {
-        const {
-            nombre, contraseña, rol_id,
-            fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno,
-            fi_departamento_id, fi_puesto_id, fi_unidad_negocio_id
-        } = req.body;
+    try {
+      const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-        if (!nombre || !contraseña || !rol_id) {
-            return res.status(400).json({ error: "Faltan datos obligatorios (nombre, contraseña, rol_id)" });
-        }
+      const rol = await prisma.rol.findUnique({ where: { rolId: Number(rol_id) } });
+      if (!rol) {
+        return res.status(400).json({ error: "Rol no encontrado" });
+      }
 
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
+      const nuevoUsuario = await prisma.$transaction(async (tx) => {
+        const usuario = await tx.usuario.create({
+          data: {
+            nombre,
+            contrasena: hashedPassword,
+            rolId: Number(rol_id),
+          },
+        });
 
-            const hashedPassword = await bcrypt.hash(contraseña, 10);
-            const userResult = await client.query(
-                `INSERT INTO usuarios (fc_nombre, "fc_contraseña", fi_rol_id)
-                 VALUES ($1, $2, $3) RETURNING *`,
-                [nombre, hashedPassword, rol_id]
+        if (!rol.esRoot) {
+          if (!nombre_empleado || !apellido_paterno || !apellido_materno || !departamento_id) {
+            throw Object.assign(
+              new Error(
+                "Para roles no-root se requiere: nombre_empleado, apellido_paterno, apellido_materno, departamento_id"
+              ),
+              { status: 400 }
             );
-            const nuevoUsuario = userResult.rows[0];
+          }
 
-            const rolResult = await client.query(
-                `SELECT fb_es_root FROM roles WHERE fi_rol_id = $1`,
-                [rol_id]
-            );
-            const esRoot = rolResult.rows[0]?.fb_es_root;
-
-            if (!esRoot) {
-                if (!fc_nombre_empleado || !fc_apellido_paterno || !fc_apellido_materno || !fi_departamento_id) {
-                    await client.query("ROLLBACK");
-                    return res.status(400).json({
-                        error: "Para roles no-root se requiere: fc_nombre_empleado, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id"
-                    });
-                }
-
-                await client.query(
-                    `INSERT INTO rrhh.empleados
-                        (fi_usuario_id, fc_nombre, fc_apellido_paterno, fc_apellido_materno, fi_departamento_id, fi_puesto_id, fi_unidad_negocio_id)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                    [
-                        nuevoUsuario.fi_usuario_id,
-                        fc_nombre_empleado,
-                        fc_apellido_paterno,
-                        fc_apellido_materno,
-                        fi_departamento_id,
-                        fi_puesto_id || null,
-                        fi_unidad_negocio_id || null
-                    ]
-                );
-            }
-
-            await client.query("COMMIT");
-            res.status(201).json({ mensaje: "Usuario creado exitosamente" });
-        } catch (err) {
-            await client.query("ROLLBACK");
-            console.error("Error al crear usuario:", err);
-            res.status(500).json({ error: "Error al crear usuario" });
-        } finally {
-            client.release();
+          await tx.empleado.create({
+            data: {
+              usuarioId: usuario.usuarioId,
+              nombre: nombre_empleado,
+              apellidoPaterno: apellido_paterno,
+              apellidoMaterno: apellido_materno,
+              departamentoId: Number(departamento_id),
+              puestoId: puesto_id ? Number(puesto_id) : null,
+              unidadNegocioId: unidad_negocio_id ? Number(unidad_negocio_id) : null,
+            },
+          });
         }
+
+        return usuario;
+      });
+
+      res.status(201).json({
+        mensaje: "Usuario creado exitosamente",
+        usuario: serializeUsuario(nuevoUsuario),
+      });
+    } catch (err) {
+      if (err.status) {
+        return res.status(err.status).json({ error: err.message });
+      }
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "Ya existe un usuario con ese nombre" });
+      }
+      console.error("Error al crear usuario:", err);
+      res.status(500).json({ error: "Error al crear usuario" });
+    }
+  }
+
+  static async update(req, res) {
+    const { id } = req.params;
+    const { nombre, contraseña, contrasena, rol_id } = req.body;
+    const password = contraseña || contrasena;
+
+    try {
+      const data = {};
+      if (nombre !== undefined) data.nombre = nombre;
+      if (rol_id !== undefined) data.rolId = Number(rol_id);
+      if (password) data.contrasena = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+      const usuario = await prisma.usuario.update({
+        where: { usuarioId: Number(id) },
+        data,
+      });
+
+      res.json({
+        mensaje: "Usuario actualizado correctamente",
+        usuario: serializeUsuario(usuario),
+      });
+    } catch (err) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "Ya existe un usuario con ese nombre" });
+      }
+      console.error("Error al actualizar usuario:", err);
+      res.status(500).json({ error: "Error al actualizar usuario" });
+    }
+  }
+
+  static async deactivate(req, res) {
+    const { id } = req.params;
+    try {
+      const usuario = await prisma.usuario.update({
+        where: { usuarioId: Number(id) },
+        data: { activo: false },
+      });
+      await revokeAllByUser(id);
+      res.json({ mensaje: "Usuario desactivado correctamente", usuario: serializeUsuario(usuario) });
+    } catch (err) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+      console.error("Error al desactivar usuario:", err);
+      res.status(500).json({ error: "Error al desactivar usuario" });
+    }
+  }
+
+  static async activate(req, res) {
+    const { id } = req.params;
+    try {
+      const usuario = await prisma.usuario.update({
+        where: { usuarioId: Number(id) },
+        data: { activo: true },
+      });
+      res.json({ mensaje: "Usuario activado correctamente", usuario: serializeUsuario(usuario) });
+    } catch (err) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+      console.error("Error al activar usuario:", err);
+      res.status(500).json({ error: "Error al activar usuario" });
+    }
+  }
+
+  static async login(req, res) {
+    const nombre = req.body.nombre;
+    const password = req.body.contraseña || req.body.contrasena;
+
+    if (!nombre || !password) {
+      return res.status(400).json({ error: "Faltan datos obligatorios (nombre, contraseña)" });
     }
 
-    static async update(req, res) {
-        const { id } = req.params;
-        const { nombre, contraseña, rol_id } = req.body;
-        try {
-            await usuarioModel.update(id, { nombre, contraseña, rol_id });
-            res.json({ mensaje: "Usuario actualizado correctamente" });
-        } catch (err) {
-            console.error("Error al actualizar usuario:", err);
-            res.status(500).json({ error: "Error al actualizar usuario" });
-        }
+    try {
+      const usuario = await prisma.usuario.findUnique({
+        where: { nombre },
+        include: { rol: true },
+      });
+
+      if (!usuario) {
+        console.warn(`[LOGIN] Usuario no encontrado: "${nombre}" — IP: ${req.ip}`);
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, usuario.contrasena);
+      if (!passwordMatch) {
+        console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
+        return res.status(401).json({ error: "Credenciales invalidas" });
+      }
+
+      if (!usuario.activo) {
+        console.warn(`[LOGIN] Cuenta deshabilitada: "${nombre}" — IP: ${req.ip}`);
+        return res.status(403).json({ error: "Cuenta deshabilitada. Contacte al administrador." });
+      }
+
+      const modulos = await getModulosForRol(usuario.rolId);
+
+      const token = jwt.sign(
+        {
+          usuario_id: usuario.usuarioId,
+          rol_id: usuario.rolId,
+          rol: usuario.rol.nombre,
+          nombre: usuario.nombre,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      const refreshToken = await createRefreshToken(usuario.usuarioId);
+
+      res.json({
+        mensaje: "Inicio de sesion exitoso",
+        token,
+        refreshToken,
+        usuario: {
+          id: usuario.usuarioId,
+          nombre: usuario.nombre,
+          rol: usuario.rol.nombre,
+        },
+        modulos,
+      });
+    } catch (err) {
+      console.error("Error en login:", err.message);
+      res.status(500).json({ error: "Error del servidor", detalle: err.message });
+    }
+  }
+
+  static async refresh(req, res) {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Se requiere el refreshToken." });
     }
 
-    static async deactivate(req, res) {
-        const { id } = req.params;
-        try {
-            const usuario = await usuarioModel.deactivate(id);
-            if (!usuario) {
-                return res.status(404).json({ error: "Usuario no encontrado" });
-            }
-            await RefreshTokenModel.revokeAllByUser(id);
-            res.json({ mensaje: "Usuario desactivado correctamente", usuario });
-        } catch (err) {
-            console.error("Error al desactivar usuario:", err);
-            res.status(500).json({ error: "Error al desactivar usuario" });
-        }
+    try {
+      const tokenData = await findValidAndRevoke(refreshToken);
+      if (!tokenData) {
+        return res.status(401).json({ error: "Refresh token invalido o expirado." });
+      }
+
+      const modulos = await getModulosForRol(tokenData.rolId);
+
+      const newAccessToken = jwt.sign(
+        {
+          usuario_id: tokenData.usuarioId,
+          rol_id: tokenData.rolId,
+          rol: tokenData.rolNombre,
+          nombre: tokenData.nombre,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      const newRefreshToken = await createRefreshToken(tokenData.usuarioId);
+
+      res.json({
+        mensaje: "Token renovado exitosamente",
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        modulos,
+      });
+    } catch (err) {
+      console.error("Error en refresh:", err.message);
+      res.status(500).json({ error: "Error al renovar token." });
     }
+  }
 
-    static async activate(req, res) {
-        const { id } = req.params;
-        try {
-            const usuario = await usuarioModel.activate(id);
-            if (!usuario) {
-                return res.status(404).json({ error: "Usuario no encontrado" });
-            }
-            res.json({ mensaje: "Usuario activado correctamente", usuario });
-        } catch (err) {
-            console.error("Error al activar usuario:", err);
-            res.status(500).json({ error: "Error al activar usuario" });
-        }
+  static async logout(req, res) {
+    const { refreshToken } = req.body;
+    try {
+      if (refreshToken) await revokeRefreshToken(refreshToken);
+      res.json({ mensaje: "Sesion cerrada correctamente." });
+    } catch (err) {
+      console.error("Error en logout:", err.message);
+      res.status(500).json({ error: "Error al cerrar sesion." });
     }
-
-    static async login(req, res) {
-        const nombre = req.body.nombre;
-        const contraseña = req.body.contraseña || req.body.contrasena;
-
-        if (!nombre || !contraseña) {
-            return res.status(400).json({ error: "Faltan datos obligatorios (nombre, contraseña)" });
-        }
-
-        try {
-            const usuario = await usuarioModel.getByNombre(nombre);
-            if (!usuario) {
-                console.warn(`[LOGIN] Usuario no encontrado: "${nombre}" — IP: ${req.ip}`);
-                return res.status(401).json({ error: "Credenciales inválidas" });
-            }
-
-            const passwordMatch = await usuarioModel.verifyPassword(
-                contraseña, 
-                usuario.contrasena
-            );
-
-            if (!passwordMatch) {
-                console.warn(`[LOGIN] Contraseña incorrecta para: "${nombre}" — IP: ${req.ip}`);
-                return res.status(401).json({ error: "Credenciales inválidas" });
-            }
-
-            if (!usuario.fb_activo) {
-                console.warn(`[LOGIN] Cuenta deshabilitada: "${nombre}" — IP: ${req.ip}`);
-                return res.status(403).json({ error: "Cuenta deshabilitada. Contacte al administrador." });
-            }
-
-            const modulos = await RolesModulosModel.getModulosByRol(usuario.rol_id);
-
-            const token = jwt.sign(
-                {
-                    usuario_id: usuario.usuario_id,
-                    rol_id: usuario.rol_id,
-                    rol: usuario.rol_nombre,
-                    nombre: usuario.nombre,
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: "8h" }
-            );
-
-            const refreshToken = await RefreshTokenModel.create(usuario.usuario_id);
-
-            res.json({
-                mensaje: "Inicio de sesión exitoso",
-                token,
-                refreshToken,
-                usuario: {
-                    id: usuario.usuario_id,
-                    nombre: usuario.nombre,
-                    rol: usuario.rol_nombre,
-                },
-                modulos,
-            });
-
-        } catch (err) {
-            console.error("Error en login:", err.message);
-            res.status(500).json({ error: "Error del servidor", detalle: err.message });
-        }
-    }
-
-    static async refresh(req, res) {
-        const { refreshToken } = req.body;
-        if (!refreshToken) {
-            return res.status(400).json({ error: "Se requiere el refreshToken." });
-        }
-
-        try {
-            const tokenData = await RefreshTokenModel.findValidAndRevoke(refreshToken);
-            if (!tokenData) {
-                return res.status(401).json({ error: "Refresh token inválido o expirado." });
-            }
-
-            const modulos = await RolesModulosModel.getModulosByRol(tokenData.rol_id);
-
-            const newAccessToken = jwt.sign(
-                {
-                    usuario_id: tokenData.fi_usuario_id,
-                    rol_id: tokenData.rol_id,
-                    rol: tokenData.rol_nombre,
-                    nombre: tokenData.nombre,
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: "8h" }
-            );
-
-            const newRefreshToken = await RefreshTokenModel.create(tokenData.fi_usuario_id);
-
-            res.json({
-                mensaje: "Token renovado exitosamente",
-                token: newAccessToken,
-                refreshToken: newRefreshToken,
-                modulos,
-            });
-        } catch (err) {
-            console.error("Error en refresh:", err.message);
-            res.status(500).json({ error: "Error al renovar token." });
-        }
-    }
-
-    static async logout(req, res) {
-        const { refreshToken } = req.body;
-
-        try {
-            if (refreshToken) {
-                await RefreshTokenModel.revoke(refreshToken);
-            }
-            res.json({ mensaje: "Sesión cerrada correctamente." });
-        } catch (err) {
-            console.error("Error en logout:", err.message);
-            res.status(500).json({ error: "Error al cerrar sesión." });
-        }
-    }
+  }
 }
 
 export default UsuarioController;
