@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 // El schema actual reemplaza la relacion Reproductor->Instalacion (con
 // ubicacion) por una relacion 1-1 Reproductor<->Pileta (la pileta tiene
@@ -66,13 +67,11 @@ class ReproductorController {
 
   static async getByGranja(req, res) {
     try {
-      const granja = String(req.params.granja ?? "").trim();
-      if (!granja) return res.json([]);
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (!ubicClause) return res.json([]);
       const reproductores = await prisma.reproductor.findMany({
         where: {
-          piletas: {
-            ubicacion: { nombre: { equals: granja, mode: "insensitive" } },
-          },
+          piletas: ubicClause,
         },
         include: reproductorInclude,
         orderBy: { id: "desc" },

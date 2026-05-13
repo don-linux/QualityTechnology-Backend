@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeEngorda } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 // Engorda en el schema actual es una relacion 1-1 con Pileta. Los campos
 // antiguos (instalacionId, loteId, ubicacionId, fechaSiembra, fechaBiometria)
@@ -48,13 +49,11 @@ class EngordaController {
 
   static async getByGranja(req, res) {
     try {
-      const granja = String(req.params.granja ?? "").trim();
-      if (!granja) return res.json([]);
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (!ubicClause) return res.json([]);
       const engordas = await prisma.engorda.findMany({
         where: {
-          piletas: {
-            ubicacion: { nombre: { equals: granja, mode: "insensitive" } },
-          },
+          piletas: ubicClause,
         },
         include: engordaInclude,
         orderBy: { id: "desc" },

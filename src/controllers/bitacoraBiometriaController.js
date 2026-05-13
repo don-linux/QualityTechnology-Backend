@@ -2,6 +2,7 @@ import prisma from "../prisma.js";
 import { listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
 import { serializeBiometria } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 // El schema actual de Biometria se relaciona directamente con Pileta
 // (`pileta_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
@@ -94,13 +95,11 @@ class BitacoraBiometriaController {
 
   static async getByGranja(req, res) {
     try {
-      const granja = String(req.params.granja ?? "").trim();
-      if (!granja) return res.json([]);
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (!ubicClause) return res.json([]);
       const rows = await prisma.biometria.findMany({
         where: {
-          piletas: {
-            ubicacion: { nombre: { equals: granja, mode: "insensitive" } },
-          },
+          piletas: ubicClause,
         },
         include: bitacoraInclude,
         orderBy: { fecha: "desc" },

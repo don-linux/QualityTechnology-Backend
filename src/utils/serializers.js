@@ -194,6 +194,7 @@ export function toNumberSafe(value) {
 
 export function serializeInstalacion(i) {
   if (!i) return null;
+  const nombreUb = i.ubicacion?.nombre ?? null;
   return {
     fi_instalacion_id: i.id,
     instalacion_id: i.id,
@@ -203,6 +204,8 @@ export function serializeInstalacion(i) {
     tipo_instalacion: i.tipo ?? null,
     granja: i.granja,
     fc_granja: i.granja,
+    ubicacion_id: i.ubicacionId ?? null,
+    ubicacion_nombre: nombreUb ?? i.granja,
     capacidad: i.capacidad ?? null,
     observaciones: i.observaciones ?? null,
   };

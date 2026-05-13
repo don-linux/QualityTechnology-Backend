@@ -1,7 +1,7 @@
 import prisma from "../prisma.js";
 import { serializePileta } from "../utils/serializers.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
-import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 // El schema actual rediseno completamente el modelo Pileta: ahora representa
 // un contenedor fisico (dimensiones, material, estado, tipo) ligado a una
@@ -51,13 +51,10 @@ const piletaInclude = {
 class PiletaController {
   static async getAll(req, res) {
     try {
-      const granja = typeof req.query.granja === "string" ? req.query.granja.trim() : "";
       const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
       const where = {};
-      if (granja) {
-        const uCond = ubicacionNombreWhereFromGranja(granja);
-        if (uCond) where.ubicacion = uCond;
-      }
+      const ubicFiltro = piletaWhereUbicacionFromRequest(req);
+      if (ubicFiltro) Object.assign(where, ubicFiltro);
       if (tipo) {
         where.tipo = tipo;
       }

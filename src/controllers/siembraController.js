@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeSiembra } from "../utils/serializers.js";
-import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -31,8 +31,6 @@ class SiembraController {
   /** Listado para trazabilidad y selectores (p. ej. vincular alevinaje a siembra hacia esta pileta). */
   static async getAll(req, res) {
     try {
-      const granja =
-        typeof req.query.granja === "string" ? req.query.granja.trim() : "";
       const piletaDestino = toInt(req.query.pileta_destino ?? req.query.pileta_destino_id);
       const destinoTipo =
         typeof req.query.destino_tipo === "string" ? req.query.destino_tipo.trim() : "";
@@ -45,10 +43,8 @@ class SiembraController {
 
       const destPiletaFilter = {};
 
-      if (granja) {
-        const uCond = ubicacionNombreWhereFromGranja(granja);
-        if (uCond) destPiletaFilter.ubicacion = uCond;
-      }
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (ubicClause) Object.assign(destPiletaFilter, ubicClause);
       if (destinoTipo) destPiletaFilter.tipo = destinoTipo;
 
       if (Object.keys(destPiletaFilter).length) {

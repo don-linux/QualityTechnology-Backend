@@ -1,7 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 // CRUD del modelo `alevinaje` (etapa cría) en piletas tipo `alevinaje`.
 // La observación se persiste con `pileta_id` y `proceso = 'alevinaje'` para
@@ -84,15 +84,10 @@ const alevinajeInclude = {
 class AlevinajeController {
   static async getAll(req, res) {
     try {
-      const granja = typeof req.query.granja === "string" ? req.query.granja.trim() : "";
       const piletaIdQ = toInt(req.query.pileta_id);
       const where = {};
-      if (granja) {
-        const uCond = ubicacionNombreWhereFromGranja(granja);
-        if (uCond) {
-          where.piletas = { ubicacion: uCond };
-        }
-      }
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.piletas = ubicClause;
       if (piletaIdQ) where.pileta_id = piletaIdQ;
 
       const rows = await prisma.alevinaje.findMany({

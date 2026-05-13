@@ -1,14 +1,31 @@
 import prisma from "../prisma.js";
 import { serializeInstalacion } from "../utils/serializers.js";
+import { instalacionWhereFromRequest, resolverUbicacionFlexible } from "../utils/granjaUbicacion.js";
 
-// El modelo Instalacion del schema actual conserva: nombre, tipo, granja,
-// capacidad, observaciones. Las dimensiones fisicas (largo, ancho, alto,
-// material, metros_cubicos) y el estado se movieron al modelo Pileta. La
-// relacion con ubicacion se reemplazo por el string `granja`.
+/** instalaciones: nombre, tipo, granja (texto), opcional FK `ubicacion`. */
 
 function pick(body, ...keys) {
   for (const k of keys) {
     if (body[k] !== undefined && body[k] !== null && body[k] !== "") return body[k];
+  }
+  return undefined;
+}
+
+function parseUbicacionIdFromBody(body) {
+  if (!body || typeof body !== "object") return undefined;
+  if ("ubicacion_id" in body) {
+    const v = body.ubicacion_id;
+    if (v === undefined) return undefined;
+    if (v === null || v === "") return null;
+    const n = Number(v);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+  if ("ubicacionId" in body) {
+    const v = body.ubicacionId;
+    if (v === undefined) return undefined;
+    if (v === null || v === "") return null;
+    const n = Number(v);
+    return Number.isInteger(n) && n > 0 ? n : null;
   }
   return undefined;
 }
@@ -19,11 +36,14 @@ function toDecimal(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+const incUbicacion = { ubicacion: true };
+
 class InstalacionController {
   static async getAll(req, res) {
     try {
       const instalaciones = await prisma.instalacion.findMany({
         orderBy: { nombre: "asc" },
+        include: incUbicacion,
       });
       res.json(instalaciones.map(serializeInstalacion));
     } catch (err) {
@@ -34,10 +54,14 @@ class InstalacionController {
 
   static async getByGranja(req, res) {
     try {
-      const granja = String(req.params.granja ?? "").trim();
-      if (!granja) return res.json([]);
+      const granjaPath = req.params.granja ?? "";
+      const where = instalacionWhereFromRequest(req, granjaPath);
+
+      if (!where) return res.json([]);
+
       const instalaciones = await prisma.instalacion.findMany({
-        where: { granja: { equals: granja, mode: "insensitive" } },
+        where,
+        include: incUbicacion,
         orderBy: { nombre: "asc" },
       });
       res.json(instalaciones.map(serializeInstalacion));
@@ -50,11 +74,19 @@ class InstalacionController {
   static async getByTipo(req, res) {
     try {
       const { tipo, granja } = req.params;
-      const where = {};
-      if (granja) where.granja = { equals: String(granja), mode: "insensitive" };
-      if (tipo) where.tipo = { contains: String(tipo), mode: "insensitive" };
+      const ubic = instalacionWhereFromRequest(req, granja ?? "");
+      const filtros = [];
+
+      if (ubic) filtros.push(ubic);
+      if (tipo) {
+        filtros.push({ tipo: { contains: String(tipo), mode: "insensitive" } });
+      }
+
+      const where = filtros.length === 0 ? {} : filtros.length === 1 ? filtros[0] : { AND: filtros };
+
       const instalaciones = await prisma.instalacion.findMany({
         where,
+        include: incUbicacion,
         orderBy: { nombre: "asc" },
       });
       res.json(instalaciones.map(serializeInstalacion));
@@ -68,13 +100,28 @@ class InstalacionController {
     try {
       const nombre = pick(req.body, "nombre", "nombre_instalacion", "nombreInstalacion");
       const tipo = pick(req.body, "tipo", "tipo_instalacion", "tipoInstalacion");
-      const granja = pick(req.body, "granja", "fc_granja");
       const capacidad = toDecimal(pick(req.body, "capacidad"));
       const observaciones = pick(req.body, "observaciones");
 
-      if (!nombre || !granja) {
+      const granjaIn = pick(req.body, "granja", "fc_granja");
+      let granjaStr = granjaIn !== undefined ? String(granjaIn).trim() : "";
+
+      const ubicParsed = parseUbicacionIdFromBody(req.body);
+      let ubicacionId = null;
+
+      if (ubicParsed) {
+        const u = await prisma.ubicacion.findUnique({ where: { id: ubicParsed } });
+        if (!u) return res.status(400).json({ error: "ubicacion no encontrada" });
+        ubicacionId = u.id;
+        if (!granjaStr) granjaStr = u.nombre;
+      } else if (granjaStr) {
+        const flex = await resolverUbicacionFlexible(granjaStr);
+        if (flex?.ubicacionId) ubicacionId = flex.ubicacionId;
+      }
+
+      if (!nombre || !granjaStr) {
         return res.status(400).json({
-          error: "nombre y granja son obligatorios",
+          error: "nombre y granja (o ubicacion_id válido) son obligatorios",
         });
       }
 
@@ -82,10 +129,12 @@ class InstalacionController {
         data: {
           nombre: String(nombre),
           tipo: tipo ? String(tipo) : null,
-          granja: String(granja),
+          granja: granjaStr,
+          ...(ubicacionId != null ? { ubicacionId } : {}),
           ...(capacidad !== null ? { capacidad } : {}),
           ...(observaciones ? { observaciones: String(observaciones) } : {}),
         },
+        include: incUbicacion,
       });
 
       res.status(201).json({
@@ -113,8 +162,24 @@ class InstalacionController {
       const tipo = pick(req.body, "tipo", "tipo_instalacion", "tipoInstalacion");
       if (tipo !== undefined) updateData.tipo = tipo ? String(tipo) : null;
 
+      const ubParsed = parseUbicacionIdFromBody(req.body);
       const granja = pick(req.body, "granja", "fc_granja");
-      if (granja !== undefined) updateData.granja = String(granja);
+
+      if (ubParsed !== undefined) {
+        if (ubParsed === null) updateData.ubicacionId = null;
+        else {
+          const u = await prisma.ubicacion.findUnique({ where: { id: ubParsed } });
+          if (!u) {
+            return res.status(400).json({ error: "ubicacion no encontrada" });
+          }
+          updateData.ubicacionId = ubParsed;
+          if (granja === undefined || !String(granja).trim()) {
+            updateData.granja = u.nombre;
+          }
+        }
+      }
+
+      if (granja !== undefined) updateData.granja = String(granja).trim();
 
       const capacidadIn = req.body.capacidad;
       if (capacidadIn !== undefined) updateData.capacidad = toDecimal(capacidadIn);
@@ -125,6 +190,7 @@ class InstalacionController {
       const actualizada = await prisma.instalacion.update({
         where: { id },
         data: updateData,
+        include: incUbicacion,
       });
 
       res.json({

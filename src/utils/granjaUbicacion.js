@@ -47,6 +47,67 @@ export function ubicacionNombreWhereFromGranja(granjaParam) {
 }
 
 /**
+ * Primer ID de ubicación válido (>0) encontrado entre varias fuentes opcionales.
+ */
+export function primerUbicacionIdValido(...candidatos) {
+  for (const c of candidatos) {
+    if (c === undefined || c === null || c === "") continue;
+    const n = Number(c);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  return null;
+}
+
+/** @returns {object|null} cláusula `where` de Prisma para `Instalacion` */
+export function instalacionWhereFromRequest(req, granjaPathParam) {
+  const q = req?.query ?? {};
+  const ubicacionId = primerUbicacionIdValido(q.ubicacion_id, q.ubicacionId);
+  const granja = String(granjaPathParam ?? "").trim();
+
+  if (!ubicacionId && !granja) return null;
+  if (ubicacionId && granja) {
+    return {
+      OR: [{ ubicacionId }, { granja: { equals: granja, mode: "insensitive" } }],
+    };
+  }
+  if (ubicacionId) return { ubicacionId };
+  return { granja: { equals: granja, mode: "insensitive" } };
+}
+
+/**
+ * Filtro aplicable sobre el modelo `Pileta`, o igual en `where: { piletas: ... }`.
+ *
+ * Preferencia: `ubicacion_id` (FK en `piletas.ubicacion_id`) frente al nombre texto
+ * heredado (`granja` en query/path). Así la “sede” se resuelve por catálogo
+ * `ubicacion`, no solo por igualar strings.
+ *
+ * Compatibilidad: si no hay id, siguen funcionando rutas `:granja` y `?granja=` con aliases.
+ *
+ * @param {express.Request|null|undefined} req
+ * @returns {{ ubicacionId: number } | { ubicacion: object } | null}
+ */
+export function piletaWhereUbicacionFromRequest(req) {
+  const q = req?.query ?? {};
+  const p = req?.params ?? {};
+
+  const ubicacionId = primerUbicacionIdValido(q.ubicacion_id, q.ubicacionId, p.ubicacion_id);
+  if (ubicacionId != null) {
+    return { ubicacionId };
+  }
+
+  const granjaNombre =
+    typeof q.granja === "string" && q.granja.trim()
+      ? q.granja.trim()
+      : typeof p.granja === "string"
+        ? p.granja.trim()
+        : "";
+
+  if (!granjaNombre) return null;
+  const cond = ubicacionNombreWhereFromGranja(granjaNombre);
+  return cond ? { ubicacion: cond } : null;
+}
+
+/**
  * Primera ubicación que responde al parámetro de granja (incluye alias cortos).
  * @returns {Promise<{ ubicacionId: number, nombre: string } | null>}
  */
