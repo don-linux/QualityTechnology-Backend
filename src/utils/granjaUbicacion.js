@@ -129,5 +129,34 @@ export async function resolverUbicacionFlexible(granjaParam) {
   }
 
   const uExact = await prisma.ubicacion.findUnique({ where: { nombre: trimmed } });
-  return uExact ? { ubicacionId: uExact.id, nombre: uExact.nombre } : null;
+  if (uExact) return { ubicacionId: uExact.id, nombre: uExact.nombre };
+
+  /**
+   * Último recurso: nombres de `unidades_negocio.fc_nombre` suelen incluir sólo parte
+   * del texto del catálogo `ubicacion.nombre`. Coincidimos por igualdad normalizada o
+   * por subcadena (evitando palabras muertas muy cortas / genéricas).
+   */
+  const STOP_MATCH = new Set(
+    ["granja", "acuícola", "la", "el", "de", "y", "del", "los", "las"].map(normalizarGranjaParam),
+  );
+  const todas = await prisma.ubicacion.findMany({
+    select: { id: true, nombre: true },
+    orderBy: { id: "asc" },
+  });
+  const nt = normalizarGranjaParam(trimmed);
+  let best = null;
+  let bestScore = 0;
+  for (const u of todas) {
+    const un = normalizarGranjaParam(u.nombre);
+    if (un === nt) return { ubicacionId: u.id, nombre: u.nombre };
+    const shorter = un.length <= nt.length ? un : nt;
+    const longer = un.length <= nt.length ? nt : un;
+    if (shorter.length < 4 || !longer.includes(shorter)) continue;
+    if (STOP_MATCH.has(shorter)) continue;
+    if (shorter.length > bestScore) {
+      bestScore = shorter.length;
+      best = u;
+    }
+  }
+  return best ? { ubicacionId: best.id, nombre: best.nombre } : null;
 }
