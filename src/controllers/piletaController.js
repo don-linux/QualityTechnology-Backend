@@ -37,12 +37,30 @@ function calcMetrosCubicos(largo, ancho, alto) {
   return Number((l * a * h).toFixed(3));
 }
 
-const piletaInclude = { ubicacion: true };
+const piletaInclude = {
+  ubicacion: true,
+  observaciones: {
+    orderBy: { created_at: "desc" },
+    take: 1,
+    select: { comentario: true, proceso: true, created_at: true },
+  },
+};
 
 class PiletaController {
   static async getAll(req, res) {
     try {
+      const granja = typeof req.query.granja === "string" ? req.query.granja.trim() : "";
+      const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
+      const where = {};
+      if (granja) {
+        where.ubicacion = { nombre: { equals: granja, mode: "insensitive" } };
+      }
+      if (tipo) {
+        where.tipo = tipo;
+      }
+
       const piletas = await prisma.pileta.findMany({
+        where,
         include: piletaInclude,
         orderBy: { id: "asc" },
       });

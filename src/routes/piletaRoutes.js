@@ -8,6 +8,14 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* ============================================================
+    CRUD PILETA (rutas fijas antes de /:param genéricos)
+============================================================ */
+
+router.get("/", piletaController.getAll);
+router.post("/", piletaController.create);
+router.put("/:id", piletaController.update);
+
+/* ============================================================
     RUTAS DE LOTES
 ============================================================ */
 
@@ -27,7 +35,6 @@ router.get("/destino/:granja", piletaController.getDestino);
 ============================================================ */
 
 router.post("/siembra", piletaController.siembra);
-router.delete("/:id", piletaController.delete);
 
 /* ============================================================
     TRAZABILIDAD
@@ -41,5 +48,7 @@ router.get("/movimientos/:usuario/:granja", piletaController.getMovimientos);
 
 router.post("/movimientos/registrar", piletaController.registrarMovimiento);
 router.delete("/movimientos/eliminar", piletaController.eliminarMovimientos);
+
+router.delete("/:id", piletaController.delete);
 
 export default router;

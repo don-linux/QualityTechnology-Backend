@@ -160,6 +160,7 @@ model Instalacion {
   @@schema("public")
 }
 
+/// Etapa inicial del ciclo en pileta tipo `reproductores`. `familia` es referencia principal para el lote en alevinaje.
 model Reproductor {
   id             Int          @id @default(autoincrement())
   pileta_id      Int          @unique
@@ -170,7 +171,9 @@ model Reproductor {
   ratio          String?      @db.VarChar(20)
   linea          String?      @db.VarChar(60)
   familia        String?      @db.VarChar(60)
+  /// Puntero opcional al comentario de este registro; la “última nota por pileta” se consulta vía `observacion.pileta_id` + `created_at`.
   observacionId  Int?         @map("observacion_id")
+  /// Última siembra relevante para este inventario (denormalización opcional).
   siembra_id     Int?
   biometria_id   Int?
   usuarioId      Int          @map("usuario_id")
@@ -206,6 +209,8 @@ model Lote {
   @@schema("public")
 }
 
+/// Unidad física del ciclo reproductivo: reproductores → alevinaje → engorda; traslados mediante `siembra`.
+/// `metros_cubicos` debe alinearse con largo×ancho×alto (API o columna GENERATED en migración SQL).
 model Pileta {
   id                                      Int                @id @default(autoincrement())
   nombre                                  String             @db.VarChar(100)
@@ -225,6 +230,7 @@ model Pileta {
   biometrias                              Biometria[]
   engorda                                 Engorda?
   inventario_alevines                     InventarioAlevin[]
+  observaciones                           observacion[]
   ubicacion                               ubicacion          @relation(fields: [ubicacionId], references: [id])
   recambios                               Recambio[]
   reproductores                           Reproductor?
@@ -239,6 +245,7 @@ model Pileta {
   @@schema("public")
 }
 
+/// Etapa engorda en pileta tipo `engorda`. `cantidad` suele alinearse con el cierre de alevinaje o la siembra de ingreso.
 model Engorda {
   id            Int          @id @default(autoincrement())
   pileta_id     Int          @unique
@@ -607,6 +614,7 @@ model Biometria {
   encargado             String?       @db.VarChar(120)
   usuarioId             Int           @map("usuario_id")
   created_at            DateTime      @default(now()) @db.Timestamp(6)
+  observacionBiometria observacion? @relation("ObservacionBiometria")
   alevinaje             alevinaje[]
   piletas               Pileta        @relation(fields: [pileta_id], references: [id], onDelete: Cascade)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
@@ -835,6 +843,7 @@ model estados {
   @@schema("catalogos")
 }
 
+/// Etapa cría en pileta tipo `alevinaje`. Opcionalmente ligado al evento físico (`siembra_origen`) que incorporó peces a esta pileta.
 model alevinaje {
   id                    Int          @id @default(autoincrement())
   pileta_id             Int
@@ -847,12 +856,14 @@ model alevinaje {
   mortalidad_porcentaje Decimal      @db.Decimal(6, 2)
   observacion_id        Int?
   biometria_id          Int?
+  siembra_origen_id     Int?         @map("siembra_origen_id")
   usuario_id            Int
   created_at            DateTime     @default(now()) @db.Timestamp(6)
-  updated_at            DateTime     @db.Timestamp(6)
+  updated_at            DateTime     @updatedAt @db.Timestamp(6)
   biometrias            Biometria?   @relation(fields: [biometria_id], references: [id])
   observacion           observacion? @relation(fields: [observacion_id], references: [id])
   piletas               Pileta       @relation(fields: [pileta_id], references: [id])
+  siembra_origen        siembra?     @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
   usuarios              Usuario      @relation(fields: [usuario_id], references: [id])
 
   @@unique([pileta_id, lote])
@@ -875,11 +886,19 @@ model caja_ahorro {
   @@schema("public")
 }
 
+/// Comentario de auditoría. Si `pileta_id` está presente, permite listar la última observación por pileta (`ORDER BY created_at DESC`), p. ej. biometría en pileta X.
 model observacion {
   id                 Int                @id @default(autoincrement())
   comentario         String
   usuario_id         Int
+  pileta_id          Int?               @map("pileta_id")
+  /// Contexto opcional del alta: biometria, siembra, reproductor, alevinaje, engorda, venta, etc.
+  proceso            String?            @db.VarChar(80)
+  /// Comentario de una biometría concreta (1:1 opcional); también se llena `pileta_id` para consultas por pileta.
+  biometria_id       Int?               @unique @map("biometria_id")
   created_at         DateTime           @default(now()) @db.Timestamp(6)
+  pileta             Pileta?            @relation(fields: [pileta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
   alevinaje          alevinaje[]
   alimentacion       Alimentacion[]
   banos              Bano[]
@@ -898,9 +917,11 @@ model observacion {
 
   @@index([created_at(sort: Desc)])
   @@index([usuario_id])
+  @@index([pileta_id, created_at(sort: Desc)])
   @@schema("public")
 }
 
+/// Movimiento de organismos entre piletas (origen → destino). Cierra/avanzar el ciclo hacia engorda/reproductores.
 model siembra {
   id                                      Int           @id @default(autoincrement())
   pileta_origen                           Int?
@@ -910,6 +931,7 @@ model siembra {
   fecha                                   DateTime      @default(now()) @db.Date
   usuario_id                              Int
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
+  alevinajes_como_origen                  alevinaje[]   @relation("AlevinajeSiembraOrigen")
   engorda                                 Engorda[]
   reproductores                           Reproductor[]
   piletas_siembra_pileta_destinoTopiletas Pileta        @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])

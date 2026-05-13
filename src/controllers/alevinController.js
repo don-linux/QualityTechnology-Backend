@@ -57,7 +57,16 @@ class AlevinController {
       }
 
       const creado = await prisma.$transaction(async (tx) => {
-        const obsId = await crearObservacionSiHay(tx, pick(req.body, "fc_observacion", "observacion"), usuarioId);
+        const piletaIdObs = toInt(pick(req.body, "pileta_id", "fn_num_instalacion"));
+        const obsId = await crearObservacionSiHay(
+          tx,
+          pick(req.body, "fc_observacion", "observacion"),
+          usuarioId,
+          {
+            piletaId: piletaIdObs != null ? piletaIdObs : undefined,
+            proceso: "inventario_alevin",
+          },
+        );
         return tx.inventarioAlevin.create({
           data: {
             ubicacionId: ubicacion.ubicacionId,

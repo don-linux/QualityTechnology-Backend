@@ -210,10 +210,14 @@ export function serializeInstalacion(i) {
 
 export function serializeReproductor(r) {
   if (!r) return null;
+  const listaObs = r.piletas?.observaciones;
+  const ultObs = Array.isArray(listaObs) ? listaObs[0] : null;
+
   return {
     fi_reproductor_id: r.id,
     reproductor_id: r.id,
     pileta_id: r.pileta_id,
+    nombre_instalacion: r.piletas?.nombre ?? null,
     nombre_pileta: r.piletas?.nombre ?? null,
     fn_machos: r.machos,
     fn_hembras: r.hembras,
@@ -233,6 +237,9 @@ export function serializeReproductor(r) {
     fi_usuario_id: r.usuarioId,
     fc_observacion: r.observacion?.comentario ?? null,
     observacion_id: r.observacionId ?? null,
+    fc_ultima_observacion_pileta: ultObs?.comentario ?? null,
+    fc_ultima_observacion_proceso: ultObs?.proceso ?? null,
+    fd_ultima_observacion_pileta: ultObs?.created_at ?? null,
   };
 }
 
@@ -259,6 +266,10 @@ export function serializeLote(l) {
 
 export function serializePileta(p) {
   if (!p) return null;
+  const lista = Array.isArray(p.observaciones) ? p.observaciones : [];
+  const ultima = lista[0];
+  const comUlt = ultima?.comentario ?? null;
+
   return {
     fi_pileta_id: p.id,
     pileta_id: p.id,
@@ -272,6 +283,10 @@ export function serializePileta(p) {
     tipo: p.tipo,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
+    ultima_observacion: comUlt,
+    fc_ultima_observacion_proceso: ultima?.proceso ?? null,
+    fd_ultima_observacion: ultima?.created_at ?? null,
+    observacion: comUlt,
   };
 }
 
@@ -581,11 +596,14 @@ export function serializeCajaAhorroResumen(c) {
 
 export function serializeBiometria(b) {
   if (!b) return null;
+  const obsBio = b.observacionBiometria;
   return {
     fi_id: b.id,
     id: b.id,
     pileta_id: b.pileta_id,
     nombre_pileta: b.piletas?.nombre ?? null,
+    instalacion_nombre: b.piletas?.nombre ?? null,
+    no_lote: null,
     fd_fecha: b.fecha,
     fecha: b.fecha,
     fn_peso_total_gramos: toNumberSafe(b.pesoTotalGramos),
@@ -595,6 +613,9 @@ export function serializeBiometria(b) {
     fi_usuario_id: b.usuarioId,
     ubicacion: b.piletas?.ubicacion?.nombre ?? null,
     ubicacion_id: b.piletas?.ubicacionId ?? null,
+    fc_observaciones: obsBio?.comentario ?? null,
+    fc_observacion_proceso: obsBio?.proceso ?? null,
+    observacion_biometria_id: obsBio?.id ?? null,
   };
 }
 

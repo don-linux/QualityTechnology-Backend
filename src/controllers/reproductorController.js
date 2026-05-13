@@ -36,7 +36,16 @@ function calcularRatio(machos, hembras) {
 }
 
 const reproductorInclude = {
-  piletas: { include: { ubicacion: true } },
+  piletas: {
+    include: {
+      ubicacion: true,
+      observaciones: {
+        orderBy: { created_at: "desc" },
+        take: 1,
+        select: { comentario: true, proceso: true, created_at: true },
+      },
+    },
+  },
   observacion: true,
 };
 

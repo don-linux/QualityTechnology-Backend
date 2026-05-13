@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
 import { serializeBiometria } from "../utils/serializers.js";
+import { crearObservacionSiHay } from "../utils/observacion.js";
 
 // El schema actual de Biometria se relaciona directamente con Pileta
 // (`pileta_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
@@ -13,7 +14,44 @@ const MAX_FC_ENCARGADO = 100;
 
 const bitacoraInclude = {
   piletas: { include: { ubicacion: true } },
+  observacionBiometria: true,
 };
+
+async function syncObservacionBiometria(tx, biometriaId, piletaId, usuarioId, textoObs) {
+  const t =
+    textoObs != null && String(textoObs).trim()
+      ? String(textoObs).trim().slice(0, MAX_FC_OBSERVACIONES)
+      : null;
+
+  const existing = await tx.observacion.findFirst({
+    where: { biometria_id: biometriaId },
+  });
+
+  if (t) {
+    if (existing) {
+      await tx.observacion.update({
+        where: { id: existing.id },
+        data: {
+          comentario: t,
+          pileta_id: piletaId,
+          proceso: "biometria",
+          usuario_id: usuarioId,
+        },
+      });
+      return existing.id;
+    }
+    return crearObservacionSiHay(tx, t, usuarioId, {
+      piletaId,
+      proceso: "biometria",
+      biometriaId,
+    });
+  }
+
+  if (existing) {
+    await tx.observacion.delete({ where: { id: existing.id } });
+  }
+  return null;
+}
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -105,25 +143,44 @@ class BitacoraBiometriaController {
 
       const fecha = fd_fecha ? new Date(fd_fecha) : new Date();
 
-      const row = await prisma.biometria.create({
-        data: {
-          pileta_id: piletaId,
-          fecha,
-          pesoTotalGramos:
-            fn_peso_total_gramos === "" || fn_peso_total_gramos == null
-              ? null
-              : String(fn_peso_total_gramos),
-          organismosMuestreados:
-            fn_organismos_muestreados === "" || fn_organismos_muestreados == null
-              ? null
-              : Number(fn_organismos_muestreados),
-          pesoPromedio: pesoProm,
-          encargado: fc_encargado || null,
-          usuarioId: fi_usuario_id,
-        },
+      const row = await prisma.$transaction(async (tx) => {
+        const bio = await tx.biometria.create({
+          data: {
+            pileta_id: piletaId,
+            fecha,
+            pesoTotalGramos:
+              fn_peso_total_gramos === "" || fn_peso_total_gramos == null
+                ? null
+                : String(fn_peso_total_gramos),
+            organismosMuestreados:
+              fn_organismos_muestreados === "" || fn_organismos_muestreados == null
+                ? null
+                : Number(fn_organismos_muestreados),
+            pesoPromedio: pesoProm,
+            encargado: fc_encargado || null,
+            usuarioId: fi_usuario_id,
+          },
+        });
+
+        await syncObservacionBiometria(
+          tx,
+          bio.id,
+          piletaId,
+          fi_usuario_id,
+          pick(req.body, "fc_observaciones", "observaciones"),
+        );
+
+        return tx.biometria.findUnique({
+          where: { id: bio.id },
+          include: bitacoraInclude,
+        });
       });
 
-      res.json({ message: "Biometría registrada", id: row.id });
+      res.json({
+        message: "Biometría registrada",
+        id: row.id,
+        data: serializeBiometria(row),
+      });
     } catch (err) {
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta invalida" });
@@ -146,9 +203,18 @@ class BitacoraBiometriaController {
         return res.status(400).json({ error: errorTexto });
       }
 
+      const prev = await prisma.biometria.findUnique({
+        where: { id },
+        select: { pileta_id: true },
+      });
+      if (!prev) return res.status(404).json({ error: "Biometría no encontrada" });
+
       const updateData = {};
       const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
       if (piletaId !== null) updateData.pileta_id = piletaId;
+
+      const piletaFinal =
+        piletaId !== null && piletaId !== undefined ? piletaId : prev.pileta_id;
 
       if (fd_fecha !== undefined) updateData.fecha = new Date(fd_fecha);
       if (fn_peso_total_gramos !== undefined) {
@@ -174,12 +240,31 @@ class BitacoraBiometriaController {
       if (fc_encargado !== undefined) updateData.encargado = fc_encargado || null;
       updateData.usuarioId = fi_usuario_id;
 
-      await prisma.biometria.update({
-        where: { id },
-        data: updateData,
+      const textoObsExplicito =
+        req.body.fc_observaciones !== undefined || req.body.observaciones !== undefined;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.biometria.update({
+          where: { id },
+          data: updateData,
+        });
+        if (textoObsExplicito) {
+          await syncObservacionBiometria(
+            tx,
+            id,
+            piletaFinal,
+            fi_usuario_id,
+            pick(req.body, "fc_observaciones", "observaciones"),
+          );
+        }
       });
 
-      res.json({ message: "Biometría actualizada" });
+      const out = await prisma.biometria.findUnique({
+        where: { id },
+        include: bitacoraInclude,
+      });
+
+      res.json({ message: "Biometría actualizada", data: serializeBiometria(out) });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Biometría no encontrada" });
       console.error("PUT /biometrias Error:", err);
