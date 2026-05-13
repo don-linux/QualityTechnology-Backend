@@ -5,6 +5,7 @@ Only commands verified from repository files are listed here. Use Node.js (`node
 ## Prerequisites
 - Node.js must be available locally (use a recent LTS that supports `node --watch`; the dev container image targets Node 24).
 - PostgreSQL connection variables are read from `PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`, and `PGDATABASE`.
+- Prisma reads `DATABASE_URL` (see `.env.example`).
 - The app also reads `PORT`, `FRONTEND_URL`, and `JWT_SECRET`.
 - `BACKEND_URL` exists in `.env.example`, but its runtime usage was not verified in the JavaScript source.
 - Dependencies are pinned with `package-lock.json`; use reproducible installs with `npm ci` when installing from scratch for CI/production-style flows.
@@ -42,8 +43,8 @@ Source: `package.json` -> `start` -> `node index.mjs`
 docker compose -f docker/dev/compose.yaml up --build
 ```
 - Starts the Express app and a Postgres 18 container.
-- The Express service runs `npm install && npm run dev`.
-- `db.sql` is mounted into Postgres initialization.
+- The Express service runs `npm install`, `prisma generate`, `prisma migrate deploy`, `prisma db seed`, then `npm run dev`.
+- The Postgres volume is not initialized from `db.sql`; schema comes from Prisma migrations.
 - The compose file references variables shown in `docker/dev/.env.example`.
 
 ### Production compose
@@ -56,15 +57,15 @@ docker compose -f docker/prod/compose.yaml up --build
 
 ## Database bootstrap
 
-### Seed security modules and root-role assignments (legacy script)
+### Initial catalog and admin user (Prisma seed)
 
-When a repository-level `seed.js` exists for this purpose, run it with Node using the configured `PG*` variables:
+After migrations, dev Docker runs `prisma db seed` automatically. Locally:
 
 ```bash
-node seed.js
+npm run prisma:seed
 ```
 
-Otherwise use the project's current tooling (Prisma/API) for data setup.
+Requires `DATABASE_URL` and a database that already has migrations applied (for example `npm run prisma:deploy`).
 
 ## Prisma CLI (from package.json)
 
@@ -73,6 +74,7 @@ Otherwise use the project's current tooling (Prisma/API) for data setup.
 - `npm run prisma:deploy` — deploy migrations (typical CI/production migrations).
 - `npm run prisma:studio` — open Prisma Studio.
 - `npm run prisma:format` — format schema file.
+- `npm run prisma:seed` — run `prisma/seed.mjs` (idempotent baseline data).
 
 ## Notes about environment files
 - `.env.example` currently documents the main local runtime variables.

@@ -15,7 +15,7 @@ Guidance for coding agents working in this repository.
 - Mount every new router in `index.mjs`.
 - Protect non-public endpoints with `authMiddleware`.
 - Keep `swagger.yaml` aligned with API changes.
-- Keep `db.sql` aligned with backend schema changes where raw SQL/schema is authoritative.
+- Keep `prisma/schema.prisma` and migrations aligned with backend schema changes; keep `db.sql` only as an optional legacy export if the team still maintains it.
 - Never commit secrets.
 
 ## Read when needed

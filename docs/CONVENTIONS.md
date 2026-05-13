@@ -60,7 +60,7 @@
 - When using `pool.connect()`, always release the client in `finally`.
 
 ## Database and docs maintenance
-- `db.sql` is the checked-in schema snapshot and should stay aligned with backend schema changes.
+- `prisma/schema.prisma` and `prisma/migrations/**` should stay aligned with backend schema changes; `db.sql` is optional legacy snapshot only if still maintained.
 - `swagger.yaml` should stay aligned with API changes.
 - `docs/` holds the durable project documentation; context files should stay short and point here.
 

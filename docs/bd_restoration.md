@@ -2,7 +2,7 @@
 
 > Warning: The procedures below are destructive. They can permanently delete schemas, tables, data, functions, and identity counters. Use them only when you explicitly want to reset a local or disposable PostgreSQL database.
 
-These notes are kept as legacy maintenance guidance. The currently tracked schema file in this repository is `db.sql`.
+For day-to-day development, `docker/dev/compose.yaml` applies `prisma migrate deploy` and `prisma db seed` instead of loading `db.sql`. These notes remain for manual restores using a SQL dump (`db.sql` or other).
 
 ## Option 1: Drop and Recreate the Database
 

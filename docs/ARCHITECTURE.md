@@ -31,9 +31,9 @@
 ### Data access
 - `src/prisma.js` configures a singleton `PrismaClient` backed by PostgreSQL (`DATABASE_URL`; see Prisma tooling in `docs/COMMANDS.md`).
 - `src/db.js` creates a shared legacy `pg.Pool` from `PGUSER`, `PGPASSWORD`, `PGHOST`, `PGPORT`, and `PGDATABASE`.
-- `db.sql` is the checked-in schema source currently present in the repository.
-- The checked-in dump defines at least the `public`, `catalogos`, `rrhh`, and `seguridad` schemas.
-- In `docker/dev/compose.yaml`, `db.sql` is mounted into Postgres initialization as `/docker-entrypoint-initdb.d/init.sql`.
+- `prisma/schema.prisma` and `prisma/migrations/**` are the authoritative schema for new environments.
+- The database defines the `public`, `catalogos`, `rrhh`, and `seguridad` schemas.
+- In `docker/dev/compose.yaml`, the Postgres service starts empty; the Express service runs `prisma migrate deploy` and `prisma db seed` on startup.
 
 ## Domain areas mounted in `index.mjs`
 - Security and access: `/usuarios`, `/roles`, `/modulos`, `/roles-modulos`
@@ -55,4 +55,4 @@
 ## Live exploration hints
 - Start with `index.mjs` to see mounted routers.
 - Then inspect matching files under `src/routes/**`, `src/controllers/**`, and `src/models/**`.
-- Use `swagger.yaml` for the API surface and `db.sql` for the current schema snapshot.
+- Use `swagger.yaml` for the API surface and `prisma/schema.prisma` for the schema.
