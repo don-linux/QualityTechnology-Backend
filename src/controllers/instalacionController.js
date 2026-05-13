@@ -38,6 +38,18 @@ function toDecimal(value) {
 
 const incUbicacion = { ubicacion: true };
 
+const ALLOWED_INSTAL_ESTADO = new Set(["vacia", "ocupada"]);
+
+function normalizeInstalEstado(raw) {
+  if (raw == null || String(raw).trim() === "") return "vacia";
+  const s = String(raw)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  return ALLOWED_INSTAL_ESTADO.has(s) ? s : null;
+}
+
 class InstalacionController {
   static async getAll(req, res) {
     try {
@@ -100,7 +112,7 @@ class InstalacionController {
     try {
       const nombre = pick(req.body, "nombre", "nombre_instalacion", "nombreInstalacion");
       const tipo = pick(req.body, "tipo", "tipo_instalacion", "tipoInstalacion");
-      const capacidad = toDecimal(pick(req.body, "capacidad"));
+      const capacidadInput = req.body.capacidad;
       const observaciones = pick(req.body, "observaciones");
 
       const granjaIn = pick(req.body, "granja", "fc_granja");
@@ -125,14 +137,67 @@ class InstalacionController {
         });
       }
 
+      const largo = toDecimal(pick(req.body, "largo"));
+      const ancho = toDecimal(pick(req.body, "ancho"));
+      const altura = toDecimal(pick(req.body, "altura"));
+      if (
+        largo === null ||
+        ancho === null ||
+        altura === null ||
+        Number(largo) <= 0 ||
+        Number(ancho) <= 0 ||
+        Number(altura) <= 0
+      ) {
+        return res.status(400).json({
+          error: "largo, ancho y altura son obligatorios y deben ser mayores que cero",
+        });
+      }
+
+      const materialRaw = pick(req.body, "material");
+      const materialStr =
+        materialRaw !== undefined ? String(materialRaw).trim() : "";
+      if (!materialStr) {
+        return res.status(400).json({ error: "material es obligatorio" });
+      }
+
+      const estadoNorm = normalizeInstalEstado(pick(req.body, "estado"));
+      if (estadoNorm === null) {
+        return res.status(400).json({ error: 'estado debe ser "vacia" u "ocupada"' });
+      }
+
+      let usuarioId = undefined;
+      const usuarioPick = pick(req.body, "fi_usuario_id", "usuario_id", "usuarioId");
+      if (usuarioPick !== undefined && usuarioPick !== null && String(usuarioPick) !== "") {
+        const nu = Number(usuarioPick);
+        if (!Number.isInteger(nu) || nu <= 0) {
+          return res.status(400).json({ error: "usuario_id inválido" });
+        }
+        const usuarioRow = await prisma.usuario.findUnique({ where: { id: nu } });
+        if (!usuarioRow) {
+          return res.status(400).json({ error: "usuario no encontrado" });
+        }
+        usuarioId = nu;
+      }
+
+      const capacidad =
+        capacidadInput !== undefined && capacidadInput !== null && capacidadInput !== ""
+          ? toDecimal(capacidadInput)
+          : null;
+
       const creada = await prisma.instalacion.create({
         data: {
           nombre: String(nombre),
           tipo: tipo ? String(tipo) : null,
           granja: granjaStr,
+          largo,
+          ancho,
+          altura,
+          material: materialStr,
+          estado: estadoNorm,
           ...(ubicacionId != null ? { ubicacionId } : {}),
           ...(capacidad !== null ? { capacidad } : {}),
           ...(observaciones ? { observaciones: String(observaciones) } : {}),
+          ...(usuarioId !== undefined ? { usuarioId } : {}),
         },
         include: incUbicacion,
       });
@@ -143,6 +208,9 @@ class InstalacionController {
       });
     } catch (err) {
       console.error("Error al registrar instalación:", err);
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "No se puede vincular la instalación (referencia inválida)" });
+      }
       res.status(500).json({ error: "Error al registrar instalación" });
     }
   }
@@ -186,6 +254,70 @@ class InstalacionController {
 
       const observaciones = pick(req.body, "observaciones");
       if (observaciones !== undefined) updateData.observaciones = observaciones ? String(observaciones) : null;
+
+      const largoIn = req.body.largo;
+      if (largoIn !== undefined) {
+        if (largoIn === null || largoIn === "") updateData.largo = null;
+        else {
+          const d = toDecimal(largoIn);
+          if (d === null || Number(d) <= 0) {
+            return res.status(400).json({ error: "largo debe ser mayor que cero" });
+          }
+          updateData.largo = d;
+        }
+      }
+
+      const anchoIn = req.body.ancho;
+      if (anchoIn !== undefined) {
+        if (anchoIn === null || anchoIn === "") updateData.ancho = null;
+        else {
+          const d = toDecimal(anchoIn);
+          if (d === null || Number(d) <= 0) {
+            return res.status(400).json({ error: "ancho debe ser mayor que cero" });
+          }
+          updateData.ancho = d;
+        }
+      }
+
+      const alturaIn = req.body.altura;
+      if (alturaIn !== undefined) {
+        if (alturaIn === null || alturaIn === "") updateData.altura = null;
+        else {
+          const d = toDecimal(alturaIn);
+          if (d === null || Number(d) <= 0) {
+            return res.status(400).json({ error: "altura debe ser mayor que cero" });
+          }
+          updateData.altura = d;
+        }
+      }
+
+      const materialUpd = pick(req.body, "material");
+      if (materialUpd !== undefined) {
+        updateData.material = materialUpd ? String(materialUpd).trim() : null;
+      }
+
+      const estadoUpdRaw = pick(req.body, "estado");
+      if (estadoUpdRaw !== undefined) {
+        const estadoUpd = normalizeInstalEstado(estadoUpdRaw);
+        if (estadoUpd === null) {
+          return res.status(400).json({ error: 'estado debe ser "vacia" u "ocupada"' });
+        }
+        updateData.estado = estadoUpd;
+      }
+
+      const usuarioUpdPick = pick(req.body, "fi_usuario_id", "usuario_id", "usuarioId");
+      if (usuarioUpdPick !== undefined) {
+        if (usuarioUpdPick === null || String(usuarioUpdPick) === "") updateData.usuarioId = null;
+        else {
+          const nu = Number(usuarioUpdPick);
+          if (!Number.isInteger(nu) || nu <= 0) {
+            return res.status(400).json({ error: "usuario_id inválido" });
+          }
+          const usuarioRow = await prisma.usuario.findUnique({ where: { id: nu } });
+          if (!usuarioRow) return res.status(400).json({ error: "usuario no encontrado" });
+          updateData.usuarioId = nu;
+        }
+      }
 
       const actualizada = await prisma.instalacion.update({
         where: { id },
