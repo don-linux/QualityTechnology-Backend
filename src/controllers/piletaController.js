@@ -1,7 +1,24 @@
 import prisma from "../prisma.js";
 import { serializePileta } from "../utils/serializers.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import {
+  piletaWhereUbicacionFromRequest,
+  primerUbicacionIdValido,
+  resolverUbicacionFlexible,
+} from "../utils/granjaUbicacion.js";
+
+const PIL_TIPOS_VALIDOS = ["alevinaje", "reproductores", "engorda"];
+
+/** Normaliza `?tipo=Alevinaje` / `Engorda` hacia enums Prisma (minúsculas). */
+function normalizarTipoPiletaQuery(raw) {
+  if (typeof raw !== "string") return "";
+  const t = raw
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return PIL_TIPOS_VALIDOS.includes(t) ? t : "";
+}
 
 // El schema actual rediseno completamente el modelo Pileta: ahora representa
 // un contenedor fisico (dimensiones, material, estado, tipo) ligado a una
@@ -51,13 +68,28 @@ const piletaInclude = {
 class PiletaController {
   static async getAll(req, res) {
     try {
-      const tipo = typeof req.query.tipo === "string" ? req.query.tipo.trim() : "";
+      const tipoFiltrado = normalizarTipoPiletaQuery(req.query?.tipo);
       const where = {};
-      const ubicFiltro = piletaWhereUbicacionFromRequest(req);
-      if (ubicFiltro) Object.assign(where, ubicFiltro);
-      if (tipo) {
-        where.tipo = tipo;
+      let ubicFiltro = piletaWhereUbicacionFromRequest(req);
+      const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
+      const granjaQ =
+        typeof req.query.granja === "string" ? req.query.granja.trim() : "";
+
+      /*
+       * Con solo `granja` (nombre corto de sede / unidad negocio) el WHERE anidado
+       * `{ ubicacion: { nombre: ... } }` suele NO coincidir con el nombre canónico
+       * del catálogo `ubicacion`. Preferimos FK cuando `resolverUbicacionFlexible`
+       * encuentra fila — mismo criterio que instalaciones/`ubicacion_id` explícito.
+       */
+      if (!ubicIdQ && granjaQ) {
+        const flex = await resolverUbicacionFlexible(granjaQ);
+        if (flex?.ubicacionId != null) {
+          ubicFiltro = { ubicacionId: flex.ubicacionId };
+        }
       }
+
+      if (ubicFiltro) Object.assign(where, ubicFiltro);
+      if (tipoFiltrado) where.tipo = tipoFiltrado;
 
       const piletas = await prisma.pileta.findMany({
         where,
