@@ -79,7 +79,7 @@ class PiletaController {
        * Con solo `granja` (nombre corto de sede / unidad negocio) el WHERE anidado
        * `{ ubicacion: { nombre: ... } }` suele NO coincidir con el nombre canónico
        * del catálogo `ubicacion`. Preferimos FK cuando `resolverUbicacionFlexible`
-       * encuentra fila — mismo criterio que instalaciones/`ubicacion_id` explícito.
+       * encuentra fila — mismo criterio que `ubicacion_id` explícito en query.
        */
       if (!ubicIdQ && granjaQ) {
         const flex = await resolverUbicacionFlexible(granjaQ);

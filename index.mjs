@@ -11,7 +11,6 @@ import { parse } from "yaml";
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
 import piletaRoutes from "./src/routes/piletaRoutes.js";
-import instalacionRoutes from "./src/routes/instalacionRoutes.js";
 import alimentoRoutes from "./src/routes/alimentoRoutes.js";
 import loteRoutes from "./src/routes/loteRoutes.js";
 import reproductorRoutes from "./src/routes/reproductorRoutes.js";
@@ -112,7 +111,6 @@ api.use("/roles-modulos", rolesModulosRoutes);
 
 // Operaciones
 api.use("/piletas", piletaRoutes);
-api.use("/instalaciones", instalacionRoutes);
 api.use("/lotes", loteRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);

@@ -192,41 +192,6 @@ export function toNumberSafe(value) {
   return value;
 }
 
-export function serializeInstalacion(i) {
-  if (!i) return null;
-  const nombreUb = i.ubicacion?.nombre ?? null;
-  const l = toNumberSafe(i.largo);
-  const an = toNumberSafe(i.ancho);
-  const al = toNumberSafe(i.altura);
-  let metrosCubicos = null;
-  if (l != null && an != null && al != null) {
-    metrosCubicos = Number((l * an * al).toFixed(4));
-  }
-
-  return {
-    fi_instalacion_id: i.id,
-    instalacion_id: i.id,
-    nombre: i.nombre,
-    nombre_instalacion: i.nombre,
-    tipo: i.tipo ?? null,
-    tipo_instalacion: i.tipo ?? null,
-    granja: i.granja,
-    fc_granja: i.granja,
-    ubicacion_id: i.ubicacionId ?? null,
-    ubicacion_nombre: nombreUb ?? i.granja,
-    largo: i.largo != null ? l : null,
-    ancho: i.ancho != null ? an : null,
-    altura: i.altura != null ? al : null,
-    metros_cubicos: metrosCubicos,
-    material: i.material ?? null,
-    estado: i.estado ?? null,
-    fi_usuario_id: i.usuarioId ?? null,
-    usuario_id: i.usuarioId ?? null,
-    capacidad: i.capacidad ?? null,
-    observaciones: i.observaciones ?? null,
-  };
-}
-
 export function serializeReproductor(r) {
   if (!r) return null;
   const listaObs = r.piletas?.observaciones;

@@ -11,7 +11,6 @@ const MODULOS = [
   ["Roles", "/roles", true],
   ["Usuarios", "/usuarios", true],
   ["Piletas", "/piletas", true],
-  ["Instalaciones", "/instalaciones", true],
   ["Lotes", "/lotes", true],
   ["Reproductores", "/reproductores", true],
   ["Engorda", "/engorda", true],

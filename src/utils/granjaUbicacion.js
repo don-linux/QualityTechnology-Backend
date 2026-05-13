@@ -58,22 +58,6 @@ export function primerUbicacionIdValido(...candidatos) {
   return null;
 }
 
-/** @returns {object|null} cláusula `where` de Prisma para `Instalacion` */
-export function instalacionWhereFromRequest(req, granjaPathParam) {
-  const q = req?.query ?? {};
-  const ubicacionId = primerUbicacionIdValido(q.ubicacion_id, q.ubicacionId);
-  const granja = String(granjaPathParam ?? "").trim();
-
-  if (!ubicacionId && !granja) return null;
-  if (ubicacionId && granja) {
-    return {
-      OR: [{ ubicacionId }, { granja: { equals: granja, mode: "insensitive" } }],
-    };
-  }
-  if (ubicacionId) return { ubicacionId };
-  return { granja: { equals: granja, mode: "insensitive" } };
-}
-
 /**
  * Filtro aplicable sobre el modelo `Pileta`, o igual en `where: { piletas: ... }`.
  *
