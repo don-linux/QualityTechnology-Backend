@@ -29,6 +29,7 @@ import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
 import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
 import alevinRoutes from "./src/routes/alevinRoutes.js";
+import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
@@ -116,6 +117,7 @@ api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alimentos", alimentoRoutes);
 api.use("/alevines", alevinRoutes);
+api.use("/alevinaje", alevinajeRoutes);
 api.use("/equipos", equipoRoutes);
 
 // Ventas / CRM

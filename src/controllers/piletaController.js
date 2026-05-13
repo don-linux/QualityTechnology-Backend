@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializePileta } from "../utils/serializers.js";
+import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 
 // El schema actual rediseno completamente el modelo Pileta: ahora representa
 // un contenedor fisico (dimensiones, material, estado, tipo) ligado a una
@@ -90,7 +91,12 @@ class PiletaController {
   static async create(req, res) {
     try {
       const nombre = pick(req.body, "nombre");
-      const ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
+      let ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
+      const granjaInput = pick(req.body, "granja", "fc_granja", "ubicacion");
+      if (!ubicacionId && granjaInput) {
+        const ubic = await resolverOCrearUbicacion(granjaInput);
+        if (ubic) ubicacionId = ubic.ubicacionId;
+      }
       const largo = toDecimal(pick(req.body, "largo"));
       const ancho = toDecimal(pick(req.body, "ancho"));
       const alto = toDecimal(pick(req.body, "alto", "altura"));
@@ -100,7 +106,8 @@ class PiletaController {
 
       if (!nombre || !ubicacionId || largo === null || ancho === null || alto === null) {
         return res.status(400).json({
-          error: "nombre, ubicacion_id, largo, ancho y alto son obligatorios",
+          error:
+            "nombre, granja (o ubicacion_id), largo, ancho y alto son obligatorios",
         });
       }
       if (!material) return res.status(400).json({ error: "material es obligatorio" });
@@ -143,7 +150,12 @@ class PiletaController {
       const nombre = pick(req.body, "nombre");
       if (nombre !== undefined) updateData.nombre = String(nombre);
 
-      const ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
+      let ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
+      const granjaInputUpd = pick(req.body, "granja", "fc_granja", "ubicacion");
+      if (!ubicacionId && granjaInputUpd) {
+        const ubic = await resolverOCrearUbicacion(granjaInputUpd);
+        if (ubic) ubicacionId = ubic.ubicacionId;
+      }
       if (ubicacionId !== null) updateData.ubicacionId = ubicacionId;
 
       const largoIn = req.body.largo;

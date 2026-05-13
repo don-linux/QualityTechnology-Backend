@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeEngorda } from "../utils/serializers.js";
+import { crearObservacionSiHay } from "../utils/observacion.js";
 
 // Engorda en el schema actual es una relacion 1-1 con Pileta. Los campos
 // antiguos (instalacionId, loteId, ubicacionId, fechaSiembra, fechaBiometria)
@@ -73,20 +74,47 @@ class EngordaController {
       }
       const cantidad = toInt(pick(req.body, "cantidad"), 0) ?? 0;
       const tallaGr = toDecimal(pick(req.body, "talla_gr", "tallaGr"));
+      const usuarioId = req.user.usuario_id;
+      const obsTexto = pick(req.body, "observacion", "fc_observacion");
+      const engordaIdExistente = toInt(pick(req.body, "fi_engorda_id", "engorda_id", "id"));
 
-      const creada = await prisma.engorda.create({
-        data: {
-          pileta_id: piletaId,
-          cantidad,
-          ...(tallaGr !== null ? { tallaGr } : {}),
-          usuarioId: req.user.usuario_id,
-        },
-        include: engordaInclude,
+      const result = await prisma.$transaction(async (tx) => {
+        const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+          piletaId,
+          proceso: "engorda",
+        });
+
+        if (engordaIdExistente) {
+          return tx.engorda.update({
+            where: { id: engordaIdExistente },
+            data: {
+              pileta_id: piletaId,
+              cantidad,
+              ...(tallaGr !== null ? { tallaGr } : {}),
+              ...(obsId ? { observacionId: obsId } : {}),
+              usuarioId,
+            },
+            include: engordaInclude,
+          });
+        }
+
+        return tx.engorda.create({
+          data: {
+            pileta_id: piletaId,
+            cantidad,
+            ...(tallaGr !== null ? { tallaGr } : {}),
+            ...(obsId ? { observacionId: obsId } : {}),
+            usuarioId,
+          },
+          include: engordaInclude,
+        });
       });
 
-      res.status(201).json({
-        mensaje: "Engorda registrada con exito",
-        data: serializeEngorda(creada),
+      res.status(engordaIdExistente ? 200 : 201).json({
+        mensaje: engordaIdExistente
+          ? "Engorda actualizada con exito"
+          : "Engorda registrada con exito",
+        data: serializeEngorda(result),
       });
     } catch (err) {
       if (err.code === "P2002") {
@@ -94,6 +122,9 @@ class EngordaController {
       }
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta invalida" });
+      }
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Engorda no encontrada" });
       }
       console.error("Error al registrar engorda:", err);
       res.status(500).json({ error: "Error al registrar engorda", detalle: err.message });

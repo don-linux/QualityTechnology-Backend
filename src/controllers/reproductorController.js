@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
+import { crearObservacionSiHay } from "../utils/observacion.js";
 
 // El schema actual reemplaza la relacion Reproductor->Instalacion (con
 // ubicacion) por una relacion 1-1 Reproductor<->Pileta (la pileta tiene
@@ -94,20 +95,30 @@ class ReproductorController {
       const hembras = toInt(pick(req.body, "hembras", "fn_hembras"), 0) ?? 0;
       const cantidadTotal = machos + hembras;
       const ratio = calcularRatio(machos, hembras);
+      const usuarioId = req.user.usuario_id;
+      const obsTexto = pick(req.body, "observacion", "fc_observacion");
 
-      const creado = await prisma.reproductor.create({
-        data: {
-          pileta_id: piletaId,
-          machos,
-          hembras,
-          cantidad_total: cantidadTotal,
-          talla: toDecimal(pick(req.body, "talla", "fn_talla")),
-          ratio,
-          linea: pick(req.body, "linea", "fc_linea") ?? null,
-          familia: pick(req.body, "familia", "fc_familia") ?? null,
-          usuarioId: req.user.usuario_id,
-        },
-        include: reproductorInclude,
+      const creado = await prisma.$transaction(async (tx) => {
+        const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+          piletaId,
+          proceso: "reproductor",
+        });
+
+        return tx.reproductor.create({
+          data: {
+            pileta_id: piletaId,
+            machos,
+            hembras,
+            cantidad_total: cantidadTotal,
+            talla: toDecimal(pick(req.body, "talla", "fn_talla")),
+            ratio,
+            linea: pick(req.body, "linea", "fc_linea") ?? null,
+            familia: pick(req.body, "familia", "fc_familia") ?? null,
+            observacionId: obsId,
+            usuarioId,
+          },
+          include: reproductorInclude,
+        });
       });
 
       res.status(201).json({
@@ -163,10 +174,29 @@ class ReproductorController {
         updateData.familia = pick(req.body, "familia", "fc_familia") ?? null;
       }
 
-      const actualizado = await prisma.reproductor.update({
-        where: { id },
-        data: updateData,
-        include: reproductorInclude,
+      const obsTexto = pick(req.body, "observacion", "fc_observacion");
+      const usuarioId = req.user.usuario_id;
+      const piletaParaObs = piletaId !== null ? piletaId : null;
+
+      const actualizado = await prisma.$transaction(async (tx) => {
+        if (obsTexto !== undefined) {
+          const piletaResolver =
+            piletaParaObs ??
+            (await tx.reproductor.findUnique({
+              where: { id },
+              select: { pileta_id: true },
+            }))?.pileta_id;
+          const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+            piletaId: piletaResolver ?? undefined,
+            proceso: "reproductor",
+          });
+          if (obsId) updateData.observacionId = obsId;
+        }
+        return tx.reproductor.update({
+          where: { id },
+          data: updateData,
+          include: reproductorInclude,
+        });
       });
 
       res.json({

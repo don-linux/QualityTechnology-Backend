@@ -376,6 +376,58 @@ export function serializeAlimento(a) {
   };
 }
 
+export function serializeAlevinaje(a) {
+  if (!a) return null;
+  const piletaUlt = Array.isArray(a.piletas?.observaciones) ? a.piletas.observaciones[0] : null;
+  const obsBio = a.biometrias?.observacionBiometria;
+  const obsBioComentario =
+    obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha =
+    obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const reproductorPilOrigen =
+    a.siembra_origen?.piletas_siembra_pileta_origenTopiletas ?? null;
+  const familiaResuelta =
+    reproductorPilOrigen?.reproductores?.familia ??
+    a.observacion?.familia ??
+    null;
+
+  return {
+    fi_id: a.id,
+    id: a.id,
+    pileta_id: a.pileta_id,
+    nombre_pileta: a.piletas?.nombre ?? null,
+    fc_granja: a.piletas?.ubicacion?.nombre ?? null,
+    fd_fecha: a.fecha,
+    fecha: a.fecha,
+    no_lote: a.lote,
+    lote: a.lote,
+    huevos_ml: a.huevos_ml,
+    ovadas: a.ovadas,
+    alevines_iniciales: a.alevines_iniciales,
+    mortalidad: a.mortalidad,
+    mortalidad_porcentaje: a.mortalidad_porcentaje,
+    alevines_actuales:
+      (Number(a.alevines_iniciales) || 0) - (Number(a.mortalidad) || 0),
+    siembra_origen_id: a.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      a.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: a.siembra_origen?.cantidad
+      ? Number(a.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: a.siembra_origen?.fecha ?? null,
+    familia: familiaResuelta,
+    biometria_id: a.biometria_id ?? null,
+    fc_observacion: a.observacion?.comentario ?? null,
+    observacion_id: a.observacion_id ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
+    fi_usuario_id: a.usuario_id,
+  };
+}
+
 export function serializeInventarioAlevin(a) {
   if (!a) return null;
   return {
