@@ -84,19 +84,32 @@ export function serializeUnidadNegocio(u) {
 
 export function serializeEmpleado(e) {
   if (!e) return null;
+  const nombre = e.nombre;
+  const apellidoPaterno = e.apellidoPaterno;
+  const apellidoMaterno = e.apellidoMaterno ?? null;
+  const fechaIngreso = e.fecha_ingreso ?? null;
   return {
     empleado_id: e.id,
+    fi_empleado_id: e.id,
     usuario_id: e.usuarioId ?? null,
     departamento_id: e.departamentoId ?? null,
+    fi_departamento_id: e.departamentoId ?? null,
     puesto_id: e.puestoId ?? null,
+    fi_puesto_id: e.puestoId ?? null,
     unidad_negocio_id: null,
-    nombre: e.nombre,
-    apellido_paterno: e.apellidoPaterno,
-    apellido_materno: e.apellidoMaterno ?? null,
+    fi_unidad_negocio_id: null,
+    nombre,
+    apellido_paterno: apellidoPaterno,
+    apellido_materno: apellidoMaterno,
+    fc_nombre: nombre,
+    fc_apellido_paterno: apellidoPaterno,
+    fc_apellido_materno: apellidoMaterno,
     sueldo_base: e.sueldo_base ?? null,
-    fecha_ingreso: e.fecha_ingreso ?? null,
-    fecha_contratacion: e.fecha_ingreso ?? null,
+    fecha_ingreso: fechaIngreso,
+    fecha_contratacion: fechaIngreso,
+    fd_fecha_contratacion: fechaIngreso,
     activo: e.esta_activo,
+    fb_activo: e.esta_activo,
     departamento_nombre: e.departamento?.nombre ?? null,
     puesto_nombre: e.puesto?.nombre ?? null,
     unidad_negocio_nombre: null,
