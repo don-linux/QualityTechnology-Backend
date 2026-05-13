@@ -122,6 +122,12 @@ class UsuarioController {
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Ya existe un usuario con ese nombre" });
       }
+      if (err.code === "P2003") {
+        return res.status(400).json({
+          error:
+            "Referencia invalida: comprueba que departamento_id y puesto_id existan en catalogos.",
+        });
+      }
       console.error("Error al crear usuario:", err);
       res.status(500).json({ error: "Error al crear usuario" });
     }

@@ -30,7 +30,7 @@ model Usuario {
   rolId              Int                @map("rol_id")
   esta_activo        Boolean            @default(true)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
-  updated_at         DateTime           @db.Timestamp(6)
+  updated_at         DateTime           @updatedAt @db.Timestamp(6)
   alevinaje          alevinaje[]
   alimentacion       Alimentacion[]
   alimentos          Alimento[]
@@ -335,7 +335,7 @@ model Empleado {
   fecha_ingreso   DateTime?            @db.Date
   esta_activo     Boolean              @default(true)
   created_at      DateTime             @default(now()) @db.Timestamp(6)
-  updated_at      DateTime             @db.Timestamp(6)
+  updated_at      DateTime             @updatedAt @db.Timestamp(6)
   actas           ActaAdministrativa[]
   documentos      DocumentoEmpleado[]
   departamento    Departamento?        @relation(fields: [departamentoId], references: [id])
