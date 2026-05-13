@@ -142,11 +142,29 @@ async function main() {
   await prisma.unidadNegocio.createMany({
     data: [
       { nombre: "Granja Acuicola Medellin" },
-      { nombre: "Granja Acuicola Ceiba" },
+      { nombre: "Granja Acuicola La Ceiba" },
       { nombre: "Quality Technology" },
     ],
     skipDuplicates: true,
   });
+
+  // Unifica nomenclatura antigua "Granja Acuicola Ceiba" con ubicación/catalogo La Ceiba
+  try {
+    const dup = await prisma.unidadNegocio.findUnique({
+      where: { nombre: "Granja Acuicola Ceiba" },
+    });
+    const canon = await prisma.unidadNegocio.findUnique({
+      where: { nombre: "Granja Acuicola La Ceiba" },
+    });
+    if (dup && !canon) {
+      await prisma.unidadNegocio.update({
+        where: { id: dup.id },
+        data: { nombre: "Granja Acuicola La Ceiba" },
+      });
+    }
+  } catch (e) {
+    console.warn("[seed] Unificación Ceiba/La Ceiba:", e.message || e);
+  }
 
   await prisma.tipoDocumento.createMany({
     data: [

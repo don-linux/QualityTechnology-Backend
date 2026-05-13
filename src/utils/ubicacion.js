@@ -1,26 +1,18 @@
 import prisma from "../prisma.js";
+import { resolverUbicacionFlexible } from "./granjaUbicacion.js";
 
 /**
  * Resuelve un parametro de "granja" (id numerico o nombre) a una ubicacion
  * registrada en la tabla `ubicacion`. Compatibilidad con el frontend que
  * sigue enviando `granja` como string (Ej. "GRANJA SUR").
  *
+ * También reconoce alias cortos (Medellin, La Ceiba) alineados con Unidad de Negocio.
+ *
  * @param {string|number|null|undefined} granjaParam
  * @returns {Promise<{ ubicacionId: number, nombre: string } | null>}
  */
 export async function resolverUbicacion(granjaParam) {
-  if (granjaParam === undefined || granjaParam === null) return null;
-  const trimmed = String(granjaParam).trim();
-  if (!trimmed) return null;
-
-  const asNumber = Number(trimmed);
-  if (Number.isInteger(asNumber) && asNumber > 0) {
-    const u = await prisma.ubicacion.findUnique({ where: { id: asNumber } });
-    if (u) return { ubicacionId: u.id, nombre: u.nombre };
-  }
-
-  const u = await prisma.ubicacion.findUnique({ where: { nombre: trimmed } });
-  return u ? { ubicacionId: u.id, nombre: u.nombre } : null;
+  return resolverUbicacionFlexible(granjaParam);
 }
 
 /**

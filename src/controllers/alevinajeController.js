@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
 
 // CRUD del modelo `alevinaje` (etapa cría) en piletas tipo `alevinaje`.
 // La observación se persiste con `pileta_id` y `proceso = 'alevinaje'` para
@@ -38,6 +39,26 @@ function calcMortalidadPorcentaje(mortalidad, iniciales) {
   return Number(((m * 100) / i).toFixed(2));
 }
 
+async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaAlevinajeId) {
+  if (!siembraOrigenId) return;
+  const s = await tx.siembra.findUnique({
+    where: { id: siembraOrigenId },
+    select: { id: true, pileta_destino: true },
+  });
+  if (!s) {
+    const err = new Error("siembra_origen_id inválido");
+    err.code = "BAD_SIEMBRA";
+    throw err;
+  }
+  if (Number(s.pileta_destino) !== Number(piletaAlevinajeId)) {
+    const err = new Error(
+      "La siembra seleccionada debe tener como destino la misma pileta de alevinaje",
+    );
+    err.code = "SIEMBRA_DESTINO";
+    throw err;
+  }
+}
+
 const alevinajeInclude = {
   piletas: {
     include: {
@@ -67,9 +88,10 @@ class AlevinajeController {
       const piletaIdQ = toInt(req.query.pileta_id);
       const where = {};
       if (granja) {
-        where.piletas = {
-          ubicacion: { nombre: { equals: granja, mode: "insensitive" } },
-        };
+        const uCond = ubicacionNombreWhereFromGranja(granja);
+        if (uCond) {
+          where.piletas = { ubicacion: uCond };
+        }
       }
       if (piletaIdQ) where.pileta_id = piletaIdQ;
 
@@ -143,6 +165,8 @@ class AlevinajeController {
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
       const creado = await prisma.$transaction(async (tx) => {
+        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId ?? null, piletaId);
+
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId,
           proceso: "alevinaje",
@@ -172,6 +196,12 @@ class AlevinajeController {
         data: serializeAlevinaje(creado),
       });
     } catch (err) {
+      if (err.code === "BAD_SIEMBRA") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "SIEMBRA_DESTINO") {
+        return res.status(400).json({ error: err.message });
+      }
       if (err.code === "P2002") {
         return res
           .status(409)
@@ -194,7 +224,12 @@ class AlevinajeController {
 
       const prev = await prisma.alevinaje.findUnique({
         where: { id },
-        select: { pileta_id: true, alevines_iniciales: true, mortalidad: true },
+        select: {
+          pileta_id: true,
+          alevines_iniciales: true,
+          mortalidad: true,
+          siembra_origen_id: true,
+        },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
@@ -250,8 +285,10 @@ class AlevinajeController {
         );
       }
 
+      let siembraOrigenFuturo = prev.siembra_origen_id;
       if (req.body.siembra_origen_id !== undefined) {
         updateData.siembra_origen_id = toInt(req.body.siembra_origen_id);
+        siembraOrigenFuturo = updateData.siembra_origen_id;
       }
       if (req.body.biometria_id !== undefined) {
         updateData.biometria_id = toInt(req.body.biometria_id);
@@ -264,6 +301,8 @@ class AlevinajeController {
         req.body.observaciones !== undefined;
 
       const actualizado = await prisma.$transaction(async (tx) => {
+        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaFinal);
+
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
@@ -286,6 +325,9 @@ class AlevinajeController {
         data: serializeAlevinaje(actualizado),
       });
     } catch (err) {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO") {
+        return res.status(400).json({ error: err.message });
+      }
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       if (err.code === "P2002") {
         return res

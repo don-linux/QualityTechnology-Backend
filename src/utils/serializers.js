@@ -376,6 +376,35 @@ export function serializeAlimento(a) {
   };
 }
 
+export function serializeSiembra(s) {
+  if (!s) return null;
+  const pilOr = s.piletas_siembra_pileta_origenTopiletas ?? null;
+  const pilDest = s.piletas_siembra_pileta_destinoTopiletas ?? null;
+  const cant =
+    typeof s.cantidad === "bigint"
+      ? Number(s.cantidad)
+      : s.cantidad != null
+        ? Number(s.cantidad)
+        : null;
+  const familiaOrigen = pilOr?.reproductores?.familia ?? null;
+
+  return {
+    fi_siembra_id: s.id,
+    id: s.id,
+    pileta_origen_id: s.pileta_origen ?? null,
+    nombre_pileta_origen: pilOr?.nombre ?? null,
+    tipo_pileta_origen: pilOr?.tipo ?? null,
+    familia_origen: familiaOrigen,
+    pileta_destino_id: s.pileta_destino,
+    nombre_pileta_destino: pilDest?.nombre ?? null,
+    tipo_pileta_destino: pilDest?.tipo ?? null,
+    fc_granja: pilDest?.ubicacion?.nombre ?? null,
+    cantidad: cant,
+    mortalidad: s.mortalidad ?? 0,
+    fecha: s.fecha,
+  };
+}
+
 export function serializeAlevinaje(a) {
   if (!a) return null;
   const piletaUlt = Array.isArray(a.piletas?.observaciones) ? a.piletas.observaciones[0] : null;
