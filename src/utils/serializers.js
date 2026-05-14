@@ -236,33 +236,6 @@ export function serializeReproductor(r) {
   };
 }
 
-export function serializeLote(l) {
-  if (!l) return null;
-  const nombreOrigen = l.pileta?.nombre ?? l.instalacion?.nombre ?? null;
-  const granjaNombre =
-    l.pileta?.ubicacion?.nombre ?? l.instalacion?.granja ?? null;
-  return {
-    fi_lote_id: l.id,
-    lote_id: l.id,
-    nombre: l.nombre,
-    no_lote: l.nombre,
-    instalacion_id: l.instalacionId,
-    fi_instalacion_id: l.instalacionId,
-    pileta_id: l.piletaId,
-    fi_pileta_id: l.piletaId,
-    nombre_instalacion: nombreOrigen,
-    nombre_pileta: nombreOrigen,
-    familia: l.familia ?? null,
-    fecha_ingreso: l.fecha_ingreso ?? null,
-    fd_fecha: l.fecha_ingreso ?? null,
-    fecha: l.fecha_ingreso ?? null,
-    cantidad: l.cantidad ?? null,
-    alevines_inicial: l.cantidad ?? null,
-    estatus: l.estatus ?? null,
-    fc_granja: granjaNombre,
-  };
-}
-
 export function serializePileta(p) {
   if (!p) return null;
   const lista = Array.isArray(p.observaciones) ? p.observaciones : [];
@@ -414,16 +387,18 @@ export function serializeAlevinaje(a) {
     obsBio?.created_at ?? piletaUlt?.created_at ?? null;
   const reproductorPilOrigen =
     a.siembra_origen?.piletas_siembra_pileta_origenTopiletas ?? null;
-  const familiaResuelta =
+  const familiaOrigen =
+    a.familia ??
     reproductorPilOrigen?.reproductores?.familia ??
-    a.observacion?.familia ??
     null;
 
   return {
     fi_id: a.id,
+    fi_lote_id: a.id,
     id: a.id,
     pileta_id: a.pileta_id,
     nombre_pileta: a.piletas?.nombre ?? null,
+    nombre_instalacion: a.piletas?.nombre ?? null,
     fc_granja: a.piletas?.ubicacion?.nombre ?? null,
     fd_fecha: a.fecha,
     fecha: a.fecha,
@@ -432,6 +407,7 @@ export function serializeAlevinaje(a) {
     huevos_ml: a.huevos_ml,
     ovadas: a.ovadas,
     alevines_iniciales: a.alevines_iniciales,
+    alevines_inicial: a.alevines_iniciales,
     mortalidad: a.mortalidad,
     mortalidad_porcentaje: a.mortalidad_porcentaje,
     alevines_actuales:
@@ -443,9 +419,10 @@ export function serializeAlevinaje(a) {
       ? Number(a.siembra_origen.cantidad)
       : null,
     siembra_origen_fecha: a.siembra_origen?.fecha ?? null,
-    familia: familiaResuelta,
+    familia: familiaOrigen,
     biometria_id: a.biometria_id ?? null,
     fc_observacion: a.observacion?.comentario ?? null,
+    observacion: a.observacion?.comentario ?? null,
     observacion_id: a.observacion_id ?? null,
     fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
     fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,

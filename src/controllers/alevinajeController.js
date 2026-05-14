@@ -1,9 +1,33 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import {
+  piletaWhereUbicacionFromRequest,
+  ubicacionNombreWhereFromGranja,
+  primerUbicacionIdValido,
+  resolverUbicacionFlexible,
+} from "../utils/granjaUbicacion.js";
 
-// CRUD del modelo `alevinaje` (etapa cría) en piletas tipo `alevinaje`.
+/**
+ * Misma línea que `GET /piletas`: si viene `ubicacion_id` en query gana sobre el texto de granja en path.
+ */
+async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
+  const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
+  if (ubicIdQ != null) return { ubicacionId: ubicIdQ };
+
+  const g = String(granjaParam ?? "").trim();
+  if (!g) return null;
+
+  const flex = await resolverUbicacionFlexible(g);
+  if (flex?.ubicacionId != null) return { ubicacionId: flex.ubicacionId };
+
+  const cond = ubicacionNombreWhereFromGranja(g);
+  return cond ? { ubicacion: cond } : null;
+}
+
+// CRUD del modelo `alevinaje` sobre piletas tipo `alevinaje`.
+// Desde control reproductivo también acepta pileta `reproductores` ocupada:
+// al crear registro nuevo, la pileta pasa a `alevinaje` dentro de la transacción.
 // La observación se persiste con `pileta_id` y `proceso = 'alevinaje'` para
 // que aparezca como "última observación" al consultar la pileta.
 
@@ -120,10 +144,17 @@ class AlevinajeController {
 
   static async create(req, res) {
     try {
-      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id", "fc_pileta_id"));
       const lote = pick(req.body, "lote", "no_lote");
       const alevinesIniciales = toInt(
-        pick(req.body, "alevines_iniciales", "fn_alevines_iniciales", "cantidad", "fn_cantidad"),
+        pick(
+          req.body,
+          "alevines_iniciales",
+          "fn_alevines_iniciales",
+          "cantidad",
+          "fn_cantidad",
+          "alevines_inicial",
+        ),
         0,
       ) ?? 0;
 
@@ -141,16 +172,28 @@ class AlevinajeController {
 
       const pileta = await prisma.pileta.findUnique({
         where: { id: piletaId },
-        select: { id: true, tipo: true, nombre: true },
+        select: { id: true, tipo: true, nombre: true, estado: true },
       });
       if (!pileta) {
         return res.status(400).json({ error: "Pileta no existe" });
       }
-      if (pileta.tipo !== "alevinaje") {
+
+      let desdeReproductores = false;
+      if (pileta.tipo === "reproductores") {
+        if (pileta.estado !== "ocupada") {
+          return res.status(400).json({
+            error: "Para registrar desde reproductores la pileta debe estar ocupada",
+          });
+        }
+        desdeReproductores = true;
+      } else if (pileta.tipo !== "alevinaje") {
         return res.status(400).json({
-          error: `La pileta '${pileta.nombre}' no es de tipo alevinaje (es ${pileta.tipo})`,
+          error: `La pileta '${pileta.nombre}' no admite registro de alevinaje (tipo ${pileta.tipo})`,
         });
       }
+
+      const familiaGuardarRaw = pick(req.body, "familia", "fc_familia");
+      const familiaGuardar = familiaGuardarRaw ? String(familiaGuardarRaw).slice(0, 60) : null;
 
       const mortalidad = toInt(pick(req.body, "mortalidad", "fn_mortalidad"), 0) ?? 0;
       const mortalidadPorc = calcMortalidadPorcentaje(mortalidad, alevinesIniciales);
@@ -160,6 +203,13 @@ class AlevinajeController {
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
       const creado = await prisma.$transaction(async (tx) => {
+        if (desdeReproductores) {
+          await tx.pileta.update({
+            where: { id: piletaId },
+            data: { tipo: "alevinaje" },
+          });
+        }
+
         await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId ?? null, piletaId);
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
@@ -172,6 +222,7 @@ class AlevinajeController {
             pileta_id: piletaId,
             fecha: toDateOrNull(pick(req.body, "fecha", "fd_fecha")) ?? new Date(),
             lote: String(lote).slice(0, 60),
+            familia: familiaGuardar,
             huevos_ml: toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml")),
             ovadas: toInt(pick(req.body, "ovadas", "fn_ovadas"), 0) ?? 0,
             alevines_iniciales: alevinesIniciales,
@@ -187,7 +238,9 @@ class AlevinajeController {
       });
 
       res.status(201).json({
-        mensaje: "Registro de alevinaje creado",
+        mensaje: desdeReproductores
+          ? "Registro creado. La pileta pasó a etapa alevinaje."
+          : "Registro de alevinaje creado",
         data: serializeAlevinaje(creado),
       });
     } catch (err) {
@@ -229,7 +282,7 @@ class AlevinajeController {
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
-      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id", "fc_pileta_id"));
       if (piletaId !== null) updateData.pileta_id = piletaId;
 
       const piletaFinal = piletaId ?? prev.pileta_id;
@@ -239,6 +292,10 @@ class AlevinajeController {
       }
       const loteIn = pick(req.body, "lote", "no_lote");
       if (loteIn !== undefined) updateData.lote = String(loteIn).slice(0, 60);
+      if (req.body.familia !== undefined || req.body.fc_familia !== undefined) {
+        const f = pick(req.body, "familia", "fc_familia");
+        updateData.familia = f ? String(f).slice(0, 60) : null;
+      }
       if (req.body.huevos_ml !== undefined || req.body.fn_huevos_ml !== undefined) {
         updateData.huevos_ml = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
       }
@@ -252,6 +309,7 @@ class AlevinajeController {
         "fn_alevines_iniciales",
         "cantidad",
         "fn_cantidad",
+        "alevines_inicial",
       );
       if (inicialesIn !== undefined) {
         const v = toInt(inicialesIn, 0) ?? 0;
@@ -344,6 +402,76 @@ class AlevinajeController {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("DELETE /alevinaje/:id Error:", err);
       res.status(500).json({ error: "Error eliminando registro" });
+    }
+  }
+
+  /**
+   * Piletas etapa `reproductores`, estado ocupada — control reproductivo (alta → `POST /alevinaje`).
+   * Respuesta incluye aliases `fi_instalacion_id` / `nombre_instalacion` por compatibilidad con cliente legacy.
+   */
+  static async getReproductoresOcupadas(req, res) {
+    try {
+      const granjaParam = String(req.params.granja ?? "").trim();
+      const filtroUb = await filtroUbicacionPiletaDesdeReq(req, granjaParam);
+      if (!filtroUb) return res.json([]);
+
+      const piletas = await prisma.pileta.findMany({
+        where: {
+          tipo: "reproductores",
+          estado: "ocupada",
+          ...filtroUb,
+        },
+        include: { ubicacion: true },
+        orderBy: { nombre: "asc" },
+      });
+
+      res.json(
+        piletas.map((p) => ({
+          fi_pileta_id: p.id,
+          pileta_id: p.id,
+          fi_instalacion_id: p.id,
+          instalacion_id: p.id,
+          nombre_pileta: p.nombre,
+          nombre_instalacion: p.nombre,
+          fc_granja: p.ubicacion?.nombre ?? null,
+        })),
+      );
+    } catch (err) {
+      console.error("GET /alevinaje/reproductores/:granja Error:", err);
+      res.status(500).json({ error: "Error al obtener piletas reproductoras" });
+    }
+  }
+
+  /**
+   * Familia ligada al circuito reproductivo: prioriza `reproductor` por `pileta_id`;
+   * si no hay, último `alevinaje` en esa pileta con `familia` no vacía.
+   */
+  static async getFamiliaPorPileta(req, res) {
+    try {
+      const piletaId = toInt(req.params.piletaId);
+      if (!piletaId) return res.json(null);
+
+      const rep = await prisma.reproductor.findUnique({
+        where: { pileta_id: piletaId },
+        select: { familia: true },
+      });
+      if (rep?.familia != null && rep.familia !== "") {
+        return res.json({ familia: rep.familia });
+      }
+
+      const alevFilas = await prisma.alevinaje.findMany({
+        where: { pileta_id: piletaId },
+        orderBy: { id: "desc" },
+        take: 20,
+        select: { familia: true },
+      });
+      const conFamilia = alevFilas.find((row) => row.familia != null && row.familia !== "");
+      if (conFamilia?.familia) return res.json({ familia: conFamilia.familia });
+
+      res.json(null);
+    } catch (error) {
+      console.error("GET /alevinaje/familia-por-pileta/:piletaId Error:", error);
+      res.status(500).json({ error: "Error cargando familia" });
     }
   }
 }

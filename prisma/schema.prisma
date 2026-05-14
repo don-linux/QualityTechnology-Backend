@@ -868,6 +868,8 @@ model alevinaje {
   pileta_id             Int
   fecha                 DateTime     @default(now()) @db.Date
   lote                  String       @db.VarChar(60)
+  /// Línea/genética declarada al registrar el lote desde control reproductivo.
+  familia               String?      @db.VarChar(60)
   huevos_ml             Decimal?     @db.Decimal(10, 2)
   ovadas                Int          @default(0)
   alevines_iniciales    Int

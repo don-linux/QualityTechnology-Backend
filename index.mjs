@@ -12,7 +12,6 @@ import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
 import piletaRoutes from "./src/routes/piletaRoutes.js";
 import alimentoRoutes from "./src/routes/alimentoRoutes.js";
-import loteRoutes from "./src/routes/loteRoutes.js";
 import reproductorRoutes from "./src/routes/reproductorRoutes.js";
 import engordaRoutes from "./src/routes/engordaRoutes.js";
 import clienteRoutes from "./src/routes/clienteRoutes.js";
@@ -111,7 +110,6 @@ api.use("/roles-modulos", rolesModulosRoutes);
 
 // Operaciones
 api.use("/piletas", piletaRoutes);
-api.use("/lotes", loteRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alimentos", alimentoRoutes);
