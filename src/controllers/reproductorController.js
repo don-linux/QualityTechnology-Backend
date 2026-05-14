@@ -137,9 +137,16 @@ const reproductorInclude = {
         take: 1,
         select: { comentario: true, proceso: true, created_at: true },
       },
+      biometrias: {
+        orderBy: { fecha: "desc" },
+        take: 1,
+        select: { fecha: true },
+      },
     },
   },
   observacion: true,
+  siembra: { select: { fecha: true } },
+  biometrias: { select: { fecha: true } },
 };
 
 class ReproductorController {

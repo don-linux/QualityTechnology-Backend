@@ -196,6 +196,9 @@ export function serializeReproductor(r) {
   if (!r) return null;
   const listaObs = r.piletas?.observaciones;
   const ultObs = Array.isArray(listaObs) ? listaObs[0] : null;
+  const fechaBioDirecta = r.biometrias?.fecha ?? null;
+  const fechaBioUltimaPileta = r.piletas?.biometrias?.[0]?.fecha ?? null;
+  const fd_fecha_biometria = fechaBioDirecta ?? fechaBioUltimaPileta ?? null;
 
   return {
     fi_reproductor_id: r.id,
@@ -217,6 +220,12 @@ export function serializeReproductor(r) {
     familia: r.familia,
     siembra_id: r.siembra_id ?? null,
     biometria_id: r.biometria_id ?? null,
+    /** Fecha del movimiento `siembra` vinculado (traslado/ingreso a esta pileta). */
+    fd_fecha_siembra: r.siembra?.fecha ?? null,
+    /** Última biometría: puntero del reproductor o, si no hay, la más reciente de la pileta. */
+    fd_fecha_biometria,
+    /** Alta del inventario repro (fallback para “días en pila” si aún no hay siembra vinculada). */
+    fd_alta_reproductor: r.created_at ?? null,
     fc_granja: r.piletas?.ubicacion?.nombre ?? null,
     fi_usuario_id: r.usuarioId,
     fc_observacion: r.observacion?.comentario ?? null,
