@@ -3,11 +3,8 @@ import { serializeEngorda } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
-// Engorda en el schema actual es una relacion 1-1 con Pileta. Los campos
-// antiguos (instalacionId, loteId, ubicacionId, fechaSiembra, fechaBiometria)
-// fueron reemplazados por pileta_id, siembra_id, biometria_id. El modelo
-// `trazaEngorda` ya no existe. Los endpoints heredados de traslados quedan
-// como 501 hasta rediseñarlos sobre `siembra`/`Biometria`.
+// Engorda es 1-1 con Pileta. La trazabilidad de traslados hacia/desde piletas
+// etapa `engorda` se expone vía registros `siembra` (como en reproductores).
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -175,18 +172,114 @@ class EngordaController {
   }
 
   // ---------------------------------------------------------------------------
-  // Endpoints heredados: pendientes de rediseno sobre los nuevos modelos.
+  // Trazabilidad vía `siembra`: movimientos donde origen o destino es pileta
+  // tipo `engorda`, filtrados por usuario del token (= parámetro :usuario).
   // ---------------------------------------------------------------------------
   static async getMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno: ya no existe trazaEngorda en el schema.",
-    });
+    try {
+      const usuarioParam = toInt(req.params.usuario);
+      const jwtUid = toInt(req.user.usuario_id);
+      if (!usuarioParam) return res.json([]);
+      if (!jwtUid || usuarioParam !== jwtUid) {
+        return res.status(403).json({ error: "No autorizado" });
+      }
+
+      const rows = await prisma.siembra.findMany({
+        where: {
+          usuario_id: usuarioParam,
+          OR: [
+            { piletas_siembra_pileta_destinoTopiletas: { tipo: "engorda" } },
+            { piletas_siembra_pileta_origenTopiletas: { tipo: "engorda" } },
+          ],
+        },
+        include: {
+          piletas_siembra_pileta_origenTopiletas: {
+            select: { id: true, nombre: true, tipo: true },
+          },
+          piletas_siembra_pileta_destinoTopiletas: {
+            select: { id: true, nombre: true, tipo: true },
+          },
+          engorda: {
+            take: 1,
+            orderBy: { id: "desc" },
+            select: {
+              observacion: { select: { comentario: true } },
+            },
+          },
+        },
+        orderBy: [{ fecha: "desc" }, { id: "desc" }],
+        take: 500,
+      });
+
+      const payload = rows.map((s) => {
+        const pilOr = s.piletas_siembra_pileta_origenTopiletas;
+        const pilDest = s.piletas_siembra_pileta_destinoTopiletas;
+        const brutas =
+          typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
+        const mortalidad = s.mortalidad ?? 0;
+        const netas = Math.max(0, brutas - mortalidad);
+        const obsEngorda = s.engorda?.[0]?.observacion?.comentario?.trim();
+        const obsParts = [];
+        if (obsEngorda) obsParts.push(obsEngorda);
+        if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
+
+        return {
+          fi_movimiento_id: s.id,
+          origen_nombre: pilOr?.nombre ?? null,
+          destino_nombre: pilDest?.nombre ?? "—",
+          cantidad_trasladada: netas,
+          fecha_movimiento: s.fecha,
+          observacion: obsParts.length ? obsParts.join(" · ") : null,
+        };
+      });
+
+      res.json(payload);
+    } catch (err) {
+      console.error("Error movimientos engorda:", err);
+      res.status(500).json({ error: "Error al obtener movimientos de engorda" });
+    }
   }
 
   static async deleteMovimiento(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno: ya no existe trazaEngorda en el schema.",
-    });
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    const usuarioId = toInt(req.user.usuario_id);
+    if (!usuarioId) return res.status(403).json({ error: "No autorizado" });
+
+    try {
+      const row = await prisma.siembra.findUnique({
+        where: { id },
+        select: {
+          usuario_id: true,
+          piletas_siembra_pileta_destinoTopiletas: { select: { tipo: true } },
+          piletas_siembra_pileta_origenTopiletas: { select: { tipo: true } },
+        },
+      });
+      if (!row) return res.status(404).json({ error: "Movimiento no encontrado" });
+      if (row.usuario_id !== usuarioId) {
+        return res.status(403).json({ error: "No autorizado" });
+      }
+      const touchesEngorda =
+        row.piletas_siembra_pileta_destinoTopiletas?.tipo === "engorda" ||
+        row.piletas_siembra_pileta_origenTopiletas?.tipo === "engorda";
+      if (!touchesEngorda) {
+        return res.status(400).json({ error: "No es un movimiento asociado a engorda" });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.engorda.updateMany({
+          where: { siembra_id: id },
+          data: { siembra_id: null },
+        });
+        await tx.siembra.delete({ where: { id } });
+      });
+
+      res.json({ mensaje: "Movimiento eliminado correctamente." });
+    } catch (err) {
+      console.error("Error eliminar movimiento engorda:", err);
+      res.status(500).json({ error: "Error al eliminar movimiento" });
+    }
   }
 }
 
