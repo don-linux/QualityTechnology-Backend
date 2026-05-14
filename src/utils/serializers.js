@@ -229,6 +229,9 @@ export function serializeReproductor(r) {
 
 export function serializeLote(l) {
   if (!l) return null;
+  const nombreOrigen = l.pileta?.nombre ?? l.instalacion?.nombre ?? null;
+  const granjaNombre =
+    l.pileta?.ubicacion?.nombre ?? l.instalacion?.granja ?? null;
   return {
     fi_lote_id: l.id,
     lote_id: l.id,
@@ -236,7 +239,10 @@ export function serializeLote(l) {
     no_lote: l.nombre,
     instalacion_id: l.instalacionId,
     fi_instalacion_id: l.instalacionId,
-    nombre_instalacion: l.instalacion?.nombre ?? null,
+    pileta_id: l.piletaId,
+    fi_pileta_id: l.piletaId,
+    nombre_instalacion: nombreOrigen,
+    nombre_pileta: nombreOrigen,
     familia: l.familia ?? null,
     fecha_ingreso: l.fecha_ingreso ?? null,
     fd_fecha: l.fecha_ingreso ?? null,
@@ -244,7 +250,7 @@ export function serializeLote(l) {
     cantidad: l.cantidad ?? null,
     alevines_inicial: l.cantidad ?? null,
     estatus: l.estatus ?? null,
-    fc_granja: l.instalacion?.granja ?? null,
+    fc_granja: granjaNombre,
   };
 }
 
@@ -627,6 +633,9 @@ export function serializeUnidadNegocioFull(u) {
     fc_nombre: u.nombre,
     fb_activo: u.esta_activo,
     activo: u.esta_activo,
+    fi_ubicacion_id: u.ubicacionId ?? null,
+    ubicacion_id: u.ubicacionId ?? null,
+    fc_ubicacion_nombre: u.ubicacion?.nombre ?? null,
   };
 }
 

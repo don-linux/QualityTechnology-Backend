@@ -13,10 +13,13 @@ function pick(body, ...keys) {
   return undefined;
 }
 
+const unidadInclude = { ubicacion: { select: { id: true, nombre: true } } };
+
 class UnidadNegocioController {
   static async getAll(req, res) {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
+        include: unidadInclude,
         orderBy: { id: "asc" },
       });
       res.json(unidades.map(serializeUnidadNegocioFull));
@@ -30,6 +33,7 @@ class UnidadNegocioController {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
         where: { esta_activo: true },
+        include: unidadInclude,
         orderBy: { nombre: "asc" },
       });
       res.json(unidades.map(serializeUnidadNegocioFull));
@@ -41,11 +45,16 @@ class UnidadNegocioController {
 
   static async create(req, res) {
     const nombre = pick(req.body, "fc_nombre", "nombre");
+    const ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId", "fi_ubicacion_id"));
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
     try {
       const unidad = await prisma.unidadNegocio.create({
-        data: { nombre: String(nombre) },
+        data: {
+          nombre: String(nombre),
+          ...(ubicacionId ? { ubicacionId } : {}),
+        },
+        include: unidadInclude,
       });
       res.status(201).json({
         mensaje: "Unidad de negocio creada correctamente",
@@ -66,10 +75,18 @@ class UnidadNegocioController {
     const nombre = pick(req.body, "fc_nombre", "nombre");
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
+    const ubicacionIdIn = req.body?.ubicacion_id ?? req.body?.ubicacionId ?? req.body?.fi_ubicacion_id;
+    const data = { nombre: String(nombre) };
+    if (ubicacionIdIn !== undefined) {
+      data.ubicacionId =
+        ubicacionIdIn === "" || ubicacionIdIn === null ? null : toInt(ubicacionIdIn);
+    }
+
     try {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
-        data: { nombre: String(nombre) },
+        data,
+        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio actualizada correctamente",
@@ -93,6 +110,7 @@ class UnidadNegocioController {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
         data: { esta_activo: true },
+        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio activada correctamente",
@@ -113,6 +131,7 @@ class UnidadNegocioController {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
         data: { esta_activo: false },
+        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio desactivada correctamente",

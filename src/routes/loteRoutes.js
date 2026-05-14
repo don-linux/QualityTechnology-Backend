@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =====================================================
-   INSTALACIONES (CONTROL REPRODUCTIVO)
+   ORIGEN CONTROL REPRODUCTIVO (piletas reproductores; ruta legacy)
 ===================================================== */
 
 router.get(

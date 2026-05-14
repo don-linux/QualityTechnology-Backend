@@ -1,12 +1,9 @@
 import prisma from "../prisma.js";
 import { serializeLote } from "../utils/serializers.js";
+import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
 
-// El modelo Lote del schema actual solo conserva: nombre, instalacionId,
-// familia, fecha_ingreso, cantidad, estatus. Los campos antiguos
-// (no_lote, huevos_ml, ovadas, alevines_inicial, mortalidad, ubicacionId,
-// usuarioId, observacionId) ya no existen. Tampoco existen los modelos
-// `LoteMovimiento`, `TrazaAlevinaje`, `TrazaEngorda`. Los endpoints que
-// dependen de esos modelos viejos devuelven 501.
+// Lotes pueden enlazarse a `pileta_id` (flujo actual: pileta reproductores) o,
+// por compatibilidad, a `instalacion_id` en datos heredados.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -27,7 +24,10 @@ function toDateOrNull(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-const loteInclude = { instalacion: true };
+const loteInclude = {
+  instalacion: true,
+  pileta: { include: { ubicacion: true } },
+};
 
 class LoteController {
   static async getAll(req, res) {
@@ -46,7 +46,12 @@ class LoteController {
   static async create(req, res) {
     try {
       const nombre = pick(req.body, "nombre", "no_lote", "noLote");
-      const instalacionId = toInt(pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id"));
+      const piletaId = toInt(
+        pick(req.body, "pileta_id", "fi_pileta_id", "fc_pileta_id"),
+      );
+      const instalacionId = toInt(
+        pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id", "fc_instalacion_id"),
+      );
       const familia = pick(req.body, "familia");
       const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso", "fecha", "fd_fecha"));
       const cantidad = toInt(pick(req.body, "cantidad", "alevines_inicial"));
@@ -55,19 +60,38 @@ class LoteController {
       if (!nombre) {
         return res.status(400).json({ error: "nombre (o no_lote) es obligatorio" });
       }
-      if (!instalacionId) {
-        return res.status(400).json({ error: "instalacion_id es obligatorio" });
+      if (!piletaId && !instalacionId) {
+        return res.status(400).json({ error: "pileta_id o instalacion_id es obligatorio" });
+      }
+
+      let data = {
+        nombre: String(nombre),
+        familia: familia ? String(familia) : null,
+        ...(fechaIngreso ? { fecha_ingreso: fechaIngreso } : {}),
+        ...(cantidad !== null ? { cantidad } : {}),
+        ...(estatus ? { estatus: String(estatus) } : {}),
+      };
+
+      if (piletaId) {
+        const pileta = await prisma.pileta.findFirst({
+          where: {
+            id: piletaId,
+            tipo: "reproductores",
+            reproductores: { isNot: null },
+          },
+        });
+        if (!pileta) {
+          return res.status(400).json({
+            error: "pileta_id invalida, no es reproductores o sin reproductores registrados",
+          });
+        }
+        data = { ...data, piletaId, instalacionId: null };
+      } else {
+        data = { ...data, instalacionId, piletaId: null };
       }
 
       const creado = await prisma.lote.create({
-        data: {
-          nombre: String(nombre),
-          instalacionId,
-          familia: familia ? String(familia) : null,
-          ...(fechaIngreso ? { fecha_ingreso: fechaIngreso } : {}),
-          ...(cantidad !== null ? { cantidad } : {}),
-          ...(estatus ? { estatus: String(estatus) } : {}),
-        },
+        data,
         include: loteInclude,
       });
 
@@ -78,7 +102,7 @@ class LoteController {
       });
     } catch (err) {
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Instalacion invalida" });
+        return res.status(400).json({ error: "Referencia invalida (pileta o instalacion)" });
       }
       console.error("Error al registrar lote:", err);
       res.status(500).json({ error: "Error al registrar lote" });
@@ -94,8 +118,32 @@ class LoteController {
       const nombre = pick(req.body, "nombre", "no_lote", "noLote");
       if (nombre !== undefined) updateData.nombre = String(nombre);
 
-      const instalacionId = toInt(pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id"));
-      if (instalacionId !== null) updateData.instalacionId = instalacionId;
+      const piletaId = toInt(
+        pick(req.body, "pileta_id", "fi_pileta_id", "fc_pileta_id"),
+      );
+      const instalacionId = toInt(
+        pick(req.body, "instalacion_id", "instalacionId", "fi_instalacion_id", "fc_instalacion_id"),
+      );
+
+      if (piletaId) {
+        const pileta = await prisma.pileta.findFirst({
+          where: {
+            id: piletaId,
+            tipo: "reproductores",
+            reproductores: { isNot: null },
+          },
+        });
+        if (!pileta) {
+          return res.status(400).json({
+            error: "pileta_id invalida, no es reproductores o sin reproductores registrados",
+          });
+        }
+        updateData.piletaId = piletaId;
+        updateData.instalacionId = null;
+      } else if (instalacionId !== null && instalacionId !== undefined) {
+        updateData.instalacionId = instalacionId;
+        updateData.piletaId = null;
+      }
 
       const familia = pick(req.body, "familia");
       if (familia !== undefined) updateData.familia = familia ? String(familia) : null;
@@ -148,26 +196,47 @@ class LoteController {
 
   static async getByInstalacion(req, res) {
     try {
-      const instalacionId = toInt(req.params.id);
-      if (!instalacionId) return res.json([]);
+      const id = toInt(req.params.id);
+      if (!id) return res.json([]);
+      const byPileta = await prisma.lote.findMany({
+        where: { piletaId: id },
+        orderBy: { id: "desc" },
+        select: { id: true, nombre: true },
+      });
+      if (byPileta.length) {
+        return res.json(byPileta.map((l) => ({ fi_lote_id: l.id, no_lote: l.nombre })));
+      }
       const lotes = await prisma.lote.findMany({
-        where: { instalacionId },
+        where: { instalacionId: id },
         orderBy: { id: "desc" },
         select: { id: true, nombre: true },
       });
       res.json(lotes.map((l) => ({ fi_lote_id: l.id, no_lote: l.nombre })));
     } catch (err) {
-      console.error("Error al obtener lotes por instalacion:", err);
-      res.status(500).json({ error: "Error al obtener lotes por instalacion" });
+      console.error("Error al obtener lotes por instalacion/pileta:", err);
+      res.status(500).json({ error: "Error al obtener lotes" });
     }
   }
 
+  /**
+   * Familia para el circuito reproductivo: prioriza `reproductor` por pileta_id.
+   * El parametro historico se llama `instalacionId`; acepta id de pileta reproductores.
+   */
   static async getFamiliaPorInstalacion(req, res) {
     try {
-      const instalacionId = toInt(req.params.instalacionId);
-      if (!instalacionId) return res.json(null);
+      const id = toInt(req.params.instalacionId);
+      if (!id) return res.json(null);
+
+      const rep = await prisma.reproductor.findUnique({
+        where: { pileta_id: id },
+        select: { familia: true },
+      });
+      if (rep?.familia != null && rep.familia !== "") {
+        return res.json({ familia: rep.familia });
+      }
+
       const lote = await prisma.lote.findFirst({
-        where: { instalacionId, familia: { not: null } },
+        where: { OR: [{ instalacionId: id }, { piletaId: id }], familia: { not: null } },
         select: { familia: true },
       });
       if (!lote) return res.json(null);
@@ -179,28 +248,67 @@ class LoteController {
   }
 
   // ---------------------------------------------------------------------------
-  // Endpoints heredados que requieren rediseno
+  // Endpoints heredados sin uso en el flujo actual
   // ---------------------------------------------------------------------------
   static async getInstalaciones(req, res) {
     res.status(501).json({
-      error: "Endpoint pendiente de rediseno: instalacion ya no tiene ubicacion_id como FK.",
+      error: "Use /piletas. El modulo instalaciones standalone fue retirado.",
     });
   }
 
+  /**
+   * Lista piletas etapa reproductores con reproductor asignado (granja via ubicacion.nombre).
+   * Alias legacy: fi_instalacion_id = fi_pileta_id = id de pileta para compat con formularios viejos.
+   */
   static async getInstalacionesReproductores(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno: instalacion ya no tiene relacion directa con reproductores.",
-    });
+    try {
+      const granja = String(req.params.granja ?? "").trim();
+      if (!granja) return res.json([]);
+
+      const ubicacionCond = ubicacionNombreWhereFromGranja(granja);
+      if (!ubicacionCond) return res.json([]);
+
+      const piletas = await prisma.pileta.findMany({
+        where: {
+          tipo: "reproductores",
+          reproductores: { isNot: null },
+          ubicacion: ubicacionCond,
+        },
+        include: { reproductores: true, ubicacion: true },
+        orderBy: { nombre: "asc" },
+      });
+
+      const list = piletas.map((p) => ({
+        fi_pileta_id: p.id,
+        pileta_id: p.id,
+        fi_instalacion_id: p.id,
+        instalacion_id: p.id,
+        nombre_pileta: p.nombre,
+        nombre_instalacion: p.nombre,
+        fc_granja: p.ubicacion?.nombre ?? null,
+      }));
+      res.json(list);
+    } catch (err) {
+      console.error("Error al obtener piletas reproductoras:", err);
+      res.status(500).json({ error: "Error al obtener piletas reproductoras" });
+    }
   }
 
   static async getByGranja(req, res) {
     try {
       const granja = String(req.params.granja ?? "").trim();
       if (!granja) return res.json([]);
+
+      const ubicacionCond = ubicacionNombreWhereFromGranja(granja);
+      const or = [
+        { instalacion: { granja: { equals: granja, mode: "insensitive" } } },
+      ];
+      if (ubicacionCond) {
+        or.push({ pileta: { ubicacion: ubicacionCond } });
+      }
+
       const lotes = await prisma.lote.findMany({
-        where: {
-          instalacion: { granja: { equals: granja, mode: "insensitive" } },
-        },
+        where: { OR: or },
         include: loteInclude,
         orderBy: { id: "desc" },
       });
