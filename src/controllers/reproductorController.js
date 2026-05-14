@@ -37,6 +37,17 @@ function calcularRatio(machos, hembras) {
   return null;
 }
 
+/** Sincroniza `Pileta.estado` en el módulo de piletas físicas (vacía / ocupada). */
+async function aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal) {
+  const id = toInt(piletaId);
+  if (!id) return;
+  const estado = cantidadTotal > 0 ? "ocupada" : "vacia";
+  await tx.pileta.update({
+    where: { id },
+    data: { estado },
+  });
+}
+
 const reproductorInclude = {
   piletas: {
     include: {
@@ -103,7 +114,7 @@ class ReproductorController {
           proceso: "reproductor",
         });
 
-        return tx.reproductor.create({
+        const creado = await tx.reproductor.create({
           data: {
             pileta_id: piletaId,
             machos,
@@ -118,6 +129,8 @@ class ReproductorController {
           },
           include: reproductorInclude,
         });
+        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+        return creado;
       });
 
       res.status(201).json({
@@ -142,6 +155,12 @@ class ReproductorController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
+      const antes = await prisma.reproductor.findUnique({
+        where: { id },
+        select: { pileta_id: true, cantidad_total: true, machos: true, hembras: true },
+      });
+      if (!antes) return res.status(404).json({ error: "Reproductor no encontrado" });
+
       const updateData = {};
 
       const piletaId = toInt(pick(req.body, "pileta_id", "piletaId", "fi_pileta_id"));
@@ -155,10 +174,8 @@ class ReproductorController {
       if (hembras !== null) updateData.hembras = hembras;
 
       if (machos !== null || hembras !== null) {
-        const actual = await prisma.reproductor.findUnique({ where: { id } });
-        if (!actual) return res.status(404).json({ error: "Reproductor no encontrado" });
-        const finalMachos = machos ?? actual.machos;
-        const finalHembras = hembras ?? actual.hembras;
+        const finalMachos = machos ?? antes.machos;
+        const finalHembras = hembras ?? antes.hembras;
         updateData.cantidad_total = finalMachos + finalHembras;
         updateData.ratio = calcularRatio(finalMachos, finalHembras);
       }
@@ -191,11 +208,18 @@ class ReproductorController {
           });
           if (obsId) updateData.observacionId = obsId;
         }
-        return tx.reproductor.update({
+        const row = await tx.reproductor.update({
           where: { id },
           data: updateData,
           include: reproductorInclude,
         });
+
+        const piletaActual = row.pileta_id;
+        if (antes.pileta_id !== piletaActual) {
+          await aplicarEstadoPiletaPorCantidad(tx, antes.pileta_id, 0);
+        }
+        await aplicarEstadoPiletaPorCantidad(tx, piletaActual, row.cantidad_total);
+        return row;
       });
 
       res.json({
@@ -214,9 +238,18 @@ class ReproductorController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
 
-    try {
-      await prisma.reproductor.delete({ where: { id } });
-      res.json({ success: true, mensaje: "Reproductor eliminado" });
+      try {
+        const existe = await prisma.reproductor.findUnique({
+          where: { id },
+          select: { pileta_id: true },
+        });
+        if (!existe) return res.status(404).json({ error: "Reproductor no encontrado" });
+
+        await prisma.$transaction(async (tx) => {
+          await tx.reproductor.delete({ where: { id } });
+          await aplicarEstadoPiletaPorCantidad(tx, existe.pileta_id, 0);
+        });
+        res.json({ success: true, mensaje: "Reproductor eliminado" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });
       if (err.code === "P2003") {
