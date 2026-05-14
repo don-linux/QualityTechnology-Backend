@@ -243,6 +243,7 @@ model Pileta {
   created_at                              DateTime           @default(now()) @db.Timestamp(6)
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
+  alevinaje_desde_reproductor             alevinaje[]                  @relation("AlevinajePiletaReproductoraOrigen")
   alimentacion                            Alimentacion[]
   alimentos                               Alimento[]
   biometrias                              Biometria[]
@@ -863,33 +864,42 @@ model estados {
 }
 
 /// Etapa cría en pileta tipo `alevinaje`. Opcionalmente ligado al evento físico (`siembra_origen`) que incorporó peces a esta pileta.
+/// `pileta_id` identifica la pileta **destino** donde vive el cargamento; opcionalmente `pileta_origen_reproductora_id` indica breeders.
 model alevinaje {
-  id                    Int          @id @default(autoincrement())
-  pileta_id             Int
-  fecha                 DateTime     @default(now()) @db.Date
-  lote                  String       @db.VarChar(60)
+  id                            Int       @id @default(autoincrement())
+  pileta_id                     Int
+  /// Opcional — pileta reproductora de la que parte el cargamento cuando difiere del destino.
+  pileta_origen_reproductora_id Int?      @map("pileta_origen_reproductora_id")
+  fecha                         DateTime  @default(now()) @db.Date
+  lote                          String    @db.VarChar(60)
   /// Línea/genética declarada al registrar el lote desde control reproductivo.
-  familia               String?      @db.VarChar(60)
-  huevos_ml             Decimal?     @db.Decimal(10, 2)
-  ovadas                Int          @default(0)
-  alevines_iniciales    Int
-  mortalidad            Int          @default(0)
-  mortalidad_porcentaje Decimal      @db.Decimal(6, 2)
-  observacion_id        Int?
-  biometria_id          Int?
-  siembra_origen_id     Int?         @map("siembra_origen_id")
-  usuario_id            Int
-  created_at            DateTime     @default(now()) @db.Timestamp(6)
-  updated_at            DateTime     @updatedAt @db.Timestamp(6)
-  biometrias            Biometria?   @relation(fields: [biometria_id], references: [id])
-  observacion           observacion? @relation(fields: [observacion_id], references: [id])
-  piletas               Pileta       @relation(fields: [pileta_id], references: [id])
-  siembra_origen        siembra?     @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
-  usuarios              Usuario      @relation(fields: [usuario_id], references: [id])
+  familia                       String?   @db.VarChar(60)
+  huevos_ml                     Decimal?  @db.Decimal(10, 2)
+  ovadas                        Int       @default(0)
+  machos                        Int       @default(0)
+  hembras                       Int       @default(0)
+  /// Preferentemente igual a machos + hembras; persistido para auditoría.
+  cantidad_total                Int       @default(0)
+  alevines_iniciales            Int
+  mortalidad                    Int       @default(0)
+  mortalidad_porcentaje         Decimal   @db.Decimal(6, 2)
+  observacion_id                Int?
+  biometria_id                  Int?
+  siembra_origen_id             Int?      @map("siembra_origen_id")
+  usuario_id                    Int
+  created_at                    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at                    DateTime  @updatedAt @db.Timestamp(6)
+  biometrias                    Biometria? @relation(fields: [biometria_id], references: [id])
+  observacion                   observacion? @relation(fields: [observacion_id], references: [id])
+  piletas                       Pileta    @relation(fields: [pileta_id], references: [id])
+  pileta_origen_reproductora    Pileta?   @relation("AlevinajePiletaReproductoraOrigen", fields: [pileta_origen_reproductora_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  siembra_origen                siembra?   @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  usuarios                       Usuario   @relation(fields: [usuario_id], references: [id])
 
   @@unique([pileta_id, lote])
   @@index([fecha(sort: Desc)])
   @@index([lote])
+  @@index([pileta_origen_reproductora_id])
   @@schema("public")
 }
 
