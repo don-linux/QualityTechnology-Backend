@@ -135,7 +135,18 @@ class EngordaController {
                 hembrasDeducir: hembrasIn,
               });
               break;
-            case "reproductores":
+            case "reproductores": {
+              const tieneRep = await tx.reproductor.findUnique({
+                where: { pileta_id: origenPiletaId },
+                select: { id: true },
+              });
+              if (!tieneRep) {
+                const err = new Error(
+                  "La pileta de origen es reproductores pero no tiene inventario registrado (tabla reproductores).",
+                );
+                err.code = "REPRO_ORIGEN_VACIO";
+                throw err;
+              }
               await descontarReproductorPorEgresoHaciaAlevinaje(tx, origenPiletaId, {
                 piletaDestinoId: piletaId,
                 machosDeducir: machosIn,
@@ -143,6 +154,7 @@ class EngordaController {
                 cantidadTotalSinSexo: 0,
               });
               break;
+            }
             case "engorda":
               await descontarEngordaPorEgresoHaciaEngorda(tx, origenPiletaId, {
                 piletaDestinoId: piletaId,
@@ -224,6 +236,7 @@ class EngordaController {
       if (
         biz === "ALEV_CANTIDAD_INSUFICIENTE" ||
         biz === "REPRO_CANTIDAD_INSUFICIENTE" ||
+        biz === "REPRO_ORIGEN_VACIO" ||
         biz === "ENGORDA_CANTIDAD_INSUFICIENTE" ||
         biz === "ENGORDA_ORIGEN_VACIA"
       ) {
@@ -244,6 +257,14 @@ class EngordaController {
       }
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Engorda no encontrada" });
+      }
+      /** Columna o tabla ausente (suele ser migración Prisma no aplicada). */
+      if (err.code === "P2022") {
+        return res.status(503).json({
+          error:
+            "Base de datos desincronizada con el código (columna o campo ausente). Ejecute `npx prisma migrate deploy` en el backend.",
+          detalle: err.message,
+        });
       }
       console.error("Error al registrar engorda:", err);
       res.status(500).json({ error: "Error al registrar engorda", detalle: err.message });

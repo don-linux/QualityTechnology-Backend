@@ -12,8 +12,8 @@ router.use(authMiddleware);
 ========================================================= */
 router.get("/granja/:granja", engordaController.getByGranja);
 router.post("/", engordaController.create);
-router.delete("/:id", engordaController.delete);
 router.get("/movimientos/:usuario", engordaController.getMovimientos);
 router.delete("/movimientos/:id", engordaController.deleteMovimiento);
+router.delete("/:id", engordaController.delete);
 
 export default router;
