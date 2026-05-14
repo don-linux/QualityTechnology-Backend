@@ -431,6 +431,13 @@ class ReproductorController {
               ubicacion: { select: { nombre: true } },
             },
           },
+          reproductores: {
+            orderBy: { updated_at: "desc" },
+            take: 1,
+            select: {
+              observacion: { select: { comentario: true } },
+            },
+          },
         },
         orderBy: [{ fecha: "desc" }, { id: "desc" }],
         take: 500,
@@ -443,7 +450,9 @@ class ReproductorController {
           typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
         const mortalidad = s.mortalidad ?? 0;
         const netas = Math.max(0, brutas - mortalidad);
+        const obsUsuario = s.reproductores?.[0]?.observacion?.comentario?.trim();
         const obsParts = [];
+        if (obsUsuario) obsParts.push(obsUsuario);
         if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
 
         return {
@@ -452,7 +461,7 @@ class ReproductorController {
           destino: pilDest?.nombre ?? "—",
           cantidad_trasladada: netas,
           fecha_movimiento: s.fecha,
-          observacion: obsParts.length ? obsParts.join(". ") : null,
+          observacion: obsParts.length ? obsParts.join(" · ") : null,
           origen_pileta_id: pilOr?.id ?? null,
         };
       });
