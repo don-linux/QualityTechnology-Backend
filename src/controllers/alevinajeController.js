@@ -1,7 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { descontarReproductorPorEgresoHaciaAlevinaje } from "../utils/reproductorInventario.js";
+import {
+  aplicarEstadoPiletaPorCantidad,
+  descontarReproductorPorEgresoHaciaAlevinaje,
+} from "../utils/reproductorInventario.js";
 import {
   piletaWhereUbicacionFromRequest,
   ubicacionNombreWhereFromGranja,
@@ -27,9 +30,10 @@ async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
 }
 
 // CRUD del modelo `alevinaje` sobre piletas tipo `alevinaje`.
-// El alta desde control reproductivo usa pileta `reproductores` como origen
-// cuando el cargamento va a otro físico tipo `alevinaje`; no se cambia aquí el `tipo`
-// de la pileta reproductora.
+// Alta desde control reproductivo (origen reproductores ≠ destino alevinaje):
+// dentro de la transacción descuenta `machos`/`hembras` (o cantidad legacy) del
+// registro `reproductores` de la pileta origen y deja `Pileta.estado` coherentes.
+// La pileta **destino** (alevinaje) pasa a estado `ocupada` al incorporar el lote.
 // La observación se persiste con `pileta_id` y `proceso = 'alevinaje'` para
 // que aparezca como "última observación" al consultar la pileta.
 
@@ -307,7 +311,7 @@ class AlevinajeController {
         if (!repDeOrigen) {
           return res.status(400).json({
             error:
-              "La pileta reproductora de origen no tiene inventario registrado (`reproductores`). Cántelo antes de mover a alevinaje.",
+              "La pileta reproductora de origen no tiene inventario registrado (`reproductores`). Regístrelo antes de mover a alevinaje.",
           });
         }
       }
@@ -329,7 +333,7 @@ class AlevinajeController {
           proceso: "alevinaje",
         });
 
-        return tx.alevinaje.create({
+        const creadoNuevo = await tx.alevinaje.create({
           data: {
             pileta_id: piletaPrincipalId,
             pileta_origen_reproductora_id: piletaOrigenReprNullable,
@@ -351,6 +355,12 @@ class AlevinajeController {
           },
           include: alevinajeInclude,
         });
+
+        if (alevinesIniciales > 0) {
+          await aplicarEstadoPiletaPorCantidad(tx, piletaPrincipalId, alevinesIniciales);
+        }
+
+        return creadoNuevo;
       });
 
       const mensaje = !mismaPileta
