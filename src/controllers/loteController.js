@@ -1,6 +1,31 @@
 import prisma from "../prisma.js";
 import { serializeLote } from "../utils/serializers.js";
-import { ubicacionNombreWhereFromGranja } from "../utils/granjaUbicacion.js";
+import {
+  ubicacionNombreWhereFromGranja,
+  primerUbicacionIdValido,
+  resolverUbicacionFlexible,
+} from "../utils/granjaUbicacion.js";
+
+/**
+ * Misma línea que `GET /piletas`: si viene `ubicacion_id` en query gana sobre el texto de granja.
+ * Sin id, usa `resolverUbicacionFlexible` y recién después el OR de alias por nombre.
+ */
+async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
+  const ubicIdQ = primerUbicacionIdValido(
+    req.query?.ubicacion_id,
+    req.query?.ubicacionId,
+  );
+  if (ubicIdQ != null) return { ubicacionId: ubicIdQ };
+
+  const g = String(granjaParam ?? "").trim();
+  if (!g) return null;
+
+  const flex = await resolverUbicacionFlexible(g);
+  if (flex?.ubicacionId != null) return { ubicacionId: flex.ubicacionId };
+
+  const cond = ubicacionNombreWhereFromGranja(g);
+  return cond ? { ubicacion: cond } : null;
+}
 
 // Lotes pueden enlazarse a `pileta_id` (flujo actual: pileta reproductores) o,
 // por compatibilidad, a `instalacion_id` en datos heredados.
@@ -77,11 +102,13 @@ class LoteController {
           where: {
             id: piletaId,
             tipo: "reproductores",
+            estado: "ocupada",
           },
         });
         if (!pileta) {
           return res.status(400).json({
-            error: "pileta_id invalida o la pileta no es etapa reproductores",
+            error:
+              "pileta_id invalida: debe ser pileta etapa reproductores y estar ocupada",
           });
         }
         data = { ...data, piletaId, instalacionId: null };
@@ -89,14 +116,26 @@ class LoteController {
         data = { ...data, instalacionId, piletaId: null };
       }
 
-      const creado = await prisma.lote.create({
-        data,
-        include: loteInclude,
+      const creado = await prisma.$transaction(async (tx) => {
+        const row = await tx.lote.create({ data });
+        if (piletaId != null) {
+          await tx.pileta.update({
+            where: { id: piletaId },
+            data: { tipo: "alevinaje" },
+          });
+        }
+        return tx.lote.findUnique({
+          where: { id: row.id },
+          include: loteInclude,
+        });
       });
 
       res.status(201).json({
         success: true,
-        message: "Lote registrado correctamente",
+        message:
+          piletaId != null
+            ? "Lote registrado correctamente. La pileta pasó a etapa alevinaje."
+            : "Lote registrado correctamente",
         data: serializeLote(creado),
       });
     } catch (err) {
@@ -125,16 +164,25 @@ class LoteController {
       );
 
       if (piletaId) {
-        const pileta = await prisma.pileta.findFirst({
-          where: {
-            id: piletaId,
-            tipo: "reproductores",
-          },
+        const actual = await prisma.lote.findUnique({
+          where: { id },
+          select: { piletaId: true },
         });
-        if (!pileta) {
-          return res.status(400).json({
-            error: "pileta_id invalida o la pileta no es etapa reproductores",
+        const mismoVinculo = actual?.piletaId === piletaId;
+        if (!mismoVinculo) {
+          const piletaValida = await prisma.pileta.findFirst({
+            where: {
+              id: piletaId,
+              tipo: "reproductores",
+              estado: "ocupada",
+            },
           });
+          if (!piletaValida) {
+            return res.status(400).json({
+              error:
+                "pileta_id invalida: use una pileta reproductores ocupada, o conserve la pileta ya asignada a este lote",
+            });
+          }
         }
         updateData.piletaId = piletaId;
         updateData.instalacionId = null;
@@ -255,22 +303,23 @@ class LoteController {
   }
 
   /**
-   * Lista piletas etapa `reproductores` de la sede (granja via ubicacion.nombre).
-   * No exige inventario `reproductores`: basta la pileta física en esa etapa.
-   * Alias legacy: fi_instalacion_id = fi_pileta_id = id de pileta para compat con formularios viejos.
+   * Piletas etapa `reproductores`, estado ocupada — candidatas para registrar lote control reproductivo.
+   * Al crear el lote, la pileta pasa automáticamente a etapa `alevinaje`.
+   * Filtro de sede igual que `GET /piletas`: `?ubicacion_id=` (prioridad) y texto de `:granja`.
+   * Alias legacy response: fi_instalacion_id = fi_pileta_id.
    */
   static async getInstalacionesReproductores(req, res) {
     try {
-      const granja = String(req.params.granja ?? "").trim();
-      if (!granja) return res.json([]);
+      const granjaParam = String(req.params.granja ?? "").trim();
 
-      const ubicacionCond = ubicacionNombreWhereFromGranja(granja);
-      if (!ubicacionCond) return res.json([]);
+      const filtroUb = await filtroUbicacionPiletaDesdeReq(req, granjaParam);
+      if (!filtroUb) return res.json([]);
 
       const piletas = await prisma.pileta.findMany({
         where: {
           tipo: "reproductores",
-          ubicacion: ubicacionCond,
+          estado: "ocupada",
+          ...filtroUb,
         },
         include: { ubicacion: true },
         orderBy: { nombre: "asc" },
@@ -297,12 +346,14 @@ class LoteController {
       const granja = String(req.params.granja ?? "").trim();
       if (!granja) return res.json([]);
 
-      const ubicacionCond = ubicacionNombreWhereFromGranja(granja);
+      const filtroUb = await filtroUbicacionPiletaDesdeReq(req, granja);
       const or = [
         { instalacion: { granja: { equals: granja, mode: "insensitive" } } },
       ];
-      if (ubicacionCond) {
-        or.push({ pileta: { ubicacion: ubicacionCond } });
+      if (filtroUb?.ubicacionId != null) {
+        or.push({ pileta: { ubicacionId: filtroUb.ubicacionId } });
+      } else if (filtroUb?.ubicacion) {
+        or.push({ pileta: { ubicacion: filtroUb.ubicacion } });
       }
 
       const lotes = await prisma.lote.findMany({
