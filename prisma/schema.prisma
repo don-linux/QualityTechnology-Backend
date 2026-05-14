@@ -193,7 +193,7 @@ model Reproductor {
   biometria_id   Int?
   usuarioId      Int          @map("usuario_id")
   created_at     DateTime     @default(now()) @db.Timestamp(6)
-  updated_at     DateTime     @db.Timestamp(6)
+  updated_at     DateTime     @updatedAt @db.Timestamp(6)
   alimentos      Alimento[]
   biometrias     Biometria?   @relation(fields: [biometria_id], references: [id])
   observacion    observacion? @relation(fields: [observacionId], references: [id])
