@@ -1,17 +1,14 @@
 meta {
   name: GET ventas
   type: http
-  seq: 57
+  seq: 34
 }
 
 get {
-  url: {{baseUrl}}/ventas
+  url: {{baseUrl}}/api/ventas
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

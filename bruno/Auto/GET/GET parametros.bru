@@ -1,17 +1,14 @@
 meta {
   name: GET parametros
   type: http
-  seq: 34
+  seq: 85
 }
 
 get {
-  url: {{baseUrl}}/parametros
+  url: {{baseUrl}}/api/parametros
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

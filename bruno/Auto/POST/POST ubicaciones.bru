@@ -1,0 +1,19 @@
+meta {
+  name: POST ubicaciones
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{baseUrl}}/api/ubicaciones
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -3,12 +3,12 @@
   "dockerComposeFile": ["../docker/dev/compose.yaml", "compose.yaml"],
   "service": "express",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "containerUser": "bun",
-  "remoteUser": "bun",
+  "containerUser": "node",
+  "remoteUser": "node",
   "overrideCommand": false,
   "forwardPorts": [5000],
-  "postCreateCommand": "bun install",
-  "postStartCommand": "bun run dev",
+  "postCreateCommand": "npm install",
+  "postStartCommand": "npm run dev",
   "remoteEnv": {
     "SHELL": "/bin/bash"
   },

@@ -1,17 +1,14 @@
 meta {
   name: DELETE parametros {id}
   type: http
-  seq: 29
+  seq: 41
 }
 
 delete {
-  url: {{baseUrl}}/parametros/{{id}}
+  url: {{baseUrl}}/api/parametros/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

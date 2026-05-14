@@ -1,0 +1,19 @@
+meta {
+  name: 06 PUT Alevines invalid json
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/alevines/99999999
+  body: text
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:text {
+  {
+}

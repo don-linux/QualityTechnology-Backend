@@ -1,17 +1,14 @@
 meta {
   name: GET piletas movimientos filtro {usuario} {granja}
   type: http
-  seq: 44
+  seq: 11
 }
 
 get {
-  url: {{baseUrl}}/piletas/movimientos/filtro/{{usuario}}/{{granja}}
+  url: {{baseUrl}}/api/piletas/movimientos/filtro/{{usuario}}/{{granja}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

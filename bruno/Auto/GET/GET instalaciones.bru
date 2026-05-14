@@ -1,17 +1,14 @@
 meta {
   name: GET instalaciones
   type: http
-  seq: 24
+  seq: 13
 }
 
 get {
-  url: {{baseUrl}}/instalaciones
+  url: {{baseUrl}}/api/instalaciones
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

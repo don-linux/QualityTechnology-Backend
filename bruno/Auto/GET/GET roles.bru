@@ -1,17 +1,14 @@
 meta {
   name: GET roles
   type: http
-  seq: 52
+  seq: 2
 }
 
 get {
-  url: {{baseUrl}}/roles
+  url: {{baseUrl}}/api/roles
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

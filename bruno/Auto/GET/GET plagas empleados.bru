@@ -1,0 +1,14 @@
+meta {
+  name: GET plagas empleados
+  type: http
+  seq: 74
+}
+
+get {
+  url: {{baseUrl}}/api/plagas/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

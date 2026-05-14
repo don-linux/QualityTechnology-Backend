@@ -1,17 +1,14 @@
 meta {
   name: DELETE lotes {id}
   type: http
-  seq: 21
+  seq: 6
 }
 
 delete {
-  url: {{baseUrl}}/lotes/{{id}}
+  url: {{baseUrl}}/api/lotes/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,17 +1,14 @@
 meta {
   name: DELETE visitas {id}
   type: http
-  seq: 50
+  seq: 37
 }
 
 delete {
-  url: {{baseUrl}}/visitas/{{id}}
+  url: {{baseUrl}}/api/visitas/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

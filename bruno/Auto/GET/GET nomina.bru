@@ -1,17 +1,14 @@
 meta {
   name: GET nomina
   type: http
-  seq: 39
+  seq: 63
 }
 
 get {
-  url: {{baseUrl}}/nomina
+  url: {{baseUrl}}/api/nomina
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

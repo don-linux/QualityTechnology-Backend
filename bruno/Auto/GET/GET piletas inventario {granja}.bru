@@ -1,17 +1,14 @@
 meta {
   name: GET piletas inventario {granja}
   type: http
-  seq: 40
+  seq: 8
 }
 
 get {
-  url: {{baseUrl}}/piletas/inventario/{{granja}}
+  url: {{baseUrl}}/api/piletas/inventario/{{granja}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

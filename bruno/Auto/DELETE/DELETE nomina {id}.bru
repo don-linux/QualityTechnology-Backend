@@ -1,17 +1,14 @@
 meta {
   name: DELETE nomina {id}
   type: http
-  seq: 33
+  seq: 25
 }
 
 delete {
-  url: {{baseUrl}}/nomina/{{id}}
+  url: {{baseUrl}}/api/nomina/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,0 +1,14 @@
+meta {
+  name: DELETE engorda movimientos {id}
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/engorda/movimientos/{{id}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

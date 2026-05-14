@@ -1,0 +1,14 @@
+meta {
+  name: GET alevinaje familia-por-pileta {piletaId}
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/alevinaje/familia-por-pileta/{{instalacionId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

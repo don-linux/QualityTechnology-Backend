@@ -1,17 +1,14 @@
 meta {
   name: GET clientes
   type: http
-  seq: 8
+  seq: 31
 }
 
 get {
-  url: {{baseUrl}}/clientes
+  url: {{baseUrl}}/api/clientes
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

@@ -1,17 +1,14 @@
 meta {
   name: DELETE caja-ahorro {id}
   type: http
-  seq: 4
+  seq: 19
 }
 
 delete {
-  url: {{baseUrl}}/caja-ahorro/{{id}}
+  url: {{baseUrl}}/api/caja-ahorro/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

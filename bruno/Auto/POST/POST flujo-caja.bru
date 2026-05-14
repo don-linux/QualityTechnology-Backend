@@ -1,19 +1,19 @@
 meta {
   name: POST flujo-caja
   type: http
-  seq: 16
+  seq: 22
 }
 
 post {
-  url: {{baseUrl}}/flujo-caja
-  body: json
+  url: {{baseUrl}}/api/flujo-caja
+  body: multipartForm
 }
 
 headers {
-  Content-Type: application/json
+  Content-Type: multipart/form-data
   Authorization: Bearer {{token}}
 }
 
-body:json {
-  {}
+body:multipart-form {
+  facturaFile: @file()
 }

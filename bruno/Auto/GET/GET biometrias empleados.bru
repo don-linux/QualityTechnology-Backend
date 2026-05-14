@@ -1,0 +1,14 @@
+meta {
+  name: GET biometrias empleados
+  type: http
+  seq: 71
+}
+
+get {
+  url: {{baseUrl}}/api/biometrias/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

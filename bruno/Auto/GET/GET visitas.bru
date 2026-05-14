@@ -1,17 +1,14 @@
 meta {
   name: GET visitas
   type: http
-  seq: 60
+  seq: 81
 }
 
 get {
-  url: {{baseUrl}}/visitas
+  url: {{baseUrl}}/api/visitas
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

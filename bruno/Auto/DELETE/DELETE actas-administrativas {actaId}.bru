@@ -1,0 +1,14 @@
+meta {
+  name: DELETE actas-administrativas {actaId}
+  type: http
+  seq: 24
+}
+
+delete {
+  url: {{baseUrl}}/api/actas-administrativas/{{actaId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

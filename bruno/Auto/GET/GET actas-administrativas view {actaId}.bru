@@ -1,0 +1,14 @@
+meta {
+  name: GET actas-administrativas view {actaId}
+  type: http
+  seq: 61
+}
+
+get {
+  url: {{baseUrl}}/api/actas-administrativas/view/{{actaId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

@@ -1,17 +1,14 @@
 meta {
   name: DELETE roles-modulos {rolId} modulos {moduloId}
   type: http
-  seq: 43
+  seq: 2
 }
 
 delete {
-  url: {{baseUrl}}/roles-modulos/{{rolId}}/modulos/{{moduloId}}
+  url: {{baseUrl}}/api/roles-modulos/{{rolId}}/modulos/{{moduloId}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

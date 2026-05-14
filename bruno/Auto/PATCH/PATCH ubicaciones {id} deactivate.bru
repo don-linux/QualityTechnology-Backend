@@ -1,0 +1,19 @@
+meta {
+  name: PATCH ubicaciones {id} deactivate
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/api/ubicaciones/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

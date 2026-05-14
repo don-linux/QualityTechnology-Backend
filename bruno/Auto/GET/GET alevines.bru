@@ -1,17 +1,14 @@
 meta {
   name: GET alevines
   type: http
-  seq: 1
+  seq: 26
 }
 
 get {
-  url: {{baseUrl}}/alevines
+  url: {{baseUrl}}/api/alevines
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

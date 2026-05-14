@@ -1,17 +1,14 @@
 meta {
   name: DELETE plagas
   type: http
-  seq: 37
+  seq: 30
 }
 
 delete {
-  url: {{baseUrl}}/plagas
+  url: {{baseUrl}}/api/plagas
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

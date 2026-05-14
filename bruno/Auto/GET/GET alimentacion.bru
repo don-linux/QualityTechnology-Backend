@@ -1,17 +1,14 @@
 meta {
   name: GET alimentacion
   type: http
-  seq: 36
+  seq: 76
 }
 
 get {
-  url: {{baseUrl}}/alimentacion
+  url: {{baseUrl}}/api/alimentacion
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

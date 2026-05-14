@@ -1,17 +1,14 @@
 meta {
   name: GET empleados
   type: http
-  seq: 12
+  seq: 46
 }
 
 get {
-  url: {{baseUrl}}/empleados
+  url: {{baseUrl}}/api/empleados
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

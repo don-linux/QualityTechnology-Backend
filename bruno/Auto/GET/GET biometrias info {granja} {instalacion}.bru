@@ -1,17 +1,14 @@
 meta {
   name: GET biometrias info {granja} {instalacion}
   type: http
-  seq: 4
+  seq: 72
 }
 
 get {
-  url: {{baseUrl}}/biometrias/info/{{granja}}/{{instalacion}}
+  url: {{baseUrl}}/api/biometrias/info/{{granja}}/{{instalacion}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

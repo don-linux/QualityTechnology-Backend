@@ -1,11 +1,11 @@
 meta {
   name: POST cuentas
   type: http
-  seq: 8
+  seq: 23
 }
 
 post {
-  url: {{baseUrl}}/cuentas
+  url: {{baseUrl}}/api/cuentas
   body: json
 }
 
@@ -15,11 +15,5 @@ headers {
 }
 
 body:json {
-  {
-    "fc_udn": "Quality Technology",
-    "fc_nombre": "Cuenta principal QT",
-    "fc_numero_cuenta": "0000-1234-5678",
-    "fc_banco": "BBVA",
-    "fc_tipo": "Cheques"
-  }
+  {}
 }

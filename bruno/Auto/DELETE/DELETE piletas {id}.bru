@@ -1,17 +1,14 @@
 meta {
   name: DELETE piletas {id}
   type: http
-  seq: 34
+  seq: 3
 }
 
 delete {
-  url: {{baseUrl}}/piletas/{{id}}
+  url: {{baseUrl}}/api/piletas/{{id}}
   body: none
 }
-
 
 headers {
   Authorization: Bearer {{token}}
 }
-
-body: none

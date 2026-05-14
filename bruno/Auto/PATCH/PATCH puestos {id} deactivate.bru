@@ -1,0 +1,19 @@
+meta {
+  name: PATCH puestos {id} deactivate
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/api/puestos/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

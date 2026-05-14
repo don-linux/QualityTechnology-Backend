@@ -1,0 +1,14 @@
+meta {
+  name: GET recambios empleados
+  type: http
+  seq: 88
+}
+
+get {
+  url: {{baseUrl}}/api/recambios/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
