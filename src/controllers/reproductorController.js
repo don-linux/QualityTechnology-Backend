@@ -69,6 +69,65 @@ async function crearSiembraMovimientoReproductor(tx, { piletaOrigenId, piletaDes
   return s.id;
 }
 
+/** Descuenta organismo en pileta interna que alimentó el destino (traslado). Si todo sale → borra repro y pileta vacía. */
+async function consumirInventarioOrigenPorTraslado(
+  tx,
+  { piletaOrigenId, piletaDestinoId, cantidadMovida, excludeReproductorId },
+) {
+  const ori = toInt(piletaOrigenId);
+  const dest = toInt(piletaDestinoId);
+  const mov = Math.floor(Number(cantidadMovida) || 0);
+  if (!ori || !dest || ori === dest || mov <= 0) return;
+
+  const repOrig = await tx.reproductor.findUnique({
+    where: { pileta_id: ori },
+    select: { id: true, machos: true, hembras: true, cantidad_total: true },
+  });
+  if (!repOrig) return;
+  if (excludeReproductorId != null && repOrig.id === excludeReproductorId) return;
+
+  const m0 = repOrig.machos;
+  const h0 = repOrig.hembras;
+  if (m0 + h0 <= 0) return;
+
+  const sacar = Math.min(mov, m0 + h0);
+
+  let m = m0;
+  let h = h0;
+
+  if (sacar >= m + h) {
+    await tx.reproductor.delete({ where: { id: repOrig.id } });
+    await aplicarEstadoPiletaPorCantidad(tx, ori, 0);
+    return;
+  }
+
+  let rest = sacar;
+  while (rest > 0 && m + h > 0) {
+    if (m >= h && m > 0) {
+      m -= 1;
+      rest -= 1;
+      continue;
+    }
+    if (h > 0) {
+      h -= 1;
+      rest -= 1;
+      continue;
+    }
+    break;
+  }
+  const cantidadActual = m + h;
+  await tx.reproductor.update({
+    where: { id: repOrig.id },
+    data: {
+      machos: m,
+      hembras: h,
+      cantidad_total: cantidadActual,
+      ratio: calcularRatio(m, h),
+    },
+  });
+  await aplicarEstadoPiletaPorCantidad(tx, ori, cantidadActual);
+}
+
 const reproductorInclude = {
   piletas: {
     include: {
@@ -165,6 +224,14 @@ class ReproductorController {
           include: reproductorInclude,
         });
         await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+
+        await consumirInventarioOrigenPorTraslado(tx, {
+          piletaOrigenId: origenPiletaId,
+          piletaDestinoId: piletaId,
+          cantidadMovida: cantidadTotal,
+          excludeReproductorId: repro.id,
+        });
+
         return repro;
       });
 
@@ -274,6 +341,13 @@ class ReproductorController {
               data: { siembra_id: nuevaSiembraId },
             });
           }
+
+          await consumirInventarioOrigenPorTraslado(tx, {
+            piletaOrigenId: origenPiletaReq,
+            piletaDestinoId: piletaActual,
+            cantidadMovida: cantidadMovimiento,
+            excludeReproductorId: id,
+          });
         }
 
         return tx.reproductor.findUnique({
@@ -331,13 +405,13 @@ class ReproductorController {
       const ubicClause = piletaWhereUbicacionFromRequest(req);
       if (!ubicClause) return res.json([]);
 
-      const reproPiletaFilter = { ...ubicClause, tipo: "reproductores" };
+      const piletaTipoReprodEnUbic = { ...ubicClause, tipo: "reproductores" };
 
       const rows = await prisma.siembra.findMany({
         where: {
           OR: [
-            { piletas_siembra_pileta_destinoTopiletas: reproPiletaFilter },
-            { piletas_siembra_pileta_origenTopiletas: reproPiletaFilter },
+            { piletas_siembra_pileta_destinoTopiletas: piletaTipoReprodEnUbic },
+            { piletas_siembra_pileta_origenTopiletas: piletaTipoReprodEnUbic },
           ],
         },
         include: {
