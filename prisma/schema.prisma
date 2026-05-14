@@ -270,6 +270,8 @@ model Engorda {
   id            Int          @id @default(autoincrement())
   pileta_id     Int          @unique
   cantidad      Int
+  machos        Int          @default(0)
+  hembras       Int          @default(0)
   tallaGr       Decimal?     @map("talla_gr") @db.Decimal(10, 2)
   observacionId Int?         @map("observacion_id")
   siembra_id    Int?

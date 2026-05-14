@@ -2,6 +2,12 @@ import prisma from "../prisma.js";
 import { serializeEngorda } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import {
+  aplicarEstadoPiletaPorCantidad,
+  descontarReproductorPorEgresoHaciaAlevinaje,
+} from "../utils/reproductorInventario.js";
+import { descontarAlevinajePorEgresoHaciaEngorda } from "../utils/alevinajeInventario.js";
+import { descontarEngordaPorEgresoHaciaEngorda } from "../utils/engordaInventario.js";
 
 // Engorda es 1-1 con Pileta. La trazabilidad de traslados hacia/desde piletas
 // etapa `engorda` se expone vía registros `siembra` (como en reproductores).
@@ -28,6 +34,12 @@ function toDecimal(value) {
 const engordaInclude = {
   piletas: { include: { ubicacion: true } },
   observacion: true,
+  siembra: {
+    select: {
+      pileta_origen: true,
+      piletas_siembra_pileta_origenTopiletas: { select: { id: true, nombre: true } },
+    },
+  },
 };
 
 class EngordaController {
@@ -68,42 +80,137 @@ class EngordaController {
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id es obligatorio" });
       }
-      const cantidad = toInt(pick(req.body, "cantidad"), 0) ?? 0;
+
+      const machosIn = Math.max(0, toInt(pick(req.body, "machos"), 0) ?? 0);
+      const hembrasIn = Math.max(0, toInt(pick(req.body, "hembras"), 0) ?? 0);
+      const cantidad = machosIn + hembrasIn;
+      const cantidadBody = pick(req.body, "cantidad");
+      if (cantidad <= 0) {
+        return res.status(400).json({ error: "machos + hembras debe ser mayor a cero" });
+      }
+      if (
+        cantidadBody !== undefined &&
+        cantidadBody !== null &&
+        cantidadBody !== ""
+      ) {
+        const cDeclared = toInt(cantidadBody, null);
+        if (cDeclared !== null && cDeclared !== cantidad) {
+          return res.status(400).json({ error: "cantidad total debe coincidir con machos + hembras" });
+        }
+      }
+
       const tallaGr = toDecimal(pick(req.body, "talla_gr", "tallaGr"));
-      const usuarioId = req.user.usuario_id;
+      const usuarioId = toInt(req.user.usuario_id);
+      if (!usuarioId) {
+        return res.status(403).json({ error: "No autorizado" });
+      }
       const obsTexto = pick(req.body, "observacion", "fc_observacion");
       const engordaIdExistente = toInt(pick(req.body, "fi_engorda_id", "engorda_id", "id"));
+      const origenPiletaId = toInt(
+        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_pileta_origen_id"),
+      );
 
       const result = await prisma.$transaction(async (tx) => {
+        if (!engordaIdExistente && origenPiletaId && origenPiletaId !== piletaId) {
+          const pilOrigen = await tx.pileta.findUnique({
+            where: { id: origenPiletaId },
+            select: { id: true, tipo: true, estado: true },
+          });
+          if (!pilOrigen) {
+            const err = new Error("Pileta de origen no encontrada");
+            err.code = "ORIGEN_INVALIDO";
+            throw err;
+          }
+          if (pilOrigen.estado !== "ocupada") {
+            const err = new Error("La pileta de origen debe estar ocupada");
+            err.code = "ORIGEN_NO_OCUPADA";
+            throw err;
+          }
+
+          switch (pilOrigen.tipo) {
+            case "alevinaje":
+              await descontarAlevinajePorEgresoHaciaEngorda(tx, origenPiletaId, {
+                piletaDestinoId: piletaId,
+                machosDeducir: machosIn,
+                hembrasDeducir: hembrasIn,
+              });
+              break;
+            case "reproductores":
+              await descontarReproductorPorEgresoHaciaAlevinaje(tx, origenPiletaId, {
+                piletaDestinoId: piletaId,
+                machosDeducir: machosIn,
+                hembrasDeducir: hembrasIn,
+                cantidadTotalSinSexo: 0,
+              });
+              break;
+            case "engorda":
+              await descontarEngordaPorEgresoHaciaEngorda(tx, origenPiletaId, {
+                piletaDestinoId: piletaId,
+                machosDeducir: machosIn,
+                hembrasDeducir: hembrasIn,
+              });
+              break;
+            default: {
+              const err = new Error("Tipo de pileta de origen no admite traslado a engorda");
+              err.code = "ORIGEN_TIPO_INVALIDO";
+              throw err;
+            }
+          }
+        }
+
+        let siembraId = null;
+        if (!engordaIdExistente && origenPiletaId && origenPiletaId !== piletaId) {
+          const s = await tx.siembra.create({
+            data: {
+              pileta_origen: origenPiletaId,
+              pileta_destino: piletaId,
+              cantidad: BigInt(cantidad),
+              mortalidad: 0,
+              usuario_id: usuarioId,
+            },
+          });
+          siembraId = s.id;
+        }
+
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId,
           proceso: "engorda",
         });
 
+        let row;
         if (engordaIdExistente) {
-          return tx.engorda.update({
+          row = await tx.engorda.update({
             where: { id: engordaIdExistente },
             data: {
               pileta_id: piletaId,
               cantidad,
+              machos: machosIn,
+              hembras: hembrasIn,
               ...(tallaGr !== null ? { tallaGr } : {}),
               ...(obsId ? { observacionId: obsId } : {}),
               usuarioId,
             },
             include: engordaInclude,
           });
+        } else {
+          row = await tx.engorda.create({
+            data: {
+              pileta_id: piletaId,
+              cantidad,
+              machos: machosIn,
+              hembras: hembrasIn,
+              ...(tallaGr !== null ? { tallaGr } : {}),
+              ...(obsId ? { observacionId: obsId } : {}),
+              ...(siembraId ? { siembra_id: siembraId } : {}),
+              usuarioId,
+            },
+            include: engordaInclude,
+          });
         }
 
-        return tx.engorda.create({
-          data: {
-            pileta_id: piletaId,
-            cantidad,
-            ...(tallaGr !== null ? { tallaGr } : {}),
-            ...(obsId ? { observacionId: obsId } : {}),
-            usuarioId,
-          },
-          include: engordaInclude,
-        });
+        await aplicarEstadoPiletaPorCantidad(tx, piletaId, row.cantidad);
+
+        return row;
       });
 
       res.status(engordaIdExistente ? 200 : 201).json({
@@ -113,6 +220,22 @@ class EngordaController {
         data: serializeEngorda(result),
       });
     } catch (err) {
+      const biz = err.code;
+      if (
+        biz === "ALEV_CANTIDAD_INSUFICIENTE" ||
+        biz === "REPRO_CANTIDAD_INSUFICIENTE" ||
+        biz === "ENGORDA_CANTIDAD_INSUFICIENTE" ||
+        biz === "ENGORDA_ORIGEN_VACIA"
+      ) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (
+        biz === "ORIGEN_INVALIDO" ||
+        biz === "ORIGEN_NO_OCUPADA" ||
+        biz === "ORIGEN_TIPO_INVALIDO"
+      ) {
+        return res.status(400).json({ error: err.message });
+      }
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Esa pileta ya tiene una engorda asociada" });
       }
@@ -162,7 +285,16 @@ class EngordaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.engorda.delete({ where: { id } });
+      await prisma.$transaction(async (tx) => {
+        const prev = await tx.engorda.findUnique({
+          where: { id },
+          select: { pileta_id: true },
+        });
+        await tx.engorda.delete({ where: { id } });
+        if (prev?.pileta_id) {
+          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, 0);
+        }
+      });
       res.json({ mensaje: "Registro eliminado correctamente." });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado." });
