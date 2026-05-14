@@ -77,12 +77,11 @@ class LoteController {
           where: {
             id: piletaId,
             tipo: "reproductores",
-            reproductores: { isNot: null },
           },
         });
         if (!pileta) {
           return res.status(400).json({
-            error: "pileta_id invalida, no es reproductores o sin reproductores registrados",
+            error: "pileta_id invalida o la pileta no es etapa reproductores",
           });
         }
         data = { ...data, piletaId, instalacionId: null };
@@ -130,12 +129,11 @@ class LoteController {
           where: {
             id: piletaId,
             tipo: "reproductores",
-            reproductores: { isNot: null },
           },
         });
         if (!pileta) {
           return res.status(400).json({
-            error: "pileta_id invalida, no es reproductores o sin reproductores registrados",
+            error: "pileta_id invalida o la pileta no es etapa reproductores",
           });
         }
         updateData.piletaId = piletaId;
@@ -257,7 +255,8 @@ class LoteController {
   }
 
   /**
-   * Lista piletas etapa reproductores con reproductor asignado (granja via ubicacion.nombre).
+   * Lista piletas etapa `reproductores` de la sede (granja via ubicacion.nombre).
+   * No exige inventario `reproductores`: basta la pileta física en esa etapa.
    * Alias legacy: fi_instalacion_id = fi_pileta_id = id de pileta para compat con formularios viejos.
    */
   static async getInstalacionesReproductores(req, res) {
@@ -271,10 +270,9 @@ class LoteController {
       const piletas = await prisma.pileta.findMany({
         where: {
           tipo: "reproductores",
-          reproductores: { isNot: null },
           ubicacion: ubicacionCond,
         },
-        include: { reproductores: true, ubicacion: true },
+        include: { ubicacion: true },
         orderBy: { nombre: "asc" },
       });
 

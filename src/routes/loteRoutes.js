@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /* =====================================================
-   ORIGEN CONTROL REPRODUCTIVO (piletas reproductores; ruta legacy)
+   ORIGEN CONTROL REPRODUCTIVO — piletas físicas etapa reproductores (ruta legacy)
 ===================================================== */
 
 router.get(
