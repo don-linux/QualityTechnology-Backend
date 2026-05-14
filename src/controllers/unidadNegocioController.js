@@ -13,19 +13,85 @@ function pick(body, ...keys) {
   return undefined;
 }
 
-const unidadInclude = { ubicacion: { select: { id: true, nombre: true } } };
+/** Sin `include: { ubicacion }` por compatibilidad con client/schema que sólo tienen `ubicacionId`. */
+async function mapUbicacionesNombres(ubicacionIds) {
+  const ids = [...new Set(ubicacionIds.filter((x) => x != null))];
+  if (ids.length === 0) return new Map();
+  const rows = await prisma.ubicacion.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, nombre: true },
+  });
+  return new Map(rows.map((r) => [r.id, r.nombre]));
+}
+
+async function serializeUnidadConUbicacion(unidad) {
+  let ubicacionNombre = null;
+  if (unidad.ubicacionId != null) {
+    const row = await prisma.ubicacion.findUnique({
+      where: { id: unidad.ubicacionId },
+      select: { nombre: true },
+    });
+    ubicacionNombre = row?.nombre ?? null;
+  }
+  return serializeUnidadNegocioFull(unidad, { ubicacionNombre });
+}
+
+const MIGRATE_HINT =
+  "La base de datos no coincide con el esquema del backend (falta tabla/columna o migración pendiente). " +
+  'En QualityTechnology-Backend ejecute: npx prisma migrate deploy';
+
+/** Respuesta cuando Prisma detecta tabla/columna inexistentes (BD sin migraciones aplicadas). */
+function respondSchemaMismatch(res, err) {
+  return res.status(500).json({
+    error: MIGRATE_HINT,
+    prismaCode: err.code,
+    ...(err.meta && typeof err.meta === "object" ? { prismaMeta: err.meta } : {}),
+  });
+}
+
+/** Errores de listado de unidades (incluye mismatch de esquema P2021/P2022). */
+function respondUnidadesListCatch(res, ctx, err) {
+  console.error(ctx, err);
+  const dev = process.env.NODE_ENV !== "production";
+  const knownSchemaMismatch = err?.code === "P2022" || err?.code === "P2021";
+  if (knownSchemaMismatch) {
+    return respondSchemaMismatch(res, err);
+  }
+  return res.status(500).json({
+    error: "Error al obtener unidades de negocio",
+    ...(dev ? { detail: String(err.message), prismaCode: err.code } : {}),
+  });
+}
+
+function respondPrismaMutationError(res, ctx, err, userMessage) {
+  console.error(ctx, err);
+  const dev = process.env.NODE_ENV !== "production";
+  if (err?.code === "P2022" || err?.code === "P2021") {
+    return respondSchemaMismatch(res, err);
+  }
+  return res.status(500).json({
+    error: userMessage,
+    ...(dev ? { detail: String(err.message), prismaCode: err.code } : {}),
+  });
+}
 
 class UnidadNegocioController {
   static async getAll(req, res) {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
-        include: unidadInclude,
         orderBy: { id: "asc" },
       });
-      res.json(unidades.map(serializeUnidadNegocioFull));
+      const nombres = await mapUbicacionesNombres(unidades.map((u) => u.ubicacionId));
+      res.json(
+        unidades.map((u) =>
+          serializeUnidadNegocioFull(u, {
+            ubicacionNombre:
+              u.ubicacionId != null ? (nombres.get(u.ubicacionId) ?? null) : null,
+          })
+        )
+      );
     } catch (err) {
-      console.error("Error al obtener unidades de negocio:", err);
-      res.status(500).json({ error: "Error al obtener unidades de negocio" });
+      respondUnidadesListCatch(res, "Error al obtener unidades de negocio:", err);
     }
   }
 
@@ -33,13 +99,19 @@ class UnidadNegocioController {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
         where: { esta_activo: true },
-        include: unidadInclude,
         orderBy: { nombre: "asc" },
       });
-      res.json(unidades.map(serializeUnidadNegocioFull));
+      const nombres = await mapUbicacionesNombres(unidades.map((u) => u.ubicacionId));
+      res.json(
+        unidades.map((u) =>
+          serializeUnidadNegocioFull(u, {
+            ubicacionNombre:
+              u.ubicacionId != null ? (nombres.get(u.ubicacionId) ?? null) : null,
+          })
+        )
+      );
     } catch (err) {
-      console.error("Error al obtener unidades de negocio activas:", err);
-      res.status(500).json({ error: "Error al obtener unidades de negocio" });
+      respondUnidadesListCatch(res, "Error al obtener unidades de negocio activas:", err);
     }
   }
 
@@ -54,18 +126,21 @@ class UnidadNegocioController {
           nombre: String(nombre),
           ...(ubicacionId ? { ubicacionId } : {}),
         },
-        include: unidadInclude,
       });
       res.status(201).json({
         mensaje: "Unidad de negocio creada correctamente",
-        unidad: serializeUnidadNegocioFull(unidad),
+        unidad: await serializeUnidadConUbicacion(unidad),
       });
     } catch (err) {
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Ya existe una unidad de negocio con ese nombre" });
       }
-      console.error("Error al crear unidad de negocio:", err);
-      res.status(500).json({ error: "Error al crear unidad de negocio" });
+      if (err.code === "P2003") {
+        return res.status(400).json({
+          error: "La ubicación física no existe o fue eliminada. Verifique el catálogo de ubicaciones.",
+        });
+      }
+      respondPrismaMutationError(res, "Error al crear unidad de negocio:", err, "Error al crear unidad de negocio");
     }
   }
 
@@ -86,19 +161,27 @@ class UnidadNegocioController {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
         data,
-        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio actualizada correctamente",
-        unidad: serializeUnidadNegocioFull(unidad),
+        unidad: await serializeUnidadConUbicacion(unidad),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Unidad de negocio no encontrada" });
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Ya existe una unidad de negocio con ese nombre" });
       }
-      console.error("Error al actualizar unidad de negocio:", err);
-      res.status(500).json({ error: "Error al actualizar unidad de negocio" });
+      if (err.code === "P2003") {
+        return res.status(400).json({
+          error: "La ubicación física no existe o fue eliminada. Verifique el catálogo de ubicaciones.",
+        });
+      }
+      respondPrismaMutationError(
+        res,
+        "Error al actualizar unidad de negocio:",
+        err,
+        "Error al actualizar unidad de negocio"
+      );
     }
   }
 
@@ -110,16 +193,19 @@ class UnidadNegocioController {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
         data: { esta_activo: true },
-        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio activada correctamente",
-        unidad: serializeUnidadNegocioFull(unidad),
+        unidad: await serializeUnidadConUbicacion(unidad),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Unidad de negocio no encontrada" });
-      console.error("Error al activar unidad de negocio:", err);
-      res.status(500).json({ error: "Error al activar unidad de negocio" });
+      respondPrismaMutationError(
+        res,
+        "Error al activar unidad de negocio:",
+        err,
+        "Error al activar unidad de negocio"
+      );
     }
   }
 
@@ -131,16 +217,19 @@ class UnidadNegocioController {
       const unidad = await prisma.unidadNegocio.update({
         where: { id },
         data: { esta_activo: false },
-        include: unidadInclude,
       });
       res.json({
         mensaje: "Unidad de negocio desactivada correctamente",
-        unidad: serializeUnidadNegocioFull(unidad),
+        unidad: await serializeUnidadConUbicacion(unidad),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Unidad de negocio no encontrada" });
-      console.error("Error al desactivar unidad de negocio:", err);
-      res.status(500).json({ error: "Error al desactivar unidad de negocio" });
+      respondPrismaMutationError(
+        res,
+        "Error al desactivar unidad de negocio:",
+        err,
+        "Error al desactivar unidad de negocio"
+      );
     }
   }
 }

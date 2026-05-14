@@ -7,8 +7,8 @@ import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 // ubicacion) por una relacion 1-1 Reproductor<->Pileta (la pileta tiene
 // ubicacionId). Tampoco existe `trazaReproductor` ni fechas de siembra y
 // biometria en el modelo: se reemplazaron por FKs siembra_id y biometria_id.
-// Los endpoints de trazabilidad/instalaciones quedan como 501 hasta que se
-// reimplementen contra `siembra` y `Biometria`.
+// Trazabilidad de movimientos se expone vía registros `siembra`; el endpoint
+// de instalaciones heredado sigue en 501 hasta rediseño.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -230,13 +230,71 @@ class ReproductorController {
   }
 
   // ---------------------------------------------------------------------------
-  // Endpoints heredados que requieren rediseno (sin modelo trazaReproductor ni
-  // relacion directa con Instalacion).
+  // Trazabilidad vía `siembra`: movimientos donde origen o destino es pileta
+  // tipo `reproductores` en la ubicación indicada (sustituye `trazaReproductor`).
   // ---------------------------------------------------------------------------
   static async getMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno: ya no existe trazaReproductor en el schema.",
-    });
+    try {
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (!ubicClause) return res.json([]);
+
+      const reproPiletaFilter = { ...ubicClause, tipo: "reproductores" };
+
+      const rows = await prisma.siembra.findMany({
+        where: {
+          OR: [
+            { piletas_siembra_pileta_destinoTopiletas: reproPiletaFilter },
+            { piletas_siembra_pileta_origenTopiletas: reproPiletaFilter },
+          ],
+        },
+        include: {
+          piletas_siembra_pileta_origenTopiletas: {
+            select: {
+              id: true,
+              nombre: true,
+              tipo: true,
+              ubicacion: { select: { nombre: true } },
+            },
+          },
+          piletas_siembra_pileta_destinoTopiletas: {
+            select: {
+              id: true,
+              nombre: true,
+              tipo: true,
+              ubicacion: { select: { nombre: true } },
+            },
+          },
+        },
+        orderBy: [{ fecha: "desc" }, { id: "desc" }],
+        take: 500,
+      });
+
+      const payload = rows.map((s) => {
+        const pilOr = s.piletas_siembra_pileta_origenTopiletas;
+        const pilDest = s.piletas_siembra_pileta_destinoTopiletas;
+        const brutas =
+          typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
+        const mortalidad = s.mortalidad ?? 0;
+        const netas = Math.max(0, brutas - mortalidad);
+        const obsParts = [];
+        if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
+
+        return {
+          fi_movimiento_id: s.id,
+          origen: pilOr?.nombre ?? "Externo",
+          destino: pilDest?.nombre ?? "—",
+          cantidad_trasladada: netas,
+          fecha_movimiento: s.fecha,
+          observacion: obsParts.length ? obsParts.join(". ") : null,
+          origen_pileta_id: pilOr?.id ?? null,
+        };
+      });
+
+      res.json(payload);
+    } catch (err) {
+      console.error("Error movimientos reproductores:", err);
+      res.status(500).json({ error: "Error al obtener movimientos de reproductores" });
+    }
   }
 
   static async getInstalaciones(req, res) {

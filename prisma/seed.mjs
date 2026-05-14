@@ -64,11 +64,11 @@ async function main() {
   await prisma.ubicacion.createMany({
     data: [
       {
-        nombre: "Granja Acuicola Medellin",
+        nombre: "Medellin",
         direccion: "Granja acuicola ubicada en Medellin",
       },
       {
-        nombre: "Granja Acuicola La Ceiba",
+        nombre: "La Ceiba",
         direccion: "Granja acuicola ubicada en La Ceiba",
       },
     ],

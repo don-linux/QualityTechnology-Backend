@@ -625,8 +625,10 @@ export function serializeFlujoCaja(f) {
   };
 }
 
-export function serializeUnidadNegocioFull(u) {
+export function serializeUnidadNegocioFull(u, opts = {}) {
   if (!u) return null;
+  const ubicacionNombre =
+    opts.ubicacionNombre !== undefined ? opts.ubicacionNombre : (u.ubicacion?.nombre ?? null);
   return {
     fi_unidad_negocio_id: u.id,
     unidad_negocio_id: u.id,
@@ -635,7 +637,7 @@ export function serializeUnidadNegocioFull(u) {
     activo: u.esta_activo,
     fi_ubicacion_id: u.ubicacionId ?? null,
     ubicacion_id: u.ubicacionId ?? null,
-    fc_ubicacion_nombre: u.ubicacion?.nombre ?? null,
+    fc_ubicacion_nombre: ubicacionNombre,
   };
 }
 

@@ -56,6 +56,42 @@ function calcMetrosCubicos(largo, ancho, alto) {
   return Number((l * a * h).toFixed(3));
 }
 
+const MIGRATE_HINT =
+  "La base de datos no coincide con el esquema Prisma del backend (falta tabla o columna). " +
+  "En QualityTechnology-Backend ejecute: npx prisma migrate deploy";
+
+function devErrPayload(err) {
+  if (process.env.NODE_ENV === "production") return {};
+  const out = { detail: String(err?.message ?? err) };
+  if (err?.code != null) out.prismaCode = err.code;
+  if (err?.name != null) out.errorName = err.name;
+  return out;
+}
+
+/** Errores de mutación tras agotar códigos P2002/P2003/P2025 tratados aparte */
+function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 500) {
+  console.error(ctx, err);
+  const dev = devErrPayload(err);
+  if (err?.code === "P2021" || err?.code === "P2022") {
+    return res.status(500).json({ error: MIGRATE_HINT, prismaCode: err.code, ...dev });
+  }
+  if (err?.name === "PrismaClientInitializationError") {
+    return res.status(503).json({
+      error:
+        "No hay conexion a la base de datos. Compruebe que PostgreSQL esta en ejecucion y que DATABASE_URL usa el host y puerto donde escucha Postgres.",
+      ...dev,
+    });
+  }
+  if (err?.name === "PrismaClientValidationError") {
+    return res.status(400).json({
+      error:
+        "Datos invalidos para el modelo Pileta (revisar tipo, estado y valores numericos).",
+      ...dev,
+    });
+  }
+  return res.status(statusFallback).json({ error: userMessage, ...dev });
+}
+
 const piletaInclude = {
   ubicacion: true,
   observaciones: {
@@ -167,8 +203,14 @@ class PiletaController {
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Ya existe una pileta con ese nombre en esa ubicacion" });
       }
-      console.error("Error al registrar pileta:", err);
-      res.status(500).json({ error: "Error al registrar pileta" });
+      if (err.code === "P2003") {
+        return res.status(400).json({
+          error:
+            "ubicacion_id no existe en el catalogo de ubicaciones, o alguna relacion requerida es invalida. Verifique el id o use `granja` para resolver/crear la sede.",
+          ...devErrPayload(err),
+        });
+      }
+      return respondPiletaMutationErr(res, "Error al registrar pileta:", err, "Error al registrar pileta");
     }
   }
 
@@ -231,8 +273,14 @@ class PiletaController {
       if (err.code === "P2002") {
         return res.status(409).json({ error: "Ya existe una pileta con ese nombre en esa ubicacion" });
       }
-      console.error("Error al actualizar pileta:", err);
-      res.status(500).json({ error: "Error al actualizar pileta" });
+      if (err.code === "P2003") {
+        return res.status(400).json({
+          error:
+            "ubicacion_id no existe en el catalogo de ubicaciones, o la relacion es invalida.",
+          ...devErrPayload(err),
+        });
+      }
+      return respondPiletaMutationErr(res, "Error al actualizar pileta:", err, "Error al actualizar pileta");
     }
   }
 
@@ -252,8 +300,7 @@ class PiletaController {
           error: "No se puede eliminar: la pileta tiene registros asociados (siembra, alevinaje, biometrias, etc.)",
         });
       }
-      console.error("Error al eliminar pileta:", err);
-      res.status(500).json({ error: "Error al eliminar pileta" });
+      return respondPiletaMutationErr(res, "Error al eliminar pileta:", err, "Error al eliminar pileta");
     }
   }
 
