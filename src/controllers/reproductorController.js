@@ -48,6 +48,27 @@ async function aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal) {
   });
 }
 
+/** Ingreso/traslado hacia pileta destino repro (tabla movimientos = `siembra`). Origen opcional (= externo si null). */
+async function crearSiembraMovimientoReproductor(tx, { piletaOrigenId, piletaDestinoId, cantidadEntera, usuarioId }) {
+  const dest = toInt(piletaDestinoId);
+  const cant = Math.floor(Number(cantidadEntera) || 0);
+  if (!dest || cant <= 0) return null;
+
+  let origen = piletaOrigenId !== undefined && piletaOrigenId !== null && piletaOrigenId !== "" ? toInt(piletaOrigenId) : null;
+  if (origen !== null && origen === dest) origen = null;
+
+  const s = await tx.siembra.create({
+    data: {
+      pileta_origen: origen,
+      pileta_destino: dest,
+      cantidad: BigInt(cant),
+      mortalidad: 0,
+      usuario_id: usuarioId,
+    },
+  });
+  return s.id;
+}
+
 const reproductorInclude = {
   piletas: {
     include: {
@@ -114,7 +135,20 @@ class ReproductorController {
           proceso: "reproductor",
         });
 
-        const creado = await tx.reproductor.create({
+        const origenPiletaId = toInt(
+          pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+        );
+        let siembraId = null;
+        if (cantidadTotal > 0) {
+          siembraId = await crearSiembraMovimientoReproductor(tx, {
+            piletaOrigenId: origenPiletaId,
+            piletaDestinoId: piletaId,
+            cantidadEntera: cantidadTotal,
+            usuarioId,
+          });
+        }
+
+        const repro = await tx.reproductor.create({
           data: {
             pileta_id: piletaId,
             machos,
@@ -126,11 +160,12 @@ class ReproductorController {
             familia: pick(req.body, "familia", "fc_familia") ?? null,
             observacionId: obsId,
             usuarioId,
+            ...(siembraId != null ? { siembra_id: siembraId } : {}),
           },
           include: reproductorInclude,
         });
         await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
-        return creado;
+        return repro;
       });
 
       res.status(201).json({
@@ -219,7 +254,32 @@ class ReproductorController {
           await aplicarEstadoPiletaPorCantidad(tx, antes.pileta_id, 0);
         }
         await aplicarEstadoPiletaPorCantidad(tx, piletaActual, row.cantidad_total);
-        return row;
+
+        const origenPiletaReq = toInt(pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"));
+        const mismoDestino = row.pileta_id === antes.pileta_id;
+        const cantidadMovimiento = mismoDestino
+          ? Math.max(0, row.cantidad_total - antes.cantidad_total)
+          : Math.max(0, row.cantidad_total);
+
+        if (cantidadMovimiento > 0) {
+          const nuevaSiembraId = await crearSiembraMovimientoReproductor(tx, {
+            piletaOrigenId: origenPiletaReq,
+            piletaDestinoId: piletaActual,
+            cantidadEntera: cantidadMovimiento,
+            usuarioId,
+          });
+          if (nuevaSiembraId != null) {
+            await tx.reproductor.update({
+              where: { id },
+              data: { siembra_id: nuevaSiembraId },
+            });
+          }
+        }
+
+        return tx.reproductor.findUnique({
+          where: { id },
+          include: reproductorInclude,
+        });
       });
 
       res.json({
@@ -238,18 +298,18 @@ class ReproductorController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
 
-      try {
-        const existe = await prisma.reproductor.findUnique({
-          where: { id },
-          select: { pileta_id: true },
-        });
-        if (!existe) return res.status(404).json({ error: "Reproductor no encontrado" });
+    try {
+      const existe = await prisma.reproductor.findUnique({
+        where: { id },
+        select: { pileta_id: true },
+      });
+      if (!existe) return res.status(404).json({ error: "Reproductor no encontrado" });
 
-        await prisma.$transaction(async (tx) => {
-          await tx.reproductor.delete({ where: { id } });
-          await aplicarEstadoPiletaPorCantidad(tx, existe.pileta_id, 0);
-        });
-        res.json({ success: true, mensaje: "Reproductor eliminado" });
+      await prisma.$transaction(async (tx) => {
+        await tx.reproductor.delete({ where: { id } });
+        await aplicarEstadoPiletaPorCantidad(tx, existe.pileta_id, 0);
+      });
+      res.json({ success: true, mensaje: "Reproductor eliminado" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });
       if (err.code === "P2003") {
