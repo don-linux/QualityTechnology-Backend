@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { descontarReproductorPorEgresoHaciaAlevinaje } from "../utils/reproductorInventario.js";
 import {
   piletaWhereUbicacionFromRequest,
   ubicacionNombreWhereFromGranja,
@@ -26,8 +27,9 @@ async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
 }
 
 // CRUD del modelo `alevinaje` sobre piletas tipo `alevinaje`.
-// Desde control reproductivo también acepta pileta `reproductores` ocupada:
-// al crear registro nuevo, la pileta pasa a `alevinaje` dentro de la transacción.
+// El alta desde control reproductivo usa pileta `reproductores` como origen
+// cuando el cargamento va a otro físico tipo `alevinaje`; no se cambia aquí el `tipo`
+// de la pileta reproductora.
 // La observación se persiste con `pileta_id` y `proceso = 'alevinaje'` para
 // que aparezca como "última observación" al consultar la pileta.
 
@@ -254,8 +256,6 @@ class AlevinajeController {
       const familiaGuardarRaw = pick(req.body, "familia", "fc_familia");
       const familiaGuardar = familiaGuardarRaw ? String(familiaGuardarRaw).slice(0, 60) : null;
 
-      let desdeReproductores = false;
-
       /** Origen debe ser breeders ocupada cuando hay traslado a otra pileta. */
       if (!mismaPileta) {
         if (pilOrigen.tipo !== "reproductores") {
@@ -279,12 +279,9 @@ class AlevinajeController {
           });
         }
       } else if (pilOrigen.tipo === "reproductores") {
-        if (pilOrigen.estado !== "ocupada") {
-          return res.status(400).json({
-            error: "Para registrar desde reproductores la pileta debe estar ocupada",
-          });
-        }
-        desdeReproductores = true;
+        return res.status(400).json({
+          error: "Seleccione una pileta de destino de alevinaje distinta del origen reproductor",
+        });
       } else if (pilDestino.tipo !== "alevinaje") {
         return res.status(400).json({
           error: `La pileta '${pilDestino.nombre}' no admite registro de alevinaje (tipo ${pilDestino.tipo})`,
@@ -302,11 +299,26 @@ class AlevinajeController {
       const piletaPrincipalId = destinoId;
       const piletaOrigenReprNullable = mismaPileta ? null : origenId;
 
+      if (!mismaPileta) {
+        const repDeOrigen = await prisma.reproductor.findUnique({
+          where: { pileta_id: origenId },
+          select: { id: true },
+        });
+        if (!repDeOrigen) {
+          return res.status(400).json({
+            error:
+              "La pileta reproductora de origen no tiene inventario registrado (`reproductores`). Cántelo antes de mover a alevinaje.",
+          });
+        }
+      }
+
       const creado = await prisma.$transaction(async (tx) => {
-        if (desdeReproductores && mismaPileta) {
-          await tx.pileta.update({
-            where: { id: origenId },
-            data: { tipo: "alevinaje" },
+        if (!mismaPileta) {
+          await descontarReproductorPorEgresoHaciaAlevinaje(tx, origenId, {
+            piletaDestinoAlevinajeId: piletaPrincipalId,
+            machosDeducir: cantidadPorSexo > 0 ? machosGuardar : 0,
+            hembrasDeducir: cantidadPorSexo > 0 ? hembrasGuardar : 0,
+            cantidadTotalSinSexo: cantidadPorSexo > 0 ? 0 : cantidadTotal,
           });
         }
 
@@ -341,18 +353,18 @@ class AlevinajeController {
         });
       });
 
-      let mensaje = "Registro de alevinaje creado";
-      if (desdeReproductores && mismaPileta) {
-        mensaje = "Registro creado. La pileta pasó a etapa alevinaje.";
-      } else if (!mismaPileta) {
-        mensaje = "Registro creado en pileta destino.";
-      }
+      const mensaje = !mismaPileta
+        ? "Registro creado en pileta destino."
+        : "Registro de alevinaje creado";
 
       res.status(201).json({
         mensaje,
         data: serializeAlevinaje(creado),
       });
     } catch (err) {
+      if (err.code === "REPRO_CANTIDAD_INSUFICIENTE") {
+        return res.status(400).json({ error: err.message });
+      }
       if (err.code === "BAD_SIEMBRA") {
         return res.status(400).json({ error: err.message });
       }
