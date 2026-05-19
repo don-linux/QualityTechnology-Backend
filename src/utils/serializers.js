@@ -236,11 +236,41 @@ export function serializeReproductor(r) {
   };
 }
 
+/** Inventario vigente en la pileta, sin importar etapa (reproductores, alevinaje o engorda). */
+export function calcularCantidadPileta(p) {
+  if (!p) return 0;
+
+  const rep = p.reproductores;
+  if (rep) {
+    return (
+      Number(rep.cantidad_total ?? (Number(rep.machos || 0) + Number(rep.hembras || 0))) || 0
+    );
+  }
+
+  const eng = p.engorda;
+  if (eng) {
+    return Number(eng.cantidad ?? (Number(eng.machos || 0) + Number(eng.hembras || 0))) || 0;
+  }
+
+  const rows = Array.isArray(p.alevinaje) ? p.alevinaje : [];
+  if (rows.length === 0) return 0;
+
+  return rows.reduce((sum, row) => {
+    const porSexo = Number(row.machos || 0) + Number(row.hembras || 0);
+    if (porSexo > 0) return sum + porSexo;
+    const ct = Number(row.cantidad_total);
+    if (Number.isFinite(ct) && ct > 0) return sum + ct;
+    const vivas = (Number(row.alevines_iniciales) || 0) - (Number(row.mortalidad) || 0);
+    return sum + Math.max(0, vivas);
+  }, 0);
+}
+
 export function serializePileta(p) {
   if (!p) return null;
   const lista = Array.isArray(p.observaciones) ? p.observaciones : [];
   const ultima = lista[0];
   const comUlt = ultima?.comentario ?? null;
+  const cantidad = calcularCantidadPileta(p);
 
   return {
     fi_pileta_id: p.id,
@@ -255,6 +285,8 @@ export function serializePileta(p) {
     tipo: p.tipo,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
+    cantidad,
+    fn_cantidad: cantidad,
     ultima_observacion: comUlt,
     fc_ultima_observacion_proceso: ultima?.proceso ?? null,
     fd_ultima_observacion: ultima?.created_at ?? null,

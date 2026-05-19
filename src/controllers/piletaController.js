@@ -94,6 +94,21 @@ function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 5
 
 const piletaInclude = {
   ubicacion: true,
+  reproductores: {
+    select: { cantidad_total: true, machos: true, hembras: true },
+  },
+  engorda: {
+    select: { cantidad: true, machos: true, hembras: true },
+  },
+  alevinaje: {
+    select: {
+      machos: true,
+      hembras: true,
+      cantidad_total: true,
+      alevines_iniciales: true,
+      mortalidad: true,
+    },
+  },
   observaciones: {
     orderBy: { created_at: "desc" },
     take: 1,
