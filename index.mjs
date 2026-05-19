@@ -53,6 +53,7 @@ import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 
 // Ubicaciones
 import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
+import estadoConservacionRoutes from "./src/routes/estadoConservacionRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -143,6 +144,7 @@ api.use("/vacaciones", vacacionRoutes);
 // Catalogos
 api.use("/unidades-negocio", unidadNegocioRoutes);
 api.use("/ubicaciones", ubicacionRoutes);
+api.use("/estados-conservacion", estadoConservacionRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);

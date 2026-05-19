@@ -63,6 +63,15 @@ export function serializePuesto(p) {
   };
 }
 
+export function serializeEstadoConservacion(e) {
+  if (!e) return null;
+  return {
+    estado_conservacion_id: e.id,
+    nombre: e.nombre,
+    activo: e.esta_activo,
+  };
+}
+
 export function serializeTipoDocumento(t) {
   if (!t) return null;
   return {
@@ -283,6 +292,8 @@ export function serializePileta(p) {
     material: p.material,
     estado: p.estado,
     tipo: p.tipo,
+    estado_conservacion_id: p.estadoConservacionId ?? null,
+    fc_estado_conservacion: p.estadoConservacion?.nombre ?? null,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
     cantidad,
