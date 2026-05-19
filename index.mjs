@@ -54,6 +54,7 @@ import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 // Ubicaciones
 import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
 import estadoConservacionRoutes from "./src/routes/estadoConservacionRoutes.js";
+import tipoInstanciaPiletaRoutes from "./src/routes/tipoInstanciaPiletaRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -145,6 +146,7 @@ api.use("/vacaciones", vacacionRoutes);
 api.use("/unidades-negocio", unidadNegocioRoutes);
 api.use("/ubicaciones", ubicacionRoutes);
 api.use("/estados-conservacion", estadoConservacionRoutes);
+api.use("/tipos-instancia-pileta", tipoInstanciaPiletaRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);

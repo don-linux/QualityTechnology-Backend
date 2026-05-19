@@ -47,6 +47,7 @@ const MODULOS = [
   ["Unidades de Negocio", "/unidades-negocio", true],
   ["Ubicaciones", "/ubicaciones", true],
   ["Estados de Conservacion", "/estados-conservacion", true],
+  ["Tipos Instancia Pileta", "/tipos-instancia-pileta", true],
 ];
 
 const ADMIN_PASSWORD_HASH =

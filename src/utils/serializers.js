@@ -72,6 +72,15 @@ export function serializeEstadoConservacion(e) {
   };
 }
 
+export function serializeTipoInstanciaPileta(t) {
+  if (!t) return null;
+  return {
+    tipo_instancia_pileta_id: t.id,
+    nombre: t.nombre,
+    activo: t.esta_activo,
+  };
+}
+
 export function serializeTipoDocumento(t) {
   if (!t) return null;
   return {
@@ -294,6 +303,8 @@ export function serializePileta(p) {
     tipo: p.tipo,
     estado_conservacion_id: p.estadoConservacionId ?? null,
     fc_estado_conservacion: p.estadoConservacion?.nombre ?? null,
+    tipo_instancia: p.tipoInstanciaId ?? null,
+    fc_tipo_instancia: p.tipoInstancia?.nombre ?? null,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
     cantidad,

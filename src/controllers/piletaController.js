@@ -95,6 +95,7 @@ function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 5
 const piletaInclude = {
   ubicacion: true,
   estadoConservacion: true,
+  tipoInstancia: true,
   reproductores: {
     select: { cantidad_total: true, machos: true, hembras: true },
   },
@@ -190,6 +191,10 @@ class PiletaController {
         pick(req.body, "estado_conservacion_id", "estadoConservacionId"),
         null
       );
+      const tipoInstanciaId = toInt(
+        pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+        null
+      );
 
       if (!nombre || !ubicacionId || largo === null || ancho === null || alto === null) {
         return res.status(400).json({
@@ -212,6 +217,7 @@ class PiletaController {
           tipo: String(tipo),
           estado: String(estado),
           ...(estadoConservacionId != null ? { estadoConservacionId } : {}),
+          ...(tipoInstanciaId != null ? { tipoInstanciaId } : {}),
         },
         include: piletaInclude,
       });
@@ -227,7 +233,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id o estado_conservacion_id no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
+            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
           ...devErrPayload(err),
         });
       }
@@ -277,6 +283,17 @@ class PiletaController {
         );
       }
 
+      if (
+        req.body.tipo_instancia !== undefined ||
+        req.body.tipo_instancia_id !== undefined ||
+        req.body.tipoInstanciaId !== undefined
+      ) {
+        updateData.tipoInstanciaId = toInt(
+          pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+          null
+        );
+      }
+
       if (updateData.largo !== undefined || updateData.ancho !== undefined || updateData.alto !== undefined) {
         const actual = await prisma.pileta.findUnique({ where: { id } });
         if (!actual) return res.status(404).json({ error: "Pileta no encontrada" });
@@ -307,7 +324,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id o estado_conservacion_id no existe en catalogos, o la relacion es invalida.",
+            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o la relacion es invalida.",
           ...devErrPayload(err),
         });
       }
