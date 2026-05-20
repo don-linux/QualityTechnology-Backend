@@ -131,8 +131,7 @@ class EngordaController {
             case "alevinaje":
               await descontarAlevinajePorEgresoHaciaEngorda(tx, origenPiletaId, {
                 piletaDestinoId: piletaId,
-                machosDeducir: machosIn,
-                hembrasDeducir: hembrasIn,
+                cantidadTotalSinSexo: cantidad,
               });
               break;
             case "reproductores": {

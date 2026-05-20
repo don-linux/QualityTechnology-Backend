@@ -196,7 +196,6 @@ model Pileta {
   created_at                              DateTime           @default(now()) @db.Timestamp(6)
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
-  alevinaje_desde_reproductor             alevinaje[]                  @relation("AlevinajePiletaReproductoraOrigen")
   alimentacion                            Alimentacion[]
   alimentos                               Alimento[]
   biometrias                              Biometria[]

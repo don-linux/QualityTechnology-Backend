@@ -104,11 +104,8 @@ const piletaInclude = {
   },
   alevinaje: {
     select: {
-      machos: true,
-      hembras: true,
       cantidad_total: true,
-      alevines_iniciales: true,
-      mortalidad: true,
+      cantidad_alimento: true,
     },
   },
   observaciones: {
