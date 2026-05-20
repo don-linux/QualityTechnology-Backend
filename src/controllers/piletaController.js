@@ -352,61 +352,6 @@ class PiletaController {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Endpoints heredados que requieren rediseno sobre los nuevos modelos
-  // (alevinaje, siembra, engorda, reproductores, Biometria). Se mantienen
-  // las rutas existentes devolviendo 501 hasta que se reimplementen.
-  // ---------------------------------------------------------------------------
-  static async getOrigen(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de inventario.",
-    });
-  }
-  static async getDestino(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de inventario.",
-    });
-  }
-  static async getLotes(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de lotes.",
-    });
-  }
-  static async getInventario(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getLotePorInst(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de lotes.",
-    });
-  }
-  static async siembra(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo siembra.",
-    });
-  }
-  static async registrarMovimiento(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getMovimientosFiltro(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async eliminarMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
 }
 
 export default PiletaController;

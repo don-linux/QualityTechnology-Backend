@@ -480,11 +480,6 @@ class ReproductorController {
     }
   }
 
-  static async getInstalaciones(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno: Reproductor ya no tiene FK directa a Instalacion.",
-    });
-  }
 }
 
 export default ReproductorController;

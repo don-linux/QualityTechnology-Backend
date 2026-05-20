@@ -47,7 +47,7 @@
 - `src/routes/bitacoras/bitacoraVisitaRoutes.js` stores uploaded images in `uploads/`.
 
 ## Verified gaps and legacy notes
-- Route files exist for `src/routes/alevinRoutes.js` and `src/routes/movimientoARoutes.js`, but they are not mounted in `index.mjs` as of this inspection.
+- Inventario de alevines en bitacoras uses `GET/POST /api/inventario` (not `/api/alevines`, removed).
 - No background worker, queue, scheduler, or separate build step was verified.
 - No automated test runner or CI workflow was verified in the repository.
 - `swagger.yaml` remains in Spanish even though the main repository documentation is now in English.

@@ -12,7 +12,6 @@ router.use(authMiddleware);
 ========================================================= */
 router.get("/movimientos/:granja", reproductorController.getMovimientos);
 router.get("/granja/:granja", reproductorController.getByGranja);
-router.get("/instalaciones/:granja", reproductorController.getInstalaciones);
 router.post("/", reproductorController.create);
 router.put("/:id", reproductorController.update);
 router.delete("/:id", reproductorController.delete);

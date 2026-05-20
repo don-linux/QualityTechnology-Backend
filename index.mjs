@@ -26,7 +26,6 @@ import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
 import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
 import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
-import alevinRoutes from "./src/routes/alevinRoutes.js";
 import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
 
@@ -115,7 +114,6 @@ api.use("/piletas", piletaRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alimentos", alimentoRoutes);
-api.use("/alevines", alevinRoutes);
 api.use("/alevinaje", alevinajeRoutes);
 api.use("/siembras", siembraRoutes);
 api.use("/equipos", equipoRoutes);
