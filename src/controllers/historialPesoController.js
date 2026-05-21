@@ -33,7 +33,7 @@ export function serializeHistorialPeso(row) {
 export async function resolverHistorialPesoId(tx, body) {
   const pesoKgBody = toDecimal(body?.peso_kg ?? body?.peso_valor ?? body?.fn_peso);
   if (pesoKgBody != null) {
-    const creado = await tx.historial_peso.create({
+    const creado = await tx.historialPeso.create({
       data: {
         peso: pesoKgBody,
         fecha:
@@ -45,7 +45,7 @@ export async function resolverHistorialPesoId(tx, body) {
 
   const idDirecto = toInt(body?.historial_peso_id ?? body?.peso_id);
   if (idDirecto) {
-    const existe = await tx.historial_peso.findUnique({ where: { id: idDirecto } });
+    const existe = await tx.historialPeso.findUnique({ where: { id: idDirecto } });
     if (!existe) {
       const err = new Error("historial_peso_id inválido");
       err.code = "BAD_HISTORIAL_PESO";
@@ -56,7 +56,7 @@ export async function resolverHistorialPesoId(tx, body) {
 
   const pesoComoId = toInt(body?.peso);
   if (pesoComoId) {
-    const existe = await tx.historial_peso.findUnique({ where: { id: pesoComoId } });
+    const existe = await tx.historialPeso.findUnique({ where: { id: pesoComoId } });
     if (existe) return pesoComoId;
   }
 
@@ -71,7 +71,7 @@ class HistorialPesoController {
         ? { alevinaje: { some: { pileta_id: piletaId } } }
         : undefined;
 
-      const rows = await prisma.historial_peso.findMany({
+      const rows = await prisma.historialPeso.findMany({
         where,
         orderBy: [{ fecha: "desc" }, { id: "desc" }],
       });
@@ -88,7 +88,7 @@ class HistorialPesoController {
       if (pesoKg == null || pesoKg < 0) {
         return res.status(400).json({ error: "peso (kg) es obligatorio y debe ser >= 0" });
       }
-      const row = await prisma.historial_peso.create({
+      const row = await prisma.historialPeso.create({
         data: {
           peso: pesoKg,
           fecha: toDateOrNull(req.body?.fecha) ?? new Date(),
