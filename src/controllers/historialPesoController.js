@@ -68,7 +68,12 @@ class HistorialPesoController {
     try {
       const piletaId = toInt(req.query.pileta_id);
       const where = piletaId
-        ? { alevinaje: { some: { pileta_id: piletaId } } }
+        ? {
+            OR: [
+              { alevinaje: { some: { pileta_id: piletaId } } },
+              { engorda: { some: { pileta_id: piletaId } } },
+            ],
+          }
         : undefined;
 
       const rows = await prisma.historialPeso.findMany({

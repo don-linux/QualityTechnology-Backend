@@ -37,7 +37,6 @@ model Usuario {
   banos              Bano[]
   biometrias         Biometria[]
   empleados          Empleado?
-  engorda            Engorda[]
   equipos            Equipo[]
   flujo_caja         FlujoCaja[]
   insumos            Insumo[]
@@ -201,7 +200,7 @@ model Pileta {
   alimentacion                            Alimentacion[]
   alimentos                               Alimento[]
   biometrias                              Biometria[]
-  engorda                                 Engorda?
+  engorda                                 Engorda[]
   inventario_alevines                     InventarioAlevin[]
   observaciones                           observacion[]
   estadoConservacion                      EstadoConservacion? @relation(fields: [estadoConservacionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -222,27 +221,24 @@ model Pileta {
   @@schema("public")
 }
 
-/// Etapa engorda en pileta tipo `engorda`. `cantidad` suele alinearse con el cierre de alevinaje o la siembra de ingreso.
+/// Inventario operativo en pileta tipo `engorda` (cantidad, alimento, peso).
 model Engorda {
-  id            Int          @id @default(autoincrement())
-  pileta_id     Int          @unique
-  cantidad      Int
-  machos        Int          @default(0)
-  hembras       Int          @default(0)
-  tallaGr       Decimal?     @map("talla_gr") @db.Decimal(10, 2)
-  observacionId Int?         @map("observacion_id")
-  siembra_id    Int?
-  biometria_id  Int?
-  usuarioId     Int          @map("usuario_id")
-  created_at    DateTime     @default(now()) @db.Timestamp(6)
-  updated_at    DateTime     @updatedAt @db.Timestamp(6)
-  alimentos     Alimento[]
-  biometrias    Biometria?   @relation(fields: [biometria_id], references: [id])
-  observacion   observacion? @relation(fields: [observacionId], references: [id])
-  piletas       Pileta       @relation(fields: [pileta_id], references: [id])
-  siembra       siembra?     @relation(fields: [siembra_id], references: [id])
-  usuario       Usuario      @relation(fields: [usuarioId], references: [id])
+  id                Int            @id @default(autoincrement())
+  pileta_id         Int
+  cantidad_total    Int            @default(0)
+  cantidad_alimento Int            @default(0)
+  observacion_id    Int?
+  biometria_id      Int?
+  siembra_origen_id Int?           @map("siembra_origen_id")
+  peso              Int?
+  alimentos         Alimento[]
+  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
+  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
+  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
+  siembra_origen    siembra?       @relation("EngordaSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
+  @@index([pileta_id])
   @@map("engorda")
   @@schema("public")
 }
@@ -864,6 +860,7 @@ model HistorialPeso {
   peso      Decimal     @db.Decimal(10, 3)
   fecha     DateTime    @default(now()) @db.Date
   alevinaje alevinaje[]
+  engorda   Engorda[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")
@@ -969,7 +966,7 @@ model siembra {
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
   alevinajes_como_origen                  alevinaje[]           @relation("AlevinajeSiembraOrigen")
   controlReproductivos_como_origen        ControlReproductivo[] @relation("ControlReproSiembraOrigen")
-  engorda                                 Engorda[]
+  engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores                           Reproductor[]
   piletas_siembra_pileta_destinoTopiletas Pileta        @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
   piletas_siembra_pileta_origenTopiletas  Pileta?       @relation("siembra_pileta_origenTopiletas", fields: [pileta_origen], references: [id])

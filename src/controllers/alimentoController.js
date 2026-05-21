@@ -5,7 +5,7 @@ import { serializeAlimento } from "../utils/serializers.js";
 // alimentoDia -> cantidad_dia, gastoAlimento -> costo_total. El concepto de
 // "cantidad" y "talla" ya no vive en Pileta (es solo contenedor fisico), asi
 // que el calculo automatico desde la pileta no aplica directamente. Para
-// reproductor usamos `cantidad_total`. Para engorda usamos `cantidad`.
+// reproductor usamos `cantidad_total`. Para engorda usamos `cantidad_total` y peso (kg).
 // La relacion a Instalacion ya no existe: Pileta/Engorda/Reproductor llevan
 // a `ubicacion` via Pileta.
 
@@ -35,14 +35,17 @@ async function calcularReproductor(reproductorId) {
 async function calcularEngorda(engordaId) {
   const e = await prisma.engorda.findUnique({
     where: { id: engordaId },
-    select: { cantidad: true, tallaGr: true },
+    select: {
+      cantidad_total: true,
+      historial_peso: { select: { peso: true } },
+    },
   });
   if (!e) return null;
-  const cantidad = Number(e.cantidad) || 0;
-  const talla = Number(e.tallaGr) || 0;
+  const cantidad = Number(e.cantidad_total) || 0;
+  const pesoKg = Number(e.historial_peso?.peso) || 0;
   let particula = 5.0;
-  if (talla < 100) particula = 3.0;
-  else if (talla < 400) particula = 4.0;
+  if (pesoKg > 0 && pesoKg < 0.1) particula = 3.0;
+  else if (pesoKg > 0 && pesoKg < 0.4) particula = 4.0;
   const porcion = 0.02;
   const cantidadDia = cantidad * porcion;
   return {

@@ -10,10 +10,13 @@ router.use(authMiddleware);
 /* =========================================================
    RUTAS DE ENGORDA
 ========================================================= */
+router.get("/", engordaController.getAll);
 router.get("/granja/:granja", engordaController.getByGranja);
-router.post("/", engordaController.create);
 router.get("/movimientos/:usuario", engordaController.getMovimientos);
 router.delete("/movimientos/:id", engordaController.deleteMovimiento);
+router.get("/:id", engordaController.getById);
+router.post("/", engordaController.create);
+router.put("/:id", engordaController.update);
 router.delete("/:id", engordaController.delete);
 
 export default router;

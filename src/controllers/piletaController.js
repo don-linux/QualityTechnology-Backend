@@ -100,7 +100,10 @@ const piletaInclude = {
     select: { cantidad_total: true, machos: true, hembras: true },
   },
   engorda: {
-    select: { cantidad: true, machos: true, hembras: true },
+    select: {
+      cantidad_total: true,
+      cantidad_alimento: true,
+    },
   },
   alevinaje: {
     select: {
