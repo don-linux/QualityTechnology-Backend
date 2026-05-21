@@ -474,6 +474,54 @@ export function serializeAlevinaje(a) {
   };
 }
 
+export function serializeControlReproductivo(r) {
+  if (!r) return null;
+  return {
+    fi_id: r.id,
+    id: r.id,
+    pileta_id: r.pileta_id,
+    fi_pileta_destino_id: r.pileta_id,
+    pileta_destino_id: r.pileta_id,
+    nombre_pileta_destino: r.piletas?.nombre ?? null,
+    nombre_pileta: r.piletas?.nombre ?? null,
+    fc_granja: r.piletas?.ubicacion?.nombre ?? null,
+    pileta_origen_reproductora_id: r.pileta_origen_reproductora_id ?? null,
+    fi_instalacion_id: r.pileta_origen_reproductora_id ?? null,
+    instalacion_id: r.pileta_origen_reproductora_id ?? null,
+    nombre_pileta_origen: r.pileta_origen_reproductora?.nombre ?? null,
+    nombre_instalacion: r.pileta_origen_reproductora?.nombre ?? null,
+    fecha: r.fecha ?? null,
+    fd_fecha: r.fecha ?? null,
+    lote: r.lote ?? null,
+    fc_lote: r.lote ?? null,
+    familia: r.familia ?? null,
+    fc_familia: r.familia ?? null,
+    huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
+    fn_huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
+    ovadas: r.ovadas ?? 0,
+    fn_ovadas: r.ovadas ?? 0,
+    machos: r.machos ?? 0,
+    fn_machos: r.machos ?? 0,
+    hembras: r.hembras ?? 0,
+    fn_hembras: r.hembras ?? 0,
+    cantidad_total: r.cantidad_total ?? 0,
+    fn_cantidad_total: r.cantidad_total ?? 0,
+    alevines_iniciales: r.alevines_iniciales ?? 0,
+    fn_alevines_iniciales: r.alevines_iniciales ?? 0,
+    mortalidad: r.mortalidad ?? 0,
+    fn_mortalidad: r.mortalidad ?? 0,
+    mortalidad_porcentaje:
+      r.mortalidad_porcentaje != null ? Number(r.mortalidad_porcentaje) : 0,
+    siembra_origen_id: r.siembra_origen_id ?? null,
+    biometria_id: r.biometria_id ?? null,
+    fc_observacion: r.observacion?.comentario ?? null,
+    observacion: r.observacion?.comentario ?? null,
+    observacion_id: r.observacion_id ?? null,
+    created_at: r.created_at ?? null,
+    updated_at: r.updated_at ?? null,
+  };
+}
+
 export function serializeInventarioAlevin(a) {
   if (!a) return null;
   return {

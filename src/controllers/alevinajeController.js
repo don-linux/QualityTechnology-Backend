@@ -5,24 +5,7 @@ import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.j
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import {
   piletaWhereUbicacionFromRequest,
-  ubicacionNombreWhereFromGranja,
-  primerUbicacionIdValido,
-  resolverUbicacionFlexible,
 } from "../utils/granjaUbicacion.js";
-
-async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
-  const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
-  if (ubicIdQ != null) return { ubicacionId: ubicIdQ };
-
-  const g = String(granjaParam ?? "").trim();
-  if (!g) return null;
-
-  const flex = await resolverUbicacionFlexible(g);
-  if (flex?.ubicacionId != null) return { ubicacionId: flex.ubicacionId };
-
-  const cond = ubicacionNombreWhereFromGranja(g);
-  return cond ? { ubicacion: cond } : null;
-}
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -319,69 +302,6 @@ class AlevinajeController {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("DELETE /alevinaje/:id Error:", err);
       res.status(500).json({ error: "Error eliminando registro" });
-    }
-  }
-
-  static async getReproductoresOcupadas(req, res) {
-    try {
-      const granjaParam = String(req.params.granja ?? "").trim();
-      const filtroUb = await filtroUbicacionPiletaDesdeReq(req, granjaParam);
-      if (!filtroUb) return res.json([]);
-
-      const piletas = await prisma.pileta.findMany({
-        where: {
-          tipo: "reproductores",
-          estado: "ocupada",
-          ...filtroUb,
-        },
-        include: { ubicacion: true },
-        orderBy: { nombre: "asc" },
-      });
-
-      res.json(
-        piletas.map((p) => ({
-          fi_pileta_id: p.id,
-          pileta_id: p.id,
-          fi_instalacion_id: p.id,
-          instalacion_id: p.id,
-          nombre_pileta: p.nombre,
-          nombre_instalacion: p.nombre,
-          fc_granja: p.ubicacion?.nombre ?? null,
-        })),
-      );
-    } catch (err) {
-      console.error("GET /alevinaje/reproductores/:granja Error:", err);
-      res.status(500).json({ error: "Error al obtener piletas reproductoras" });
-    }
-  }
-
-  /** Familia desde `reproductores` o último registro legado en `alevinaje_old`. */
-  static async getFamiliaPorPileta(req, res) {
-    try {
-      const piletaId = toInt(req.params.piletaId);
-      if (!piletaId) return res.json(null);
-
-      const rep = await prisma.reproductor.findUnique({
-        where: { pileta_id: piletaId },
-        select: { familia: true },
-      });
-      if (rep?.familia != null && rep.familia !== "") {
-        return res.json({ familia: rep.familia });
-      }
-
-      const alevFilas = await prisma.alevinaje_old.findMany({
-        where: { pileta_id: piletaId },
-        orderBy: { id: "desc" },
-        take: 20,
-        select: { familia: true },
-      });
-      const conFamilia = alevFilas.find((row) => row.familia != null && row.familia !== "");
-      if (conFamilia?.familia) return res.json({ familia: conFamilia.familia });
-
-      res.json(null);
-    } catch (error) {
-      console.error("GET /alevinaje/familia-por-pileta/:piletaId Error:", error);
-      res.status(500).json({ error: "Error cargando familia" });
     }
   }
 }

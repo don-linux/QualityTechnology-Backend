@@ -27,6 +27,7 @@ import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
 import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
 import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
+import controlReproductivoRoutes from "./src/routes/controlReproductivoRoutes.js";
 import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
 
@@ -116,6 +117,7 @@ api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alimentos", alimentoRoutes);
 api.use("/alevinaje", alevinajeRoutes);
+api.use("/control-reproductivo", controlReproductivoRoutes);
 api.use("/historial-peso", historialPesoRoutes);
 api.use("/siembras", siembraRoutes);
 api.use("/equipos", equipoRoutes);
