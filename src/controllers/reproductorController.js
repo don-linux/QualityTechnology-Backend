@@ -48,26 +48,7 @@ async function aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal) {
   });
 }
 
-/** Ingreso/traslado hacia pileta destino repro (tabla movimientos = `siembra`). Origen opcional (= externo si null). */
-async function crearSiembraMovimientoReproductor(tx, { piletaOrigenId, piletaDestinoId, cantidadEntera, usuarioId }) {
-  const dest = toInt(piletaDestinoId);
-  const cant = Math.floor(Number(cantidadEntera) || 0);
-  if (!dest || cant <= 0) return null;
-
-  let origen = piletaOrigenId !== undefined && piletaOrigenId !== null && piletaOrigenId !== "" ? toInt(piletaOrigenId) : null;
-  if (origen !== null && origen === dest) origen = null;
-
-  const s = await tx.siembra.create({
-    data: {
-      pileta_origen: origen,
-      pileta_destino: dest,
-      cantidad: BigInt(cant),
-      mortalidad: 0,
-      usuario_id: usuarioId,
-    },
-  });
-  return s.id;
-}
+import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 
 /** Descuenta organismo en pileta interna que alimentó el destino (traslado). Si todo sale → borra repro y pileta vacía. */
 async function consumirInventarioOrigenPorTraslado(
@@ -206,7 +187,7 @@ class ReproductorController {
         );
         let siembraId = null;
         if (cantidadTotal > 0) {
-          siembraId = await crearSiembraMovimientoReproductor(tx, {
+          siembraId = await crearSiembraMovimiento(tx, {
             piletaOrigenId: origenPiletaId,
             piletaDestinoId: piletaId,
             cantidadEntera: cantidadTotal,
@@ -336,7 +317,7 @@ class ReproductorController {
           : Math.max(0, row.cantidad_total);
 
         if (cantidadMovimiento > 0) {
-          const nuevaSiembraId = await crearSiembraMovimientoReproductor(tx, {
+          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
             piletaOrigenId: origenPiletaReq,
             piletaDestinoId: piletaActual,
             cantidadEntera: cantidadMovimiento,

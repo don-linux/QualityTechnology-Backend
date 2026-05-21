@@ -3,6 +3,7 @@ import { serializeEngorda } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
+import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 function pick(body, ...keys) {
@@ -136,11 +137,25 @@ class EngordaController {
 
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
-      const siembraOrigenId = toInt(pick(req.body, "siembra_origen_id"));
+      const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
+      const origenPiletaId = toInt(
+        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+      );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
       const creado = await prisma.$transaction(async (tx) => {
-        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId ?? null, piletaId);
+        let siembraOrigenId = siembraOrigenIdBody ?? null;
+        if (!siembraOrigenId && cantidadTotal > 0) {
+          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
+            piletaOrigenId: origenPiletaId,
+            piletaDestinoId: piletaId,
+            cantidadEntera: cantidadTotal,
+            usuarioId,
+          });
+          if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
+        } else if (siembraOrigenId) {
+          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+        }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId,
