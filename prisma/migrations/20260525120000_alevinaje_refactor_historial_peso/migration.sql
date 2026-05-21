@@ -2,6 +2,21 @@
 
 ALTER TABLE "public"."alevinaje" RENAME TO "alevinaje_old";
 
+-- PostgreSQL conserva nombres de constraints/secuencias al renombrar la tabla;
+-- hay que renombrarlos antes de recrear public.alevinaje con los mismos identificadores.
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_pkey" TO "alevinaje_old_pkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_pileta_id_fkey" TO "alevinaje_old_pileta_id_fkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_observacion_id_fkey" TO "alevinaje_old_observacion_id_fkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_biometria_id_fkey" TO "alevinaje_old_biometria_id_fkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_usuario_id_fkey" TO "alevinaje_old_usuario_id_fkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_siembra_origen_id_fkey" TO "alevinaje_old_siembra_origen_id_fkey";
+ALTER TABLE "public"."alevinaje_old" RENAME CONSTRAINT "alevinaje_pileta_origen_reproductora_id_fkey" TO "alevinaje_old_pileta_origen_reproductora_id_fkey";
+ALTER INDEX "public"."alevinaje_fecha_idx" RENAME TO "alevinaje_old_fecha_idx";
+ALTER INDEX "public"."alevinaje_lote_idx" RENAME TO "alevinaje_old_lote_idx";
+ALTER INDEX "public"."alevinaje_pileta_id_lote_key" RENAME TO "alevinaje_old_pileta_id_lote_key";
+ALTER INDEX "public"."alevinaje_pileta_origen_reproductora_id_idx" RENAME TO "alevinaje_old_pileta_origen_reproductora_id_idx";
+ALTER SEQUENCE "public"."alevinaje_id_seq" RENAME TO "alevinaje_old_id_seq";
+
 CREATE TABLE "public"."historial_peso" (
     "id" SERIAL NOT NULL,
     "peso" DECIMAL(10, 3) NOT NULL,
