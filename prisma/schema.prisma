@@ -151,7 +151,6 @@ model Reproductor {
   pileta_id      Int          @unique
   machos         Int          @default(0)
   hembras        Int          @default(0)
-  cantidad_total Int
   talla          Decimal?     @db.Decimal(10, 2)
   ratio          String?      @db.VarChar(20)
   linea          String?      @db.VarChar(60)

@@ -31,10 +31,9 @@ export async function crearSiembraMovimiento(
   return s.id;
 }
 
-export const ETAPAS_TRAZABILIDAD = ["reproductores", "alevinaje", "engorda"];
+export const ETAPAS_TRAZABILIDAD = ["alevinaje", "engorda"];
 
 const ETAPA_LABEL = {
-  reproductores: "Reproductores",
   alevinaje: "Alevinaje",
   engorda: "Engorda",
 };
@@ -59,11 +58,10 @@ export function serializarMovimientoSiembra(s) {
   const mortalidad = s.mortalidad ?? 0;
   const netas = Math.max(0, brutas - mortalidad);
 
-  const obsRepro = s.reproductores?.[0]?.observacion?.comentario?.trim();
   const obsAlev = s.alevinajes_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsEng = s.engordas_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsParts = [];
-  const obsUsuario = obsRepro || obsAlev || obsEng;
+  const obsUsuario = obsAlev || obsEng;
   if (obsUsuario) obsParts.push(obsUsuario);
   if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
 

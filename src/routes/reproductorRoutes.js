@@ -10,7 +10,6 @@ router.use(authMiddleware);
 /* =========================================================
    RUTAS DE REPRODUCTORES
 ========================================================= */
-router.get("/movimientos/:granja", reproductorController.getMovimientos);
 router.get("/granja/:granja", reproductorController.getByGranja);
 router.post("/", reproductorController.create);
 router.put("/:id", reproductorController.update);

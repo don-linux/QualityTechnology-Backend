@@ -29,6 +29,10 @@ function toDecimal(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function totalReproductor(r) {
+  return Number(r?.machos || 0) + Number(r?.hembras || 0);
+}
+
 function calcularRatio(machos, hembras) {
   if (machos > 0 && hembras > 0) {
     const r = hembras / machos;
@@ -62,7 +66,7 @@ async function consumirInventarioOrigenPorTraslado(
 
   const repOrig = await tx.reproductor.findUnique({
     where: { pileta_id: ori },
-    select: { id: true, machos: true, hembras: true, cantidad_total: true },
+    select: { id: true, machos: true, hembras: true },
   });
   if (!repOrig) return;
   if (excludeReproductorId != null && repOrig.id === excludeReproductorId) return;
@@ -102,7 +106,6 @@ async function consumirInventarioOrigenPorTraslado(
     data: {
       machos: m,
       hembras: h,
-      cantidad_total: cantidadActual,
       ratio: calcularRatio(m, h),
     },
   });
@@ -200,7 +203,6 @@ class ReproductorController {
             pileta_id: piletaId,
             machos,
             hembras,
-            cantidad_total: cantidadTotal,
             talla: toDecimal(pick(req.body, "talla", "fn_talla")),
             ratio,
             linea: pick(req.body, "linea", "fc_linea") ?? null,
@@ -247,7 +249,7 @@ class ReproductorController {
     try {
       const antes = await prisma.reproductor.findUnique({
         where: { id },
-        select: { pileta_id: true, cantidad_total: true, machos: true, hembras: true },
+        select: { pileta_id: true, machos: true, hembras: true },
       });
       if (!antes) return res.status(404).json({ error: "Reproductor no encontrado" });
 
@@ -266,7 +268,6 @@ class ReproductorController {
       if (machos !== null || hembras !== null) {
         const finalMachos = machos ?? antes.machos;
         const finalHembras = hembras ?? antes.hembras;
-        updateData.cantidad_total = finalMachos + finalHembras;
         updateData.ratio = calcularRatio(finalMachos, finalHembras);
       }
 
@@ -308,13 +309,15 @@ class ReproductorController {
         if (antes.pileta_id !== piletaActual) {
           await aplicarEstadoPiletaPorCantidad(tx, antes.pileta_id, 0);
         }
-        await aplicarEstadoPiletaPorCantidad(tx, piletaActual, row.cantidad_total);
+        await aplicarEstadoPiletaPorCantidad(tx, piletaActual, totalReproductor(row));
 
         const origenPiletaReq = toInt(pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"));
         const mismoDestino = row.pileta_id === antes.pileta_id;
+        const totalAntes = totalReproductor(antes);
+        const totalActual = totalReproductor(row);
         const cantidadMovimiento = mismoDestino
-          ? Math.max(0, row.cantidad_total - antes.cantidad_total)
-          : Math.max(0, row.cantidad_total);
+          ? Math.max(0, totalActual - totalAntes)
+          : Math.max(0, totalActual);
 
         if (cantidadMovimiento > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
@@ -381,83 +384,6 @@ class ReproductorController {
       }
       console.error("Error eliminar:", err);
       res.status(500).json({ error: "Error al eliminar reproductor" });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Trazabilidad vía `siembra`: movimientos donde origen o destino es pileta
-  // tipo `reproductores` en la ubicación indicada (sustituye `trazaReproductor`).
-  // ---------------------------------------------------------------------------
-  static async getMovimientos(req, res) {
-    try {
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (!ubicClause) return res.json([]);
-
-      const piletaTipoReprodEnUbic = { ...ubicClause, tipo: "reproductores" };
-
-      const rows = await prisma.siembra.findMany({
-        where: {
-          OR: [
-            { piletas_siembra_pileta_destinoTopiletas: piletaTipoReprodEnUbic },
-            { piletas_siembra_pileta_origenTopiletas: piletaTipoReprodEnUbic },
-          ],
-        },
-        include: {
-          piletas_siembra_pileta_origenTopiletas: {
-            select: {
-              id: true,
-              nombre: true,
-              tipo: true,
-              ubicacion: { select: { nombre: true } },
-            },
-          },
-          piletas_siembra_pileta_destinoTopiletas: {
-            select: {
-              id: true,
-              nombre: true,
-              tipo: true,
-              ubicacion: { select: { nombre: true } },
-            },
-          },
-          reproductores: {
-            orderBy: { updated_at: "desc" },
-            take: 1,
-            select: {
-              observacion: { select: { comentario: true } },
-            },
-          },
-        },
-        orderBy: [{ fecha: "desc" }, { id: "desc" }],
-        take: 500,
-      });
-
-      const payload = rows.map((s) => {
-        const pilOr = s.piletas_siembra_pileta_origenTopiletas;
-        const pilDest = s.piletas_siembra_pileta_destinoTopiletas;
-        const brutas =
-          typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
-        const mortalidad = s.mortalidad ?? 0;
-        const netas = Math.max(0, brutas - mortalidad);
-        const obsUsuario = s.reproductores?.[0]?.observacion?.comentario?.trim();
-        const obsParts = [];
-        if (obsUsuario) obsParts.push(obsUsuario);
-        if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
-
-        return {
-          fi_movimiento_id: s.id,
-          origen: pilOr?.nombre ?? "Externo",
-          destino: pilDest?.nombre ?? "—",
-          cantidad_trasladada: netas,
-          fecha_movimiento: s.fecha,
-          observacion: obsParts.length ? obsParts.join(" · ") : null,
-          origen_pileta_id: pilOr?.id ?? null,
-        };
-      });
-
-      res.json(payload);
-    } catch (err) {
-      console.error("Error movimientos reproductores:", err);
-      res.status(500).json({ error: "Error al obtener movimientos de reproductores" });
     }
   }
 

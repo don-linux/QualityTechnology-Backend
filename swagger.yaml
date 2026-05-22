@@ -1777,29 +1777,6 @@ paths:
         '500':
           description: "Error del servidor"
 
-  /reproductores/movimientos/{granja}:
-    get:
-      summary: "Obtener trazabilidad de reproductores por granja"
-      description: "Devuelve movimientos/trazabilidad para reproductores de una granja."
-      parameters:
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lista de movimientos"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
-        '500':
-          description: "Error del servidor"
-
   /reproductores:
     post:
       summary: "Registrar reproductor"

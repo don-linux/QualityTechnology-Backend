@@ -97,7 +97,7 @@ const piletaInclude = {
   estadoConservacion: true,
   tipoInstancia: true,
   reproductores: {
-    select: { cantidad_total: true, machos: true, hembras: true },
+    select: { machos: true, hembras: true },
   },
   engorda: {
     select: {

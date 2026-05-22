@@ -111,7 +111,6 @@ export async function descontarReproductorPorEgresoHaciaAlevinaje(tx, piletaOrig
     data: {
       machos: m,
       hembras: h,
-      cantidad_total: cantidadActual,
       ratio: calcularRatio(m, h),
     },
   });

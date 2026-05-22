@@ -22,13 +22,6 @@ const siembraTrazabilidadInclude = {
       ubicacion: { select: { nombre: true } },
     },
   },
-  reproductores: {
-    orderBy: { updated_at: "desc" },
-    take: 1,
-    select: {
-      observacion: { select: { comentario: true } },
-    },
-  },
   alevinajes_como_origen: {
     orderBy: { id: "desc" },
     take: 1,
@@ -46,7 +39,7 @@ const siembraTrazabilidadInclude = {
 };
 
 class TrazabilidadController {
-  /** Movimientos `siembra` donde origen o destino es pileta de reproductores, alevinaje o engorda. */
+  /** Movimientos `siembra` donde origen o destino es pileta de alevinaje o engorda. */
   static async getMovimientos(req, res) {
     try {
       const ubicClause = piletaWhereUbicacionFromRequest(req);

@@ -226,8 +226,7 @@ export function serializeReproductor(r) {
     nombre_pileta: r.piletas?.nombre ?? null,
     fn_machos: r.machos,
     fn_hembras: r.hembras,
-    fn_cantidad: r.cantidad_total ?? (Number(r.machos || 0) + Number(r.hembras || 0)),
-    cantidad_total: r.cantidad_total ?? null,
+    fn_cantidad: Number(r.machos || 0) + Number(r.hembras || 0),
     fn_talla: r.talla,
     talla: r.talla,
     fc_ratio: r.ratio,
@@ -260,9 +259,7 @@ export function calcularCantidadPileta(p) {
 
   const rep = p.reproductores;
   if (rep) {
-    return (
-      Number(rep.cantidad_total ?? (Number(rep.machos || 0) + Number(rep.hembras || 0))) || 0
-    );
+    return Number(rep.machos || 0) + Number(rep.hembras || 0) || 0;
   }
 
   const engRows = Array.isArray(p.engorda) ? p.engorda : p.engorda ? [p.engorda] : [];
