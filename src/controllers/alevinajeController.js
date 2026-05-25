@@ -2,6 +2,7 @@ import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 

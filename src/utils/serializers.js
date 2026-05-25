@@ -581,8 +581,14 @@ export function serializeInventarioAlevin(a) {
 // Ventas / Finanzas / Catalogos
 // ============================================================================
 
+function nombreEmpleado(e) {
+  if (!e) return null;
+  return [e.nombre, e.apellidoPaterno, e.apellidoMaterno].filter(Boolean).join(" ");
+}
+
 export function serializeCliente(c) {
   if (!c) return null;
+  const ejecutivoId = c.ejecutivoEmpleadoId ?? c.ejecutivo?.id ?? null;
   return {
     fi_cliente_id: c.id,
     cliente_id: c.id,
@@ -594,6 +600,9 @@ export function serializeCliente(c) {
     fc_telefono: c.telefono ?? null,
     email: c.email ?? null,
     fc_correo: c.email ?? null,
+    ejecutivo_empleado_id: ejecutivoId,
+    fi_ejecutivo_empleado_id: ejecutivoId,
+    ejecutivo_nombre: nombreEmpleado(c.ejecutivo) ?? null,
     activo: c.esta_activo,
   };
 }

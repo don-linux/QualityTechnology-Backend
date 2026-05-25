@@ -324,6 +324,7 @@ model Empleado {
   usuario         Usuario?             @relation(fields: [usuarioId], references: [id])
   nominas         Nomina[]
   vacaciones      Vacacion[]
+  clientes        Cliente[]
 
   @@index([departamentoId])
   @@index([puestoId])
@@ -400,17 +401,20 @@ model Vacacion {
 }
 
 model Cliente {
-  id           Int           @id @default(autoincrement())
-  nombre       String        @db.VarChar(150)
-  empresa      String?       @db.VarChar(150)
-  telefono     String?       @db.VarChar(20)
-  email        String?       @db.VarChar(100)
-  esta_activo  Boolean       @default(true)
-  created_at   DateTime      @default(now()) @db.Timestamp(6)
-  updated_at   DateTime      @db.Timestamp(6)
-  lista_espera ListaEspera[]
+  id                  Int           @id @default(autoincrement())
+  nombre              String        @db.VarChar(150)
+  empresa             String?       @db.VarChar(150)
+  telefono            String?       @db.VarChar(20)
+  email               String?       @db.VarChar(100)
+  ejecutivoEmpleadoId Int?          @map("ejecutivo_empleado_id")
+  esta_activo         Boolean       @default(true)
+  created_at          DateTime      @default(now()) @db.Timestamp(6)
+  updated_at          DateTime      @db.Timestamp(6)
+  ejecutivo           Empleado?     @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
+  lista_espera        ListaEspera[]
 
   @@index([nombre])
+  @@index([ejecutivoEmpleadoId])
   @@map("clientes")
   @@schema("public")
 }

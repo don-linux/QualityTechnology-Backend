@@ -1,13 +1,18 @@
 import prisma from "../prisma.js";
 import { serializeCliente } from "../utils/serializers.js";
 
-// El schema actual reduce Cliente a (nombre, empresa, telefono, email,
-// esta_activo). Los campos antiguos (razon_social, rfc, unidad_negocio_id,
-// nombre_contacto, ejecutivo, localidad, estado, usuario_id) ya no existen.
-// El alias `fc_razon_social` se mapea a `nombre`, `fc_nombre_contacto` a
-// `empresa`. El resto se ignora si llega.
-
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+const clienteInclude = {
+  ejecutivo: {
+    select: {
+      id: true,
+      nombre: true,
+      apellidoPaterno: true,
+      apellidoMaterno: true,
+    },
+  },
+};
 
 function normalizeText(value) {
   if (value === undefined || value === null) return "";
@@ -31,9 +36,15 @@ function buildClientePayload(body) {
   const empresa = normalizeText(pick(body, "empresa", "fc_nombre_contacto") ?? "");
   const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
   const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
+  const ejecutivoEmpleadoId = parseRequiredId(
+    pick(body, "ejecutivo_empleado_id", "fi_ejecutivo_empleado_id", "ejecutivo_id"),
+  );
 
   if (!nombre) {
     return { error: "Campo obligatorio: nombre" };
+  }
+  if (!ejecutivoEmpleadoId) {
+    return { error: "Campo obligatorio: ejecutivo (empleado)" };
   }
   if (email && !EMAIL_RE.test(email)) {
     return { error: "email debe tener formato de correo electronico valido" };
@@ -45,14 +56,33 @@ function buildClientePayload(body) {
       empresa: empresa || null,
       telefono: telefono || null,
       email: email || null,
+      ejecutivoEmpleadoId,
     },
   };
+}
+
+async function assertEmpleadoEjecutivoValido(empleadoId) {
+  const emp = await prisma.empleado.findUnique({
+    where: { id: empleadoId },
+    select: { id: true, esta_activo: true },
+  });
+  if (!emp) {
+    const err = new Error("Ejecutivo (empleado) no encontrado");
+    err.code = "EJECUTIVO_NOT_FOUND";
+    throw err;
+  }
+  if (!emp.esta_activo) {
+    const err = new Error("El ejecutivo seleccionado no está activo");
+    err.code = "EJECUTIVO_INACTIVO";
+    throw err;
+  }
 }
 
 class ClienteController {
   static async getAll(req, res) {
     try {
       const clientes = await prisma.cliente.findMany({
+        include: clienteInclude,
         orderBy: [{ nombre: "asc" }, { id: "asc" }],
       });
       res.json(clientes.map(serializeCliente));
@@ -76,6 +106,9 @@ class ClienteController {
       const result = empleados
         .map((e) => ({
           fi_empleado_id: e.id,
+          fc_nombre: e.nombre,
+          fc_apellido_paterno: e.apellidoPaterno,
+          fc_apellido_materno: e.apellidoMaterno ?? null,
           fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
             .filter(Boolean)
             .join(" "),
@@ -93,9 +126,20 @@ class ClienteController {
       const { error, payload } = buildClientePayload(req.body);
       if (error) return res.status(400).json({ error });
 
-      const cliente = await prisma.cliente.create({ data: payload });
+      await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
+
+      const cliente = await prisma.cliente.create({
+        data: payload,
+        include: clienteInclude,
+      });
       res.status(201).json(serializeCliente(cliente));
     } catch (err) {
+      if (err.code === "EJECUTIVO_NOT_FOUND" || err.code === "EJECUTIVO_INACTIVO") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Ejecutivo (empleado) inválido" });
+      }
       console.error("Error al registrar cliente:", err);
       res.status(500).json({ error: "Error al registrar cliente" });
     }
@@ -109,13 +153,22 @@ class ClienteController {
       const { error, payload } = buildClientePayload(req.body);
       if (error) return res.status(400).json({ error });
 
+      await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
+
       const cliente = await prisma.cliente.update({
         where: { id },
         data: payload,
+        include: clienteInclude,
       });
       res.json(serializeCliente(cliente));
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
+      if (err.code === "EJECUTIVO_NOT_FOUND" || err.code === "EJECUTIVO_INACTIVO") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Ejecutivo (empleado) inválido" });
+      }
       console.error("Error al actualizar cliente:", err);
       res.status(500).json({ error: "Error al actualizar cliente" });
     }
