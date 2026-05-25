@@ -699,6 +699,8 @@ export function serializeListaEspera(l) {
     pileta_origen_id: l.pileta_origen_id ?? null,
     fi_pileta_origen_id: l.pileta_origen_id ?? null,
     nombre_pileta_origen: l.pileta_origen?.nombre ?? null,
+    venta_id: l.venta_id ?? null,
+    fi_venta_id: l.venta_id ?? null,
     notas: l.notas ?? null,
     fc_notas: l.notas ?? null,
     estatus: l.estatus,

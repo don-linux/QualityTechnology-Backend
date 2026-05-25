@@ -457,6 +457,7 @@ model Venta {
   observacion     observacion? @relation(fields: [observacionId], references: [id])
   usuarios        Usuario      @relation(fields: [usuario_id], references: [id])
   siembras        siembra[]
+  lista_espera    ListaEspera[]
 
   @@index([fecha(sort: Desc)])
   @@index([estadoPago])
@@ -481,16 +482,19 @@ model ListaEspera {
   hora_entrega      String?   @map("hora_entrega") @db.VarChar(10)
   encargado_venta   String?   @map("encargado_venta") @db.VarChar(150)
   pileta_origen_id  Int?      @map("pileta_origen_id")
+  venta_id          Int?      @map("venta_id")
   notas             String?   @db.VarChar(500)
   estatus           String    @default("PENDIENTE") @db.VarChar(30)
   created_at        DateTime  @default(now()) @db.Timestamp(6)
   updated_at        DateTime  @updatedAt @db.Timestamp(6)
   clientes          Cliente?  @relation(fields: [cliente_id], references: [id])
   pileta_origen     Pileta?   @relation(fields: [pileta_origen_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  venta             Venta?    @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([cliente_id])
   @@index([estatus])
   @@index([pileta_origen_id])
+  @@index([venta_id])
   @@index([fecha_entrega])
   @@map("lista_espera")
   @@schema("public")

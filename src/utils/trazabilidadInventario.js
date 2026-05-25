@@ -323,3 +323,48 @@ export async function registrarVentaTrazabilidad(
 
   return siembraId;
 }
+
+/**
+ * Revierte egreso por venta: restaura inventario en pileta origen, elimina siembra y venta.
+ */
+export async function revertirVentaTrazabilidad(tx, ventaId) {
+  const venta = toInt(ventaId);
+  if (!venta) return;
+
+  const siembras = await tx.siembra.findMany({
+    where: { venta_id: venta },
+    select: {
+      id: true,
+      pileta_origen: true,
+      cantidad: true,
+      usuario_id: true,
+    },
+  });
+
+  for (const s of siembras) {
+    const origen = s.pileta_origen;
+    const cant =
+      typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
+
+    if (origen && cant > 0) {
+      const pil = await tx.pileta.findUnique({
+        where: { id: origen },
+        select: { id: true, tipo: true },
+      });
+      if (pil && ETAPAS_TRAZABILIDAD.includes(pil.tipo)) {
+        await sumarInventarioDestino(tx, {
+          piletaDestinoId: origen,
+          tipoDestino: pil.tipo,
+          cantidad: cant,
+          siembraOrigenId: s.id,
+          usuarioId: s.usuario_id,
+          observacion: "Reversión por cancelación de próxima venta",
+        });
+      }
+    }
+
+    await tx.siembra.delete({ where: { id: s.id } });
+  }
+
+  await tx.venta.delete({ where: { id: venta } }).catch(() => {});
+}

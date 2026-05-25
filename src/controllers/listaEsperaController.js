@@ -3,11 +3,12 @@ import { serializeListaEspera, serializeVenta } from "../utils/serializers.js";
 import {
   etapaRequeridaParaTipoVenta,
   registrarVentaTrazabilidad,
+  revertirVentaTrazabilidad,
   ventaRequiereTrazabilidad,
 } from "../utils/trazabilidadInventario.js";
 
-// ListaEspera persiste datos del formulario Próximas Ventas incluyendo pileta_origen_id
-// para trazabilidad al convertir a venta real.
+// Al registrar una próxima venta trazable se crea venta + movimiento en siembra
+// y se descuenta inventario de la pileta. Convertir solo retira el pedido de la lista.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -125,6 +126,92 @@ function buildPayloadFromBody(body) {
   };
 }
 
+async function crearVentaDesdeLista(tx, data, usuarioId, listaId) {
+  const cantidad = Math.trunc(Number(data.cantidad_peces) || 0);
+  const precio = Number(data.precio_unitario) || 0;
+  const total = cantidad * precio;
+
+  return tx.venta.create({
+    data: {
+      folio: `PE-${listaId}`,
+      fecha: data.fecha_entrega ?? new Date(),
+      cliente_nombre: data.cliente_nombre,
+      tipoVenta: data.tipo_venta,
+      cantidad,
+      precio_unitario: precio,
+      montoTotal: total,
+      monto_abonado: 0,
+      estadoPago: "ADEUDO",
+      empresa: data.granja ?? "QUALITY",
+      vendedor_nombre: data.encargado_venta ?? null,
+      usuario_id: usuarioId,
+    },
+  });
+}
+
+async function aplicarTrazabilidadListaEspera(tx, lista, usuarioId) {
+  if (!ventaRequiereTrazabilidad(lista.tipo_venta)) return null;
+
+  const piletaOrigenId = lista.pileta_origen_id;
+  if (!piletaOrigenId) {
+    throw Object.assign(
+      new Error("pileta_origen_id es obligatorio para ventas de alevines o mojarra"),
+      { code: "VALIDACION" },
+    );
+  }
+
+  const etapa = etapaRequeridaParaTipoVenta(lista.tipo_venta);
+  const pil = await tx.pileta.findUnique({
+    where: { id: piletaOrigenId },
+    select: { id: true, tipo: true, nombre: true },
+  });
+  if (!pil) {
+    throw Object.assign(new Error("Pileta de origen no existe"), { code: "PILETA_NOT_FOUND" });
+  }
+  if (pil.tipo !== etapa) {
+    throw Object.assign(
+      new Error(`La pileta '${pil.nombre}' debe ser tipo ${etapa} para este tipo de venta`),
+      { code: "PILETA_TIPO_INVALIDO" },
+    );
+  }
+
+  const venta = await crearVentaDesdeLista(tx, lista, usuarioId, lista.id);
+
+  await registrarVentaTrazabilidad(tx, {
+    piletaOrigenId,
+    cantidad: lista.cantidad_peces,
+    ventaId: venta.id,
+    usuarioId,
+    tipoVenta: lista.tipo_venta,
+    observacion: lista.notas,
+    fechaMovimiento: lista.fecha_entrega ?? new Date(),
+  });
+
+  await tx.listaEspera.update({
+    where: { id: lista.id },
+    data: { venta_id: venta.id },
+  });
+
+  return venta.id;
+}
+
+function mapErrorTrazabilidad(err, res) {
+  if (
+    err.code === "VALIDACION" ||
+    err.code === "PILETA_TIPO_INVALIDO" ||
+    err.code === "PILETA_NOT_FOUND" ||
+    err.code === "SIEMBRA_FAIL"
+  ) {
+    res.status(400).json({ error: err.message });
+    return true;
+  }
+  if (err.code === "ALEV_CANTIDAD_INSUFICIENTE" || err.code === "ENGORDA_CANTIDAD_INSUFICIENTE") {
+    res.status(400).json({ error: err.message });
+    return true;
+  }
+  return false;
+}
+
 class ListaEsperaController {
   static async getAll(req, res) {
     try {
@@ -142,12 +229,22 @@ class ListaEsperaController {
   static async create(req, res) {
     try {
       const data = buildPayloadFromBody(req.body);
-      const creado = await prisma.listaEspera.create({
-        data,
-        include: { clientes: true, pileta_origen: true },
+      const usuarioId = req.user.usuario_id;
+
+      const creado = await prisma.$transaction(async (tx) => {
+        const lista = await tx.listaEspera.create({ data });
+        if (ventaRequiereTrazabilidad(data.tipo_venta)) {
+          await aplicarTrazabilidadListaEspera(tx, lista, usuarioId);
+        }
+        return tx.listaEspera.findUnique({
+          where: { id: lista.id },
+          include: { clientes: true, pileta_origen: true },
+        });
       });
+
       res.status(201).json(serializeListaEspera(creado));
     } catch (err) {
+      if (mapErrorTrazabilidad(err, res)) return;
       console.error("Error al registrar lista de espera:", err);
       res.status(400).json({ error: err.message || "Error al registrar en lista de espera" });
     }
@@ -158,13 +255,34 @@ class ListaEsperaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
       const data = buildPayloadFromBody(req.body);
-      await prisma.listaEspera.update({
-        where: { id },
-        data,
+      const usuarioId = req.user.usuario_id;
+
+      await prisma.$transaction(async (tx) => {
+        const anterior = await tx.listaEspera.findUnique({ where: { id } });
+        if (!anterior) {
+          const err = new Error("Registro no encontrado");
+          err.code = "P2025";
+          throw err;
+        }
+
+        if (anterior.venta_id) {
+          await revertirVentaTrazabilidad(tx, anterior.venta_id);
+        }
+
+        const lista = await tx.listaEspera.update({
+          where: { id },
+          data: { ...data, venta_id: null },
+        });
+
+        if (ventaRequiereTrazabilidad(data.tipo_venta)) {
+          await aplicarTrazabilidadListaEspera(tx, lista, usuarioId);
+        }
       });
+
       res.sendStatus(200);
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
+      if (mapErrorTrazabilidad(err, res)) return;
       console.error("Error en PUT:", err);
       res.status(400).json({ error: err.message || "Error al actualizar" });
     }
@@ -174,10 +292,22 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
-      await prisma.listaEspera.delete({ where: { id } });
+      await prisma.$transaction(async (tx) => {
+        const lista = await tx.listaEspera.findUnique({ where: { id } });
+        if (!lista) {
+          const err = new Error("Registro no encontrado");
+          err.code = "P2025";
+          throw err;
+        }
+        if (lista.venta_id) {
+          await revertirVentaTrazabilidad(tx, lista.venta_id);
+        }
+        await tx.listaEspera.delete({ where: { id } });
+      });
       res.sendStatus(204);
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
+      if (mapErrorTrazabilidad(err, res)) return;
       console.error("Error en DELETE:", err);
       res.status(500).json({ error: "Error al eliminar" });
     }
@@ -196,10 +326,20 @@ class ListaEsperaController {
         const lista = await tx.listaEspera.findUnique({ where: { id } });
         if (!lista) return null;
 
+        const tipoVenta = normalizarTipoVenta(lista.tipo_venta) ?? "ALEVINES";
+
+        if (lista.venta_id) {
+          const ventaExistente = await tx.venta.update({
+            where: { id: lista.venta_id },
+            data: { folio: `LE-${id}` },
+          });
+          await tx.listaEspera.delete({ where: { id } });
+          return ventaExistente;
+        }
+
         const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
         const precio = Number(lista.precio_unitario) || 0;
         const total = cantidad * precio;
-        const tipoVenta = normalizarTipoVenta(lista.tipo_venta) ?? "ALEVINES";
         const piletaOrigenId = piletaOrigenIdBody ?? lista.pileta_origen_id ?? null;
 
         if (ventaRequiereTrazabilidad(tipoVenta)) {
@@ -232,7 +372,7 @@ class ListaEsperaController {
         const ventaNueva = await tx.venta.create({
           data: {
             folio: `LE-${id}`,
-            fecha: new Date(),
+            fecha: lista.fecha_entrega ?? new Date(),
             cliente_nombre: lista.cliente_nombre,
             tipoVenta,
             cantidad,
@@ -241,7 +381,7 @@ class ListaEsperaController {
             monto_abonado: 0,
             estadoPago: "ADEUDO",
             empresa: lista.granja ?? "QUALITY",
-            vendedor_nombre: null,
+            vendedor_nombre: lista.encargado_venta ?? null,
             usuario_id: req.user.usuario_id,
           },
         });
@@ -254,7 +394,7 @@ class ListaEsperaController {
             usuarioId: req.user.usuario_id,
             tipoVenta,
             observacion: lista.notas,
-            fechaMovimiento: ventaNueva.fecha,
+            fechaMovimiento: lista.fecha_entrega ?? ventaNueva.fecha,
           });
         }
 
@@ -270,16 +410,7 @@ class ListaEsperaController {
         data: serializeVenta(venta),
       });
     } catch (err) {
-      if (
-        err.code === "VALIDACION" ||
-        err.code === "PILETA_TIPO_INVALIDO" ||
-        err.code === "PILETA_NOT_FOUND"
-      ) {
-        return res.status(400).json({ error: err.message });
-      }
-      if (err.code === "ALEV_CANTIDAD_INSUFICIENTE" || err.code === "ENGORDA_CANTIDAD_INSUFICIENTE") {
-        return res.status(400).json({ error: err.message });
-      }
+      if (mapErrorTrazabilidad(err, res)) return;
       console.error("Error al convertir:", err);
       res.status(500).json({ error: err.message });
     }
