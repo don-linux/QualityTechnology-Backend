@@ -451,6 +451,7 @@ model Venta {
   updated_at      DateTime     @db.Timestamp(6)
   observacion     observacion? @relation(fields: [observacionId], references: [id])
   usuarios        Usuario      @relation(fields: [usuario_id], references: [id])
+  siembras        siembra[]
 
   @@index([fecha(sort: Desc)])
   @@index([estadoPago])
@@ -466,6 +467,8 @@ model ListaEspera {
   cliente_nombre  String   @db.VarChar(150)
   cantidad_peces  Int?
   precio_unitario Decimal? @db.Decimal(10, 2)
+  tipo_venta      String?  @map("tipo_venta") @db.VarChar(30)
+  granja          String?  @db.VarChar(120)
   notas           String?  @db.VarChar(500)
   estatus         String   @default("PENDIENTE") @db.VarChar(30)
   created_at      DateTime @default(now()) @db.Timestamp(6)
@@ -953,13 +956,14 @@ model observacion {
   @@schema("public")
 }
 
-/// Movimiento de organismos entre piletas (origen → destino). Cierra/avanzar el ciclo hacia engorda/reproductores.
+/// Movimiento de organismos entre piletas (origen → destino) o egreso por venta (destino null + venta_id).
 model siembra {
   id                                      Int           @id @default(autoincrement())
   pileta_origen                           Int?
-  pileta_destino                          Int
+  pileta_destino                          Int?
   cantidad                                BigInt
   mortalidad                              Int           @default(0)
+  venta_id                                Int?          @map("venta_id")
   fecha                                   DateTime      @default(now()) @db.Date
   usuario_id                              Int
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
@@ -967,13 +971,15 @@ model siembra {
   controlReproductivos_como_origen        ControlReproductivo[] @relation("ControlReproSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores                           Reproductor[]
-  piletas_siembra_pileta_destinoTopiletas Pileta        @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
+  venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
+  piletas_siembra_pileta_destinoTopiletas Pileta?       @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
   piletas_siembra_pileta_origenTopiletas  Pileta?       @relation("siembra_pileta_origenTopiletas", fields: [pileta_origen], references: [id])
   usuarios                                Usuario       @relation(fields: [usuario_id], references: [id])
 
   @@index([fecha(sort: Desc)])
   @@index([pileta_destino])
   @@index([pileta_origen])
+  @@index([venta_id])
   @@schema("public")
 }
 

@@ -63,6 +63,14 @@ const siembraTrazabilidadInclude = {
       observacion: { select: { comentario: true } },
     },
   },
+  venta: {
+    select: {
+      id: true,
+      folio: true,
+      cliente_nombre: true,
+      tipoVenta: true,
+    },
+  },
 };
 
 class TrazabilidadController {

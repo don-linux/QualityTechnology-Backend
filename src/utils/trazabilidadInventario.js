@@ -1,6 +1,6 @@
 import { crearObservacionSiHay } from "./observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
-import { crearSiembraMovimiento, ETAPAS_TRAZABILIDAD } from "./siembraMovimiento.js";
+import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "./siembraMovimiento.js";
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
 
@@ -251,4 +251,75 @@ export async function registrarMortalidadTrazabilidad(
   }
 
   return siembra.id;
+}
+
+/** Tipos de venta que egresan inventario de piletas. */
+export const TIPOS_VENTA_TRAZABLES = {
+  ALEVINES: "alevinaje",
+  ALEVIN: "alevinaje",
+  MOJARRA_KG: "engorda",
+  KG: "engorda",
+};
+
+export function etapaRequeridaParaTipoVenta(tipoVenta) {
+  const t = String(tipoVenta ?? "")
+    .trim()
+    .toUpperCase();
+  return TIPOS_VENTA_TRAZABLES[t] ?? null;
+}
+
+export function ventaRequiereTrazabilidad(tipoVenta) {
+  return etapaRequeridaParaTipoVenta(tipoVenta) !== null;
+}
+
+/**
+ * Egreso por venta: crea siembra (origen pileta → venta) y descuenta inventario.
+ * @returns {Promise<number>} id de siembra
+ */
+export async function registrarVentaTrazabilidad(
+  tx,
+  { piletaOrigenId, cantidad, ventaId, usuarioId, observacion, fechaMovimiento, tipoVenta },
+) {
+  const origen = toInt(piletaOrigenId);
+  const cant = Math.floor(Number(cantidad) || 0);
+  const venta = toInt(ventaId);
+  if (!origen || cant <= 0 || !venta) {
+    throw errValidacion("pileta_origen_id, cantidad (>0) y venta_id son obligatorios para venta");
+  }
+
+  const etapaEsperada = etapaRequeridaParaTipoVenta(tipoVenta);
+  const pilOr = await obtenerPiletaEtapa(tx, origen);
+  if (etapaEsperada && pilOr.tipo !== etapaEsperada) {
+    throw errValidacion(
+      `Para venta tipo '${tipoVenta}' la pileta debe ser de etapa ${etapaEsperada}, no '${pilOr.tipo}'`,
+    );
+  }
+
+  const { stock } = await consultarStockPiletaEtapa(tx, origen);
+  assertStockSuficiente(stock, cant, pilOr.nombre);
+
+  const siembraId = await crearSiembraVenta(tx, {
+    piletaOrigenId: origen,
+    cantidadEntera: cant,
+    ventaId: venta,
+    usuarioId,
+    fechaMovimiento,
+  });
+
+  if (!siembraId) {
+    const err = new Error("No se pudo crear el movimiento de venta en trazabilidad");
+    err.code = "SIEMBRA_FAIL";
+    throw err;
+  }
+
+  await descontarInventarioOrigen(tx, origen, null, cant, pilOr.tipo);
+
+  if (observacion?.trim()) {
+    await crearObservacionSiHay(tx, observacion, usuarioId, {
+      piletaId: origen,
+      proceso: "venta",
+    });
+  }
+
+  return siembraId;
 }
