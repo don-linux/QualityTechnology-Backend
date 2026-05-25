@@ -7,7 +7,7 @@ function toInt(value, fallback = null) {
 /** Ingreso/traslado entre piletas (tabla `siembra`). Origen opcional (= externo si null). */
 export async function crearSiembraMovimiento(
   tx,
-  { piletaOrigenId, piletaDestinoId, cantidadEntera, usuarioId },
+  { piletaOrigenId, piletaDestinoId, cantidadEntera, usuarioId, fechaMovimiento },
 ) {
   const dest = toInt(piletaDestinoId);
   const cant = Math.floor(Number(cantidadEntera) || 0);
@@ -19,15 +19,16 @@ export async function crearSiembraMovimiento(
       : null;
   if (origen !== null && origen === dest) origen = null;
 
-  const s = await tx.siembra.create({
-    data: {
-      pileta_origen: origen,
-      pileta_destino: dest,
-      cantidad: BigInt(cant),
-      mortalidad: 0,
-      usuario_id: usuarioId,
-    },
-  });
+  const data = {
+    pileta_origen: origen,
+    pileta_destino: dest,
+    cantidad: BigInt(cant),
+    mortalidad: 0,
+    usuario_id: usuarioId,
+  };
+  if (fechaMovimiento) data.fecha = fechaMovimiento;
+
+  const s = await tx.siembra.create({ data });
   return s.id;
 }
 
