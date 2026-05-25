@@ -450,8 +450,6 @@ components:
         fd_fecha_entrega:
           type: string
           format: date
-        fc_talla:
-          type: string
         fn_cantidad:
           type: number
         fc_cliente:
@@ -471,6 +469,10 @@ components:
         fc_uap_asignada:
           type: string
         fc_granja_asignada:
+          type: string
+        pileta_origen_id:
+          type: integer
+        nombre_pileta_origen:
           type: string
 
     Equipo:

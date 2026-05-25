@@ -665,6 +665,11 @@ export function serializeVenta(v) {
 
 export function serializeListaEspera(l) {
   if (!l) return null;
+  const fechaEntrega = l.fecha_entrega
+    ? (l.fecha_entrega instanceof Date
+        ? l.fecha_entrega.toISOString().slice(0, 10)
+        : String(l.fecha_entrega).slice(0, 10))
+    : null;
   return {
     fi_lista_id: l.id,
     lista_id: l.id,
@@ -679,6 +684,21 @@ export function serializeListaEspera(l) {
     fc_uap_asignada: l.tipo_venta ?? null,
     granja: l.granja ?? null,
     fc_granja_asignada: l.granja ?? null,
+    fecha_entrega: fechaEntrega,
+    fd_fecha_entrega: fechaEntrega,
+    lugar_entrega: l.lugar_entrega ?? null,
+    fc_lugar_entrega: l.lugar_entrega ?? null,
+    unidad_produccion: l.unidad_produccion ?? null,
+    fc_unidad_produccion: l.unidad_produccion ?? null,
+    hora_embolsado: l.hora_embolsado ?? null,
+    fc_hora_embolsado: l.hora_embolsado ?? null,
+    hora_entrega: l.hora_entrega ?? null,
+    fc_hora_entrega: l.hora_entrega ?? null,
+    encargado_venta: l.encargado_venta ?? null,
+    fc_encargado_venta: l.encargado_venta ?? null,
+    pileta_origen_id: l.pileta_origen_id ?? null,
+    fi_pileta_origen_id: l.pileta_origen_id ?? null,
+    nombre_pileta_origen: l.pileta_origen?.nombre ?? null,
     notas: l.notas ?? null,
     fc_notas: l.notas ?? null,
     estatus: l.estatus,

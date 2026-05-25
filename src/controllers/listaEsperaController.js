@@ -6,8 +6,8 @@ import {
   ventaRequiereTrazabilidad,
 } from "../utils/trazabilidadInventario.js";
 
-// El schema actual reduce ListaEspera a (cliente_id, cliente_nombre,
-// cantidad_peces, precio_unitario, tipo_venta, granja, notas, estatus).
+// ListaEspera persiste datos del formulario Próximas Ventas incluyendo pileta_origen_id
+// para trazabilidad al convertir a venta real.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -37,19 +37,89 @@ function normalizarTipoVenta(raw) {
   return t || null;
 }
 
+function parseFechaEntrega(raw) {
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error("fecha_entrega invalida");
+  }
+  return d;
+}
+
 function buildPayloadFromBody(body) {
   const clienteNombre = pick(body, "cliente_nombre", "fc_cliente", "cliente");
   if (!clienteNombre) {
     throw new Error("cliente_nombre es obligatorio");
   }
+
+  const fechaEntrega = parseFechaEntrega(pick(body, "fecha_entrega", "fd_fecha_entrega"));
+  if (!fechaEntrega) {
+    throw new Error("fecha_entrega es obligatoria");
+  }
+
   const tipoRaw = pick(body, "tipo_venta", "fc_uap_asignada", "fc_tipo_venta");
+  const tipoVenta = normalizarTipoVenta(tipoRaw);
+  const piletaOrigenId = toInt(
+    pick(body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
+  );
+
+  if (ventaRequiereTrazabilidad(tipoVenta) && !piletaOrigenId) {
+    throw new Error("pileta_origen_id es obligatorio para ventas de alevines o mojarra");
+  }
+
+  const lugar = pick(body, "lugar_entrega", "fc_lugar_entrega");
+  if (!lugar) {
+    throw new Error("lugar_entrega es obligatorio");
+  }
+
+  const unidadProduccion = pick(body, "unidad_produccion", "fc_unidad_produccion");
+  if (!unidadProduccion) {
+    throw new Error("unidad_produccion es obligatoria");
+  }
+
+  const horaEmbolsado = pick(body, "hora_embolsado", "fc_hora_embolsado");
+  if (!horaEmbolsado) {
+    throw new Error("hora_embolsado es obligatoria");
+  }
+
+  const horaEntrega = pick(body, "hora_entrega", "fc_hora_entrega");
+  if (!horaEntrega) {
+    throw new Error("hora_entrega es obligatoria");
+  }
+
+  const cantidad = toInt(pick(body, "cantidad_peces", "fn_cantidad", "cantidad"));
+  if (!cantidad || cantidad <= 0) {
+    throw new Error("cantidad es obligatoria y debe ser mayor a cero");
+  }
+
+  const precio = toDecimal(pick(body, "precio_unitario", "fn_precio_venta", "precio_venta"));
+  if (precio == null || precio < 0) {
+    throw new Error("precio_unitario es obligatorio");
+  }
+
+  const granja = pick(body, "granja", "fc_granja_asignada", "fc_granja");
+  if (!granja) {
+    throw new Error("granja es obligatoria");
+  }
+
+  if (!tipoVenta) {
+    throw new Error("tipo_venta es obligatorio");
+  }
+
   return {
     cliente_id: toInt(pick(body, "cliente_id", "fi_cliente_id")),
     cliente_nombre: String(clienteNombre),
-    cantidad_peces: toInt(pick(body, "cantidad_peces", "fn_cantidad", "cantidad")),
-    precio_unitario: toDecimal(pick(body, "precio_unitario", "fn_precio_venta", "precio_venta")),
-    tipo_venta: normalizarTipoVenta(tipoRaw),
-    granja: pick(body, "granja", "fc_granja_asignada", "fc_granja") ?? null,
+    cantidad_peces: cantidad,
+    precio_unitario: precio,
+    tipo_venta: tipoVenta,
+    granja: String(granja),
+    fecha_entrega: fechaEntrega,
+    lugar_entrega: String(lugar),
+    unidad_produccion: String(unidadProduccion),
+    hora_embolsado: String(horaEmbolsado),
+    hora_entrega: String(horaEntrega),
+    encargado_venta: pick(body, "encargado_venta", "fc_encargado_venta") ?? null,
+    pileta_origen_id: piletaOrigenId,
     notas: pick(body, "notas", "fc_notas", "fc_observaciones") ?? null,
     estatus: pick(body, "estatus", "fc_estatus") ?? "PENDIENTE",
   };
@@ -59,7 +129,7 @@ class ListaEsperaController {
   static async getAll(req, res) {
     try {
       const lista = await prisma.listaEspera.findMany({
-        include: { clientes: true },
+        include: { clientes: true, pileta_origen: true },
         orderBy: { id: "desc" },
       });
       res.json(lista.map(serializeListaEspera));
@@ -74,7 +144,7 @@ class ListaEsperaController {
       const data = buildPayloadFromBody(req.body);
       const creado = await prisma.listaEspera.create({
         data,
-        include: { clientes: true },
+        include: { clientes: true, pileta_origen: true },
       });
       res.status(201).json(serializeListaEspera(creado));
     } catch (err) {
@@ -117,7 +187,7 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
 
-    const piletaOrigenId = toInt(
+    const piletaOrigenIdBody = toInt(
       pick(req.body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
     );
 
@@ -130,6 +200,7 @@ class ListaEsperaController {
         const precio = Number(lista.precio_unitario) || 0;
         const total = cantidad * precio;
         const tipoVenta = normalizarTipoVenta(lista.tipo_venta) ?? "ALEVINES";
+        const piletaOrigenId = piletaOrigenIdBody ?? lista.pileta_origen_id ?? null;
 
         if (ventaRequiereTrazabilidad(tipoVenta)) {
           if (!piletaOrigenId) {
