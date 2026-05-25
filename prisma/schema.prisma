@@ -409,7 +409,7 @@ model Cliente {
   ejecutivoEmpleadoId Int?          @map("ejecutivo_empleado_id")
   esta_activo         Boolean       @default(true)
   created_at          DateTime      @default(now()) @db.Timestamp(6)
-  updated_at          DateTime      @db.Timestamp(6)
+  updated_at          DateTime      @updatedAt @db.Timestamp(6)
   ejecutivo           Empleado?     @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
   lista_espera        ListaEspera[]
 
