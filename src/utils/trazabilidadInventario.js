@@ -88,6 +88,35 @@ async function descontarInventarioOrigen(tx, piletaOrigenId, piletaDestinoId, ca
   await descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, opciones);
 }
 
+/**
+ * Vincula la observación del usuario al movimiento de siembra (p. ej. mortalidad sin destino)
+ * mediante un registro de inventario con cantidad 0, para que aparezca en la trazabilidad.
+ */
+async function vincularObservacionSiembra(
+  tx,
+  { siembraId, piletaId, tipoPileta, usuarioId, observacion },
+) {
+  const obsId = await crearObservacionSiHay(tx, observacion, usuarioId, {
+    piletaId,
+    proceso: "trazabilidad",
+  });
+  if (!obsId) return;
+
+  const data = {
+    pileta_id: piletaId,
+    cantidad_total: 0,
+    cantidad_alimento: 0,
+    observacion_id: obsId,
+    siembra_origen_id: siembraId,
+  };
+
+  if (tipoPileta === "alevinaje") {
+    await tx.alevinaje.create({ data });
+  } else {
+    await tx.engorda.create({ data });
+  }
+}
+
 async function sumarInventarioDestino(
   tx,
   { piletaDestinoId, tipoDestino, cantidad, siembraOrigenId, usuarioId, observacion },
@@ -204,9 +233,12 @@ export async function registrarMovimientoTrazabilidad(
       observacion,
     });
   } else if (observacion?.trim()) {
-    await crearObservacionSiHay(tx, observacion, usuarioId, {
+    await vincularObservacionSiembra(tx, {
+      siembraId,
       piletaId: origen ?? dest,
-      proceso: "trazabilidad",
+      tipoPileta: pilOr?.tipo ?? pilDest.tipo,
+      usuarioId,
+      observacion,
     });
   }
 
@@ -244,9 +276,12 @@ export async function registrarMortalidadTrazabilidad(
   await descontarInventarioOrigen(tx, id, null, cant, pil.tipo);
 
   if (observacion?.trim()) {
-    await crearObservacionSiHay(tx, observacion, usuarioId, {
+    await vincularObservacionSiembra(tx, {
+      siembraId: siembra.id,
       piletaId: id,
-      proceso: "trazabilidad",
+      tipoPileta: pil.tipo,
+      usuarioId,
+      observacion,
     });
   }
 
