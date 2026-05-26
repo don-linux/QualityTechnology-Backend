@@ -7,6 +7,7 @@ import {
 import {
   registrarMortalidadTrazabilidad,
   registrarMovimientoTrazabilidad,
+  registrarVentaDesdeListaEspera,
   parseFechaMovimiento,
 } from "../utils/trazabilidadInventario.js";
 
@@ -29,6 +30,7 @@ function normalizarTipoMovimiento(raw) {
     .toUpperCase();
   if (t === "INGRESO" || t === "SIEMBRA") return "INGRESO";
   if (t === "MORTALIDAD") return "MORTALIDAD";
+  if (t === "VENTA") return "VENTA";
   return "TRASLADO";
 }
 
@@ -128,6 +130,25 @@ class TrazabilidadController {
       );
 
       const movimientoId = await prisma.$transaction(async (tx) => {
+        if (tipoMov === "VENTA") {
+          const listaEsperaId = toInt(
+            pick(req.body, "lista_espera_id", "fi_lista_id", "fi_lista_espera_id"),
+          );
+          if (!listaEsperaId) {
+            const err = new Error("lista_espera_id es obligatorio para venta");
+            err.code = "VALIDACION";
+            throw err;
+          }
+          const { siembraId } = await registrarVentaDesdeListaEspera(tx, {
+            listaEsperaId,
+            piletaOrigenId,
+            usuarioId,
+            observacion,
+            fechaMovimiento,
+          });
+          return siembraId;
+        }
+
         if (tipoMov === "MORTALIDAD") {
           const piletaId = piletaOrigenId ?? piletaDestinoId;
           return registrarMortalidadTrazabilidad(tx, {

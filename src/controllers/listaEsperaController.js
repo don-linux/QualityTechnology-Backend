@@ -1,14 +1,13 @@
 import prisma from "../prisma.js";
 import { serializeListaEspera, serializeVenta } from "../utils/serializers.js";
 import {
-  etapaRequeridaParaTipoVenta,
-  registrarVentaTrazabilidad,
   revertirVentaTrazabilidad,
   ventaRequiereTrazabilidad,
 } from "../utils/trazabilidadInventario.js";
 
-// Al registrar una próxima venta trazable se crea venta + movimiento en siembra
-// y se descuenta inventario de la pileta. Convertir solo retira el pedido de la lista.
+// Al registrar una próxima venta solo se guarda el pedido.
+// La venta y el movimiento de trazabilidad se crean desde el módulo Trazabilidad (tipo VENTA).
+// Convertir retira el pedido de la lista y actualiza el folio de la venta ya registrada.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -126,73 +125,27 @@ function buildPayloadFromBody(body) {
   };
 }
 
-async function crearVentaDesdeLista(tx, data, usuarioId, listaId) {
-  const cantidad = Math.trunc(Number(data.cantidad_peces) || 0);
-  const precio = Number(data.precio_unitario) || 0;
+async function crearVentaDesdeLista(tx, lista, usuarioId, listaId) {
+  const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
+  const precio = Number(lista.precio_unitario) || 0;
   const total = cantidad * precio;
 
   return tx.venta.create({
     data: {
-      folio: `PE-${listaId}`,
-      fecha: data.fecha_entrega ?? new Date(),
-      cliente_nombre: data.cliente_nombre,
-      tipoVenta: data.tipo_venta,
+      folio: `LE-${listaId}`,
+      fecha: lista.fecha_entrega ?? new Date(),
+      cliente_nombre: lista.cliente_nombre,
+      tipoVenta: lista.tipo_venta,
       cantidad,
       precio_unitario: precio,
       montoTotal: total,
       monto_abonado: 0,
       estadoPago: "ADEUDO",
-      empresa: data.granja ?? "QUALITY",
-      vendedor_nombre: data.encargado_venta ?? null,
+      empresa: lista.granja ?? "QUALITY",
+      vendedor_nombre: lista.encargado_venta ?? null,
       usuario_id: usuarioId,
     },
   });
-}
-
-async function aplicarTrazabilidadListaEspera(tx, lista, usuarioId) {
-  if (!ventaRequiereTrazabilidad(lista.tipo_venta)) return null;
-
-  const piletaOrigenId = lista.pileta_origen_id;
-  if (!piletaOrigenId) {
-    throw Object.assign(
-      new Error("pileta_origen_id es obligatorio para ventas de alevines o mojarra"),
-      { code: "VALIDACION" },
-    );
-  }
-
-  const etapa = etapaRequeridaParaTipoVenta(lista.tipo_venta);
-  const pil = await tx.pileta.findUnique({
-    where: { id: piletaOrigenId },
-    select: { id: true, tipo: true, nombre: true },
-  });
-  if (!pil) {
-    throw Object.assign(new Error("Pileta de origen no existe"), { code: "PILETA_NOT_FOUND" });
-  }
-  if (pil.tipo !== etapa) {
-    throw Object.assign(
-      new Error(`La pileta '${pil.nombre}' debe ser tipo ${etapa} para este tipo de venta`),
-      { code: "PILETA_TIPO_INVALIDO" },
-    );
-  }
-
-  const venta = await crearVentaDesdeLista(tx, lista, usuarioId, lista.id);
-
-  await registrarVentaTrazabilidad(tx, {
-    piletaOrigenId,
-    cantidad: lista.cantidad_peces,
-    ventaId: venta.id,
-    usuarioId,
-    tipoVenta: lista.tipo_venta,
-    observacion: lista.notas,
-    fechaMovimiento: lista.fecha_entrega ?? new Date(),
-  });
-
-  await tx.listaEspera.update({
-    where: { id: lista.id },
-    data: { venta_id: venta.id },
-  });
-
-  return venta.id;
 }
 
 function mapErrorTrazabilidad(err, res) {
@@ -229,17 +182,10 @@ class ListaEsperaController {
   static async create(req, res) {
     try {
       const data = buildPayloadFromBody(req.body);
-      const usuarioId = req.user.usuario_id;
 
-      const creado = await prisma.$transaction(async (tx) => {
-        const lista = await tx.listaEspera.create({ data });
-        if (ventaRequiereTrazabilidad(data.tipo_venta)) {
-          await aplicarTrazabilidadListaEspera(tx, lista, usuarioId);
-        }
-        return tx.listaEspera.findUnique({
-          where: { id: lista.id },
-          include: { clientes: true, pileta_origen: true },
-        });
+      const creado = await prisma.listaEspera.create({
+        data,
+        include: { clientes: true, pileta_origen: true },
       });
 
       res.status(201).json(serializeListaEspera(creado));
@@ -255,33 +201,20 @@ class ListaEsperaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
       const data = buildPayloadFromBody(req.body);
-      const usuarioId = req.user.usuario_id;
 
-      await prisma.$transaction(async (tx) => {
-        const anterior = await tx.listaEspera.findUnique({ where: { id } });
-        if (!anterior) {
-          const err = new Error("Registro no encontrado");
-          err.code = "P2025";
-          throw err;
-        }
+      const anterior = await prisma.listaEspera.findUnique({ where: { id } });
+      if (!anterior) return res.status(404).json({ error: "Registro no encontrado" });
 
-        if (anterior.venta_id) {
-          await revertirVentaTrazabilidad(tx, anterior.venta_id);
-        }
-
-        const lista = await tx.listaEspera.update({
-          where: { id },
-          data: { ...data, venta_id: null },
+      if (anterior.venta_id) {
+        return res.status(400).json({
+          error: "No se puede editar un pedido con trazabilidad registrada. Elimínelo desde Trazabilidad.",
         });
+      }
 
-        if (ventaRequiereTrazabilidad(data.tipo_venta)) {
-          await aplicarTrazabilidadListaEspera(tx, lista, usuarioId);
-        }
-      });
+      await prisma.listaEspera.update({ where: { id }, data });
 
       res.sendStatus(200);
     } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       if (mapErrorTrazabilidad(err, res)) return;
       console.error("Error en PUT:", err);
       res.status(400).json({ error: err.message || "Error al actualizar" });
@@ -317,16 +250,20 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
 
-    const piletaOrigenIdBody = toInt(
-      pick(req.body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
-    );
-
     try {
       const venta = await prisma.$transaction(async (tx) => {
         const lista = await tx.listaEspera.findUnique({ where: { id } });
         if (!lista) return null;
 
         const tipoVenta = normalizarTipoVenta(lista.tipo_venta) ?? "ALEVINES";
+
+        if (ventaRequiereTrazabilidad(tipoVenta) && !lista.venta_id) {
+          const err = new Error(
+            "Debe registrar la venta en el módulo de Trazabilidad antes de convertir",
+          );
+          err.code = "VALIDACION";
+          throw err;
+        }
 
         if (lista.venta_id) {
           const ventaExistente = await tx.venta.update({
@@ -337,67 +274,7 @@ class ListaEsperaController {
           return ventaExistente;
         }
 
-        const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
-        const precio = Number(lista.precio_unitario) || 0;
-        const total = cantidad * precio;
-        const piletaOrigenId = piletaOrigenIdBody ?? lista.pileta_origen_id ?? null;
-
-        if (ventaRequiereTrazabilidad(tipoVenta)) {
-          if (!piletaOrigenId) {
-            const err = new Error(
-              "pileta_origen_id es obligatorio para convertir ventas de alevines o mojarra",
-            );
-            err.code = "VALIDACION";
-            throw err;
-          }
-          const etapa = etapaRequeridaParaTipoVenta(tipoVenta);
-          const pil = await tx.pileta.findUnique({
-            where: { id: piletaOrigenId },
-            select: { id: true, tipo: true, nombre: true },
-          });
-          if (!pil) {
-            const err = new Error("Pileta de origen no existe");
-            err.code = "PILETA_NOT_FOUND";
-            throw err;
-          }
-          if (pil.tipo !== etapa) {
-            const err = new Error(
-              `La pileta '${pil.nombre}' debe ser tipo ${etapa} para este tipo de venta`,
-            );
-            err.code = "PILETA_TIPO_INVALIDO";
-            throw err;
-          }
-        }
-
-        const ventaNueva = await tx.venta.create({
-          data: {
-            folio: `LE-${id}`,
-            fecha: lista.fecha_entrega ?? new Date(),
-            cliente_nombre: lista.cliente_nombre,
-            tipoVenta,
-            cantidad,
-            precio_unitario: precio,
-            montoTotal: total,
-            monto_abonado: 0,
-            estadoPago: "ADEUDO",
-            empresa: lista.granja ?? "QUALITY",
-            vendedor_nombre: lista.encargado_venta ?? null,
-            usuario_id: req.user.usuario_id,
-          },
-        });
-
-        if (ventaRequiereTrazabilidad(tipoVenta)) {
-          await registrarVentaTrazabilidad(tx, {
-            piletaOrigenId,
-            cantidad,
-            ventaId: ventaNueva.id,
-            usuarioId: req.user.usuario_id,
-            tipoVenta,
-            observacion: lista.notas,
-            fechaMovimiento: lista.fecha_entrega ?? ventaNueva.fecha,
-          });
-        }
-
+        const ventaNueva = await crearVentaDesdeLista(tx, lista, req.user.usuario_id, id);
         await tx.listaEspera.delete({ where: { id } });
         return ventaNueva;
       });

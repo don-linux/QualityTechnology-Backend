@@ -360,6 +360,73 @@ export async function registrarVentaTrazabilidad(
 }
 
 /**
+ * Crea venta + egreso en trazabilidad a partir de un pedido en lista de espera.
+ * @returns {Promise<{ siembraId: number, ventaId: number }>}
+ */
+export async function registrarVentaDesdeListaEspera(
+  tx,
+  { listaEsperaId, piletaOrigenId, usuarioId, observacion, fechaMovimiento },
+) {
+  const listaId = toInt(listaEsperaId);
+  if (!listaId) throw errValidacion("lista_espera_id es obligatorio para venta");
+
+  const lista = await tx.listaEspera.findUnique({
+    where: { id: listaId },
+    include: { pileta_origen: { select: { id: true, nombre: true, tipo: true } } },
+  });
+  if (!lista) throw errValidacion("Pedido de lista de espera no encontrado");
+  if (lista.venta_id) throw errValidacion("Este pedido ya tiene una venta registrada");
+  if (!ventaRequiereTrazabilidad(lista.tipo_venta)) {
+    throw errValidacion("Este tipo de venta no requiere trazabilidad");
+  }
+
+  const origen = toInt(piletaOrigenId) ?? lista.pileta_origen_id;
+  if (!origen) {
+    throw errValidacion("pileta_origen_id es obligatorio para ventas de alevines o mojarra");
+  }
+
+  const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
+  if (cantidad <= 0) throw errValidacion("El pedido no tiene cantidad válida");
+
+  const precio = Number(lista.precio_unitario) || 0;
+  const total = cantidad * precio;
+
+  const venta = await tx.venta.create({
+    data: {
+      folio: `PE-${lista.id}`,
+      fecha: lista.fecha_entrega ?? new Date(),
+      cliente_nombre: lista.cliente_nombre,
+      tipoVenta: lista.tipo_venta,
+      cantidad,
+      precio_unitario: precio,
+      montoTotal: total,
+      monto_abonado: 0,
+      estadoPago: "ADEUDO",
+      empresa: lista.granja ?? "QUALITY",
+      vendedor_nombre: lista.encargado_venta ?? null,
+      usuario_id: usuarioId,
+    },
+  });
+
+  const siembraId = await registrarVentaTrazabilidad(tx, {
+    piletaOrigenId: origen,
+    cantidad,
+    ventaId: venta.id,
+    usuarioId,
+    tipoVenta: lista.tipo_venta,
+    observacion: observacion ?? lista.notas,
+    fechaMovimiento: fechaMovimiento ?? lista.fecha_entrega ?? new Date(),
+  });
+
+  await tx.listaEspera.update({
+    where: { id: lista.id },
+    data: { venta_id: venta.id },
+  });
+
+  return { siembraId, ventaId: venta.id };
+}
+
+/**
  * Revierte egreso por venta: restaura inventario en pileta origen, elimina siembra y venta.
  */
 export async function revertirVentaTrazabilidad(tx, ventaId) {
