@@ -7,8 +7,8 @@
   "remoteUser": "node",
   "overrideCommand": false,
   "forwardPorts": [5000],
-  "postCreateCommand": "npm install && npm run prisma:generate",
-  "postStartCommand": "npm run prisma:deploy && npm run prisma:seed && npm run dev",
+  "postCreateCommand": "cd /app && npm install && npm run prisma:generate",
+  "postStartCommand": "cd /app && npm run prisma:deploy && npm run prisma:seed && npm run dev",
   "remoteEnv": {
     "SHELL": "/bin/bash"
   },
