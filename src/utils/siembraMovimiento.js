@@ -1,3 +1,5 @@
+import { labelSubtipoMovimiento } from "./trazabilidadSubtipos.js";
+
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
@@ -91,6 +93,9 @@ export function serializarMovimientoSiembra(s) {
   if (esVenta && s.venta?.folio) obsParts.push(`Folio: ${s.venta.folio}`);
 
   const etapa = resolverEtapaMovimiento(pilOr, pilDest);
+  const subtipoLabel = labelSubtipoMovimiento(pilOr, pilDest, esVenta, mortalidad);
+  const esMortalidadPura =
+    Boolean(pilOr && pilDest && pilOr.id === pilDest.id && mortalidad > 0);
 
   let destinoLabel = pilDest?.nombre ?? "—";
   if (esVenta) {
@@ -109,12 +114,13 @@ export function serializarMovimientoSiembra(s) {
     fi_movimiento_id: s.id,
     origen: pilOr?.nombre ?? "Externo",
     destino: destinoLabel,
-    cantidad_trasladada: netas,
+    cantidad_trasladada: esMortalidadPura ? mortalidad : netas,
     fecha_movimiento: s.fecha,
     observacion: obsParts.length ? obsParts.join(" · ") : null,
     origen_pileta_id: pilOr?.id ?? null,
     etapa,
-    fc_etapa: esVenta ? "Venta" : labelEtapa(etapa),
+    fc_etapa: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
+    fc_subtipo_movimiento: subtipoLabel,
     fc_granja: pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null,
     es_venta: esVenta,
     venta_id: s.venta_id ?? s.venta?.id ?? null,

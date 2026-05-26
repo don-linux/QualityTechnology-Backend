@@ -9,7 +9,12 @@ import {
   registrarMovimientoTrazabilidad,
   registrarVentaDesdeListaEspera,
   parseFechaMovimiento,
+  etapaRequeridaParaTipoVenta,
 } from "../utils/trazabilidadInventario.js";
+import {
+  resolverSubtipoMovimiento,
+  validarPiletasSegunSubtipo,
+} from "../utils/trazabilidadSubtipos.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -24,14 +29,10 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-function normalizarTipoMovimiento(raw) {
-  const t = String(raw ?? "TRASLADO")
-    .trim()
-    .toUpperCase();
-  if (t === "INGRESO" || t === "SIEMBRA") return "INGRESO";
-  if (t === "MORTALIDAD") return "MORTALIDAD";
-  if (t === "VENTA") return "VENTA";
-  return "TRASLADO";
+function modoDesdeSubtipo(resuelto) {
+  if (!resuelto) return null;
+  if (resuelto.config) return resuelto.config.modo;
+  return resuelto.modo;
 }
 
 const siembraTrazabilidadInclude = {
@@ -107,9 +108,15 @@ class TrazabilidadController {
   static async createMovimiento(req, res) {
     try {
       const usuarioId = req.user.usuario_id;
-      const tipoMov = normalizarTipoMovimiento(
-        pick(req.body, "tipo_movimiento", "tipo", "fc_tipo_movimiento"),
-      );
+      const rawTipo = pick(req.body, "tipo_movimiento", "tipo", "fc_tipo_movimiento");
+      const resuelto = resolverSubtipoMovimiento(rawTipo);
+      const tipoMov = modoDesdeSubtipo(resuelto);
+      if (!tipoMov) {
+        return res.status(400).json({
+          error:
+            "tipo_movimiento inválido. Use: ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
+        });
+      }
       const piletaOrigenId = toInt(
         pick(req.body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
       );
@@ -130,6 +137,14 @@ class TrazabilidadController {
       );
 
       const movimientoId = await prisma.$transaction(async (tx) => {
+        if (resuelto?.config) {
+          await validarPiletasSegunSubtipo(tx, {
+            subtipoConfig: resuelto.config,
+            piletaOrigenId,
+            piletaDestinoId,
+          });
+        }
+
         if (tipoMov === "VENTA") {
           const listaEsperaId = toInt(
             pick(req.body, "lista_espera_id", "fi_lista_id", "fi_lista_espera_id"),
@@ -138,6 +153,20 @@ class TrazabilidadController {
             const err = new Error("lista_espera_id es obligatorio para venta");
             err.code = "VALIDACION";
             throw err;
+          }
+          if (resuelto?.config?.etapaOrigen) {
+            const lista = await tx.listaEspera.findUnique({
+              where: { id: listaEsperaId },
+              select: { tipo_venta: true },
+            });
+            const etapaPedido = etapaRequeridaParaTipoVenta(lista?.tipo_venta);
+            if (etapaPedido && etapaPedido !== resuelto.config.etapaOrigen) {
+              const err = new Error(
+                `El pedido no corresponde a movimiento '${rawTipo}' (etapa esperada: ${resuelto.config.etapaOrigen})`,
+              );
+              err.code = "VALIDACION";
+              throw err;
+            }
           }
           const { siembraId } = await registrarVentaDesdeListaEspera(tx, {
             listaEsperaId,
