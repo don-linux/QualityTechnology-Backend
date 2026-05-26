@@ -48,7 +48,14 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   const vigente = await tx.alevinaje.findFirst({
     where: { pileta_id: ori },
     orderBy: { id: "desc" },
-    select: { id: true, cantidad_total: true, cantidad_alimento: true },
+    select: {
+      id: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+      peso: true,
+      biometria_id: true,
+      observacion_id: true,
+    },
   });
 
   const disponible = vigente?.cantidad_total ?? 0;
@@ -63,9 +70,8 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   const obsTexto = opciones.observacion?.trim?.() ? String(opciones.observacion).trim() : "";
   const usuarioId = toInt(opciones.usuarioId ?? null);
 
-  let observacionId = null;
   if (obsTexto && usuarioId) {
-    observacionId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+    await crearObservacionSiHay(tx, obsTexto, usuarioId, {
       piletaId: ori,
       proceso: opciones.procesoObservacion ?? "trazabilidad",
     });
@@ -76,7 +82,9 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
       pileta_id: ori,
       cantidad_total: restante,
       cantidad_alimento: vigente.cantidad_alimento ?? 0,
-      observacion_id: observacionId,
+      peso: vigente.peso ?? null,
+      biometria_id: vigente.biometria_id ?? null,
+      observacion_id: vigente.observacion_id ?? null,
       siembra_origen_id: siembraOrigenId,
     },
   });
