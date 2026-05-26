@@ -31,8 +31,22 @@ export function ultimoRegistroPorPileta(rows, opts = {}) {
  */
 export function cantidadVigenteDesdeRegistrosPeriodicos(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return 0;
-  const ultimo = ultimoRegistroPorPileta(rows, { piletaKey: "pileta_id", idKey: "id" });
-  const row = ultimo[0];
+
+  const hasPiletaKey = rows.some((r) => r?.pileta_id != null);
+  let row;
+  if (hasPiletaKey) {
+    const ultimo = ultimoRegistroPorPileta(rows, { piletaKey: "pileta_id", idKey: "id" });
+    row = ultimo[0];
+  } else {
+    // Include desde Pileta sin pileta_id en el select: el más reciente por id
+    row = rows.reduce((best, r) => {
+      if (!r) return best;
+      const id = Number(r.id ?? 0);
+      const bestId = Number(best?.id ?? -1);
+      return id >= bestId ? r : best;
+    }, null);
+  }
+
   const ct = Number(row?.cantidad_total);
   return Number.isFinite(ct) && ct > 0 ? ct : 0;
 }

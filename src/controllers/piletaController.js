@@ -101,12 +101,16 @@ const piletaInclude = {
   },
   engorda: {
     select: {
+      id: true,
+      pileta_id: true,
       cantidad_total: true,
       cantidad_alimento: true,
     },
   },
   alevinaje: {
     select: {
+      id: true,
+      pileta_id: true,
       cantidad_total: true,
       cantidad_alimento: true,
     },
