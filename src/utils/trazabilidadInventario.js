@@ -129,6 +129,99 @@ async function sumarInventarioDestino(
   await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
 }
 
+const vigenteSelectRestauracion = {
+  cantidad_alimento: true,
+  peso: true,
+  biometria_id: true,
+  observacion_id: true,
+};
+
+/**
+ * Devolución por cancelación de venta: suma al stock vigente (no reemplaza).
+ * Crea registro periódico nuevo, hereda peso/observación del vigente anterior.
+ */
+async function restaurarInventarioPorDevolucionVenta(
+  tx,
+  { piletaId, tipoPileta, cantidadDevuelta, siembraOrigenId, usuarioId, observacion },
+) {
+  const pid = toInt(piletaId);
+  const qty = Math.floor(Number(cantidadDevuelta) || 0);
+  if (!pid || qty <= 0) return;
+
+  const stockActual = await cantidadVigenteEnPileta(tx, pid, tipoPileta);
+  const nuevaCantidad = stockActual + qty;
+
+  const vigente =
+    tipoPileta === "alevinaje"
+      ? await tx.alevinaje.findFirst({
+          where: { pileta_id: pid },
+          orderBy: { id: "desc" },
+          select: vigenteSelectRestauracion,
+        })
+      : await tx.engorda.findFirst({
+          where: { pileta_id: pid },
+          orderBy: { id: "desc" },
+          select: vigenteSelectRestauracion,
+        });
+
+  if (observacion?.trim() && usuarioId) {
+    await crearObservacionSiHay(tx, observacion, usuarioId, {
+      piletaId: pid,
+      proceso: "trazabilidad",
+    });
+  }
+
+  const data = {
+    pileta_id: pid,
+    cantidad_total: nuevaCantidad,
+    cantidad_alimento: vigente?.cantidad_alimento ?? 0,
+    peso: vigente?.peso ?? null,
+    biometria_id: vigente?.biometria_id ?? null,
+    observacion_id: vigente?.observacion_id ?? null,
+    siembra_origen_id: toInt(siembraOrigenId ?? null),
+  };
+
+  if (tipoPileta === "alevinaje") {
+    await tx.alevinaje.create({ data });
+  } else {
+    await tx.engorda.create({ data });
+  }
+
+  await aplicarEstadoPiletaPorCantidad(tx, pid, nuevaCantidad);
+}
+
+/** Crea siembra de devolución (externo → pileta) y restaura inventario acumulado. */
+async function registrarDevolucionVentaEnPileta(
+  tx,
+  { piletaOrigenId, cantidad, usuarioId, observacion, fechaMovimiento },
+) {
+  const origen = toInt(piletaOrigenId);
+  const cant = Math.floor(Number(cantidad) || 0);
+  if (!origen || cant <= 0) return null;
+
+  const pil = await obtenerPiletaEtapa(tx, origen);
+
+  const siembraId = await crearSiembraMovimiento(tx, {
+    piletaOrigenId: null,
+    piletaDestinoId: origen,
+    cantidadEntera: cant,
+    usuarioId,
+    fechaMovimiento,
+  });
+  if (!siembraId) return null;
+
+  await restaurarInventarioPorDevolucionVenta(tx, {
+    piletaId: origen,
+    tipoPileta: pil.tipo,
+    cantidadDevuelta: cant,
+    siembraOrigenId: siembraId,
+    usuarioId,
+    observacion,
+  });
+
+  return siembraId;
+}
+
 /**
  * Traslado o ingreso externo: crea siembra y ajusta inventarios en origen/destino.
  * @returns {Promise<number>} id de siembra
@@ -387,23 +480,16 @@ export async function registrarVentaDesdeListaEspera(
  * y restaura inventario, sin eliminar el movimiento de venta original.
  * @returns {Promise<number|null>} id del nuevo movimiento de siembra
  */
-export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId) {
+export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback = {}) {
   const venta = toInt(ventaId);
   const uid = toInt(usuarioId);
   if (!venta || !uid) return null;
 
   const ventaRow = await tx.venta.findUnique({
     where: { id: venta },
-    select: { id: true, folio: true },
+    select: { id: true, folio: true, cantidad: true },
   });
   if (!ventaRow) return null;
-
-  const siembras = await tx.siembra.findMany({
-    where: { venta_id: venta },
-    select: { id: true, pileta_origen: true, cantidad: true },
-    orderBy: { id: "asc" },
-  });
-  if (siembras.length === 0) return null;
 
   const observacion = ventaRow.folio
     ? `Cancelación de venta · Folio: ${ventaRow.folio}`
@@ -412,23 +498,49 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId) {
   const hoy = new Date();
   hoy.setHours(12, 0, 0, 0);
 
-  let nuevoMovimientoId = null;
-  for (const s of siembras) {
-    const origen = s.pileta_origen;
-    const cant =
-      typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
-    if (!origen || cant <= 0) continue;
+  const siembras = await tx.siembra.findMany({
+    where: { venta_id: venta },
+    select: { id: true, pileta_origen: true, cantidad: true },
+    orderBy: { id: "asc" },
+  });
 
-    nuevoMovimientoId = await registrarMovimientoTrazabilidad(tx, {
-      piletaOrigenId: null,
-      piletaDestinoId: origen,
-      cantidad: cant,
-      mortalidad: 0,
-      usuarioId: uid,
-      observacion,
-      fechaMovimiento: hoy,
-    });
+  let nuevoMovimientoId = null;
+
+  if (siembras.length > 0) {
+    for (const s of siembras) {
+      const origen = s.pileta_origen;
+      const cant =
+        typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
+      if (!origen || cant <= 0) continue;
+
+      nuevoMovimientoId = await registrarDevolucionVentaEnPileta(tx, {
+        piletaOrigenId: origen,
+        cantidad: cant,
+        usuarioId: uid,
+        observacion,
+        fechaMovimiento: hoy,
+      });
+    }
+    return nuevoMovimientoId;
   }
 
-  return nuevoMovimientoId;
+  const origenFallback = toInt(fallback.piletaOrigenId);
+  const cantFallback = Math.floor(
+    Number(fallback.cantidad ?? ventaRow.cantidad ?? 0) || 0,
+  );
+  if (
+    !origenFallback ||
+    cantFallback <= 0 ||
+    !ventaRequiereTrazabilidad(fallback.tipoVenta)
+  ) {
+    return null;
+  }
+
+  return registrarDevolucionVentaEnPileta(tx, {
+    piletaOrigenId: origenFallback,
+    cantidad: cantFallback,
+    usuarioId: uid,
+    observacion,
+    fechaMovimiento: hoy,
+  });
 }

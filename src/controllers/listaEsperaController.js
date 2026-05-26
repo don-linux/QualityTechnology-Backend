@@ -240,6 +240,11 @@ class ListaEsperaController {
             tx,
             lista.venta_id,
             req.user.usuario_id,
+            {
+              piletaOrigenId: lista.pileta_origen_id,
+              cantidad: lista.cantidad_peces,
+              tipoVenta: lista.tipo_venta,
+            },
           );
           inventarioRestaurado = movimientoId != null;
         }
