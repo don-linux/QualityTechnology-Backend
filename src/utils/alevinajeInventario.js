@@ -1,9 +1,11 @@
 /**
- * Descuentos en filas `alevinaje` cuando egresa inventario hacia otra pileta (p. ej. engorda).
- * Solo el último registro periódico por pileta representa el inventario vigente.
+ * Descuentos en filas `alevinaje` cuando egresa inventario (venta, traslado, mortalidad).
+ * Crea un registro periódico nuevo con el stock restante; solo el último registro por pileta
+ * representa el inventario vigente (mismo criterio que los ingresos por traslado).
  */
 
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
+import { crearObservacionSiHay } from "./observacion.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -14,7 +16,16 @@ function toInt(value, fallback = null) {
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
  * @param {number|null} piletaOrigenId
- * @param {{ piletaDestinoId?: number|null, cantidadTotalSinSexo?: number, cantidad?: number }} opciones
+ * @param {{
+ *   piletaDestinoId?: number|null,
+ *   cantidadTotalSinSexo?: number,
+ *   cantidad?: number,
+ *   cantidad_total?: number,
+ *   siembraOrigenId?: number|null,
+ *   observacion?: string|null,
+ *   usuarioId?: number|null,
+ *   procesoObservacion?: string,
+ * }} opciones
  */
 export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId, opciones = {}) {
   const ori = toInt(piletaOrigenId);
@@ -37,7 +48,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   const vigente = await tx.alevinaje.findFirst({
     where: { pileta_id: ori },
     orderBy: { id: "desc" },
-    select: { id: true, cantidad_total: true },
+    select: { id: true, cantidad_total: true, cantidad_alimento: true },
   });
 
   const disponible = vigente?.cantidad_total ?? 0;
@@ -48,9 +59,26 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   }
 
   const restante = disponible - qty;
-  await tx.alevinaje.update({
-    where: { id: vigente.id },
-    data: { cantidad_total: restante },
+  const siembraOrigenId = toInt(opciones.siembraOrigenId ?? null);
+  const obsTexto = opciones.observacion?.trim?.() ? String(opciones.observacion).trim() : "";
+  const usuarioId = toInt(opciones.usuarioId ?? null);
+
+  let observacionId = null;
+  if (obsTexto && usuarioId) {
+    observacionId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+      piletaId: ori,
+      proceso: opciones.procesoObservacion ?? "trazabilidad",
+    });
+  }
+
+  await tx.alevinaje.create({
+    data: {
+      pileta_id: ori,
+      cantidad_total: restante,
+      cantidad_alimento: vigente.cantidad_alimento ?? 0,
+      observacion_id: observacionId,
+      siembra_origen_id: siembraOrigenId,
+    },
   });
 
   await aplicarEstadoPiletaPorCantidad(tx, ori, restante);
