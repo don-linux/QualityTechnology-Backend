@@ -1,7 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeListaEspera, serializeVenta } from "../utils/serializers.js";
 import {
-  revertirVentaTrazabilidad,
+  cancelarVentaTrazabilidad,
   ventaRequiereTrazabilidad,
 } from "../utils/trazabilidadInventario.js";
 
@@ -225,6 +225,8 @@ class ListaEsperaController {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
     try {
+      let inventarioRestaurado = false;
+
       await prisma.$transaction(async (tx) => {
         const lista = await tx.listaEspera.findUnique({ where: { id } });
         if (!lista) {
@@ -232,17 +234,30 @@ class ListaEsperaController {
           err.code = "P2025";
           throw err;
         }
-        if (lista.venta_id) {
-          await revertirVentaTrazabilidad(tx, lista.venta_id);
+
+        if (lista.venta_id && ventaRequiereTrazabilidad(lista.tipo_venta)) {
+          const movimientoId = await cancelarVentaTrazabilidad(
+            tx,
+            lista.venta_id,
+            req.user.usuario_id,
+          );
+          inventarioRestaurado = movimientoId != null;
         }
+
         await tx.listaEspera.delete({ where: { id } });
       });
-      res.sendStatus(204);
+
+      res.json({
+        mensaje: inventarioRestaurado
+          ? "Pedido cancelado. Se registró la devolución en trazabilidad y los organismos fueron restaurados en su pileta de origen."
+          : "Pedido cancelado.",
+        inventario_restaurado: inventarioRestaurado,
+      });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       if (mapErrorTrazabilidad(err, res)) return;
-      console.error("Error en DELETE:", err);
-      res.status(500).json({ error: "Error al eliminar" });
+      console.error("Error al cancelar pedido:", err);
+      res.status(500).json({ error: "Error al cancelar el pedido" });
     }
   }
 

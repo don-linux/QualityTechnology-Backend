@@ -427,46 +427,52 @@ export async function registrarVentaDesdeListaEspera(
 }
 
 /**
- * Revierte egreso por venta: restaura inventario en pileta origen, elimina siembra y venta.
+ * Cancela una venta trazable: registra un ingreso de devolución en trazabilidad
+ * y restaura inventario, sin eliminar el movimiento de venta original.
+ * @returns {Promise<number|null>} id del nuevo movimiento de siembra
  */
-export async function revertirVentaTrazabilidad(tx, ventaId) {
+export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId) {
   const venta = toInt(ventaId);
-  if (!venta) return;
+  const uid = toInt(usuarioId);
+  if (!venta || !uid) return null;
+
+  const ventaRow = await tx.venta.findUnique({
+    where: { id: venta },
+    select: { id: true, folio: true },
+  });
+  if (!ventaRow) return null;
 
   const siembras = await tx.siembra.findMany({
     where: { venta_id: venta },
-    select: {
-      id: true,
-      pileta_origen: true,
-      cantidad: true,
-      usuario_id: true,
-    },
+    select: { id: true, pileta_origen: true, cantidad: true },
+    orderBy: { id: "asc" },
   });
+  if (siembras.length === 0) return null;
 
+  const observacion = ventaRow.folio
+    ? `Cancelación de venta · Folio: ${ventaRow.folio}`
+    : "Cancelación de venta";
+
+  const hoy = new Date();
+  hoy.setHours(12, 0, 0, 0);
+
+  let nuevoMovimientoId = null;
   for (const s of siembras) {
     const origen = s.pileta_origen;
     const cant =
       typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
+    if (!origen || cant <= 0) continue;
 
-    if (origen && cant > 0) {
-      const pil = await tx.pileta.findUnique({
-        where: { id: origen },
-        select: { id: true, tipo: true },
-      });
-      if (pil && ETAPAS_TRAZABILIDAD.includes(pil.tipo)) {
-        await sumarInventarioDestino(tx, {
-          piletaDestinoId: origen,
-          tipoDestino: pil.tipo,
-          cantidad: cant,
-          siembraOrigenId: s.id,
-          usuarioId: s.usuario_id,
-          observacion: "Reversión por cancelación de próxima venta",
-        });
-      }
-    }
-
-    await tx.siembra.delete({ where: { id: s.id } });
+    nuevoMovimientoId = await registrarMovimientoTrazabilidad(tx, {
+      piletaOrigenId: null,
+      piletaDestinoId: origen,
+      cantidad: cant,
+      mortalidad: 0,
+      usuarioId: uid,
+      observacion,
+      fechaMovimiento: hoy,
+    });
   }
 
-  await tx.venta.delete({ where: { id: venta } }).catch(() => {});
+  return nuevoMovimientoId;
 }
