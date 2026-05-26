@@ -1,5 +1,6 @@
 /**
  * Descuentos en filas `engorda` cuando egresa inventario hacia otra pileta.
+ * Solo el último registro periódico por pileta representa el inventario vigente.
  */
 
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
@@ -33,36 +34,24 @@ export async function descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, 
   );
   if (qty <= 0) return;
 
-  const rows = await tx.engorda.findMany({
+  const vigente = await tx.engorda.findFirst({
     where: { pileta_id: ori },
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
     select: { id: true, cantidad_total: true },
   });
 
-  const total = rows.reduce((s, r) => s + (r.cantidad_total ?? 0), 0);
-  if (rows.length === 0 || qty > total) {
+  const disponible = vigente?.cantidad_total ?? 0;
+  if (!vigente || qty > disponible) {
     const err = new Error("Cantidad mayor al inventario de engorda en la pileta de origen");
     err.code = "ENGORDA_CANTIDAD_INSUFICIENTE";
     throw err;
   }
 
-  let rest = qty;
-  for (const row of rows) {
-    if (rest <= 0) break;
-    const disponible = row.cantidad_total ?? 0;
-    if (disponible <= 0) continue;
-    const take = Math.min(disponible, rest);
-    rest -= take;
-    await tx.engorda.update({
-      where: { id: row.id },
-      data: { cantidad_total: disponible - take },
-    });
-  }
-
-  const suma = await tx.engorda.aggregate({
-    where: { pileta_id: ori },
-    _sum: { cantidad_total: true },
+  const restante = disponible - qty;
+  await tx.engorda.update({
+    where: { id: vigente.id },
+    data: { cantidad_total: restante },
   });
-  const vivas = suma._sum.cantidad_total ?? 0;
-  await aplicarEstadoPiletaPorCantidad(tx, ori, vivas);
+
+  await aplicarEstadoPiletaPorCantidad(tx, ori, restante);
 }

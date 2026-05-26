@@ -3,6 +3,8 @@
  * preservando el contrato HTTP esperado por el frontend existente.
  */
 
+import { cantidadVigenteDesdeRegistrosPeriodicos } from "./inventarioVigente.js";
+
 export function serializeRol(rol) {
   if (!rol) return null;
   return {
@@ -264,19 +266,11 @@ export function calcularCantidadPileta(p) {
 
   const engRows = Array.isArray(p.engorda) ? p.engorda : p.engorda ? [p.engorda] : [];
   if (engRows.length > 0) {
-    return engRows.reduce((sum, row) => {
-      const ct = Number(row.cantidad_total);
-      return sum + (Number.isFinite(ct) && ct > 0 ? ct : 0);
-    }, 0);
+    return cantidadVigenteDesdeRegistrosPeriodicos(engRows);
   }
 
   const rows = Array.isArray(p.alevinaje) ? p.alevinaje : [];
-  if (rows.length === 0) return 0;
-
-  return rows.reduce((sum, row) => {
-    const ct = Number(row.cantidad_total);
-    return sum + (Number.isFinite(ct) && ct > 0 ? ct : 0);
-  }, 0);
+  return cantidadVigenteDesdeRegistrosPeriodicos(rows);
 }
 
 export function serializePileta(p) {

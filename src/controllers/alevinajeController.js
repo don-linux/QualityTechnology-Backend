@@ -5,6 +5,7 @@ import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.j
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
+import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -76,7 +77,12 @@ class AlevinajeController {
         include: alevinajeInclude,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeAlevinaje));
+
+      const historial =
+        req.query.historial === "1" ||
+        String(req.query.historial || "").toLowerCase() === "true";
+      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      res.json(vista.map(serializeAlevinaje));
     } catch (err) {
       console.error("GET /alevinaje Error:", err);
       res.status(500).json({ error: "Error obteniendo registros de alevinaje" });
@@ -178,7 +184,7 @@ class AlevinajeController {
       });
 
       res.status(201).json({
-        mensaje: "Registro de alevinaje creado",
+        mensaje: "Registro periódico de alevinaje guardado",
         data: serializeAlevinaje(creado),
       });
     } catch (err) {
@@ -284,8 +290,9 @@ class AlevinajeController {
           include: alevinajeInclude,
         });
 
-        if (updateData.cantidad_total !== undefined) {
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, updateData.cantidad_total);
+        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
+          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "alevinaje");
+          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
         }
 
         return row;

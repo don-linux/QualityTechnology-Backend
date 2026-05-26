@@ -5,6 +5,7 @@ import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.j
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -76,7 +77,12 @@ class EngordaController {
         include: engordaInclude,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeEngorda));
+
+      const historial =
+        req.query.historial === "1" ||
+        String(req.query.historial || "").toLowerCase() === "true";
+      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      res.json(vista.map(serializeEngorda));
     } catch (err) {
       console.error("GET /engorda Error:", err);
       res.status(500).json({ error: "Error obteniendo registros de engorda" });
@@ -177,16 +183,12 @@ class EngordaController {
           include: engordaInclude,
         });
 
-        const suma = await tx.engorda.aggregate({
-          where: { pileta_id: piletaId },
-          _sum: { cantidad_total: true },
-        });
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, suma._sum.cantidad_total ?? 0);
+        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
         return creadoNuevo;
       });
 
       res.status(201).json({
-        mensaje: "Registro de engorda creado",
+        mensaje: "Registro periódico de engorda guardado",
         data: serializeEngorda(creado),
       });
     } catch (err) {
@@ -293,19 +295,13 @@ class EngordaController {
         });
 
         if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
-          const suma = await tx.engorda.aggregate({
-            where: { pileta_id: piletaId },
-            _sum: { cantidad_total: true },
-          });
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, suma._sum.cantidad_total ?? 0);
+          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "engorda");
+          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
         }
 
         if (updateData.pileta_id !== undefined && prev.pileta_id !== piletaId) {
-          const sumaPrev = await tx.engorda.aggregate({
-            where: { pileta_id: prev.pileta_id },
-            _sum: { cantidad_total: true },
-          });
-          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, sumaPrev._sum.cantidad_total ?? 0);
+          const vigentePrev = await cantidadVigenteEnPileta(tx, prev.pileta_id, "engorda");
+          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigentePrev);
         }
 
         return row;
@@ -341,11 +337,8 @@ class EngordaController {
           throw err;
         }
         await tx.engorda.delete({ where: { id } });
-        const suma = await tx.engorda.aggregate({
-          where: { pileta_id: prev.pileta_id },
-          _sum: { cantidad_total: true },
-        });
-        await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, suma._sum.cantidad_total ?? 0);
+        const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "engorda");
+        await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
       });
 
       res.json({ mensaje: "Registro eliminado" });

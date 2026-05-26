@@ -3,6 +3,7 @@ import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
 import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "./siembraMovimiento.js";
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
+import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -36,18 +37,8 @@ export function parseFechaMovimiento(raw) {
 
 async function consultarStockPiletaEtapa(tx, piletaId) {
   const pil = await obtenerPiletaEtapa(tx, piletaId);
-  if (pil.tipo === "alevinaje") {
-    const suma = await tx.alevinaje.aggregate({
-      where: { pileta_id: pil.id },
-      _sum: { cantidad_total: true },
-    });
-    return { pil, stock: suma._sum.cantidad_total ?? 0 };
-  }
-  const suma = await tx.engorda.aggregate({
-    where: { pileta_id: pil.id },
-    _sum: { cantidad_total: true },
-  });
-  return { pil, stock: suma._sum.cantidad_total ?? 0 };
+  const stock = await cantidadVigenteEnPileta(tx, pil.id, pil.tipo);
+  return { pil, stock };
 }
 
 function assertStockSuficiente(disponible, requerido, nombrePileta) {
@@ -137,11 +128,7 @@ async function sumarInventarioDestino(
         siembra_origen_id: siembraOrigenId,
       },
     });
-    const suma = await tx.alevinaje.aggregate({
-      where: { pileta_id: piletaDestinoId },
-      _sum: { cantidad_total: true },
-    });
-    await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, suma._sum.cantidad_total ?? 0);
+    await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
     return;
   }
 
@@ -154,11 +141,7 @@ async function sumarInventarioDestino(
       siembra_origen_id: siembraOrigenId,
     },
   });
-  const suma = await tx.engorda.aggregate({
-    where: { pileta_id: piletaDestinoId },
-    _sum: { cantidad_total: true },
-  });
-  await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, suma._sum.cantidad_total ?? 0);
+  await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
 }
 
 /**
