@@ -275,6 +275,8 @@ export function calcularCantidadPileta(p) {
 
 export function serializeObservacionHistorial(o) {
   if (!o) return null;
+  const usuario = o.usuarios ?? o.usuario ?? null;
+  const rolNombre = usuario?.rol?.nombre ?? null;
   return {
     fi_observacion_id: o.id,
     observacion_id: o.id,
@@ -286,6 +288,10 @@ export function serializeObservacionHistorial(o) {
     created_at: o.created_at,
     fd_fecha: o.created_at,
     fecha: o.created_at,
+    usuario_nombre: usuario?.nombre ?? null,
+    fc_usuario: usuario?.nombre ?? null,
+    rol_nombre: rolNombre,
+    fc_rol: rolNombre,
   };
 }
 

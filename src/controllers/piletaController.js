@@ -225,6 +225,12 @@ class PiletaController {
           comentario: true,
           proceso: true,
           created_at: true,
+          usuarios: {
+            select: {
+              nombre: true,
+              rol: { select: { nombre: true } },
+            },
+          },
         },
       });
 
