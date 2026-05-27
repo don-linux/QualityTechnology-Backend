@@ -1,4 +1,4 @@
-import { crearObservacionSiHay } from "./observacion.js";
+import { crearObservacionSiHay, crearObservacionCancelacionVenta } from "./observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
 import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "./siembraMovimiento.js";
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
@@ -85,6 +85,7 @@ async function descontarInventarioOrigen(
     observacion: meta.observacion ?? null,
     usuarioId: meta.usuarioId ?? null,
     procesoObservacion: meta.procesoObservacion ?? "trazabilidad",
+    folioVenta: meta.folioVenta ?? null,
   };
   if (tipoOrigen === "alevinaje") {
     await descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId, opciones);
@@ -142,7 +143,7 @@ const vigenteSelectRestauracion = {
  */
 async function restaurarInventarioPorDevolucionVenta(
   tx,
-  { piletaId, tipoPileta, cantidadDevuelta, siembraOrigenId, usuarioId, observacion },
+  { piletaId, tipoPileta, cantidadDevuelta, siembraOrigenId, usuarioId, folioVenta },
 ) {
   const pid = toInt(piletaId);
   const qty = Math.floor(Number(cantidadDevuelta) || 0);
@@ -164,12 +165,14 @@ async function restaurarInventarioPorDevolucionVenta(
           select: vigenteSelectRestauracion,
         });
 
-  if (observacion?.trim() && usuarioId) {
-    await crearObservacionSiHay(tx, observacion, usuarioId, {
-      piletaId: pid,
-      proceso: "trazabilidad",
-    });
-  }
+  const obsId = usuarioId
+    ? await crearObservacionCancelacionVenta(
+        tx,
+        { folioVenta },
+        usuarioId,
+        { piletaId: pid, proceso: "trazabilidad" },
+      )
+    : null;
 
   const data = {
     pileta_id: pid,
@@ -177,7 +180,7 @@ async function restaurarInventarioPorDevolucionVenta(
     cantidad_alimento: vigente?.cantidad_alimento ?? 0,
     peso: vigente?.peso ?? null,
     biometria_id: vigente?.biometria_id ?? null,
-    observacion_id: vigente?.observacion_id ?? null,
+    observacion_id: obsId,
     siembra_origen_id: toInt(siembraOrigenId ?? null),
   };
 
@@ -193,7 +196,7 @@ async function restaurarInventarioPorDevolucionVenta(
 /** Crea siembra de devolución (externo → pileta) y restaura inventario acumulado. */
 async function registrarDevolucionVentaEnPileta(
   tx,
-  { piletaOrigenId, cantidad, usuarioId, observacion, fechaMovimiento },
+  { piletaOrigenId, cantidad, usuarioId, folioVenta, fechaMovimiento },
 ) {
   const origen = toInt(piletaOrigenId);
   const cant = Math.floor(Number(cantidad) || 0);
@@ -216,7 +219,7 @@ async function registrarDevolucionVentaEnPileta(
     cantidadDevuelta: cant,
     siembraOrigenId: siembraId,
     usuarioId,
-    observacion,
+    folioVenta,
   });
 
   return siembraId;
@@ -283,7 +286,7 @@ export async function registrarMovimientoTrazabilidad(
   if (origen !== null && pilOr) {
     await descontarInventarioOrigen(tx, origen, dest, cant, pilOr.tipo, {
       siembraOrigenId: siembraId,
-      observacion: netas === 0 ? observacion : null,
+      observacion,
       usuarioId,
     });
   }
@@ -398,11 +401,17 @@ export async function registrarVentaTrazabilidad(
     throw err;
   }
 
+  const ventaRow = await tx.venta.findUnique({
+    where: { id: venta },
+    select: { folio: true },
+  });
+
   await descontarInventarioOrigen(tx, origen, null, cant, pilOr.tipo, {
     siembraOrigenId: siembraId,
     observacion,
     usuarioId,
     procesoObservacion: "venta",
+    folioVenta: ventaRow?.folio ?? String(venta),
   });
 
   return siembraId;
@@ -491,9 +500,7 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
   });
   if (!ventaRow) return null;
 
-  const observacion = ventaRow.folio
-    ? `Cancelación de venta · Folio: ${ventaRow.folio}`
-    : "Cancelación de venta";
+  const folioVenta = ventaRow.folio ?? String(ventaRow.id);
 
   const hoy = new Date();
   hoy.setHours(12, 0, 0, 0);
@@ -517,7 +524,7 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
         piletaOrigenId: origen,
         cantidad: cant,
         usuarioId: uid,
-        observacion,
+        folioVenta,
         fechaMovimiento: hoy,
       });
     }
@@ -540,7 +547,7 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
     piletaOrigenId: origenFallback,
     cantidad: cantFallback,
     usuarioId: uid,
-    observacion,
+    folioVenta,
     fechaMovimiento: hoy,
   });
 }

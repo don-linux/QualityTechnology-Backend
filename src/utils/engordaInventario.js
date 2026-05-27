@@ -5,7 +5,7 @@
  */
 
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
-import { crearObservacionSiHay } from "./observacion.js";
+import { crearObservacionEgresoInventario } from "./observacion.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -25,6 +25,7 @@ function toInt(value, fallback = null) {
  *   observacion?: string|null,
  *   usuarioId?: number|null,
  *   procesoObservacion?: string,
+ *   folioVenta?: string|number|null,
  * }} opciones
  */
 export async function descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, opciones = {}) {
@@ -69,13 +70,20 @@ export async function descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, 
   const siembraOrigenId = toInt(opciones.siembraOrigenId ?? null);
   const obsTexto = opciones.observacion?.trim?.() ? String(opciones.observacion).trim() : "";
   const usuarioId = toInt(opciones.usuarioId ?? null);
-
-  if (obsTexto && usuarioId) {
-    await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-      piletaId: ori,
-      proceso: opciones.procesoObservacion ?? "trazabilidad",
-    });
-  }
+  const obsId = usuarioId
+    ? await crearObservacionEgresoInventario(
+        tx,
+        {
+          textoNuevo: obsTexto,
+          folioVenta: opciones.folioVenta ?? null,
+        },
+        usuarioId,
+        {
+          piletaId: ori,
+          proceso: opciones.procesoObservacion ?? "trazabilidad",
+        },
+      )
+    : null;
 
   await tx.engorda.create({
     data: {
@@ -84,7 +92,7 @@ export async function descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, 
       cantidad_alimento: vigente.cantidad_alimento ?? 0,
       peso: vigente.peso ?? null,
       biometria_id: vigente.biometria_id ?? null,
-      observacion_id: vigente.observacion_id ?? null,
+      observacion_id: obsId,
       siembra_origen_id: siembraOrigenId,
     },
   });
