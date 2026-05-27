@@ -176,7 +176,7 @@ class PiletaController {
     }
   }
 
-  /** Historial de comentarios en `observacion` por pileta (alevinaje, engorda, trazabilidad, etc.). */
+  /** Historial completo de `observacion` asociadas a una pileta (directas y vía bitácoras/biometría). */
   static async getObservacionesHistorial(req, res) {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
@@ -193,27 +193,33 @@ class PiletaController {
       if (!pileta) return res.status(404).json({ error: "Pileta no encontrada" });
 
       const rawProcesos = pick(req.query, "proceso", "procesos");
-      let procesos = [];
-      if (rawProcesos) {
-        procesos = String(rawProcesos)
-          .split(",")
-          .map((p) => p.trim().toLowerCase())
-          .filter(Boolean);
-      } else if (pileta.tipo === "alevinaje") {
-        procesos = ["alevinaje", "trazabilidad", "venta"];
-      } else if (pileta.tipo === "engorda") {
-        procesos = ["engorda", "trazabilidad", "venta"];
-      } else {
-        procesos = ["alevinaje", "engorda", "trazabilidad", "venta"];
-      }
+      const procesosFiltro = rawProcesos
+        ? String(rawProcesos)
+            .split(",")
+            .map((p) => p.trim().toLowerCase())
+            .filter(Boolean)
+        : null;
+
+      const vinculoPileta = {
+        OR: [
+          { pileta_id: id },
+          { alimentacion: { some: { pileta_id: id } } },
+          { recambios: { some: { pileta_id: id } } },
+          { inventarioAlevines: { some: { pileta_id: id } } },
+          { biometria: { is: { pileta_id: id } } },
+          { parametros: { some: { numero_estanque: id } } },
+          { medicamentos: { some: { numero_estanque: id } } },
+        ],
+      };
+
+      const whereObs = procesosFiltro?.length
+        ? { AND: [vinculoPileta, { proceso: { in: procesosFiltro } }] }
+        : vinculoPileta;
 
       const rows = await prisma.observacion.findMany({
-        where: {
-          pileta_id: id,
-          proceso: { in: procesos },
-        },
+        where: whereObs,
         orderBy: { created_at: "desc" },
-        take: 200,
+        take: 500,
         select: {
           id: true,
           comentario: true,
