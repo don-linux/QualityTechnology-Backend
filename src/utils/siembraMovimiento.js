@@ -90,7 +90,12 @@ export function serializarMovimientoSiembra(s) {
   const obsUsuario = obsAlev || obsEng;
   if (obsUsuario) obsParts.push(obsUsuario);
   if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
-  if (esVenta && s.venta?.folio) obsParts.push(`Folio: ${s.venta.folio}`);
+  if (esVenta && s.venta?.folio) {
+    const folioTag = `Folio: ${s.venta.folio}`;
+    if (!obsUsuario || !obsUsuario.includes(folioTag)) {
+      obsParts.push(folioTag);
+    }
+  }
 
   const etapa = resolverEtapaMovimiento(pilOr, pilDest);
   const subtipoLabel = labelSubtipoMovimiento(pilOr, pilDest, esVenta, mortalidad);

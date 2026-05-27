@@ -200,11 +200,11 @@ class PiletaController {
           .map((p) => p.trim().toLowerCase())
           .filter(Boolean);
       } else if (pileta.tipo === "alevinaje") {
-        procesos = ["alevinaje", "trazabilidad"];
+        procesos = ["alevinaje", "trazabilidad", "venta"];
       } else if (pileta.tipo === "engorda") {
-        procesos = ["engorda", "trazabilidad"];
+        procesos = ["engorda", "trazabilidad", "venta"];
       } else {
-        procesos = ["alevinaje", "engorda", "trazabilidad"];
+        procesos = ["alevinaje", "engorda", "trazabilidad", "venta"];
       }
 
       const rows = await prisma.observacion.findMany({
