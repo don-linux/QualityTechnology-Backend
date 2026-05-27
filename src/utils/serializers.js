@@ -273,6 +273,22 @@ export function calcularCantidadPileta(p) {
   return cantidadVigenteDesdeRegistrosPeriodicos(rows);
 }
 
+export function serializeObservacionHistorial(o) {
+  if (!o) return null;
+  return {
+    fi_observacion_id: o.id,
+    observacion_id: o.id,
+    comentario: o.comentario,
+    observacion: o.comentario,
+    fc_observacion: o.comentario,
+    proceso: o.proceso ?? null,
+    fc_proceso: o.proceso ?? null,
+    created_at: o.created_at,
+    fd_fecha: o.created_at,
+    fecha: o.created_at,
+  };
+}
+
 export function serializePileta(p) {
   if (!p) return null;
   const lista = Array.isArray(p.observaciones) ? p.observaciones : [];

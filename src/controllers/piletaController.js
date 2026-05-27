@@ -1,5 +1,5 @@
 import prisma from "../prisma.js";
-import { serializePileta } from "../utils/serializers.js";
+import { serializeObservacionHistorial, serializePileta } from "../utils/serializers.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import {
   piletaWhereUbicacionFromRequest,
@@ -173,6 +173,63 @@ class PiletaController {
     } catch (err) {
       console.error("Error al obtener pileta:", err);
       res.status(500).json({ error: "Error al obtener pileta" });
+    }
+  }
+
+  /** Historial de comentarios en `observacion` por pileta (alevinaje, engorda, trazabilidad, etc.). */
+  static async getObservacionesHistorial(req, res) {
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const wherePileta = { id };
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (ubicClause) Object.assign(wherePileta, ubicClause);
+
+      const pileta = await prisma.pileta.findFirst({
+        where: wherePileta,
+        select: { id: true, tipo: true },
+      });
+      if (!pileta) return res.status(404).json({ error: "Pileta no encontrada" });
+
+      const rawProcesos = pick(req.query, "proceso", "procesos");
+      let procesos = [];
+      if (rawProcesos) {
+        procesos = String(rawProcesos)
+          .split(",")
+          .map((p) => p.trim().toLowerCase())
+          .filter(Boolean);
+      } else if (pileta.tipo === "alevinaje") {
+        procesos = ["alevinaje", "trazabilidad"];
+      } else if (pileta.tipo === "engorda") {
+        procesos = ["engorda", "trazabilidad"];
+      } else {
+        procesos = ["alevinaje", "engorda", "trazabilidad"];
+      }
+
+      const rows = await prisma.observacion.findMany({
+        where: {
+          pileta_id: id,
+          proceso: { in: procesos },
+        },
+        orderBy: { created_at: "desc" },
+        take: 200,
+        select: {
+          id: true,
+          comentario: true,
+          proceso: true,
+          created_at: true,
+        },
+      });
+
+      const historial = rows
+        .filter((o) => String(o.comentario ?? "").trim() !== "")
+        .map(serializeObservacionHistorial);
+
+      res.json(historial);
+    } catch (err) {
+      console.error("GET /piletas/:id/observaciones Error:", err);
+      res.status(500).json({ error: "Error al obtener historial de observaciones" });
     }
   }
 

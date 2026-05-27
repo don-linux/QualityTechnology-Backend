@@ -12,6 +12,7 @@ router.use(authMiddleware);
 ============================================================ */
 
 router.get("/", piletaController.getAll);
+router.get("/:id/observaciones", piletaController.getObservacionesHistorial);
 router.post("/", piletaController.create);
 router.put("/:id", piletaController.update);
 
