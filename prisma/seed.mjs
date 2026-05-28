@@ -15,7 +15,6 @@ const MODULOS = [
   ["Engorda", "/engorda", true],
   ["Clientes", "/clientes", true],
   ["Ventas", "/ventas", true],
-  ["Alimentos", "/alimentos", true],
   ["Lista de Espera", "/lista-espera", true],
   ["Equipos", "/equipos", true],
   ["Nomina", "/nomina", true],

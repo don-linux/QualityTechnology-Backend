@@ -33,7 +33,6 @@ model Usuario {
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
   controlReproductivo ControlReproductivo[]
   alimentacion       Alimentacion[]
-  alimentos          Alimento[]
   banos              Bano[]
   biometrias         Biometria[]
   empleados          Empleado?
@@ -163,7 +162,6 @@ model Reproductor {
   usuarioId      Int          @map("usuario_id")
   created_at     DateTime     @default(now()) @db.Timestamp(6)
   updated_at     DateTime     @updatedAt @db.Timestamp(6)
-  alimentos      Alimento[]
   biometrias     Biometria?   @relation(fields: [biometria_id], references: [id])
   observacion    observacion? @relation(fields: [observacionId], references: [id])
   piletas        Pileta       @relation(fields: [pileta_id], references: [id])
@@ -197,7 +195,6 @@ model Pileta {
   controlReproductivo                     ControlReproductivo[]
   controlReproductivoOrigen               ControlReproductivo[] @relation("ControlReproPiletaOrigen")
   alimentacion                            Alimentacion[]
-  alimentos                               Alimento[]
   biometrias                              Biometria[]
   engorda                                 Engorda[]
   inventario_alevines                     InventarioAlevin[]
@@ -229,7 +226,6 @@ model Engorda {
   biometria_id      Int?
   siembra_origen_id Int?           @map("siembra_origen_id")
   peso              Int?
-  alimentos         Alimento[]
   biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion       observacion?   @relation(fields: [observacion_id], references: [id])
@@ -275,31 +271,6 @@ model Mantenimiento {
   @@index([fecha(sort: Desc)])
   @@index([equipoId])
   @@map("mantenimientos")
-  @@schema("public")
-}
-
-model Alimento {
-  id                   Int          @id @default(autoincrement())
-  piletaId             Int?         @map("pileta_id")
-  engordaId            Int?         @map("engorda_id")
-  reproductorId        Int?         @map("reproductor_id")
-  milimetros_particula Decimal?     @db.Decimal(10, 2)
-  cantidad_dia         Decimal?     @db.Decimal(10, 3)
-  porcion              Decimal?     @db.Decimal(10, 3)
-  costo_total          Decimal?     @db.Decimal(12, 2)
-  usuarioId            Int          @map("usuario_id")
-  created_at           DateTime     @default(now()) @db.Timestamp(6)
-  updated_at           DateTime     @db.Timestamp(6)
-  engorda              Engorda?     @relation(fields: [engordaId], references: [id], onDelete: Restrict)
-  pileta               Pileta?      @relation(fields: [piletaId], references: [id], onDelete: Restrict)
-  reproductor          Reproductor? @relation(fields: [reproductorId], references: [id], onDelete: Restrict)
-  usuario              Usuario      @relation(fields: [usuarioId], references: [id])
-
-  @@index([engordaId])
-  @@index([piletaId])
-  @@index([reproductorId])
-  @@index([usuarioId])
-  @@map("alimentos")
   @@schema("public")
 }
 

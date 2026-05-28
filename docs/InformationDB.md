@@ -7,8 +7,8 @@
 --   seguridad.modulos, seguridad.roles_modulos, seguridad.refresh_tokens,
 --   rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento
 --
--- Tablas Inventarios: 11
---   instalaciones, reproductores, lotes, piletas, engorda, alimentos,
+-- Tablas Inventarios: 10
+--   instalaciones, reproductores, lotes, piletas, engorda,
 --   equipos, mantenimientos,
 --   trazabilidad_alevinaje, trazabilidad_engorda, trazabilidad_reproductores
 --
@@ -94,7 +94,6 @@
 -- DROP TABLE IF EXISTS public.trazabilidad_alevinaje     CASCADE;
 -- DROP TABLE IF EXISTS public.mantenimientos             CASCADE;
 -- DROP TABLE IF EXISTS public.equipos                    CASCADE;
--- DROP TABLE IF EXISTS public.alimentos                  CASCADE;
 -- DROP TABLE IF EXISTS public.engorda                    CASCADE;
 -- DROP TABLE IF EXISTS public.piletas                    CASCADE;
 -- DROP TABLE IF EXISTS public.lotes                      CASCADE;

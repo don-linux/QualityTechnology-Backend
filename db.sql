@@ -549,53 +549,6 @@ COMMENT ON TABLE mantenimientos IS
 
 
 -- ============================================================================
--- 9.  ALIMENTOS
--- ----------------------------------------------------------------------------
--- Registro diario de alimentación. Cada fila referencia exactamente UNA
--- unidad productiva: pileta, engorda o reproductor (nunca varias).
--- ============================================================================
-CREATE TABLE alimentos (
-    alimento_id          integer        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    pileta_id            integer,
-    engorda_id           integer,
-    reproductor_id       integer,
-    particula_mm            numeric(10,2),
-    alimento_dia            numeric(10,3),
-    porcion                 numeric(10,3),
-    gasto_alimento          numeric(12,2),
-    usuario_id           integer        NOT NULL,
-
-    CONSTRAINT alimentos_unidad_chk CHECK (
-        (CASE WHEN pileta_id      IS NOT NULL THEN 1 ELSE 0 END)
-      + (CASE WHEN engorda_id     IS NOT NULL THEN 1 ELSE 0 END)
-      + (CASE WHEN reproductor_id IS NOT NULL THEN 1 ELSE 0 END) = 1
-    ),
-    CONSTRAINT alimentos_pileta_fk
-        FOREIGN KEY (pileta_id) REFERENCES piletas (pileta_id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT alimentos_engorda_fk
-        FOREIGN KEY (engorda_id) REFERENCES engorda (engorda_id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT alimentos_reproductor_fk
-        FOREIGN KEY (reproductor_id) REFERENCES reproductores (reproductor_id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT alimentos_usuario_fk
-        FOREIGN KEY (usuario_id) REFERENCES usuarios (usuario_id)
-        ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
-CREATE INDEX alimentos_pileta_idx      ON alimentos (pileta_id);
-CREATE INDEX alimentos_engorda_idx     ON alimentos (engorda_id);
-CREATE INDEX alimentos_reproductor_idx ON alimentos (reproductor_id);
-CREATE INDEX alimentos_usuario_idx     ON alimentos (usuario_id);
-
-COMMENT ON TABLE alimentos IS
-    'Bitácora de alimentación. Cada fila referencia exactamente una unidad productiva (pileta | engorda | reproductor).';
-COMMENT ON CONSTRAINT alimentos_unidad_chk ON alimentos IS
-    'Garantiza que exactamente una de las tres FKs (pileta/engorda/reproductor) esté poblada.';
-
-
--- ============================================================================
 -- 10.  TRAZABILIDAD — ALEVINAJE
 -- ----------------------------------------------------------------------------
 -- Histórico de movimientos entre piletas / desde origen externo / bajas por
@@ -1781,7 +1734,6 @@ WITH modulos_base (nombre, ruta, activo) AS (
         ('Engorda',           '/engorda',           true),
         ('Clientes',          '/clientes',          true),
         ('Ventas',            '/ventas',            true),
-        ('Alimentos',         '/alimentos',         true),
         ('Lista de Espera',   '/lista-espera',      true),
         ('Equipos',           '/equipos',           true),
         ('Nomina',            '/nomina',            true),

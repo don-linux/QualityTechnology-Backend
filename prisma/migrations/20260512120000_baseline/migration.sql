@@ -81,23 +81,6 @@ CREATE TABLE "public"."alimentacion" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."alimentos" (
-    "id" SERIAL NOT NULL,
-    "pileta_id" INTEGER,
-    "engorda_id" INTEGER,
-    "reproductor_id" INTEGER,
-    "milimetros_particula" DECIMAL(10,2),
-    "cantidad_dia" DECIMAL(10,3),
-    "porcion" DECIMAL(10,3),
-    "costo_total" DECIMAL(12,2),
-    "usuario_id" INTEGER NOT NULL,
-    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(6) NOT NULL,
-
-    CONSTRAINT "alimentos_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."banos" (
     "id" SERIAL NOT NULL,
     "ubicacion_id" INTEGER NOT NULL,
@@ -801,18 +784,6 @@ CREATE INDEX "alimentacion_ubicacion_id_idx" ON "public"."alimentacion"("ubicaci
 CREATE INDEX "alimentacion_usuario_id_idx" ON "public"."alimentacion"("usuario_id" ASC);
 
 -- CreateIndex
-CREATE INDEX "alimentos_engorda_id_idx" ON "public"."alimentos"("engorda_id" ASC);
-
--- CreateIndex
-CREATE INDEX "alimentos_pileta_id_idx" ON "public"."alimentos"("pileta_id" ASC);
-
--- CreateIndex
-CREATE INDEX "alimentos_reproductor_id_idx" ON "public"."alimentos"("reproductor_id" ASC);
-
--- CreateIndex
-CREATE INDEX "alimentos_usuario_id_idx" ON "public"."alimentos"("usuario_id" ASC);
-
--- CreateIndex
 CREATE INDEX "banos_fecha_idx" ON "public"."banos"("fecha" DESC);
 
 -- CreateIndex
@@ -1096,18 +1067,6 @@ ALTER TABLE "public"."alimentacion" ADD CONSTRAINT "alimentacion_ubicacion_id_fk
 
 -- AddForeignKey
 ALTER TABLE "public"."alimentacion" ADD CONSTRAINT "alimentacion_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_engorda_id_fkey" FOREIGN KEY ("engorda_id") REFERENCES "public"."engorda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_pileta_id_fkey" FOREIGN KEY ("pileta_id") REFERENCES "public"."piletas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_reproductor_id_fkey" FOREIGN KEY ("reproductor_id") REFERENCES "public"."reproductores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."alimentos" ADD CONSTRAINT "alimentos_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."banos" ADD CONSTRAINT "banos_observacion_id_fkey" FOREIGN KEY ("observacion_id") REFERENCES "public"."observacion"("id") ON DELETE SET NULL ON UPDATE CASCADE;

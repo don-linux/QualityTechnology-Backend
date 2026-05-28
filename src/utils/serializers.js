@@ -409,32 +409,6 @@ export function serializeMantenimiento(m) {
   };
 }
 
-export function serializeAlimento(a) {
-  if (!a) return null;
-  return {
-    fi_alimento_id: a.id,
-    alimento_id: a.id,
-    fi_pileta_id: a.piletaId ?? null,
-    pileta_id: a.piletaId ?? null,
-    fi_engorda_id: a.engordaId ?? null,
-    engorda_id: a.engordaId ?? null,
-    fi_reproductor_id: a.reproductorId ?? null,
-    reproductor_id: a.reproductorId ?? null,
-    milimetros_particula: a.milimetros_particula,
-    particula_mm: a.milimetros_particula,
-    cantidad_dia: a.cantidad_dia,
-    alimento_dia: a.cantidad_dia,
-    porcion: a.porcion,
-    costo_total: a.costo_total,
-    gasto_alimento: a.costo_total,
-    fi_usuario_id: a.usuarioId,
-    pileta_nombre: a.pileta?.nombre ?? null,
-    engorda_pileta: a.engorda?.piletas?.nombre ?? null,
-    reproductor_pileta: a.reproductor?.piletas?.nombre ?? null,
-    usuario_nombre: a.usuario?.nombre ?? null,
-  };
-}
-
 export function serializeSiembra(s) {
   if (!s) return null;
   const pilOr = s.piletas_siembra_pileta_origenTopiletas ?? null;
