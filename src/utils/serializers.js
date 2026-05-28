@@ -65,10 +65,10 @@ export function serializePuesto(p) {
   };
 }
 
-export function serializeTipoInstanciaPileta(t) {
+export function serializeTipoPileta(t) {
   if (!t) return null;
   return {
-    tipo_instancia_pileta_id: t.id,
+    tipo_pileta_id: t.id,
     nombre: t.nombre,
     activo: t.esta_activo,
   };
@@ -306,8 +306,8 @@ export function serializePileta(p) {
     tipo: p.tipo,
     estado_conservacion: p.estadoConservacion ?? null,
     fc_estado_conservacion: p.estadoConservacion ?? null,
-    tipo_instancia: p.tipoInstanciaId ?? null,
-    fc_tipo_instancia: p.tipoInstancia?.nombre ?? null,
+    tipo_pileta_id: p.tipoPiletaId ?? null,
+    fc_tipo_pileta: p.tipoPileta?.nombre ?? null,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
     cantidad,

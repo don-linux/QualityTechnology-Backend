@@ -95,7 +95,7 @@ function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 5
 
 const piletaInclude = {
   ubicacion: true,
-  tipoInstancia: true,
+  tipoPileta: true,
   reproductores: {
     select: { machos: true, hembras: true },
   },
@@ -266,8 +266,8 @@ class PiletaController {
         "fc_estado_conservacion",
         "estadoConservacion"
       );
-      const tipoInstanciaId = toInt(
-        pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+      const tipoPiletaId = toInt(
+        pick(req.body, "tipo_pileta_id", "tipoPiletaId"),
         null
       );
 
@@ -299,7 +299,7 @@ class PiletaController {
           tipo: String(tipo),
           estado: String(estado),
           estadoConservacion: estadoConservacionCheck.value,
-          ...(tipoInstanciaId != null ? { tipoInstanciaId } : {}),
+          ...(tipoPiletaId != null ? { tipoPiletaId } : {}),
         },
         include: piletaInclude,
       });
@@ -315,7 +315,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id o tipo_instancia no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
+            "ubicacion_id o tipo_pileta_id no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
           ...devErrPayload(err),
         });
       }
@@ -371,12 +371,11 @@ class PiletaController {
       }
 
       if (
-        req.body.tipo_instancia !== undefined ||
-        req.body.tipo_instancia_id !== undefined ||
-        req.body.tipoInstanciaId !== undefined
+        req.body.tipo_pileta_id !== undefined ||
+        req.body.tipoPiletaId !== undefined
       ) {
-        updateData.tipoInstanciaId = toInt(
-          pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+        updateData.tipoPiletaId = toInt(
+          pick(req.body, "tipo_pileta_id", "tipoPiletaId"),
           null
         );
       }
@@ -411,7 +410,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id o tipo_instancia no existe en catalogos, o la relacion es invalida.",
+            "ubicacion_id o tipo_pileta_id no existe en catalogos, o la relacion es invalida.",
           ...devErrPayload(err),
         });
       }
