@@ -73,9 +73,9 @@ export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
     const row = await tx.incubacion.findFirst({
       where: { pileta_id: id },
       orderBy: { id: "desc" },
-      select: { cantidad_total: true },
+      select: { fecha_egreso: true },
     });
-    return row?.cantidad_total ?? 0;
+    return row && !row.fecha_egreso ? 1 : 0;
   }
 
   const row = await tx.engorda.findFirst({

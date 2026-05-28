@@ -835,23 +835,26 @@ model alevinaje {
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `incubacion` (cantidad, alimento, peso).
+/// Inventario operativo en pileta tipo `incubacion` (lote, huevos/ml, fechas de estancia).
 model incubacion {
   id                Int           @id @default(autoincrement())
   pileta_id         Int
-  cantidad_total    Int           @default(0)
-  cantidad_alimento Int           @default(0)
+  lote              String        @db.VarChar(60)
+  huevos_ml         Decimal?      @db.Decimal(10, 2)
+  fecha_ingreso     DateTime?     @db.Date
+  dias_en_pileta    Int?
+  fecha_egreso      DateTime?     @db.Date
   observacion_id    Int?
   biometria_id      Int?
   siembra_origen_id Int?          @map("siembra_origen_id")
-  peso              Int?
   biometrias        Biometria?    @relation(fields: [biometria_id], references: [id])
-  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion       observacion?  @relation(fields: [observacion_id], references: [id])
   piletas           Pileta        @relation(fields: [pileta_id], references: [id])
   siembra_origen    siembra?      @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
+  @@unique([pileta_id, lote])
   @@index([pileta_id])
+  @@index([lote])
   @@schema("public")
 }
 
@@ -861,7 +864,6 @@ model HistorialPeso {
   fecha     DateTime    @default(now()) @db.Date
   alevinaje   alevinaje[]
   engorda     Engorda[]
-  incubacion  incubacion[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")

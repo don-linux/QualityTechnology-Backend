@@ -3,8 +3,6 @@ import { serializeIncubacion } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
-import { resolverHistorialPesoId } from "./historialPesoController.js";
-import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
@@ -18,6 +16,39 @@ function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
   return Number.isInteger(n) ? n : fallback;
+}
+
+function toDecimal(value, fallback = null) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toDateOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function normalizarLote(value) {
+  const lote = String(value ?? "")
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z0-9-]+$/.test(lote)) {
+    const err = new Error("El lote solo admite letras, números y guion");
+    err.code = "BAD_LOTE";
+    throw err;
+  }
+  return lote;
+}
+
+function calcularDiasEnPileta(fechaIngreso, fechaEgreso) {
+  if (!fechaIngreso) return null;
+  const inicio = new Date(fechaIngreso);
+  const fin = fechaEgreso ? new Date(fechaEgreso) : new Date();
+  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return null;
+  const diff = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
 }
 
 async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaIncubacionId) {
@@ -60,7 +91,6 @@ const incubacionInclude = {
       },
     },
   },
-  historial_peso: true,
 };
 
 class IncubacionController {
@@ -110,20 +140,20 @@ class IncubacionController {
       const piletaId = toInt(
         pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
       );
-      const cantidadTotal = Math.max(
-        0,
-        toInt(pick(req.body, "cantidad_total", "fn_cantidad_total", "alevines_iniciales"), 0) ?? 0,
+      const loteRaw = pick(req.body, "lote", "fc_lote", "no_lote");
+      const fechaIngreso = toDateOrNull(
+        pick(req.body, "fecha_ingreso", "fd_fecha_ingreso", "fecha"),
       );
-      const cantidadAlimento = Math.max(
-        0,
-        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
-      );
+      const fechaEgreso = toDateOrNull(pick(req.body, "fecha_egreso", "fd_fecha_egreso"));
 
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id (pileta de incubación) es obligatorio" });
       }
-      if (cantidadTotal <= 0) {
-        return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
+      if (!loteRaw) {
+        return res.status(400).json({ error: "lote es obligatorio" });
+      }
+      if (!fechaIngreso) {
+        return res.status(400).json({ error: "fecha_ingreso es obligatoria" });
       }
 
       const pil = await prisma.pileta.findUnique({
@@ -137,25 +167,19 @@ class IncubacionController {
         });
       }
 
+      const lote = normalizarLote(loteRaw);
+      const huevosMl = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
+      const diasBody = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
+      const diasEnPileta =
+        diasBody != null ? diasBody : calcularDiasEnPileta(fechaIngreso, fechaEgreso);
+
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
-      const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
-      const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
-      );
+      const siembraOrigenId = toInt(pick(req.body, "siembra_origen_id"));
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
       const creado = await prisma.$transaction(async (tx) => {
-        let siembraOrigenId = siembraOrigenIdBody ?? null;
-        if (!siembraOrigenId && cantidadTotal > 0) {
-          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: origenPiletaId,
-            piletaDestinoId: piletaId,
-            cantidadEntera: cantidadTotal,
-            usuarioId,
-          });
-          if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
-        } else if (siembraOrigenId) {
+        if (siembraOrigenId) {
           await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
         }
 
@@ -164,22 +188,23 @@ class IncubacionController {
           proceso: "incubacion",
         });
 
-        const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
-
         const creadoNuevo = await tx.incubacion.create({
           data: {
             pileta_id: piletaId,
-            cantidad_total: cantidadTotal,
-            cantidad_alimento: cantidadAlimento,
+            lote,
+            huevos_ml: huevosMl,
+            fecha_ingreso: fechaIngreso,
+            dias_en_pileta: diasEnPileta,
+            fecha_egreso: fechaEgreso,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
             siembra_origen_id: siembraOrigenId ?? null,
-            peso: pesoHistorialId,
           },
           include: incubacionInclude,
         });
 
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+        const ocupada = fechaEgreso ? 0 : 1;
+        await aplicarEstadoPiletaPorCantidad(tx, piletaId, ocupada);
         return creadoNuevo;
       });
 
@@ -188,11 +213,14 @@ class IncubacionController {
         data: serializeIncubacion(creado),
       });
     } catch (err) {
-      if (err.code === "BAD_SIEMBRA" || err.code === "BAD_HISTORIAL_PESO") {
+      if (err.code === "BAD_LOTE" || err.code === "BAD_SIEMBRA") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "SIEMBRA_DESTINO") {
         return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "Ya existe un lote con ese código en la pileta" });
       }
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta o referencias inválidas" });
@@ -209,7 +237,12 @@ class IncubacionController {
 
       const prev = await prisma.incubacion.findUnique({
         where: { id },
-        select: { pileta_id: true, siembra_origen_id: true },
+        select: {
+          pileta_id: true,
+          siembra_origen_id: true,
+          fecha_ingreso: true,
+          fecha_egreso: true,
+        },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
@@ -231,17 +264,30 @@ class IncubacionController {
         piletaId = nid;
       }
 
-      if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
-        const ct = toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), 0) ?? 0;
-        if (ct <= 0) {
-          return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
-        }
-        updateData.cantidad_total = ct;
+      if (req.body.lote !== undefined || req.body.fc_lote !== undefined) {
+        updateData.lote = normalizarLote(pick(req.body, "lote", "fc_lote", "no_lote"));
       }
 
-      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
-        updateData.cantidad_alimento =
-          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
+      if (req.body.huevos_ml !== undefined || req.body.fn_huevos_ml !== undefined) {
+        updateData.huevos_ml = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
+      }
+
+      if (req.body.fecha_ingreso !== undefined || req.body.fd_fecha_ingreso !== undefined) {
+        const fi = toDateOrNull(pick(req.body, "fecha_ingreso", "fd_fecha_ingreso", "fecha"));
+        if (!fi) return res.status(400).json({ error: "fecha_ingreso inválida" });
+        updateData.fecha_ingreso = fi;
+      }
+
+      if (req.body.fecha_egreso !== undefined || req.body.fd_fecha_egreso !== undefined) {
+        updateData.fecha_egreso = toDateOrNull(
+          pick(req.body, "fecha_egreso", "fd_fecha_egreso"),
+        );
+      }
+
+      if (req.body.dias_en_pileta !== undefined || req.body.fn_dias_en_pileta !== undefined) {
+        updateData.dias_en_pileta = toInt(
+          pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"),
+        );
       }
 
       if (req.body.siembra_origen_id !== undefined) {
@@ -265,15 +311,6 @@ class IncubacionController {
       const actualizado = await prisma.$transaction(async (tx) => {
         await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
 
-        if (
-          req.body.peso_kg !== undefined ||
-          req.body.peso_valor !== undefined ||
-          req.body.historial_peso_id !== undefined ||
-          req.body.peso_id !== undefined
-        ) {
-          updateData.peso = await resolverHistorialPesoId(tx, req.body);
-        }
-
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
@@ -284,13 +321,28 @@ class IncubacionController {
           if (obsId) updateData.observacion_id = obsId;
         }
 
+        const fechaIngresoFutura =
+          updateData.fecha_ingreso !== undefined ? updateData.fecha_ingreso : prev.fecha_ingreso;
+        const fechaEgresoFutura =
+          updateData.fecha_egreso !== undefined ? updateData.fecha_egreso : prev.fecha_egreso;
+
+        if (
+          updateData.dias_en_pileta === undefined &&
+          (updateData.fecha_ingreso !== undefined || updateData.fecha_egreso !== undefined)
+        ) {
+          updateData.dias_en_pileta = calcularDiasEnPileta(fechaIngresoFutura, fechaEgresoFutura);
+        }
+
         const row = await tx.incubacion.update({
           where: { id },
           data: updateData,
           include: incubacionInclude,
         });
 
-        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
+        if (
+          updateData.pileta_id !== undefined ||
+          updateData.fecha_egreso !== undefined
+        ) {
           const vigente = await cantidadVigenteEnPileta(tx, piletaId, "incubacion");
           await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
         }
@@ -303,8 +355,15 @@ class IncubacionController {
         data: serializeIncubacion(actualizado),
       });
     } catch (err) {
-      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO" || err.code === "BAD_HISTORIAL_PESO") {
+      if (
+        err.code === "BAD_LOTE" ||
+        err.code === "BAD_SIEMBRA" ||
+        err.code === "SIEMBRA_DESTINO"
+      ) {
         return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "Ya existe un lote con ese código en la pileta" });
       }
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("PUT /incubacion/:id Error:", err);

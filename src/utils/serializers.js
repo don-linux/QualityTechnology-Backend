@@ -3,7 +3,10 @@
  * preservando el contrato HTTP esperado por el frontend existente.
  */
 
-import { cantidadVigenteDesdeRegistrosPeriodicos } from "./inventarioVigente.js";
+import {
+  cantidadVigenteDesdeRegistrosPeriodicos,
+  ultimoRegistroPorPileta,
+} from "./inventarioVigente.js";
 
 export function serializeRol(rol) {
   if (!rol) return null;
@@ -262,7 +265,9 @@ export function calcularCantidadPileta(p) {
 
   const incRows = Array.isArray(p.incubacion) ? p.incubacion : [];
   if (incRows.length > 0) {
-    return cantidadVigenteDesdeRegistrosPeriodicos(incRows);
+    const ultimo = ultimoRegistroPorPileta(incRows, { piletaKey: "pileta_id", idKey: "id" });
+    const row = ultimo[0];
+    return row && !row.fecha_egreso ? 1 : 0;
   }
 
   const rows = Array.isArray(p.alevinaje) ? p.alevinaje : [];
@@ -492,7 +497,6 @@ export function serializeIncubacion(i) {
   const obsBio = i.biometrias?.observacionBiometria;
   const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
   const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
-  const hp = i.historial_peso ?? null;
 
   return {
     fi_id: i.id,
@@ -505,13 +509,16 @@ export function serializeIncubacion(i) {
     nombre_pileta_destino: i.piletas?.nombre ?? null,
     nombre_pileta: i.piletas?.nombre ?? null,
     fc_granja: i.piletas?.ubicacion?.nombre ?? null,
-    cantidad_total: i.cantidad_total ?? 0,
-    cantidad_alimento: i.cantidad_alimento ?? 0,
-    historial_peso_id: i.peso ?? null,
-    peso: hp?.peso != null ? Number(hp.peso) : null,
-    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
-    fecha_peso: hp?.fecha ?? null,
-    fd_fecha_peso: hp?.fecha ?? null,
+    lote: i.lote ?? null,
+    fc_lote: i.lote ?? null,
+    huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
+    fn_huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
+    fecha_ingreso: i.fecha_ingreso ?? null,
+    fd_fecha_ingreso: i.fecha_ingreso ?? null,
+    dias_en_pileta: i.dias_en_pileta ?? null,
+    fn_dias_en_pileta: i.dias_en_pileta ?? null,
+    fecha_egreso: i.fecha_egreso ?? null,
+    fd_fecha_egreso: i.fecha_egreso ?? null,
     siembra_origen_id: i.siembra_origen_id ?? null,
     siembra_origen_pileta:
       i.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,

@@ -119,8 +119,11 @@ const piletaInclude = {
     select: {
       id: true,
       pileta_id: true,
-      cantidad_total: true,
-      cantidad_alimento: true,
+      lote: true,
+      huevos_ml: true,
+      fecha_ingreso: true,
+      dias_en_pileta: true,
+      fecha_egreso: true,
     },
   },
   observaciones: {
