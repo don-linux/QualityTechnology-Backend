@@ -192,6 +192,7 @@ model Pileta {
   created_at                              DateTime           @default(now()) @db.Timestamp(6)
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
+  incubacion                              incubacion[]
   controlReproductivo                     ControlReproductivo[]
   controlReproductivoOrigen               ControlReproductivo[] @relation("ControlReproPiletaOrigen")
   alimentacion                            Alimentacion[]
@@ -581,6 +582,7 @@ model Biometria {
   created_at            DateTime      @default(now()) @db.Timestamp(6)
   observacionBiometria observacion? @relation("ObservacionBiometria")
   alevinaje             alevinaje[]
+  incubacion            incubacion[]
   controlReproductivo   ControlReproductivo[]
   piletas               Pileta        @relation(fields: [pileta_id], references: [id], onDelete: Cascade)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
@@ -833,12 +835,33 @@ model alevinaje {
   @@schema("public")
 }
 
+/// Inventario operativo en pileta tipo `incubacion` (cantidad, alimento, peso).
+model incubacion {
+  id                Int           @id @default(autoincrement())
+  pileta_id         Int
+  cantidad_total    Int           @default(0)
+  cantidad_alimento Int           @default(0)
+  observacion_id    Int?
+  biometria_id      Int?
+  siembra_origen_id Int?          @map("siembra_origen_id")
+  peso              Int?
+  biometrias        Biometria?    @relation(fields: [biometria_id], references: [id])
+  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  observacion       observacion?  @relation(fields: [observacion_id], references: [id])
+  piletas           Pileta        @relation(fields: [pileta_id], references: [id])
+  siembra_origen    siembra?      @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+
+  @@index([pileta_id])
+  @@schema("public")
+}
+
 model HistorialPeso {
   id        Int         @id @default(autoincrement())
   peso      Decimal     @db.Decimal(10, 3)
   fecha     DateTime    @default(now()) @db.Date
-  alevinaje alevinaje[]
-  engorda   Engorda[]
+  alevinaje   alevinaje[]
+  engorda     Engorda[]
+  incubacion  incubacion[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")
@@ -910,6 +933,7 @@ model observacion {
   pileta             Pileta?            @relation(fields: [pileta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
   alevinaje          alevinaje[]
+  incubacion         incubacion[]
   controlReproductivo ControlReproductivo[]
   alimentacion       Alimentacion[]
   banos              Bano[]
@@ -944,6 +968,7 @@ model siembra {
   usuario_id                              Int
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
   alevinajes_como_origen                  alevinaje[]           @relation("AlevinajeSiembraOrigen")
+  incubaciones_como_origen                incubacion[]          @relation("IncubacionSiembraOrigen")
   controlReproductivos_como_origen        ControlReproductivo[] @relation("ControlReproSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores                           Reproductor[]
@@ -993,6 +1018,7 @@ enum PiletaTipo {
   alevinaje
   reproductores
   engorda
+  incubacion
 
   @@schema("public")
 }
