@@ -1,4 +1,4 @@
-FROM node:24.15.0-trixie-slim
+FROM node:24.16.0-slim
 
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     git \
     openssh-client \
-    postgresql-client \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if [ "$USER_GID" != "$(id -g node)" ]; then groupmod -g "$USER_GID" node; fi \
