@@ -6,6 +6,7 @@ import {
   primerUbicacionIdValido,
   resolverUbicacionFlexible,
 } from "../utils/granjaUbicacion.js";
+import { validateEstadoConservacion } from "../constants/estadosConservacionPileta.js";
 
 const PIL_TIPOS_VALIDOS = ["alevinaje", "reproductores", "engorda"];
 
@@ -94,7 +95,6 @@ function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 5
 
 const piletaInclude = {
   ubicacion: true,
-  estadoConservacion: true,
   tipoInstancia: true,
   reproductores: {
     select: { machos: true, hembras: true },
@@ -260,9 +260,11 @@ class PiletaController {
       const material = pick(req.body, "material");
       const tipo = pick(req.body, "tipo");
       const estado = pick(req.body, "estado") ?? "vacia";
-      const estadoConservacionId = toInt(
-        pick(req.body, "estado_conservacion_id", "estadoConservacionId"),
-        null
+      const estadoConservacionRaw = pick(
+        req.body,
+        "estado_conservacion",
+        "fc_estado_conservacion",
+        "estadoConservacion"
       );
       const tipoInstanciaId = toInt(
         pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
@@ -278,6 +280,13 @@ class PiletaController {
       if (!material) return res.status(400).json({ error: "material es obligatorio" });
       if (!tipo) return res.status(400).json({ error: "tipo es obligatorio (alevinaje|reproductores|engorda)" });
 
+      const estadoConservacionCheck = validateEstadoConservacion(estadoConservacionRaw, {
+        required: true,
+      });
+      if (!estadoConservacionCheck.ok) {
+        return res.status(400).json({ error: estadoConservacionCheck.error });
+      }
+
       const creada = await prisma.pileta.create({
         data: {
           nombre: String(nombre),
@@ -289,7 +298,7 @@ class PiletaController {
           material: String(material),
           tipo: String(tipo),
           estado: String(estado),
-          ...(estadoConservacionId != null ? { estadoConservacionId } : {}),
+          estadoConservacion: estadoConservacionCheck.value,
           ...(tipoInstanciaId != null ? { tipoInstanciaId } : {}),
         },
         include: piletaInclude,
@@ -306,7 +315,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
+            "ubicacion_id o tipo_instancia no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
           ...devErrPayload(err),
         });
       }
@@ -347,13 +356,18 @@ class PiletaController {
       if (estado !== undefined) updateData.estado = String(estado);
 
       if (
-        req.body.estado_conservacion_id !== undefined ||
-        req.body.estadoConservacionId !== undefined
+        req.body.estado_conservacion !== undefined ||
+        req.body.fc_estado_conservacion !== undefined ||
+        req.body.estadoConservacion !== undefined
       ) {
-        updateData.estadoConservacionId = toInt(
-          pick(req.body, "estado_conservacion_id", "estadoConservacionId"),
-          null
+        const estadoConservacionCheck = validateEstadoConservacion(
+          pick(req.body, "estado_conservacion", "fc_estado_conservacion", "estadoConservacion"),
+          { required: true }
         );
+        if (!estadoConservacionCheck.ok) {
+          return res.status(400).json({ error: estadoConservacionCheck.error });
+        }
+        updateData.estadoConservacion = estadoConservacionCheck.value;
       }
 
       if (
@@ -397,7 +411,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o la relacion es invalida.",
+            "ubicacion_id o tipo_instancia no existe en catalogos, o la relacion es invalida.",
           ...devErrPayload(err),
         });
       }

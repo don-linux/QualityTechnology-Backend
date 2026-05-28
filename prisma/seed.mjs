@@ -44,7 +44,6 @@ const MODULOS = [
   ["Roles Modulos", "/roles-modulos", true],
   ["Unidades de Negocio", "/unidades-negocio", true],
   ["Ubicaciones", "/ubicaciones", true],
-  ["Estados de Conservacion", "/estados-conservacion", true],
   ["Tipos Instancia Pileta", "/tipos-instancia-pileta", true],
 ];
 
