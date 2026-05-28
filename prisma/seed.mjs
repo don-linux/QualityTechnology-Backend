@@ -11,7 +11,6 @@ const MODULOS = [
   ["Roles", "/roles", true],
   ["Usuarios", "/usuarios", true],
   ["Piletas", "/piletas", true],
-  ["Lotes", "/lotes", true],
   ["Reproductores", "/reproductores", true],
   ["Engorda", "/engorda", true],
   ["Clientes", "/clientes", true],
@@ -37,7 +36,6 @@ const MODULOS = [
   ["Medicamentos", "/medicamentos", true],
   ["Recambios", "/recambios", true],
   ["Inventario", "/inventario", true],
-  ["Catalogo Estados", "/estados", false],
   ["Expedientes", "/expedientes", false],
   ["Puestos", "/puestos", true],
   ["Empleados", "/empleados", true],
@@ -46,6 +44,8 @@ const MODULOS = [
   ["Roles Modulos", "/roles-modulos", true],
   ["Unidades de Negocio", "/unidades-negocio", true],
   ["Ubicaciones", "/ubicaciones", true],
+  ["Estados de Conservacion", "/estados-conservacion", true],
+  ["Tipos Instancia Pileta", "/tipos-instancia-pileta", true],
 ];
 
 const ADMIN_PASSWORD_HASH =

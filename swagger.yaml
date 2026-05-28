@@ -450,8 +450,6 @@ components:
         fd_fecha_entrega:
           type: string
           format: date
-        fc_talla:
-          type: string
         fn_cantidad:
           type: number
         fc_cliente:
@@ -471,6 +469,10 @@ components:
         fc_uap_asignada:
           type: string
         fc_granja_asignada:
+          type: string
+        pileta_origen_id:
+          type: integer
+        nombre_pileta_origen:
           type: string
 
     Equipo:
@@ -1774,29 +1776,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Reproductor'
-        '500':
-          description: "Error del servidor"
-
-  /reproductores/movimientos/{granja}:
-    get:
-      summary: "Obtener trazabilidad de reproductores por granja"
-      description: "Devuelve movimientos/trazabilidad para reproductores de una granja."
-      parameters:
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lista de movimientos"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
         '500':
           description: "Error del servidor"
 

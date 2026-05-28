@@ -19,13 +19,12 @@ const router = express.Router();
    ====================================================== */
 router.post("/login", loginLimiter, usuarioController.login);
 router.post("/refresh", usuarioController.refresh);
+router.post("/logout", usuarioController.logout);
 
 /* ======================================================
     RUTAS PROTEGIDAS (Requieren Token)
    ====================================================== */
 router.use(authMiddleware);
-
-router.post("/logout", usuarioController.logout);
 
 /* ======================================================
     RUTAS PROTEGIDAS (Requieren Token + Módulo "Usuarios")

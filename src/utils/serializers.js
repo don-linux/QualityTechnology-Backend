@@ -3,6 +3,8 @@
  * preservando el contrato HTTP esperado por el frontend existente.
  */
 
+import { cantidadVigenteDesdeRegistrosPeriodicos } from "./inventarioVigente.js";
+
 export function serializeRol(rol) {
   if (!rol) return null;
   return {
@@ -60,6 +62,24 @@ export function serializePuesto(p) {
     puesto_id: p.id,
     nombre: p.nombre,
     activo: p.esta_activo,
+  };
+}
+
+export function serializeEstadoConservacion(e) {
+  if (!e) return null;
+  return {
+    estado_conservacion_id: e.id,
+    nombre: e.nombre,
+    activo: e.esta_activo,
+  };
+}
+
+export function serializeTipoInstanciaPileta(t) {
+  if (!t) return null;
+  return {
+    tipo_instancia_pileta_id: t.id,
+    nombre: t.nombre,
+    activo: t.esta_activo,
   };
 }
 
@@ -208,8 +228,7 @@ export function serializeReproductor(r) {
     nombre_pileta: r.piletas?.nombre ?? null,
     fn_machos: r.machos,
     fn_hembras: r.hembras,
-    fn_cantidad: r.cantidad_total ?? (Number(r.machos || 0) + Number(r.hembras || 0)),
-    cantidad_total: r.cantidad_total ?? null,
+    fn_cantidad: Number(r.machos || 0) + Number(r.hembras || 0),
     fn_talla: r.talla,
     talla: r.talla,
     fc_ratio: r.ratio,
@@ -236,11 +255,52 @@ export function serializeReproductor(r) {
   };
 }
 
+/** Inventario vigente en la pileta, sin importar etapa (reproductores, alevinaje o engorda). */
+export function calcularCantidadPileta(p) {
+  if (!p) return 0;
+
+  const rep = p.reproductores;
+  if (rep) {
+    return Number(rep.machos || 0) + Number(rep.hembras || 0) || 0;
+  }
+
+  const engRows = Array.isArray(p.engorda) ? p.engorda : p.engorda ? [p.engorda] : [];
+  if (engRows.length > 0) {
+    return cantidadVigenteDesdeRegistrosPeriodicos(engRows);
+  }
+
+  const rows = Array.isArray(p.alevinaje) ? p.alevinaje : [];
+  return cantidadVigenteDesdeRegistrosPeriodicos(rows);
+}
+
+export function serializeObservacionHistorial(o) {
+  if (!o) return null;
+  const usuario = o.usuarios ?? o.usuario ?? null;
+  const rolNombre = usuario?.rol?.nombre ?? null;
+  return {
+    fi_observacion_id: o.id,
+    observacion_id: o.id,
+    comentario: o.comentario,
+    observacion: o.comentario,
+    fc_observacion: o.comentario,
+    proceso: o.proceso ?? null,
+    fc_proceso: o.proceso ?? null,
+    created_at: o.created_at,
+    fd_fecha: o.created_at,
+    fecha: o.created_at,
+    usuario_nombre: usuario?.nombre ?? null,
+    fc_usuario: usuario?.nombre ?? null,
+    rol_nombre: rolNombre,
+    fc_rol: rolNombre,
+  };
+}
+
 export function serializePileta(p) {
   if (!p) return null;
   const lista = Array.isArray(p.observaciones) ? p.observaciones : [];
   const ultima = lista[0];
   const comUlt = ultima?.comentario ?? null;
+  const cantidad = calcularCantidadPileta(p);
 
   return {
     fi_pileta_id: p.id,
@@ -253,8 +313,14 @@ export function serializePileta(p) {
     material: p.material,
     estado: p.estado,
     tipo: p.tipo,
+    estado_conservacion_id: p.estadoConservacionId ?? null,
+    fc_estado_conservacion: p.estadoConservacion?.nombre ?? null,
+    tipo_instancia: p.tipoInstanciaId ?? null,
+    fc_tipo_instancia: p.tipoInstancia?.nombre ?? null,
     ubicacion_id: p.ubicacionId,
     fc_granja: p.ubicacion?.nombre ?? null,
+    cantidad,
+    fn_cantidad: cantidad,
     ultima_observacion: comUlt,
     fc_ultima_observacion_proceso: ultima?.proceso ?? null,
     fd_ultima_observacion: ultima?.created_at ?? null,
@@ -264,24 +330,50 @@ export function serializePileta(p) {
 
 export function serializeEngorda(e) {
   if (!e) return null;
+  const piletaUlt = Array.isArray(e.piletas?.observaciones) ? e.piletas.observaciones[0] : null;
+  const obsBio = e.biometrias?.observacionBiometria;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const hp = e.historial_peso ?? null;
+
   return {
     fi_engorda_id: e.id,
+    fi_id: e.id,
+    id: e.id,
     engorda_id: e.id,
     pileta_id: e.pileta_id,
+    fi_pileta_destino_id: e.pileta_id,
+    pileta_destino_id: e.pileta_id,
+    nombre_pileta_destino: e.piletas?.nombre ?? null,
     nombre_pileta: e.piletas?.nombre ?? null,
     destino_nombre: e.piletas?.nombre ?? null,
-    cantidad: e.cantidad,
-    machos: e.machos ?? 0,
-    hembras: e.hembras ?? 0,
-    origen_pileta_id: e.siembra?.pileta_origen ?? null,
-    origen_nombre_pileta: e.siembra?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
-    talla_gr: e.tallaGr,
-    siembra_id: e.siembra_id ?? null,
-    biometria_id: e.biometria_id ?? null,
     fc_granja: e.piletas?.ubicacion?.nombre ?? null,
-    fi_usuario_id: e.usuarioId,
+    cantidad_total: e.cantidad_total ?? 0,
+    cantidad: e.cantidad_total ?? 0,
+    cantidad_alimento: e.cantidad_alimento ?? 0,
+    historial_peso_id: e.peso ?? null,
+    peso: hp?.peso != null ? Number(hp.peso) : null,
+    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    fecha_peso: hp?.fecha ?? null,
+    fd_fecha_peso: hp?.fecha ?? null,
+    siembra_origen_id: e.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      e.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: e.siembra_origen?.cantidad
+      ? Number(e.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: e.siembra_origen?.fecha ?? null,
+    origen_pileta_id: e.siembra_origen?.pileta_origen ?? null,
+    origen_nombre_pileta: e.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    biometria_id: e.biometria_id ?? null,
+    fc_observacion: e.observacion?.comentario ?? null,
     observacion: e.observacion?.comentario ?? null,
-    observacion_id: e.observacionId ?? null,
+    observacion_id: e.observacion_id ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
   };
 }
 
@@ -385,49 +477,26 @@ export function serializeAlevinaje(a) {
   if (!a) return null;
   const piletaUlt = Array.isArray(a.piletas?.observaciones) ? a.piletas.observaciones[0] : null;
   const obsBio = a.biometrias?.observacionBiometria;
-  const obsBioComentario =
-    obsBio?.comentario ?? piletaUlt?.comentario ?? null;
-  const obsBioFecha =
-    obsBio?.created_at ?? piletaUlt?.created_at ?? null;
-  const reproductorPilOrigen =
-    a.siembra_origen?.piletas_siembra_pileta_origenTopiletas ?? null;
-  const repFamPorPilaOrigen = a.pileta_origen_reproductora?.reproductores?.familia ?? null;
-  const familiaOrigen =
-    a.familia ??
-    repFamPorPilaOrigen ??
-    reproductorPilOrigen?.reproductores?.familia ??
-    null;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const hp = a.historial_peso ?? null;
 
   return {
     fi_id: a.id,
-    fi_lote_id: a.id,
     id: a.id,
     pileta_id: a.pileta_id,
     fi_pileta_destino_id: a.pileta_id,
     pileta_destino_id: a.pileta_id,
     nombre_pileta_destino: a.piletas?.nombre ?? null,
     nombre_pileta: a.piletas?.nombre ?? null,
-    nombre_instalacion: a.piletas?.nombre ?? null,
-    pileta_origen_reproductora_id: a.pileta_origen_reproductora_id ?? null,
-    fi_pileta_origen_reproductora_id: a.pileta_origen_reproductora_id ?? null,
-    fi_pileta_origen_id: a.pileta_origen_reproductora_id ?? null,
-    nombre_pileta_origen_reproductora: a.pileta_origen_reproductora?.nombre ?? null,
     fc_granja: a.piletas?.ubicacion?.nombre ?? null,
-    fd_fecha: a.fecha,
-    fecha: a.fecha,
-    no_lote: a.lote,
-    lote: a.lote,
-    huevos_ml: a.huevos_ml,
-    ovadas: a.ovadas,
-    machos: a.machos ?? 0,
-    hembras: a.hembras ?? 0,
-    cantidad_total: a.cantidad_total ?? a.alevines_iniciales ?? 0,
-    alevines_iniciales: a.alevines_iniciales,
-    alevines_inicial: a.alevines_iniciales,
-    mortalidad: a.mortalidad,
-    mortalidad_porcentaje: a.mortalidad_porcentaje,
-    alevines_actuales:
-      (Number(a.alevines_iniciales) || 0) - (Number(a.mortalidad) || 0),
+    cantidad_total: a.cantidad_total ?? 0,
+    cantidad_alimento: a.cantidad_alimento ?? 0,
+    historial_peso_id: a.peso ?? null,
+    peso: hp?.peso != null ? Number(hp.peso) : null,
+    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    fecha_peso: hp?.fecha ?? null,
+    fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: a.siembra_origen_id ?? null,
     siembra_origen_pileta:
       a.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
@@ -435,7 +504,6 @@ export function serializeAlevinaje(a) {
       ? Number(a.siembra_origen.cantidad)
       : null,
     siembra_origen_fecha: a.siembra_origen?.fecha ?? null,
-    familia: familiaOrigen,
     biometria_id: a.biometria_id ?? null,
     fc_observacion: a.observacion?.comentario ?? null,
     observacion: a.observacion?.comentario ?? null,
@@ -445,7 +513,54 @@ export function serializeAlevinaje(a) {
     fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
     fc_observacion_biometria: obsBioComentario,
     fd_observacion_biometria: obsBioFecha,
-    fi_usuario_id: a.usuario_id,
+  };
+}
+
+export function serializeControlReproductivo(r) {
+  if (!r) return null;
+  return {
+    fi_id: r.id,
+    id: r.id,
+    pileta_id: r.pileta_id,
+    fi_pileta_destino_id: r.pileta_id,
+    pileta_destino_id: r.pileta_id,
+    nombre_pileta_destino: r.piletas?.nombre ?? null,
+    nombre_pileta: r.piletas?.nombre ?? null,
+    fc_granja: r.piletas?.ubicacion?.nombre ?? null,
+    pileta_origen_reproductora_id: r.pileta_origen_reproductora_id ?? null,
+    fi_instalacion_id: r.pileta_origen_reproductora_id ?? null,
+    instalacion_id: r.pileta_origen_reproductora_id ?? null,
+    nombre_pileta_origen: r.pileta_origen_reproductora?.nombre ?? null,
+    nombre_instalacion: r.pileta_origen_reproductora?.nombre ?? null,
+    fecha: r.fecha ?? null,
+    fd_fecha: r.fecha ?? null,
+    lote: r.lote ?? null,
+    fc_lote: r.lote ?? null,
+    familia: r.familia ?? null,
+    fc_familia: r.familia ?? null,
+    huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
+    fn_huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
+    ovadas: r.ovadas ?? 0,
+    fn_ovadas: r.ovadas ?? 0,
+    machos: r.machos ?? 0,
+    fn_machos: r.machos ?? 0,
+    hembras: r.hembras ?? 0,
+    fn_hembras: r.hembras ?? 0,
+    cantidad_total: r.cantidad_total ?? 0,
+    fn_cantidad_total: r.cantidad_total ?? 0,
+    alevines_iniciales: r.alevines_iniciales ?? 0,
+    fn_alevines_iniciales: r.alevines_iniciales ?? 0,
+    mortalidad: r.mortalidad ?? 0,
+    fn_mortalidad: r.mortalidad ?? 0,
+    mortalidad_porcentaje:
+      r.mortalidad_porcentaje != null ? Number(r.mortalidad_porcentaje) : 0,
+    siembra_origen_id: r.siembra_origen_id ?? null,
+    biometria_id: r.biometria_id ?? null,
+    fc_observacion: r.observacion?.comentario ?? null,
+    observacion: r.observacion?.comentario ?? null,
+    observacion_id: r.observacion_id ?? null,
+    created_at: r.created_at ?? null,
+    updated_at: r.updated_at ?? null,
   };
 }
 
@@ -482,8 +597,14 @@ export function serializeInventarioAlevin(a) {
 // Ventas / Finanzas / Catalogos
 // ============================================================================
 
+function nombreEmpleado(e) {
+  if (!e) return null;
+  return [e.nombre, e.apellidoPaterno, e.apellidoMaterno].filter(Boolean).join(" ");
+}
+
 export function serializeCliente(c) {
   if (!c) return null;
+  const ejecutivoId = c.ejecutivoEmpleadoId ?? c.ejecutivo?.id ?? null;
   return {
     fi_cliente_id: c.id,
     cliente_id: c.id,
@@ -495,6 +616,9 @@ export function serializeCliente(c) {
     fc_telefono: c.telefono ?? null,
     email: c.email ?? null,
     fc_correo: c.email ?? null,
+    ejecutivo_empleado_id: ejecutivoId,
+    fi_ejecutivo_empleado_id: ejecutivoId,
+    ejecutivo_nombre: nombreEmpleado(c.ejecutivo) ?? null,
     activo: c.esta_activo,
   };
 }
@@ -557,6 +681,11 @@ export function serializeVenta(v) {
 
 export function serializeListaEspera(l) {
   if (!l) return null;
+  const fechaEntrega = l.fecha_entrega
+    ? (l.fecha_entrega instanceof Date
+        ? l.fecha_entrega.toISOString().slice(0, 10)
+        : String(l.fecha_entrega).slice(0, 10))
+    : null;
   return {
     fi_lista_id: l.id,
     lista_id: l.id,
@@ -567,6 +696,27 @@ export function serializeListaEspera(l) {
     fn_cantidad: l.cantidad_peces ?? null,
     precio_unitario: l.precio_unitario ?? null,
     fn_precio_venta: l.precio_unitario ?? null,
+    tipo_venta: l.tipo_venta ?? null,
+    fc_uap_asignada: l.tipo_venta ?? null,
+    granja: l.granja ?? null,
+    fc_granja_asignada: l.granja ?? null,
+    fecha_entrega: fechaEntrega,
+    fd_fecha_entrega: fechaEntrega,
+    lugar_entrega: l.lugar_entrega ?? null,
+    fc_lugar_entrega: l.lugar_entrega ?? null,
+    unidad_produccion: l.unidad_produccion ?? null,
+    fc_unidad_produccion: l.unidad_produccion ?? null,
+    hora_embolsado: l.hora_embolsado ?? null,
+    fc_hora_embolsado: l.hora_embolsado ?? null,
+    hora_entrega: l.hora_entrega ?? null,
+    fc_hora_entrega: l.hora_entrega ?? null,
+    encargado_venta: l.encargado_venta ?? null,
+    fc_encargado_venta: l.encargado_venta ?? null,
+    pileta_origen_id: l.pileta_origen_id ?? null,
+    fi_pileta_origen_id: l.pileta_origen_id ?? null,
+    nombre_pileta_origen: l.pileta_origen?.nombre ?? null,
+    venta_id: l.venta_id ?? null,
+    fi_venta_id: l.venta_id ?? null,
     notas: l.notas ?? null,
     fc_notas: l.notas ?? null,
     estatus: l.estatus,

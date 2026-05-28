@@ -26,8 +26,10 @@ import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
 import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
 import cuentaRoutes from "./src/routes/cuentaRoutes.js";
 import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
-import alevinRoutes from "./src/routes/alevinRoutes.js";
 import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
+import trazabilidadRoutes from "./src/routes/trazabilidadRoutes.js";
+import controlReproductivoRoutes from "./src/routes/controlReproductivoRoutes.js";
+import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
 
 // Rutas de Bitácoras
@@ -53,6 +55,8 @@ import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 
 // Ubicaciones
 import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
+import estadoConservacionRoutes from "./src/routes/estadoConservacionRoutes.js";
+import tipoInstanciaPiletaRoutes from "./src/routes/tipoInstanciaPiletaRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -113,9 +117,11 @@ api.use("/piletas", piletaRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alimentos", alimentoRoutes);
-api.use("/alevines", alevinRoutes);
 api.use("/alevinaje", alevinajeRoutes);
+api.use("/control-reproductivo", controlReproductivoRoutes);
+api.use("/historial-peso", historialPesoRoutes);
 api.use("/siembras", siembraRoutes);
+api.use("/trazabilidad", trazabilidadRoutes);
 api.use("/equipos", equipoRoutes);
 
 // Ventas / CRM
@@ -143,6 +149,8 @@ api.use("/vacaciones", vacacionRoutes);
 // Catalogos
 api.use("/unidades-negocio", unidadNegocioRoutes);
 api.use("/ubicaciones", ubicacionRoutes);
+api.use("/estados-conservacion", estadoConservacionRoutes);
+api.use("/tipos-instancia-pileta", tipoInstanciaPiletaRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);

@@ -12,42 +12,9 @@ router.use(authMiddleware);
 ============================================================ */
 
 router.get("/", piletaController.getAll);
+router.get("/:id/observaciones", piletaController.getObservacionesHistorial);
 router.post("/", piletaController.create);
 router.put("/:id", piletaController.update);
-
-/* ============================================================
-    RUTAS DE LOTES
-============================================================ */
-
-router.get("/lotes/:granja", piletaController.getLotes);
-router.get("/lote-por-inst/:inst/:granja", piletaController.getLotePorInst);
-
-/* ============================================================
-    INVENTARIO
-============================================================ */
-
-router.get("/inventario/:granja", piletaController.getInventario);
-router.get("/origen/:granja", piletaController.getOrigen);
-router.get("/destino/:granja", piletaController.getDestino);
-
-/* ============================================================
-    SIEMBRA
-============================================================ */
-
-router.post("/siembra", piletaController.siembra);
-
-/* ============================================================
-    TRAZABILIDAD
-============================================================ */
-
-// FILTRO PRIMERO (más específico)
-router.get("/movimientos/filtro/:usuario/:granja", piletaController.getMovimientosFiltro);
-
-// GENERAL DESPUÉS
-router.get("/movimientos/:usuario/:granja", piletaController.getMovimientos);
-
-router.post("/movimientos/registrar", piletaController.registrarMovimiento);
-router.delete("/movimientos/eliminar", piletaController.eliminarMovimientos);
 
 router.delete("/:id", piletaController.delete);
 

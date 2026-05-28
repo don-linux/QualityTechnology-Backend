@@ -1,6 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeVenta } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import {
+  registrarVentaTrazabilidad,
+  ventaRequiereTrazabilidad,
+} from "../utils/trazabilidadInventario.js";
 
 // Venta en el schema actual renombra varios campos: cliente -> cliente_nombre,
 // cantidadVendida -> cantidad, precioVenta -> precio_unitario, abonado ->
@@ -123,10 +127,19 @@ class VentaController {
       const fecha = toDateOrNull(fechaIn) ?? new Date();
       const montoTotal = cantidad * precioUnitario;
       const estadoPago = calcularEstado(montoTotal, montoAbonado);
+      const piletaOrigenId = toInt(
+        req.body.pileta_origen_id ?? req.body.origen_pileta_id ?? req.body.fi_pileta_origen_id,
+      );
+
+      if (ventaRequiereTrazabilidad(tipoVenta) && !piletaOrigenId) {
+        return res.status(400).json({
+          error: "pileta_origen_id es obligatorio para ventas de alevines o mojarra",
+        });
+      }
 
       const venta = await prisma.$transaction(async (tx) => {
         const obsId = await crearObservacionSiHay(tx, observaciones, req.user.usuario_id);
-        return tx.venta.create({
+        const ventaNueva = await tx.venta.create({
           data: {
             folio: folio ?? null,
             fecha,
@@ -144,6 +157,20 @@ class VentaController {
           },
           include: { observacion: true },
         });
+
+        if (ventaRequiereTrazabilidad(tipoVenta)) {
+          await registrarVentaTrazabilidad(tx, {
+            piletaOrigenId,
+            cantidad,
+            ventaId: ventaNueva.id,
+            usuarioId: req.user.usuario_id,
+            tipoVenta,
+            observacion: observaciones,
+            fechaMovimiento: fecha,
+          });
+        }
+
+        return ventaNueva;
       });
 
       res.status(201).json({
@@ -151,6 +178,12 @@ class VentaController {
         data: serializeVenta(venta),
       });
     } catch (err) {
+      if (err.code === "VALIDACION" || err.code === "PILETA_TIPO_INVALIDO" || err.code === "PILETA_NOT_FOUND") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "ALEV_CANTIDAD_INSUFICIENTE" || err.code === "ENGORDA_CANTIDAD_INSUFICIENTE") {
+        return res.status(400).json({ error: err.message });
+      }
       console.error("Error al registrar venta:", err);
       res.status(500).json({ error: err.message });
     }

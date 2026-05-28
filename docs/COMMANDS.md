@@ -47,6 +47,15 @@ docker compose -f docker/dev/compose.yaml up --build
 - The Postgres volume is not initialized from `db.sql`; schema comes from Prisma migrations.
 - The compose file references variables shown in `docker/dev/.env.example`.
 
+### Dev container (Cursor / VS Code)
+
+Opening `.devcontainer/devcontainer.json` overrides the Express service command (`sleep infinity`) and runs database bootstrap via lifecycle hooks instead of `docker/dev/compose.yaml` command:
+
+- `postCreateCommand`: `npm install`, `prisma generate`
+- `postStartCommand`: `prisma migrate deploy`, `prisma db seed`, `npm run dev`
+
+Rebuild or run **Dev Containers: Rebuild Container** after changing hooks or migrations.
+
 ### Production compose
 ```bash
 docker compose -f docker/prod/compose.yaml up --build

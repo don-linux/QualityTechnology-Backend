@@ -1,5 +1,5 @@
 import prisma from "../prisma.js";
-import { serializePileta } from "../utils/serializers.js";
+import { serializeObservacionHistorial, serializePileta } from "../utils/serializers.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import {
   piletaWhereUbicacionFromRequest,
@@ -94,6 +94,27 @@ function respondPiletaMutationErr(res, ctx, err, userMessage, statusFallback = 5
 
 const piletaInclude = {
   ubicacion: true,
+  estadoConservacion: true,
+  tipoInstancia: true,
+  reproductores: {
+    select: { machos: true, hembras: true },
+  },
+  engorda: {
+    select: {
+      id: true,
+      pileta_id: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+    },
+  },
+  alevinaje: {
+    select: {
+      id: true,
+      pileta_id: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+    },
+  },
   observaciones: {
     orderBy: { created_at: "desc" },
     take: 1,
@@ -155,6 +176,75 @@ class PiletaController {
     }
   }
 
+  /** Historial completo de `observacion` asociadas a una pileta (directas y vía bitácoras/biometría). */
+  static async getObservacionesHistorial(req, res) {
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const wherePileta = { id };
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (ubicClause) Object.assign(wherePileta, ubicClause);
+
+      const pileta = await prisma.pileta.findFirst({
+        where: wherePileta,
+        select: { id: true, tipo: true },
+      });
+      if (!pileta) return res.status(404).json({ error: "Pileta no encontrada" });
+
+      const rawProcesos = pick(req.query, "proceso", "procesos");
+      const procesosFiltro = rawProcesos
+        ? String(rawProcesos)
+            .split(",")
+            .map((p) => p.trim().toLowerCase())
+            .filter(Boolean)
+        : null;
+
+      const vinculoPileta = {
+        OR: [
+          { pileta_id: id },
+          { alimentacion: { some: { pileta_id: id } } },
+          { recambios: { some: { pileta_id: id } } },
+          { inventarioAlevines: { some: { pileta_id: id } } },
+          { biometria: { is: { pileta_id: id } } },
+          { parametros: { some: { numero_estanque: id } } },
+          { medicamentos: { some: { numero_estanque: id } } },
+        ],
+      };
+
+      const whereObs = procesosFiltro?.length
+        ? { AND: [vinculoPileta, { proceso: { in: procesosFiltro } }] }
+        : vinculoPileta;
+
+      const rows = await prisma.observacion.findMany({
+        where: whereObs,
+        orderBy: { created_at: "desc" },
+        take: 500,
+        select: {
+          id: true,
+          comentario: true,
+          proceso: true,
+          created_at: true,
+          usuarios: {
+            select: {
+              nombre: true,
+              rol: { select: { nombre: true } },
+            },
+          },
+        },
+      });
+
+      const historial = rows
+        .filter((o) => String(o.comentario ?? "").trim() !== "")
+        .map(serializeObservacionHistorial);
+
+      res.json(historial);
+    } catch (err) {
+      console.error("GET /piletas/:id/observaciones Error:", err);
+      res.status(500).json({ error: "Error al obtener historial de observaciones" });
+    }
+  }
+
   static async create(req, res) {
     try {
       const nombre = pick(req.body, "nombre");
@@ -170,6 +260,14 @@ class PiletaController {
       const material = pick(req.body, "material");
       const tipo = pick(req.body, "tipo");
       const estado = pick(req.body, "estado") ?? "vacia";
+      const estadoConservacionId = toInt(
+        pick(req.body, "estado_conservacion_id", "estadoConservacionId"),
+        null
+      );
+      const tipoInstanciaId = toInt(
+        pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+        null
+      );
 
       if (!nombre || !ubicacionId || largo === null || ancho === null || alto === null) {
         return res.status(400).json({
@@ -191,6 +289,8 @@ class PiletaController {
           material: String(material),
           tipo: String(tipo),
           estado: String(estado),
+          ...(estadoConservacionId != null ? { estadoConservacionId } : {}),
+          ...(tipoInstanciaId != null ? { tipoInstanciaId } : {}),
         },
         include: piletaInclude,
       });
@@ -206,7 +306,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id no existe en el catalogo de ubicaciones, o alguna relacion requerida es invalida. Verifique el id o use `granja` para resolver/crear la sede.",
+            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o alguna relacion requerida es invalida. Verifique los ids o use `granja` para resolver/crear la sede.",
           ...devErrPayload(err),
         });
       }
@@ -246,6 +346,27 @@ class PiletaController {
       const estado = pick(req.body, "estado");
       if (estado !== undefined) updateData.estado = String(estado);
 
+      if (
+        req.body.estado_conservacion_id !== undefined ||
+        req.body.estadoConservacionId !== undefined
+      ) {
+        updateData.estadoConservacionId = toInt(
+          pick(req.body, "estado_conservacion_id", "estadoConservacionId"),
+          null
+        );
+      }
+
+      if (
+        req.body.tipo_instancia !== undefined ||
+        req.body.tipo_instancia_id !== undefined ||
+        req.body.tipoInstanciaId !== undefined
+      ) {
+        updateData.tipoInstanciaId = toInt(
+          pick(req.body, "tipo_instancia", "tipo_instancia_id", "tipoInstanciaId"),
+          null
+        );
+      }
+
       if (updateData.largo !== undefined || updateData.ancho !== undefined || updateData.alto !== undefined) {
         const actual = await prisma.pileta.findUnique({ where: { id } });
         if (!actual) return res.status(404).json({ error: "Pileta no encontrada" });
@@ -276,7 +397,7 @@ class PiletaController {
       if (err.code === "P2003") {
         return res.status(400).json({
           error:
-            "ubicacion_id no existe en el catalogo de ubicaciones, o la relacion es invalida.",
+            "ubicacion_id, estado_conservacion_id o tipo_instancia no existe en catalogos, o la relacion es invalida.",
           ...devErrPayload(err),
         });
       }
@@ -304,61 +425,6 @@ class PiletaController {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Endpoints heredados que requieren rediseno sobre los nuevos modelos
-  // (alevinaje, siembra, engorda, reproductores, Biometria). Se mantienen
-  // las rutas existentes devolviendo 501 hasta que se reimplementen.
-  // ---------------------------------------------------------------------------
-  static async getOrigen(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de inventario.",
-    });
-  }
-  static async getDestino(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de inventario.",
-    });
-  }
-  static async getLotes(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de lotes.",
-    });
-  }
-  static async getInventario(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getLotePorInst(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo de lotes.",
-    });
-  }
-  static async siembra(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre el nuevo modelo siembra.",
-    });
-  }
-  static async registrarMovimiento(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async getMovimientosFiltro(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
-  static async eliminarMovimientos(req, res) {
-    res.status(501).json({
-      error: "Endpoint pendiente de rediseno sobre los nuevos modelos siembra/alevinaje.",
-    });
-  }
 }
 
 export default PiletaController;

@@ -1,8 +1,11 @@
 /**
- * Descuentos en filas `alevinaje` cuando egresa inventario hacia otra pileta (p. ej. engorda).
+ * Descuentos en filas `alevinaje` cuando egresa inventario (venta, traslado, mortalidad).
+ * Crea un registro periódico nuevo con el stock restante; solo el último registro por pileta
+ * representa el inventario vigente (mismo criterio que los ingresos por traslado).
  */
 
 import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
+import { crearObservacionEgresoInventario } from "./observacion.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -13,99 +16,86 @@ function toInt(value, fallback = null) {
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
  * @param {number|null} piletaOrigenId
- * @param {{ piletaDestinoId?: number|null, machosDeducir?: number, hembrasDeducir?: number, cantidadTotalSinSexo?: number }} opciones
+ * @param {{
+ *   piletaDestinoId?: number|null,
+ *   cantidadTotalSinSexo?: number,
+ *   cantidad?: number,
+ *   cantidad_total?: number,
+ *   siembraOrigenId?: number|null,
+ *   observacion?: string|null,
+ *   usuarioId?: number|null,
+ *   procesoObservacion?: string,
+ *   folioVenta?: string|number|null,
+ * }} opciones
  */
 export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId, opciones = {}) {
   const ori = toInt(piletaOrigenId);
   const dest = toInt(opciones.piletaDestinoId ?? null);
   if (!ori || (dest && ori === dest)) return;
 
-  const md = Math.max(0, Math.floor(Number(opciones.machosDeducir ?? opciones.machos ?? 0) || 0));
-  const hd = Math.max(0, Math.floor(Number(opciones.hembrasDeducir ?? opciones.hembras ?? 0) || 0));
-  const qtySexo = md + hd;
-  const qtyFallback = Math.max(0, Math.floor(Number(opciones.cantidadTotalSinSexo ?? 0) || 0));
+  const qty = Math.max(
+    0,
+    Math.floor(
+      Number(
+        opciones.cantidadTotalSinSexo ??
+          opciones.cantidad ??
+          opciones.cantidad_total ??
+          0,
+      ) || 0,
+    ),
+  );
+  if (qty <= 0) return;
 
-  const rows = await tx.alevinaje.findMany({
+  const vigente = await tx.alevinaje.findFirst({
     where: { pileta_id: ori },
-    orderBy: { id: "asc" },
-    select: { id: true, machos: true, hembras: true },
+    orderBy: { id: "desc" },
+    select: {
+      id: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+      peso: true,
+      biometria_id: true,
+      observacion_id: true,
+    },
   });
 
-  const totalM = rows.reduce((s, r) => s + (r.machos ?? 0), 0);
-  const totalH = rows.reduce((s, r) => s + (r.hembras ?? 0), 0);
-
-  if (rows.length === 0 && (qtySexo > 0 || qtyFallback > 0)) {
-    const err = new Error("No hay registros de alevinaje en la pileta de origen");
+  const disponible = vigente?.cantidad_total ?? 0;
+  if (!vigente || qty > disponible) {
+    const err = new Error("Cantidad mayor al inventario de alevinaje en la pileta de origen");
     err.code = "ALEV_CANTIDAD_INSUFICIENTE";
     throw err;
   }
 
-  if (qtySexo > 0) {
-    if (md > totalM || hd > totalH) {
-      const err = new Error(
-        "Cantidad mayor al inventario de alevinaje (machos/hembras) en la pileta de origen",
-      );
-      err.code = "ALEV_CANTIDAD_INSUFICIENTE";
-      throw err;
-    }
-    let remM = md;
-    let remH = hd;
-    for (const row of rows) {
-      if (remM <= 0 && remH <= 0) break;
-      const takeM = Math.min(row.machos ?? 0, remM);
-      const takeH = Math.min(row.hembras ?? 0, remH);
-      const nm = (row.machos ?? 0) - takeM;
-      const nh = (row.hembras ?? 0) - takeH;
-      remM -= takeM;
-      remH -= takeH;
-      await tx.alevinaje.update({
-        where: { id: row.id },
-        data: { machos: nm, hembras: nh, cantidad_total: nm + nh },
-      });
-    }
-  } else if (qtyFallback > 0) {
-    if (qtyFallback > totalM + totalH) {
-      const err = new Error("Cantidad mayor al inventario de alevinaje en la pileta de origen");
-      err.code = "ALEV_CANTIDAD_INSUFICIENTE";
-      throw err;
-    }
-    const copies = rows.map((r) => ({
-      id: r.id,
-      machos: r.machos ?? 0,
-      hembras: r.hembras ?? 0,
-    }));
-    let rest = qtyFallback;
-    for (const row of copies) {
-      while (rest > 0 && row.machos + row.hembras > 0) {
-        if (row.machos >= row.hembras && row.machos > 0) {
-          row.machos -= 1;
-          rest -= 1;
-          continue;
-        }
-        if (row.hembras > 0) {
-          row.hembras -= 1;
-          rest -= 1;
-          continue;
-        }
-        break;
-      }
-    }
-    for (const row of copies) {
-      await tx.alevinaje.update({
-        where: { id: row.id },
-        data: {
-          machos: row.machos,
-          hembras: row.hembras,
-          cantidad_total: row.machos + row.hembras,
+  const restante = disponible - qty;
+  const siembraOrigenId = toInt(opciones.siembraOrigenId ?? null);
+  const obsTexto = opciones.observacion?.trim?.() ? String(opciones.observacion).trim() : "";
+  const usuarioId = toInt(opciones.usuarioId ?? null);
+  const obsId = usuarioId
+    ? await crearObservacionEgresoInventario(
+        tx,
+        {
+          textoNuevo: obsTexto,
+          folioVenta: opciones.folioVenta ?? null,
         },
-      });
-    }
-  }
+        usuarioId,
+        {
+          piletaId: ori,
+          proceso: opciones.procesoObservacion ?? "trazabilidad",
+        },
+      )
+    : null;
 
-  const suma = await tx.alevinaje.aggregate({
-    where: { pileta_id: ori },
-    _sum: { machos: true, hembras: true },
+  await tx.alevinaje.create({
+    data: {
+      pileta_id: ori,
+      cantidad_total: restante,
+      cantidad_alimento: vigente.cantidad_alimento ?? 0,
+      peso: vigente.peso ?? null,
+      biometria_id: vigente.biometria_id ?? null,
+      observacion_id: obsId,
+      siembra_origen_id: siembraOrigenId,
+    },
   });
-  const vivas = (suma._sum.machos ?? 0) + (suma._sum.hembras ?? 0);
-  await aplicarEstadoPiletaPorCantidad(tx, ori, vivas);
+
+  await aplicarEstadoPiletaPorCantidad(tx, ori, restante);
 }
