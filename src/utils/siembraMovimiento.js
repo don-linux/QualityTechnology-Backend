@@ -61,6 +61,7 @@ export const ETAPAS_TRAZABILIDAD = ["alevinaje", "engorda"];
 const ETAPA_LABEL = {
   alevinaje: "Alevinaje",
   engorda: "Engorda",
+  reproductores: "Reproductores",
 };
 
 export function labelEtapa(tipo) {

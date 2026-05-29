@@ -4,7 +4,10 @@
  */
 
 import { crearObservacionEgresoInventario } from "./observacion.js";
-import { calcularRatioReproductor } from "./reproductorCampos.js";
+import { calcularRatioReproductor, pickRepro, toIntRepro } from "./reproductorCampos.js";
+import { crearSiembraMovimiento } from "./siembraMovimiento.js";
+import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
+import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -174,4 +177,176 @@ export async function descontarReproductorPorEgresoHaciaAlevinaje(tx, piletaOrig
   await tx.reproductor.create({ data: base });
 
   await aplicarEstadoPiletaPorCantidad(tx, ori, cantidadActual);
+}
+
+function errValidacion(message) {
+  const err = new Error(message);
+  err.code = "VALIDACION";
+  return err;
+}
+
+/**
+ * Agrupa cantidades por pileta de engorda cuando la procedencia es interna.
+ * @returns {{ movimientosInternos: { piletaOrigenId: number, cantidad: number }[], cantidadExterna: number }}
+ */
+export function analizarProcedenciaSeleccionInterna(body, campos) {
+  const tipoMachos = String(
+    pickRepro(body, "fc_tipo_procedencia_machos", "tipo_procedencia_machos") ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  const tipoHembras = String(
+    pickRepro(body, "fc_tipo_procedencia_hembras", "tipo_procedencia_hembras") ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  const piletaMachos = toIntRepro(
+    pickRepro(body, "fc_procedencia_machos_pileta_id", "procedencia_machos_pileta_id"),
+  );
+  const piletaHembras = toIntRepro(
+    pickRepro(body, "fc_procedencia_hembras_pileta_id", "procedencia_hembras_pileta_id"),
+  );
+
+  const tieneTipos = Boolean(tipoMachos || tipoHembras);
+  const movimientosInternos = new Map();
+  let cantidadExterna = 0;
+
+  const acumularInterno = (tipo, piletaId, cantidad) => {
+    if (tipo !== "interna" || !piletaId || cantidad <= 0) return;
+    movimientosInternos.set(piletaId, (movimientosInternos.get(piletaId) || 0) + cantidad);
+  };
+
+  const acumularExterno = (tipo, cantidad) => {
+    if (tipo === "interna" || cantidad <= 0) return;
+    cantidadExterna += cantidad;
+  };
+
+  acumularInterno(tipoMachos, piletaMachos, campos.machos ?? 0);
+  acumularInterno(tipoHembras, piletaHembras, campos.hembras ?? 0);
+
+  if (tieneTipos) {
+    if (tipoMachos === "interna" && (campos.machos ?? 0) > 0 && !piletaMachos) {
+      throw errValidacion("Debe seleccionar la pileta de engorda para procedencia interna de machos");
+    }
+    if (tipoHembras === "interna" && (campos.hembras ?? 0) > 0 && !piletaHembras) {
+      throw errValidacion("Debe seleccionar la pileta de engorda para procedencia interna de hembras");
+    }
+    acumularExterno(tipoMachos, campos.machos ?? 0);
+    acumularExterno(tipoHembras, campos.hembras ?? 0);
+  }
+
+  return {
+    tieneTipos,
+    movimientosInternos: [...movimientosInternos.entries()].map(([piletaOrigenId, cantidad]) => ({
+      piletaOrigenId,
+      cantidad,
+    })),
+    cantidadExterna,
+  };
+}
+
+async function assertPiletaEngorda(tx, piletaId, rol) {
+  const id = toInt(piletaId);
+  if (!id) throw errValidacion(`pileta de ${rol} inválida para selección interna`);
+
+  const pil = await tx.pileta.findUnique({
+    where: { id },
+    select: { id: true, nombre: true, tipo: true },
+  });
+  if (!pil) throw errValidacion(`Pileta de ${rol} no encontrada`);
+  if (pil.tipo !== "engorda") {
+    throw errValidacion(
+      `La pileta de ${rol} '${pil.nombre}' debe ser de engorda para selección interna`,
+    );
+  }
+  return pil;
+}
+
+async function assertPiletaReproductores(tx, piletaId) {
+  const id = toInt(piletaId);
+  if (!id) throw errValidacion("pileta destino inválida");
+
+  const pil = await tx.pileta.findUnique({
+    where: { id },
+    select: { id: true, nombre: true, tipo: true },
+  });
+  if (!pil) throw errValidacion("Pileta destino no encontrada");
+  if (pil.tipo !== "reproductores") {
+    throw errValidacion(`La pileta destino '${pil.nombre}' debe ser de reproductores`);
+  }
+  return pil;
+}
+
+/**
+ * Selección interna: traslado engorda → reproductores con descuento de inventario.
+ * @returns {Promise<number>} id de siembra
+ */
+export async function registrarMovimientoEngordaAReproductor(
+  tx,
+  { piletaOrigenId, piletaDestinoId, cantidad, usuarioId, observacion },
+) {
+  const origen = toInt(piletaOrigenId);
+  const destino = toInt(piletaDestinoId);
+  const cant = Math.floor(Number(cantidad) || 0);
+  if (!origen || !destino || cant <= 0) {
+    throw errValidacion("Origen, destino y cantidad son obligatorios para selección interna");
+  }
+  if (origen === destino) {
+    throw errValidacion("La pileta de engorda no puede ser la misma pileta de reproductores");
+  }
+
+  const pilOr = await assertPiletaEngorda(tx, origen, "origen");
+  await assertPiletaReproductores(tx, destino);
+
+  const stock = await cantidadVigenteEnPileta(tx, pilOr.id, "engorda");
+  if (cant > stock) {
+    throw errValidacion(
+      `Stock insuficiente en '${pilOr.nombre}': disponible ${stock}, solicitado ${cant}`,
+    );
+  }
+
+  const siembraId = await crearSiembraMovimiento(tx, {
+    piletaOrigenId: origen,
+    piletaDestinoId: destino,
+    cantidadEntera: cant,
+    usuarioId,
+  });
+  if (!siembraId) {
+    const err = new Error("No se pudo crear el movimiento de trazabilidad hacia reproductores");
+    err.code = "SIEMBRA_FAIL";
+    throw err;
+  }
+
+  await descontarEngordaPorEgresoHaciaEngorda(tx, origen, {
+    piletaDestinoId: destino,
+    cantidad_total: cant,
+    siembraOrigenId: siembraId,
+    observacion,
+    usuarioId,
+    procesoObservacion: "reproductor",
+  });
+
+  return siembraId;
+}
+
+/**
+ * Registra uno o más traslados engorda → reproductores según procedencia interna.
+ * @returns {Promise<number[]>} ids de siembra creados
+ */
+export async function registrarSeleccionInternaDesdeEngorda(
+  tx,
+  { piletaDestinoId, movimientos, usuarioId, observacion },
+) {
+  const ids = [];
+  for (const mov of movimientos ?? []) {
+    const id = await registrarMovimientoEngordaAReproductor(tx, {
+      piletaOrigenId: mov.piletaOrigenId,
+      piletaDestinoId,
+      cantidad: mov.cantidad,
+      usuarioId,
+      observacion,
+    });
+    ids.push(id);
+  }
+  return ids;
 }

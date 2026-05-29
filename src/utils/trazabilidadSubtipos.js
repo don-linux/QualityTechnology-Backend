@@ -24,6 +24,12 @@ export const SUBTIPOS_TRAZABILIDAD = {
     etapaOrigen: "engorda",
     etapaDestino: "engorda",
   },
+  ENGORDA_A_REPRODUCTORES: {
+    label: "De engorda a reproductores",
+    modo: "TRASLADO",
+    etapaOrigen: "engorda",
+    etapaDestino: "reproductores",
+  },
   ENGORDA_A_VENTA: {
     label: "De engorda a venta",
     modo: "VENTA",
@@ -159,5 +165,8 @@ export function labelSubtipoMovimiento(pilOr, pilDest, esVenta, mortalidadRegist
   if (o === "alevinaje" && d === "alevinaje") return SUBTIPOS_TRAZABILIDAD.ALEVINAJE_A_ALEVINAJE.label;
   if (o === "alevinaje" && d === "engorda") return SUBTIPOS_TRAZABILIDAD.ALEVINAJE_A_ENGORDA.label;
   if (o === "engorda" && d === "engorda") return SUBTIPOS_TRAZABILIDAD.ENGORDA_A_ENGORDA.label;
+  if (o === "engorda" && d === "reproductores") {
+    return SUBTIPOS_TRAZABILIDAD.ENGORDA_A_REPRODUCTORES.label;
+  }
   return null;
 }

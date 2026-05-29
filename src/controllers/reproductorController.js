@@ -1,7 +1,7 @@
 import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import { aplicarEstadoPiletaPorCantidad, analizarProcedenciaSeleccionInterna, registrarSeleccionInternaDesdeEngorda } from "../utils/reproductorInventario.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
@@ -153,7 +153,28 @@ class ReproductorController {
 
       const creado = await prisma.$transaction(async (tx) => {
         let siembraOrigenId = siembraOrigenIdBody ?? null;
-        if (!siembraOrigenId && cantidadTotal > 0) {
+        const { tieneTipos, movimientosInternos, cantidadExterna } =
+          analizarProcedenciaSeleccionInterna(req.body, campos);
+
+        if (!siembraOrigenId && movimientosInternos.length > 0) {
+          const siembraIds = await registrarSeleccionInternaDesdeEngorda(tx, {
+            piletaDestinoId: piletaId,
+            movimientos: movimientosInternos,
+            usuarioId,
+            observacion: obsTexto,
+          });
+          siembraOrigenId = siembraIds[0] ?? null;
+        }
+
+        if (!siembraOrigenId && cantidadExterna > 0) {
+          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
+            piletaOrigenId: null,
+            piletaDestinoId: piletaId,
+            cantidadEntera: cantidadExterna,
+            usuarioId,
+          });
+          if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
+        } else if (!siembraOrigenId && !tieneTipos && cantidadTotal > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
             piletaOrigenId: origenPiletaId,
             piletaDestinoId: piletaId,
@@ -192,7 +213,10 @@ class ReproductorController {
         data: serializeReproductor(creado),
       });
     } catch (err) {
-      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO") {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO" || err.code === "VALIDACION") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "ENGORDA_CANTIDAD_INSUFICIENTE") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
