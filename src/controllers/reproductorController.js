@@ -2,22 +2,21 @@ import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
-import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import {
+  parseReproductorCampos,
+  pickRepro,
+  toIntRepro,
+} from "../utils/reproductorCampos.js";
 
 function pick(body, ...keys) {
-  for (const k of keys) {
-    if (body[k] !== undefined && body[k] !== null && body[k] !== "") return body[k];
-  }
-  return undefined;
+  return pickRepro(body, ...keys);
 }
 
 function toInt(value, fallback = null) {
-  if (value === undefined || value === null || value === "") return fallback;
-  const n = Number(value);
-  return Number.isInteger(n) ? n : fallback;
+  return toIntRepro(value, fallback);
 }
 
 async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaReproductorId) {
@@ -48,6 +47,11 @@ const reproductorInclude = {
         orderBy: { created_at: "desc" },
         take: 1,
         select: { comentario: true, proceso: true, created_at: true },
+      },
+      biometrias: {
+        orderBy: { fecha: "desc" },
+        take: 1,
+        select: { fecha: true },
       },
     },
   },
@@ -112,13 +116,8 @@ class ReproductorController {
       const piletaId = toInt(
         pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
       );
-      const cantidadTotal = Math.max(
-        0,
-        toInt(
-          pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad", "fn_cantidad"),
-          0,
-        ) ?? 0,
-      );
+      const campos = parseReproductorCampos(req.body);
+      const cantidadTotal = campos.cantidad_total;
       const cantidadAlimento = Math.max(
         0,
         toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
@@ -128,7 +127,9 @@ class ReproductorController {
         return res.status(400).json({ error: "pileta_id (pileta de reproductores) es obligatorio" });
       }
       if (cantidadTotal <= 0) {
-        return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
+        return res.status(400).json({
+          error: "Debe indicar al menos un macho o una hembra (total de reproductores mayor a 0)",
+        });
       }
 
       const pil = await prisma.pileta.findUnique({
@@ -169,17 +170,14 @@ class ReproductorController {
           proceso: "reproductor",
         });
 
-        const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
-
         const creadoNuevo = await tx.reproductor.create({
           data: {
             pileta_id: piletaId,
-            cantidad_total: cantidadTotal,
+            ...campos,
             cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
             siembra_origen_id: siembraOrigenId ?? null,
-            peso: pesoHistorialId,
           },
           include: reproductorInclude,
         });
@@ -194,10 +192,7 @@ class ReproductorController {
         data: serializeReproductor(creado),
       });
     } catch (err) {
-      if (err.code === "BAD_SIEMBRA" || err.code === "BAD_HISTORIAL_PESO") {
-        return res.status(400).json({ error: err.message });
-      }
-      if (err.code === "SIEMBRA_DESTINO") {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
@@ -239,15 +234,73 @@ class ReproductorController {
         piletaId = nid;
       }
 
-      if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
-        const ct = toInt(
-          pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad", "fn_cantidad"),
-          0,
-        ) ?? 0;
-        if (ct <= 0) {
-          return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
+      const tocaInventarioRepro =
+        req.body.machos !== undefined ||
+        req.body.fn_machos !== undefined ||
+        req.body.hembras !== undefined ||
+        req.body.fn_hembras !== undefined ||
+        req.body.genetica_machos !== undefined ||
+        req.body.fc_genetica_machos !== undefined ||
+        req.body.familia_machos !== undefined ||
+        req.body.fc_familia_machos !== undefined ||
+        req.body.procedencia_machos !== undefined ||
+        req.body.fc_procedencia_machos !== undefined ||
+        req.body.genetica_hembras !== undefined ||
+        req.body.fc_genetica_hembras !== undefined ||
+        req.body.familia_hembras !== undefined ||
+        req.body.fc_familia_hembras !== undefined ||
+        req.body.procedencia_hembras !== undefined ||
+        req.body.fc_procedencia_hembras !== undefined ||
+        req.body.talla !== undefined ||
+        req.body.fn_talla !== undefined;
+
+      if (tocaInventarioRepro) {
+        const prevFull = await prisma.reproductor.findUnique({
+          where: { id },
+          select: {
+            machos: true,
+            hembras: true,
+            genetica_machos: true,
+            familia_machos: true,
+            procedencia_machos: true,
+            genetica_hembras: true,
+            familia_hembras: true,
+            procedencia_hembras: true,
+            talla: true,
+          },
+        });
+        const merged = {
+          machos:
+            req.body.machos !== undefined || req.body.fn_machos !== undefined
+              ? pick(req.body, "machos", "fn_machos")
+              : prevFull?.machos,
+          hembras:
+            req.body.hembras !== undefined || req.body.fn_hembras !== undefined
+              ? pick(req.body, "hembras", "fn_hembras")
+              : prevFull?.hembras,
+          genetica_machos:
+            pick(req.body, "genetica_machos", "fc_genetica_machos") ?? prevFull?.genetica_machos,
+          familia_machos:
+            pick(req.body, "familia_machos", "fc_familia_machos") ?? prevFull?.familia_machos,
+          procedencia_machos:
+            pick(req.body, "procedencia_machos", "fc_procedencia_machos") ??
+            prevFull?.procedencia_machos,
+          genetica_hembras:
+            pick(req.body, "genetica_hembras", "fc_genetica_hembras") ?? prevFull?.genetica_hembras,
+          familia_hembras:
+            pick(req.body, "familia_hembras", "fc_familia_hembras") ?? prevFull?.familia_hembras,
+          procedencia_hembras:
+            pick(req.body, "procedencia_hembras", "fc_procedencia_hembras") ??
+            prevFull?.procedencia_hembras,
+          talla: pick(req.body, "talla", "fn_talla") ?? prevFull?.talla,
+        };
+        const campos = parseReproductorCampos(merged);
+        if (campos.cantidad_total <= 0) {
+          return res.status(400).json({
+            error: "Debe indicar al menos un macho o una hembra (total de reproductores mayor a 0)",
+          });
         }
-        updateData.cantidad_total = ct;
+        Object.assign(updateData, campos);
       }
 
       if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
@@ -275,15 +328,6 @@ class ReproductorController {
 
       const actualizado = await prisma.$transaction(async (tx) => {
         await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
-
-        if (
-          req.body.peso_kg !== undefined ||
-          req.body.peso_valor !== undefined ||
-          req.body.historial_peso_id !== undefined ||
-          req.body.peso_id !== undefined
-        ) {
-          updateData.peso = await resolverHistorialPesoId(tx, req.body);
-        }
 
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
@@ -320,7 +364,7 @@ class ReproductorController {
         data: serializeReproductor(actualizado),
       });
     } catch (err) {
-      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO" || err.code === "BAD_HISTORIAL_PESO") {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });

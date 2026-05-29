@@ -100,6 +100,8 @@ const piletaInclude = {
     select: {
       id: true,
       pileta_id: true,
+      machos: true,
+      hembras: true,
       cantidad_total: true,
       cantidad_alimento: true,
     },

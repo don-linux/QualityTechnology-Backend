@@ -206,14 +206,28 @@ export function toNumberSafe(value) {
   return value;
 }
 
+function diasDesdeFecha(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const f = new Date(fecha);
+  if (Number.isNaN(f.getTime())) return null;
+  f.setHours(0, 0, 0, 0);
+  return Math.floor((hoy - f) / (1000 * 60 * 60 * 24));
+}
+
 export function serializeReproductor(r) {
   if (!r) return null;
   const piletaUlt = Array.isArray(r.piletas?.observaciones) ? r.piletas.observaciones[0] : null;
   const obsBio = r.biometrias?.observacionBiometria;
   const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
   const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
-  const hp = r.historial_peso ?? null;
-  const cantidad = r.cantidad_total ?? 0;
+  const fechaBioPileta = r.piletas?.biometrias?.[0]?.fecha ?? null;
+  const fechaBiometria = r.biometrias?.fecha ?? fechaBioPileta ?? null;
+  const fechaSiembra = r.siembra_origen?.fecha ?? null;
+  const machos = r.machos ?? 0;
+  const hembras = r.hembras ?? 0;
+  const cantidad = r.cantidad_total ?? machos + hembras;
 
   return {
     fi_reproductor_id: r.id,
@@ -227,27 +241,46 @@ export function serializeReproductor(r) {
     nombre_pileta: r.piletas?.nombre ?? null,
     nombre_pileta_destino: r.piletas?.nombre ?? null,
     fc_granja: r.piletas?.ubicacion?.nombre ?? null,
+    machos,
+    fn_machos: machos,
+    genetica_machos: r.genetica_machos ?? null,
+    fc_genetica_machos: r.genetica_machos ?? null,
+    familia_machos: r.familia_machos ?? null,
+    fc_familia_machos: r.familia_machos ?? null,
+    procedencia_machos: r.procedencia_machos ?? null,
+    fc_procedencia_machos: r.procedencia_machos ?? null,
+    hembras,
+    fn_hembras: hembras,
+    genetica_hembras: r.genetica_hembras ?? null,
+    fc_genetica_hembras: r.genetica_hembras ?? null,
+    familia_hembras: r.familia_hembras ?? null,
+    fc_familia_hembras: r.familia_hembras ?? null,
+    procedencia_hembras: r.procedencia_hembras ?? null,
+    fc_procedencia_hembras: r.procedencia_hembras ?? null,
     cantidad_total: cantidad,
     cantidad,
     fn_cantidad: cantidad,
+    ratio: r.ratio ?? null,
+    fc_ratio: r.ratio ?? null,
+    talla: r.talla != null ? Number(r.talla) : null,
+    fn_talla: r.talla != null ? Number(r.talla) : null,
     cantidad_alimento: r.cantidad_alimento ?? 0,
-    historial_peso_id: r.peso ?? null,
-    peso: hp?.peso != null ? Number(hp.peso) : null,
-    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
-    fecha_peso: hp?.fecha ?? null,
-    fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: r.siembra_origen_id ?? null,
     siembra_origen_pileta:
       r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
     siembra_origen_cantidad: r.siembra_origen?.cantidad
       ? Number(r.siembra_origen.cantidad)
       : null,
-    siembra_origen_fecha: r.siembra_origen?.fecha ?? null,
+    siembra_origen_fecha: fechaSiembra,
     origen_pileta_id: r.siembra_origen?.pileta_origen ?? null,
     origen_nombre_pileta: r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    fd_fecha_siembra: fechaSiembra,
+    fn_dias_en_pila: diasDesdeFecha(fechaSiembra),
+    dias_en_pila: diasDesdeFecha(fechaSiembra),
     biometria_id: r.biometria_id ?? null,
-    fd_fecha_biometria: r.biometrias?.fecha ?? null,
-    fd_fecha_siembra: r.siembra_origen?.fecha ?? null,
+    fd_fecha_biometria: fechaBiometria,
+    fn_dias_biometria: diasDesdeFecha(fechaBiometria),
+    dias_transcurridos_biometria: diasDesdeFecha(fechaBiometria),
     fc_observacion: r.observacion?.comentario ?? null,
     observacion: r.observacion?.comentario ?? null,
     observacion_id: r.observacion_id ?? null,

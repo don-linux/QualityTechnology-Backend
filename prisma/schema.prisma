@@ -143,16 +143,26 @@ model UnidadNegocio {
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `reproductores` (cantidad, alimento, peso). Varios registros por pileta; el último por `id` es el vigente.
+/// Inventario operativo en pileta tipo `reproductores`. Varios registros por pileta; el último por `id` es el vigente.
 model Reproductor {
-  id                Int            @id @default(autoincrement())
-  pileta_id         Int
-  cantidad_total    Int            @default(0)
-  cantidad_alimento Int            @default(0)
-  observacion_id    Int?
-  biometria_id      Int?
-  siembra_origen_id Int?           @map("siembra_origen_id")
-  peso              Int?
+  id                 Int            @id @default(autoincrement())
+  pileta_id          Int
+  machos             Int            @default(0)
+  genetica_machos    String?        @db.VarChar(60)
+  familia_machos     String?        @db.VarChar(60)
+  procedencia_machos String?        @db.VarChar(100)
+  hembras            Int            @default(0)
+  genetica_hembras   String?        @db.VarChar(60)
+  familia_hembras    String?        @db.VarChar(60)
+  procedencia_hembras String?       @db.VarChar(100)
+  cantidad_total     Int            @default(0)
+  ratio              String?        @db.VarChar(20)
+  talla              Decimal?       @db.Decimal(10, 2)
+  cantidad_alimento  Int            @default(0)
+  observacion_id     Int?
+  biometria_id       Int?
+  siembra_origen_id  Int?           @map("siembra_origen_id")
+  peso               Int?
   biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion       observacion?   @relation(fields: [observacion_id], references: [id])
