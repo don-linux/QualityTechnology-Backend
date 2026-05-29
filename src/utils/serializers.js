@@ -208,44 +208,54 @@ export function toNumberSafe(value) {
 
 export function serializeReproductor(r) {
   if (!r) return null;
-  const listaObs = r.piletas?.observaciones;
-  const ultObs = Array.isArray(listaObs) ? listaObs[0] : null;
-  const fechaBioDirecta = r.biometrias?.fecha ?? null;
-  const fechaBioUltimaPileta = r.piletas?.biometrias?.[0]?.fecha ?? null;
-  const fd_fecha_biometria = fechaBioDirecta ?? fechaBioUltimaPileta ?? null;
+  const piletaUlt = Array.isArray(r.piletas?.observaciones) ? r.piletas.observaciones[0] : null;
+  const obsBio = r.biometrias?.observacionBiometria;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const hp = r.historial_peso ?? null;
+  const cantidad = r.cantidad_total ?? 0;
 
   return {
     fi_reproductor_id: r.id,
+    fi_id: r.id,
+    id: r.id,
     reproductor_id: r.id,
     pileta_id: r.pileta_id,
+    fi_pileta_destino_id: r.pileta_id,
+    pileta_destino_id: r.pileta_id,
     nombre_instalacion: r.piletas?.nombre ?? null,
     nombre_pileta: r.piletas?.nombre ?? null,
-    fn_machos: r.machos,
-    fn_hembras: r.hembras,
-    fn_cantidad: Number(r.machos || 0) + Number(r.hembras || 0),
-    fn_talla: r.talla,
-    talla: r.talla,
-    fc_ratio: r.ratio,
-    ratio: r.ratio,
-    fc_linea: r.linea,
-    linea: r.linea,
-    fc_familia: r.familia,
-    familia: r.familia,
-    siembra_id: r.siembra_id ?? null,
-    biometria_id: r.biometria_id ?? null,
-    /** Fecha del movimiento `siembra` vinculado (traslado/ingreso a esta pileta). */
-    fd_fecha_siembra: r.siembra?.fecha ?? null,
-    /** Última biometría: puntero del reproductor o, si no hay, la más reciente de la pileta. */
-    fd_fecha_biometria,
-    /** Alta del inventario repro (fallback para “días en pila” si aún no hay siembra vinculada). */
-    fd_alta_reproductor: r.created_at ?? null,
+    nombre_pileta_destino: r.piletas?.nombre ?? null,
     fc_granja: r.piletas?.ubicacion?.nombre ?? null,
-    fi_usuario_id: r.usuarioId,
+    cantidad_total: cantidad,
+    cantidad,
+    fn_cantidad: cantidad,
+    cantidad_alimento: r.cantidad_alimento ?? 0,
+    historial_peso_id: r.peso ?? null,
+    peso: hp?.peso != null ? Number(hp.peso) : null,
+    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    fecha_peso: hp?.fecha ?? null,
+    fd_fecha_peso: hp?.fecha ?? null,
+    siembra_origen_id: r.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: r.siembra_origen?.cantidad
+      ? Number(r.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: r.siembra_origen?.fecha ?? null,
+    origen_pileta_id: r.siembra_origen?.pileta_origen ?? null,
+    origen_nombre_pileta: r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    biometria_id: r.biometria_id ?? null,
+    fd_fecha_biometria: r.biometrias?.fecha ?? null,
+    fd_fecha_siembra: r.siembra_origen?.fecha ?? null,
     fc_observacion: r.observacion?.comentario ?? null,
-    observacion_id: r.observacionId ?? null,
-    fc_ultima_observacion_pileta: ultObs?.comentario ?? null,
-    fc_ultima_observacion_proceso: ultObs?.proceso ?? null,
-    fd_ultima_observacion_pileta: ultObs?.created_at ?? null,
+    observacion: r.observacion?.comentario ?? null,
+    observacion_id: r.observacion_id ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
   };
 }
 
@@ -253,9 +263,9 @@ export function serializeReproductor(r) {
 export function calcularCantidadPileta(p) {
   if (!p) return 0;
 
-  const rep = p.reproductores;
-  if (rep) {
-    return Number(rep.machos || 0) + Number(rep.hembras || 0) || 0;
+  const repRows = Array.isArray(p.reproductores) ? p.reproductores : p.reproductores ? [p.reproductores] : [];
+  if (repRows.length > 0) {
+    return cantidadVigenteDesdeRegistrosPeriodicos(repRows);
   }
 
   const engRows = Array.isArray(p.engorda) ? p.engorda : p.engorda ? [p.engorda] : [];
@@ -429,7 +439,7 @@ export function serializeSiembra(s) {
       : s.cantidad != null
         ? Number(s.cantidad)
         : null;
-  const familiaOrigen = pilOr?.reproductores?.familia ?? null;
+  const familiaOrigen = null;
 
   return {
     fi_siembra_id: s.id,

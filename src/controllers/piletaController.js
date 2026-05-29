@@ -97,7 +97,12 @@ const piletaInclude = {
   ubicacion: true,
   tipoPileta: true,
   reproductores: {
-    select: { machos: true, hembras: true },
+    select: {
+      id: true,
+      pileta_id: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+    },
   },
   engorda: {
     select: {

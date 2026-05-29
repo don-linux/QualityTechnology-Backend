@@ -456,14 +456,6 @@ class ControlReproductivoController {
       const piletaId = toInt(req.params.piletaId);
       if (!piletaId) return res.json(null);
 
-      const rep = await prisma.reproductor.findUnique({
-        where: { pileta_id: piletaId },
-        select: { familia: true },
-      });
-      if (rep?.familia != null && rep.familia !== "") {
-        return res.json({ familia: rep.familia });
-      }
-
       const filas = await prisma.controlReproductivo.findMany({
         where: { pileta_origen_reproductora_id: piletaId },
         orderBy: { id: "desc" },

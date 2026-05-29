@@ -47,7 +47,6 @@ model Usuario {
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   refreshTokens      RefreshToken[]
-  reproductores      Reproductor[]
   siembra            siembra[]
   rol                Rol                @relation(fields: [rolId], references: [id])
   ventas             Venta[]
@@ -144,32 +143,23 @@ model UnidadNegocio {
   @@schema("public")
 }
 
-/// Etapa inicial del ciclo en pileta tipo `reproductores`. `familia` es referencia principal para el lote en alevinaje.
+/// Inventario operativo en pileta tipo `reproductores` (cantidad, alimento, peso). Varios registros por pileta; el último por `id` es el vigente.
 model Reproductor {
-  id             Int          @id @default(autoincrement())
-  pileta_id      Int          @unique
-  machos         Int          @default(0)
-  hembras        Int          @default(0)
-  talla          Decimal?     @db.Decimal(10, 2)
-  ratio          String?      @db.VarChar(20)
-  linea          String?      @db.VarChar(60)
-  familia        String?      @db.VarChar(60)
-  /// Puntero opcional al comentario de este registro; la “última nota por pileta” se consulta vía `observacion.pileta_id` + `created_at`.
-  observacionId  Int?         @map("observacion_id")
-  /// Última siembra relevante para este inventario (denormalización opcional).
-  siembra_id     Int?
-  biometria_id   Int?
-  usuarioId      Int          @map("usuario_id")
-  created_at     DateTime     @default(now()) @db.Timestamp(6)
-  updated_at     DateTime     @updatedAt @db.Timestamp(6)
-  biometrias     Biometria?   @relation(fields: [biometria_id], references: [id])
-  observacion    observacion? @relation(fields: [observacionId], references: [id])
-  piletas        Pileta       @relation(fields: [pileta_id], references: [id])
-  siembra        siembra?     @relation(fields: [siembra_id], references: [id])
-  usuario        Usuario      @relation(fields: [usuarioId], references: [id])
+  id                Int            @id @default(autoincrement())
+  pileta_id         Int
+  cantidad_total    Int            @default(0)
+  cantidad_alimento Int            @default(0)
+  observacion_id    Int?
+  biometria_id      Int?
+  siembra_origen_id Int?           @map("siembra_origen_id")
+  peso              Int?
+  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
+  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
+  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
+  siembra_origen    siembra?       @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
-  @@index([familia])
-  @@index([linea])
+  @@index([pileta_id])
   @@map("reproductores")
   @@schema("public")
 }
@@ -203,7 +193,7 @@ model Pileta {
   tipoPileta                              TipoPileta?        @relation(fields: [tipoPiletaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   ubicacion                               ubicacion          @relation(fields: [ubicacionId], references: [id])
   recambios                               Recambio[]
-  reproductores                           Reproductor?
+  reproductores                           Reproductor[]
   siembra_siembra_pileta_destinoTopiletas siembra[]          @relation("siembra_pileta_destinoTopiletas")
   siembra_siembra_pileta_origenTopiletas  siembra[]          @relation("siembra_pileta_origenTopiletas")
   lista_espera                            ListaEspera[]
@@ -862,8 +852,9 @@ model HistorialPeso {
   id        Int         @id @default(autoincrement())
   peso      Decimal     @db.Decimal(10, 3)
   fecha     DateTime    @default(now()) @db.Date
-  alevinaje   alevinaje[]
-  engorda     Engorda[]
+  alevinaje     alevinaje[]
+  engorda       Engorda[]
+  reproductores Reproductor[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")
@@ -973,7 +964,7 @@ model siembra {
   incubaciones_como_origen                incubacion[]          @relation("IncubacionSiembraOrigen")
   controlReproductivos_como_origen        ControlReproductivo[] @relation("ControlReproSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
-  reproductores                           Reproductor[]
+  reproductores_como_origen               Reproductor[]     @relation("ReproductorSiembraOrigen")
   venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
   piletas_siembra_pileta_destinoTopiletas Pileta?       @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
   piletas_siembra_pileta_origenTopiletas  Pileta?       @relation("siembra_pileta_origenTopiletas", fields: [pileta_origen], references: [id])

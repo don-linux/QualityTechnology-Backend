@@ -1,14 +1,11 @@
 import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
+import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import { resolverHistorialPesoId } from "./historialPesoController.js";
+import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
-
-// El schema actual reemplaza la relacion Reproductor->Instalacion (con
-// ubicacion) por una relacion 1-1 Reproductor<->Pileta (la pileta tiene
-// ubicacionId). Tampoco existe `trazaReproductor` ni fechas de siembra y
-// biometria en el modelo: se reemplazaron por FKs siembra_id y biometria_id.
-// Trazabilidad de movimientos se expone vía registros `siembra`; el endpoint
-// de instalaciones heredado sigue en 501 hasta rediseño.
+import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -23,93 +20,24 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-function toDecimal(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function totalReproductor(r) {
-  return Number(r?.machos || 0) + Number(r?.hembras || 0);
-}
-
-function calcularRatio(machos, hembras) {
-  if (machos > 0 && hembras > 0) {
-    const r = hembras / machos;
-    return `1:${Math.round(r * 100) / 100}`;
-  }
-  return null;
-}
-
-/** Sincroniza `Pileta.estado` en el módulo de piletas físicas (vacía / ocupada). */
-async function aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal) {
-  const id = toInt(piletaId);
-  if (!id) return;
-  const estado = cantidadTotal > 0 ? "ocupada" : "vacia";
-  await tx.pileta.update({
-    where: { id },
-    data: { estado },
+async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaReproductorId) {
+  if (!siembraOrigenId) return;
+  const s = await tx.siembra.findUnique({
+    where: { id: siembraOrigenId },
+    select: { id: true, pileta_destino: true },
   });
-}
-
-import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
-
-/** Descuenta organismo en pileta interna que alimentó el destino (traslado). Si todo sale → borra repro y pileta vacía. */
-async function consumirInventarioOrigenPorTraslado(
-  tx,
-  { piletaOrigenId, piletaDestinoId, cantidadMovida, excludeReproductorId },
-) {
-  const ori = toInt(piletaOrigenId);
-  const dest = toInt(piletaDestinoId);
-  const mov = Math.floor(Number(cantidadMovida) || 0);
-  if (!ori || !dest || ori === dest || mov <= 0) return;
-
-  const repOrig = await tx.reproductor.findUnique({
-    where: { pileta_id: ori },
-    select: { id: true, machos: true, hembras: true },
-  });
-  if (!repOrig) return;
-  if (excludeReproductorId != null && repOrig.id === excludeReproductorId) return;
-
-  const m0 = repOrig.machos;
-  const h0 = repOrig.hembras;
-  if (m0 + h0 <= 0) return;
-
-  const sacar = Math.min(mov, m0 + h0);
-
-  let m = m0;
-  let h = h0;
-
-  if (sacar >= m + h) {
-    await tx.reproductor.delete({ where: { id: repOrig.id } });
-    await aplicarEstadoPiletaPorCantidad(tx, ori, 0);
-    return;
+  if (!s) {
+    const err = new Error("siembra_origen_id inválido");
+    err.code = "BAD_SIEMBRA";
+    throw err;
   }
-
-  let rest = sacar;
-  while (rest > 0 && m + h > 0) {
-    if (m >= h && m > 0) {
-      m -= 1;
-      rest -= 1;
-      continue;
-    }
-    if (h > 0) {
-      h -= 1;
-      rest -= 1;
-      continue;
-    }
-    break;
+  if (Number(s.pileta_destino) !== Number(piletaReproductorId)) {
+    const err = new Error(
+      "La siembra seleccionada debe tener como destino la misma pileta de reproductores",
+    );
+    err.code = "SIEMBRA_DESTINO";
+    throw err;
   }
-  const cantidadActual = m + h;
-  await tx.reproductor.update({
-    where: { id: repOrig.id },
-    data: {
-      machos: m,
-      hembras: h,
-      ratio: calcularRatio(m, h),
-    },
-  });
-  await aplicarEstadoPiletaPorCantidad(tx, ori, cantidadActual);
 }
 
 const reproductorInclude = {
@@ -121,230 +49,269 @@ const reproductorInclude = {
         take: 1,
         select: { comentario: true, proceso: true, created_at: true },
       },
-      biometrias: {
-        orderBy: { fecha: "desc" },
-        take: 1,
-        select: { fecha: true },
-      },
     },
   },
   observacion: true,
-  siembra: { select: { fecha: true } },
-  biometrias: { select: { fecha: true } },
+  biometrias: { include: { observacionBiometria: true } },
+  siembra_origen: {
+    include: {
+      piletas_siembra_pileta_origenTopiletas: true,
+    },
+  },
+  historial_peso: true,
 };
 
 class ReproductorController {
   static async getAll(req, res) {
     try {
-      const reproductores = await prisma.reproductor.findMany({
+      const piletaIdQ = toInt(req.query.pileta_id);
+      const where = {};
+      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.piletas = ubicClause;
+      if (piletaIdQ) where.pileta_id = piletaIdQ;
+
+      const rows = await prisma.reproductor.findMany({
+        where,
         include: reproductorInclude,
         orderBy: { id: "desc" },
       });
-      res.json(reproductores.map(serializeReproductor));
+
+      const historial =
+        req.query.historial === "1" ||
+        String(req.query.historial || "").toLowerCase() === "true";
+      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      res.json(vista.map(serializeReproductor));
     } catch (err) {
-      console.error("Error reproductores:", err);
-      res.status(500).json({ error: "Error al obtener reproductores" });
+      console.error("GET /reproductores Error:", err);
+      res.status(500).json({ error: "Error obteniendo registros de reproductores" });
     }
   }
 
   static async getByGranja(req, res) {
+    return ReproductorController.getAll(req, res);
+  }
+
+  static async getById(req, res) {
     try {
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (!ubicClause) return res.json([]);
-      const reproductores = await prisma.reproductor.findMany({
-        where: {
-          piletas: ubicClause,
-        },
+      const id = toInt(req.params.id);
+      if (!id) return res.status(400).json({ error: "id invalido" });
+      const row = await prisma.reproductor.findUnique({
+        where: { id },
         include: reproductorInclude,
-        orderBy: { id: "desc" },
       });
-      res.json(reproductores.map(serializeReproductor));
+      if (!row) return res.status(404).json({ error: "Registro no encontrado" });
+      res.json(serializeReproductor(row));
     } catch (err) {
-      console.error("Error reproductores por granja:", err);
-      res.status(500).json({ error: "Error al obtener reproductores" });
+      console.error("GET /reproductores/:id Error:", err);
+      res.status(500).json({ error: "Error obteniendo registro" });
     }
   }
 
   static async create(req, res) {
     try {
-      const piletaId = toInt(pick(req.body, "pileta_id", "piletaId", "fi_pileta_id"));
+      const piletaId = toInt(
+        pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
+      );
+      const cantidadTotal = Math.max(
+        0,
+        toInt(
+          pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad", "fn_cantidad"),
+          0,
+        ) ?? 0,
+      );
+      const cantidadAlimento = Math.max(
+        0,
+        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
+      );
+
       if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id es obligatorio" });
+        return res.status(400).json({ error: "pileta_id (pileta de reproductores) es obligatorio" });
+      }
+      if (cantidadTotal <= 0) {
+        return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
       }
 
-      const machos = toInt(pick(req.body, "machos", "fn_machos"), 0) ?? 0;
-      const hembras = toInt(pick(req.body, "hembras", "fn_hembras"), 0) ?? 0;
-      const cantidadTotal = machos + hembras;
-      const ratio = calcularRatio(machos, hembras);
+      const pil = await prisma.pileta.findUnique({
+        where: { id: piletaId },
+        select: { id: true, tipo: true, nombre: true },
+      });
+      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (pil.tipo !== "reproductores") {
+        return res.status(400).json({
+          error: `La pileta '${pil.nombre}' debe ser tipo reproductores`,
+        });
+      }
+
       const usuarioId = req.user.usuario_id;
-      const obsTexto = pick(req.body, "observacion", "fc_observacion");
+      const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
+      const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
+      const origenPiletaId = toInt(
+        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+      );
+      const biometriaId = toInt(pick(req.body, "biometria_id"));
 
       const creado = await prisma.$transaction(async (tx) => {
-        const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId,
-          proceso: "reproductor",
-        });
-
-        const origenPiletaId = toInt(
-          pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
-        );
-        let siembraId = null;
-        if (cantidadTotal > 0) {
-          siembraId = await crearSiembraMovimiento(tx, {
+        let siembraOrigenId = siembraOrigenIdBody ?? null;
+        if (!siembraOrigenId && cantidadTotal > 0) {
+          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
             piletaOrigenId: origenPiletaId,
             piletaDestinoId: piletaId,
             cantidadEntera: cantidadTotal,
             usuarioId,
           });
+          if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
+        } else if (siembraOrigenId) {
+          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
         }
 
-        const repro = await tx.reproductor.create({
+        const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
+          piletaId,
+          proceso: "reproductor",
+        });
+
+        const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
+
+        const creadoNuevo = await tx.reproductor.create({
           data: {
             pileta_id: piletaId,
-            machos,
-            hembras,
-            talla: toDecimal(pick(req.body, "talla", "fn_talla")),
-            ratio,
-            linea: pick(req.body, "linea", "fc_linea") ?? null,
-            familia: pick(req.body, "familia", "fc_familia") ?? null,
-            observacionId: obsId,
-            usuarioId,
-            ...(siembraId != null ? { siembra_id: siembraId } : {}),
+            cantidad_total: cantidadTotal,
+            cantidad_alimento: cantidadAlimento,
+            observacion_id: obsId,
+            biometria_id: biometriaId ?? null,
+            siembra_origen_id: siembraOrigenId ?? null,
+            peso: pesoHistorialId,
           },
           include: reproductorInclude,
         });
+
         await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
-
-        await consumirInventarioOrigenPorTraslado(tx, {
-          piletaOrigenId: origenPiletaId,
-          piletaDestinoId: piletaId,
-          cantidadMovida: cantidadTotal,
-          excludeReproductorId: repro.id,
-        });
-
-        return repro;
+        return creadoNuevo;
       });
 
       res.status(201).json({
         success: true,
-        mensaje: "Reproductor registrado correctamente",
+        mensaje: "Registro periódico de reproductores guardado",
         data: serializeReproductor(creado),
       });
     } catch (err) {
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Esa pileta ya tiene un reproductor asociado" });
+      if (err.code === "BAD_SIEMBRA" || err.code === "BAD_HISTORIAL_PESO") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "SIEMBRA_DESTINO") {
+        return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta invalida" });
+        return res.status(400).json({ error: "Pileta o referencias inválidas" });
       }
-      console.error("Error registrar reproductor:", err);
+      console.error("POST /reproductores Error:", err);
       res.status(500).json({ error: "Error al registrar reproductor", detalle: err.message });
     }
   }
 
   static async update(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-
     try {
-      const antes = await prisma.reproductor.findUnique({
+      const id = toInt(req.params.id);
+      if (!id) return res.status(400).json({ error: "id invalido" });
+
+      const prev = await prisma.reproductor.findUnique({
         where: { id },
-        select: { pileta_id: true, machos: true, hembras: true },
+        select: { pileta_id: true, siembra_origen_id: true },
       });
-      if (!antes) return res.status(404).json({ error: "Reproductor no encontrado" });
+      if (!prev) return res.status(404).json({ error: "Reproductor no encontrado" });
 
       const updateData = {};
+      let piletaId = prev.pileta_id;
 
-      const piletaId = toInt(pick(req.body, "pileta_id", "piletaId", "fi_pileta_id"));
-      if (piletaId !== null) updateData.pileta_id = piletaId;
-
-      const machosIn = pick(req.body, "machos", "fn_machos");
-      const hembrasIn = pick(req.body, "hembras", "fn_hembras");
-      const machos = machosIn !== undefined ? toInt(machosIn, 0) ?? 0 : null;
-      const hembras = hembrasIn !== undefined ? toInt(hembrasIn, 0) ?? 0 : null;
-      if (machos !== null) updateData.machos = machos;
-      if (hembras !== null) updateData.hembras = hembras;
-
-      if (machos !== null || hembras !== null) {
-        const finalMachos = machos ?? antes.machos;
-        const finalHembras = hembras ?? antes.hembras;
-        updateData.ratio = calcularRatio(finalMachos, finalHembras);
+      if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
+        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
+        if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
+        const pd = await prisma.pileta.findUnique({
+          where: { id: nid },
+          select: { tipo: true, nombre: true },
+        });
+        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (pd.tipo !== "reproductores") {
+          return res.status(400).json({
+            error: `La pileta '${pd.nombre}' debe ser tipo reproductores`,
+          });
+        }
+        updateData.pileta_id = nid;
+        piletaId = nid;
       }
 
-      if (req.body.talla !== undefined || req.body.fn_talla !== undefined) {
-        updateData.talla = toDecimal(pick(req.body, "talla", "fn_talla"));
-      }
-      if (req.body.linea !== undefined || req.body.fc_linea !== undefined) {
-        updateData.linea = pick(req.body, "linea", "fc_linea") ?? null;
-      }
-      if (req.body.familia !== undefined || req.body.fc_familia !== undefined) {
-        updateData.familia = pick(req.body, "familia", "fc_familia") ?? null;
+      if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
+        const ct = toInt(
+          pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad", "fn_cantidad"),
+          0,
+        ) ?? 0;
+        if (ct <= 0) {
+          return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
+        }
+        updateData.cantidad_total = ct;
       }
 
-      const obsTexto = pick(req.body, "observacion", "fc_observacion");
+      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
+        updateData.cantidad_alimento =
+          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
+      }
+
+      if (req.body.siembra_origen_id !== undefined) {
+        updateData.siembra_origen_id = toInt(req.body.siembra_origen_id);
+      }
+      if (req.body.biometria_id !== undefined) {
+        updateData.biometria_id = toInt(req.body.biometria_id);
+      }
+
       const usuarioId = req.user.usuario_id;
-      const piletaParaObs = piletaId !== null ? piletaId : null;
+      const obsTextoExplicito =
+        req.body.observacion !== undefined ||
+        req.body.fc_observacion !== undefined ||
+        req.body.observaciones !== undefined;
+
+      const siembraOrigenFuturo =
+        updateData.siembra_origen_id !== undefined
+          ? updateData.siembra_origen_id
+          : prev.siembra_origen_id;
 
       const actualizado = await prisma.$transaction(async (tx) => {
-        if (obsTexto !== undefined) {
-          const piletaResolver =
-            piletaParaObs ??
-            (await tx.reproductor.findUnique({
-              where: { id },
-              select: { pileta_id: true },
-            }))?.pileta_id;
-          const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-            piletaId: piletaResolver ?? undefined,
-            proceso: "reproductor",
-          });
-          if (obsId) updateData.observacionId = obsId;
+        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
+
+        if (
+          req.body.peso_kg !== undefined ||
+          req.body.peso_valor !== undefined ||
+          req.body.historial_peso_id !== undefined ||
+          req.body.peso_id !== undefined
+        ) {
+          updateData.peso = await resolverHistorialPesoId(tx, req.body);
         }
+
+        if (obsTextoExplicito) {
+          const obsId = await crearObservacionSiHay(
+            tx,
+            pick(req.body, "observacion", "fc_observacion", "observaciones"),
+            usuarioId,
+            { piletaId, proceso: "reproductor" },
+          );
+          if (obsId) updateData.observacion_id = obsId;
+        }
+
         const row = await tx.reproductor.update({
           where: { id },
           data: updateData,
           include: reproductorInclude,
         });
 
-        const piletaActual = row.pileta_id;
-        if (antes.pileta_id !== piletaActual) {
-          await aplicarEstadoPiletaPorCantidad(tx, antes.pileta_id, 0);
-        }
-        await aplicarEstadoPiletaPorCantidad(tx, piletaActual, totalReproductor(row));
-
-        const origenPiletaReq = toInt(pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"));
-        const mismoDestino = row.pileta_id === antes.pileta_id;
-        const totalAntes = totalReproductor(antes);
-        const totalActual = totalReproductor(row);
-        const cantidadMovimiento = mismoDestino
-          ? Math.max(0, totalActual - totalAntes)
-          : Math.max(0, totalActual);
-
-        if (cantidadMovimiento > 0) {
-          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: origenPiletaReq,
-            piletaDestinoId: piletaActual,
-            cantidadEntera: cantidadMovimiento,
-            usuarioId,
-          });
-          if (nuevaSiembraId != null) {
-            await tx.reproductor.update({
-              where: { id },
-              data: { siembra_id: nuevaSiembraId },
-            });
-          }
-
-          await consumirInventarioOrigenPorTraslado(tx, {
-            piletaOrigenId: origenPiletaReq,
-            piletaDestinoId: piletaActual,
-            cantidadMovida: cantidadMovimiento,
-            excludeReproductorId: id,
-          });
+        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
+          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "reproductores");
+          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
         }
 
-        return tx.reproductor.findUnique({
-          where: { id },
-          include: reproductorInclude,
-        });
+        if (updateData.pileta_id !== undefined && prev.pileta_id !== piletaId) {
+          const vigentePrev = await cantidadVigenteEnPileta(tx, prev.pileta_id, "reproductores");
+          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigentePrev);
+        }
+
+        return row;
       });
 
       res.json({
@@ -353,8 +320,11 @@ class ReproductorController {
         data: serializeReproductor(actualizado),
       });
     } catch (err) {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO" || err.code === "BAD_HISTORIAL_PESO") {
+        return res.status(400).json({ error: err.message });
+      }
       if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });
-      console.error("Error actualizar reproductor:", err);
+      console.error("PUT /reproductores/:id Error:", err);
       res.status(500).json({ error: "Error al actualizar reproductor", detalle: err.message });
     }
   }
@@ -364,16 +334,21 @@ class ReproductorController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const existe = await prisma.reproductor.findUnique({
-        where: { id },
-        select: { pileta_id: true },
-      });
-      if (!existe) return res.status(404).json({ error: "Reproductor no encontrado" });
-
       await prisma.$transaction(async (tx) => {
+        const prev = await tx.reproductor.findUnique({
+          where: { id },
+          select: { pileta_id: true },
+        });
+        if (!prev) {
+          const err = new Error("Reproductor no encontrado");
+          err.code = "P2025";
+          throw err;
+        }
         await tx.reproductor.delete({ where: { id } });
-        await aplicarEstadoPiletaPorCantidad(tx, existe.pileta_id, 0);
+        const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "reproductores");
+        await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
       });
+
       res.json({ success: true, mensaje: "Reproductor eliminado" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });
@@ -382,11 +357,10 @@ class ReproductorController {
           error: "No se puede eliminar: el reproductor tiene registros relacionados.",
         });
       }
-      console.error("Error eliminar:", err);
+      console.error("Error eliminar reproductor:", err);
       res.status(500).json({ error: "Error al eliminar reproductor" });
     }
   }
-
 }
 
 export default ReproductorController;

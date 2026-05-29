@@ -14,7 +14,7 @@ const siembraListInclude = {
       id: true,
       nombre: true,
       tipo: true,
-      reproductores: { select: { familia: true } },
+      reproductores: { select: { id: true, cantidad_total: true } },
     },
   },
   piletas_siembra_pileta_destinoTopiletas: {

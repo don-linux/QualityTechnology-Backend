@@ -54,11 +54,20 @@ export function cantidadVigenteDesdeRegistrosPeriodicos(rows) {
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
  * @param {number} piletaId
- * @param {"alevinaje"|"engorda"|"incubacion"} etapa
+ * @param {"alevinaje"|"engorda"|"incubacion"|"reproductores"} etapa
  */
 export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
   const id = Number(piletaId);
   if (!Number.isFinite(id)) return 0;
+
+  if (etapa === "reproductores") {
+    const row = await tx.reproductor.findFirst({
+      where: { pileta_id: id },
+      orderBy: { id: "desc" },
+      select: { cantidad_total: true },
+    });
+    return row?.cantidad_total ?? 0;
+  }
 
   if (etapa === "alevinaje") {
     const row = await tx.alevinaje.findFirst({
