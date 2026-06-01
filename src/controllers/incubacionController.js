@@ -4,6 +4,10 @@ import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import {
+  loteGeneticoDesdeEventoCosecha,
+  normalizarLoteIncubacion,
+} from "../utils/incubacionLote.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -28,18 +32,6 @@ function toDateOrNull(value) {
   if (value === undefined || value === null || value === "") return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function normalizarLote(value) {
-  const lote = String(value ?? "")
-    .trim()
-    .toUpperCase();
-  if (!/^[A-Z0-9-]+$/.test(lote)) {
-    const err = new Error("El lote solo admite letras, números y guion");
-    err.code = "BAD_LOTE";
-    throw err;
-  }
-  return lote;
 }
 
 function calcularDiasEnPileta(fechaIngreso, fechaEgreso) {
@@ -178,7 +170,7 @@ class IncubacionController {
         });
       }
 
-      const lote = loteRaw ? normalizarLote(loteRaw) : null;
+      const lote = loteRaw ? normalizarLoteIncubacion(loteRaw) : null;
       const huevosMl = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
       const diasBody = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
       const diasEnPileta =
@@ -204,7 +196,10 @@ class IncubacionController {
         if (eventoCosechaId) {
           const ev = await tx.eventoCosecha.findUnique({
             where: { id: eventoCosechaId },
-            include: { incubacion: { select: { id: true } } },
+            include: {
+              incubacion: { select: { id: true } },
+              reproductor: { select: { lote_genetico: true } },
+            },
           });
           if (!ev) {
             const err = new Error("evento_cosecha_id inválido");
@@ -222,9 +217,7 @@ class IncubacionController {
           if (!fechaIngresoFinal && ev.fecha_cosecha) {
             fechaIngresoFinal = ev.fecha_cosecha;
           }
-          if (!loteFinal && ev.codigo) {
-            loteFinal = normalizarLote(ev.codigo.replace(/^EV-/, "INC-"));
-          }
+          loteFinal = loteGeneticoDesdeEventoCosecha(ev);
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
@@ -262,6 +255,7 @@ class IncubacionController {
     } catch (err) {
       if (
         err.code === "BAD_LOTE" ||
+        err.code === "BAD_LOTE_GENETICO" ||
         err.code === "BAD_SIEMBRA" ||
         err.code === "BAD_EVENTO" ||
         err.code === "EVENTO_YA_RECIBIDO"
@@ -296,6 +290,7 @@ class IncubacionController {
           siembra_origen_id: true,
           fecha_ingreso: true,
           fecha_egreso: true,
+          evento_cosecha_id: true,
         },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
@@ -318,8 +313,13 @@ class IncubacionController {
         piletaId = nid;
       }
 
-      if (req.body.lote !== undefined || req.body.fc_lote !== undefined) {
-        updateData.lote = normalizarLote(pick(req.body, "lote", "fc_lote", "no_lote"));
+      if (
+        (req.body.lote !== undefined || req.body.fc_lote !== undefined) &&
+        !prev.evento_cosecha_id
+      ) {
+        updateData.lote = normalizarLoteIncubacion(
+          pick(req.body, "lote", "fc_lote", "no_lote"),
+        );
       }
 
       if (req.body.huevos_ml !== undefined || req.body.fn_huevos_ml !== undefined) {
@@ -411,6 +411,7 @@ class IncubacionController {
     } catch (err) {
       if (
         err.code === "BAD_LOTE" ||
+        err.code === "BAD_LOTE_GENETICO" ||
         err.code === "BAD_SIEMBRA" ||
         err.code === "SIEMBRA_DESTINO"
       ) {

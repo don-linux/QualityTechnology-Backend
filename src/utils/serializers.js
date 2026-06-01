@@ -560,6 +560,10 @@ export function serializeIncubacion(i) {
     fc_granja: i.piletas?.ubicacion?.nombre ?? null,
     lote: i.lote ?? null,
     fc_lote: i.lote ?? null,
+    lote_genetico:
+      i.evento_cosecha?.reproductor?.lote_genetico ?? i.lote ?? null,
+    fc_lote_genetico:
+      i.evento_cosecha?.reproductor?.lote_genetico ?? i.lote ?? null,
     huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
     fn_huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
     fecha_ingreso: i.fecha_ingreso ?? null,
