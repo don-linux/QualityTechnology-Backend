@@ -583,6 +583,12 @@ export function serializeIncubacion(i) {
 
 export function serializeControlReproductivo(r) {
   if (!r) return null;
+  const piletaUlt = Array.isArray(r.piletas?.observaciones) ? r.piletas.observaciones[0] : null;
+  const obsBio = r.biometrias?.observacionBiometria;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const hp = r.historial_peso ?? null;
+
   return {
     fi_id: r.id,
     id: r.id,
@@ -592,40 +598,29 @@ export function serializeControlReproductivo(r) {
     nombre_pileta_destino: r.piletas?.nombre ?? null,
     nombre_pileta: r.piletas?.nombre ?? null,
     fc_granja: r.piletas?.ubicacion?.nombre ?? null,
-    pileta_origen_reproductora_id: r.pileta_origen_reproductora_id ?? null,
-    fi_instalacion_id: r.pileta_origen_reproductora_id ?? null,
-    instalacion_id: r.pileta_origen_reproductora_id ?? null,
-    nombre_pileta_origen: r.pileta_origen_reproductora?.nombre ?? null,
-    nombre_instalacion: r.pileta_origen_reproductora?.nombre ?? null,
-    fecha: r.fecha ?? null,
-    fd_fecha: r.fecha ?? null,
-    lote: r.lote ?? null,
-    fc_lote: r.lote ?? null,
-    familia: r.familia ?? null,
-    fc_familia: r.familia ?? null,
-    huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
-    fn_huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
-    ovadas: r.ovadas ?? 0,
-    fn_ovadas: r.ovadas ?? 0,
-    machos: r.machos ?? 0,
-    fn_machos: r.machos ?? 0,
-    hembras: r.hembras ?? 0,
-    fn_hembras: r.hembras ?? 0,
     cantidad_total: r.cantidad_total ?? 0,
-    fn_cantidad_total: r.cantidad_total ?? 0,
-    alevines_iniciales: r.alevines_iniciales ?? 0,
-    fn_alevines_iniciales: r.alevines_iniciales ?? 0,
-    mortalidad: r.mortalidad ?? 0,
-    fn_mortalidad: r.mortalidad ?? 0,
-    mortalidad_porcentaje:
-      r.mortalidad_porcentaje != null ? Number(r.mortalidad_porcentaje) : 0,
+    cantidad_alimento: r.cantidad_alimento ?? 0,
+    historial_peso_id: r.peso ?? null,
+    peso: hp?.peso != null ? Number(hp.peso) : null,
+    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    fecha_peso: hp?.fecha ?? null,
+    fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: r.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: r.siembra_origen?.cantidad
+      ? Number(r.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: r.siembra_origen?.fecha ?? null,
     biometria_id: r.biometria_id ?? null,
     fc_observacion: r.observacion?.comentario ?? null,
     observacion: r.observacion?.comentario ?? null,
     observacion_id: r.observacion_id ?? null,
-    created_at: r.created_at ?? null,
-    updated_at: r.updated_at ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
   };
 }
 

@@ -6,15 +6,6 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get(
-  "/reproductores/:granja",
-  controlReproductivoController.getReproductoresOcupadas,
-);
-router.get(
-  "/familia-por-pileta/:piletaId",
-  controlReproductivoController.getFamiliaPorPileta,
-);
-
 router.get("/", controlReproductivoController.getAll);
 router.get("/:id", controlReproductivoController.getById);
 router.post("/", controlReproductivoController.create);

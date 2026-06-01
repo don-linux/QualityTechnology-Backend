@@ -1,26 +1,11 @@
 import prisma from "../prisma.js";
 import { serializeControlReproductivo } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import {
-  piletaWhereUbicacionFromRequest,
-  ubicacionNombreWhereFromGranja,
-  primerUbicacionIdValido,
-  resolverUbicacionFlexible,
-} from "../utils/granjaUbicacion.js";
-
-async function filtroUbicacionPiletaDesdeReq(req, granjaParam) {
-  const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
-  if (ubicIdQ != null) return { ubicacionId: ubicIdQ };
-
-  const g = String(granjaParam ?? "").trim();
-  if (!g) return null;
-
-  const flex = await resolverUbicacionFlexible(g);
-  if (flex?.ubicacionId != null) return { ubicacionId: flex.ubicacionId };
-
-  const cond = ubicacionNombreWhereFromGranja(g);
-  return cond ? { ubicacion: cond } : null;
-}
+import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { resolverHistorialPesoId } from "./historialPesoController.js";
+import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
+import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -35,34 +20,37 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-function toDecimal(value, fallback = null) {
-  if (value === undefined || value === null || value === "") return fallback;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function calcMortalidadPct(alevinesIniciales, mortalidad) {
-  const ai = Math.max(0, alevinesIniciales || 0);
-  const m = Math.max(0, mortalidad || 0);
-  if (ai <= 0) return 0;
-  return Math.round((m / ai) * 10000) / 100;
-}
-
-function normalizarLote(value) {
-  const lote = String(value ?? "")
-    .trim()
-    .toUpperCase();
-  if (!/^[A-Z0-9-]+$/.test(lote)) {
-    const err = new Error("El lote solo admite letras, números y guion");
-    err.code = "BAD_LOTE";
+async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId) {
+  if (!siembraOrigenId) return;
+  const s = await tx.siembra.findUnique({
+    where: { id: siembraOrigenId },
+    select: { id: true, pileta_destino: true },
+  });
+  if (!s) {
+    const err = new Error("siembra_origen_id inválido");
+    err.code = "BAD_SIEMBRA";
     throw err;
   }
-  return lote;
+  if (Number(s.pileta_destino) !== Number(piletaId)) {
+    const err = new Error(
+      "La siembra seleccionada debe tener como destino la misma pileta de control reproductivo",
+    );
+    err.code = "SIEMBRA_DESTINO";
+    throw err;
+  }
 }
 
 const controlReproductivoInclude = {
-  piletas: { include: { ubicacion: true } },
-  pileta_origen_reproductora: { include: { ubicacion: true } },
+  piletas: {
+    include: {
+      ubicacion: true,
+      observaciones: {
+        orderBy: { created_at: "desc" },
+        take: 1,
+        select: { comentario: true, proceso: true, created_at: true },
+      },
+    },
+  },
   observacion: true,
   biometrias: { include: { observacionBiometria: true } },
   siembra_origen: {
@@ -72,6 +60,7 @@ const controlReproductivoInclude = {
       },
     },
   },
+  historial_peso: true,
 };
 
 class ControlReproductivoController {
@@ -88,7 +77,12 @@ class ControlReproductivoController {
         include: controlReproductivoInclude,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeControlReproductivo));
+
+      const historial =
+        req.query.historial === "1" ||
+        String(req.query.historial || "").toLowerCase() === "true";
+      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      res.json(vista.map(serializeControlReproductivo));
     } catch (err) {
       console.error("GET /control-reproductivo Error:", err);
       res.status(500).json({ error: "Error obteniendo registros de control reproductivo" });
@@ -116,116 +110,89 @@ class ControlReproductivoController {
       const piletaId = toInt(
         pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
       );
-      const piletaOrigenId = toInt(
-        pick(req.body, "pileta_origen_reproductora_id", "fi_instalacion_id", "instalacion_id"),
-      );
-      const loteRaw = pick(req.body, "lote", "fc_lote", "no_lote");
-      const alevinesIniciales = Math.max(
-        0,
-        toInt(pick(req.body, "alevines_iniciales", "fn_alevines_iniciales"), 0) ?? 0,
-      );
-      const mortalidad = Math.max(
-        0,
-        toInt(pick(req.body, "mortalidad", "fn_mortalidad"), 0) ?? 0,
-      );
-      const machos = Math.max(0, toInt(pick(req.body, "machos", "fn_machos"), 0) ?? 0);
-      const hembras = Math.max(0, toInt(pick(req.body, "hembras", "fn_hembras"), 0) ?? 0);
       const cantidadTotal = Math.max(
         0,
-        toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), machos + hembras) ??
-          machos + hembras,
+        toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), 0) ?? 0,
       );
-      const ovadas = Math.max(0, toInt(pick(req.body, "ovadas", "fn_ovadas"), 0) ?? 0);
+      const cantidadAlimento = Math.max(
+        0,
+        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
+      );
 
       if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de alevinaje destino) es obligatorio" });
+        return res.status(400).json({ error: "pileta_id (pileta reproductora) es obligatorio" });
       }
-      if (!loteRaw) {
-        return res.status(400).json({ error: "lote es obligatorio" });
+      if (cantidadTotal <= 0) {
+        return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
       }
-      if (alevinesIniciales <= 0) {
-        return res.status(400).json({ error: "alevines_iniciales debe ser mayor a 0" });
-      }
-      if (mortalidad > alevinesIniciales) {
-        return res.status(400).json({ error: "mortalidad no puede superar alevines_iniciales" });
-      }
-
-      const lote = normalizarLote(loteRaw);
 
       const pil = await prisma.pileta.findUnique({
         where: { id: piletaId },
         select: { id: true, tipo: true, nombre: true },
       });
-      if (!pil) return res.status(400).json({ error: "Pileta destino no existe" });
-      if (pil.tipo !== "alevinaje") {
+      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (pil.tipo !== "reproductores") {
         return res.status(400).json({
-          error: `La pileta destino '${pil.nombre}' debe ser tipo alevinaje`,
+          error: `La pileta '${pil.nombre}' debe ser tipo reproductores`,
         });
-      }
-
-      if (piletaOrigenId) {
-        const po = await prisma.pileta.findUnique({
-          where: { id: piletaOrigenId },
-          select: { tipo: true, nombre: true },
-        });
-        if (!po) return res.status(400).json({ error: "Pileta reproductora origen no existe" });
-        if (po.tipo !== "reproductores") {
-          return res.status(400).json({
-            error: `La pileta origen '${po.nombre}' debe ser tipo reproductores`,
-          });
-        }
       }
 
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
-      const siembraOrigenId = toInt(pick(req.body, "siembra_origen_id"));
+      const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
+      const origenPiletaId = toInt(
+        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+      );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
-      const fechaRaw = pick(req.body, "fecha", "fd_fecha");
-      const familia = pick(req.body, "familia", "fc_familia");
-      const huevosMl = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
 
       const creado = await prisma.$transaction(async (tx) => {
+        let siembraOrigenId = siembraOrigenIdBody ?? null;
+        if (!siembraOrigenId && cantidadTotal > 0) {
+          const nuevaSiembraId = await crearSiembraMovimiento(tx, {
+            piletaOrigenId: origenPiletaId,
+            piletaDestinoId: piletaId,
+            cantidadEntera: cantidadTotal,
+            usuarioId,
+          });
+          if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
+        } else if (siembraOrigenId) {
+          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+        }
+
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId,
           proceso: "control_reproductivo",
         });
 
+        const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
+
         const creadoNuevo = await tx.controlReproductivo.create({
           data: {
             pileta_id: piletaId,
-            pileta_origen_reproductora_id: piletaOrigenId ?? null,
-            fecha: fechaRaw ? new Date(fechaRaw) : new Date(),
-            lote,
-            familia: familia != null ? String(familia).slice(0, 60) : null,
-            huevos_ml: huevosMl,
-            ovadas,
-            machos,
-            hembras,
             cantidad_total: cantidadTotal,
-            alevines_iniciales: alevinesIniciales,
-            mortalidad,
-            mortalidad_porcentaje: calcMortalidadPct(alevinesIniciales, mortalidad),
+            cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
             siembra_origen_id: siembraOrigenId ?? null,
-            usuario_id: usuarioId,
+            peso: pesoHistorialId,
           },
           include: controlReproductivoInclude,
         });
 
+        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
         return creadoNuevo;
       });
 
       res.status(201).json({
-        mensaje: "Registro de control reproductivo creado",
+        mensaje: "Registro periódico de control reproductivo guardado",
         data: serializeControlReproductivo(creado),
       });
     } catch (err) {
-      if (err.code === "BAD_LOTE") {
+      if (err.code === "BAD_SIEMBRA" || err.code === "BAD_HISTORIAL_PESO") {
         return res.status(400).json({ error: err.message });
       }
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un lote con ese código en la pileta destino" });
+      if (err.code === "SIEMBRA_DESTINO") {
+        return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta o referencias inválidas" });
@@ -242,18 +209,12 @@ class ControlReproductivoController {
 
       const prev = await prisma.controlReproductivo.findUnique({
         where: { id },
-        select: {
-          pileta_id: true,
-          alevines_iniciales: true,
-          mortalidad: true,
-        },
+        select: { pileta_id: true, siembra_origen_id: true },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
       let piletaId = prev.pileta_id;
-      let alevinesIniciales = prev.alevines_iniciales;
-      let mortalidad = prev.mortalidad;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
         const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
@@ -262,99 +223,27 @@ class ControlReproductivoController {
           where: { id: nid },
           select: { tipo: true, nombre: true },
         });
-        if (!pd) return res.status(400).json({ error: "Pileta destino no existe" });
-        if (pd.tipo !== "alevinaje") {
-          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo alevinaje` });
+        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (pd.tipo !== "reproductores") {
+          return res.status(400).json({
+            error: `La pileta '${pd.nombre}' debe ser tipo reproductores`,
+          });
         }
         updateData.pileta_id = nid;
         piletaId = nid;
       }
 
-      if (
-        req.body.pileta_origen_reproductora_id !== undefined ||
-        req.body.fi_instalacion_id !== undefined
-      ) {
-        const oid = toInt(
-          pick(req.body, "pileta_origen_reproductora_id", "fi_instalacion_id", "instalacion_id"),
-        );
-        if (oid) {
-          const po = await prisma.pileta.findUnique({
-            where: { id: oid },
-            select: { tipo: true, nombre: true },
-          });
-          if (!po) return res.status(400).json({ error: "Pileta reproductora origen no existe" });
-          if (po.tipo !== "reproductores") {
-            return res.status(400).json({
-              error: `La pileta origen '${po.nombre}' debe ser tipo reproductores`,
-            });
-          }
-        }
-        updateData.pileta_origen_reproductora_id = oid;
-      }
-
-      if (req.body.lote !== undefined || req.body.fc_lote !== undefined) {
-        updateData.lote = normalizarLote(pick(req.body, "lote", "fc_lote", "no_lote"));
-      }
-
-      if (req.body.fecha !== undefined || req.body.fd_fecha !== undefined) {
-        const f = pick(req.body, "fecha", "fd_fecha");
-        if (f) updateData.fecha = new Date(f);
-      }
-
-      if (req.body.familia !== undefined || req.body.fc_familia !== undefined) {
-        const fam = pick(req.body, "familia", "fc_familia");
-        updateData.familia = fam != null ? String(fam).slice(0, 60) : null;
-      }
-
-      if (req.body.huevos_ml !== undefined || req.body.fn_huevos_ml !== undefined) {
-        updateData.huevos_ml = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
-      }
-
-      if (req.body.ovadas !== undefined || req.body.fn_ovadas !== undefined) {
-        updateData.ovadas = Math.max(0, toInt(pick(req.body, "ovadas", "fn_ovadas"), 0) ?? 0);
-      }
-
-      if (req.body.machos !== undefined || req.body.fn_machos !== undefined) {
-        updateData.machos = Math.max(0, toInt(pick(req.body, "machos", "fn_machos"), 0) ?? 0);
-      }
-
-      if (req.body.hembras !== undefined || req.body.fn_hembras !== undefined) {
-        updateData.hembras = Math.max(0, toInt(pick(req.body, "hembras", "fn_hembras"), 0) ?? 0);
-      }
-
       if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
-        updateData.cantidad_total = Math.max(
-          0,
-          toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), 0) ?? 0,
-        );
-      }
-
-      if (req.body.alevines_iniciales !== undefined || req.body.fn_alevines_iniciales !== undefined) {
-        const ai = toInt(pick(req.body, "alevines_iniciales", "fn_alevines_iniciales"), 0) ?? 0;
-        if (ai <= 0) {
-          return res.status(400).json({ error: "alevines_iniciales debe ser mayor a 0" });
+        const ct = toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), 0) ?? 0;
+        if (ct <= 0) {
+          return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
         }
-        updateData.alevines_iniciales = ai;
-        alevinesIniciales = ai;
+        updateData.cantidad_total = ct;
       }
 
-      if (req.body.mortalidad !== undefined || req.body.fn_mortalidad !== undefined) {
-        updateData.mortalidad = Math.max(
-          0,
-          toInt(pick(req.body, "mortalidad", "fn_mortalidad"), 0) ?? 0,
-        );
-        mortalidad = updateData.mortalidad;
-      }
-
-      if (mortalidad > alevinesIniciales) {
-        return res.status(400).json({ error: "mortalidad no puede superar alevines_iniciales" });
-      }
-
-      if (
-        updateData.mortalidad !== undefined ||
-        updateData.alevines_iniciales !== undefined
-      ) {
-        updateData.mortalidad_porcentaje = calcMortalidadPct(alevinesIniciales, mortalidad);
+      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
+        updateData.cantidad_alimento =
+          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
       }
 
       if (req.body.siembra_origen_id !== undefined) {
@@ -370,7 +259,23 @@ class ControlReproductivoController {
         req.body.fc_observacion !== undefined ||
         req.body.observaciones !== undefined;
 
+      const siembraOrigenFuturo =
+        updateData.siembra_origen_id !== undefined
+          ? updateData.siembra_origen_id
+          : prev.siembra_origen_id;
+
       const actualizado = await prisma.$transaction(async (tx) => {
+        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
+
+        if (
+          req.body.peso_kg !== undefined ||
+          req.body.peso_valor !== undefined ||
+          req.body.historial_peso_id !== undefined ||
+          req.body.peso_id !== undefined
+        ) {
+          updateData.peso = await resolverHistorialPesoId(tx, req.body);
+        }
+
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
@@ -381,11 +286,18 @@ class ControlReproductivoController {
           if (obsId) updateData.observacion_id = obsId;
         }
 
-        return tx.controlReproductivo.update({
+        const row = await tx.controlReproductivo.update({
           where: { id },
           data: updateData,
           include: controlReproductivoInclude,
         });
+
+        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
+          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "control_reproductivo");
+          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+        }
+
+        return row;
       });
 
       res.json({
@@ -393,11 +305,8 @@ class ControlReproductivoController {
         data: serializeControlReproductivo(actualizado),
       });
     } catch (err) {
-      if (err.code === "BAD_LOTE") {
+      if (err.code === "BAD_SIEMBRA" || err.code === "SIEMBRA_DESTINO" || err.code === "BAD_HISTORIAL_PESO") {
         return res.status(400).json({ error: err.message });
-      }
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un lote con ese código en la pileta destino" });
       }
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("PUT /control-reproductivo/:id Error:", err);
@@ -415,60 +324,6 @@ class ControlReproductivoController {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("DELETE /control-reproductivo/:id Error:", err);
       res.status(500).json({ error: "Error eliminando registro" });
-    }
-  }
-
-  static async getReproductoresOcupadas(req, res) {
-    try {
-      const granjaParam = String(req.params.granja ?? "").trim();
-      const filtroUb = await filtroUbicacionPiletaDesdeReq(req, granjaParam);
-      if (!filtroUb) return res.json([]);
-
-      const piletas = await prisma.pileta.findMany({
-        where: {
-          tipo: "reproductores",
-          estado: "ocupada",
-          ...filtroUb,
-        },
-        include: { ubicacion: true },
-        orderBy: { nombre: "asc" },
-      });
-
-      res.json(
-        piletas.map((p) => ({
-          fi_pileta_id: p.id,
-          pileta_id: p.id,
-          fi_instalacion_id: p.id,
-          instalacion_id: p.id,
-          nombre_pileta: p.nombre,
-          nombre_instalacion: p.nombre,
-          fc_granja: p.ubicacion?.nombre ?? null,
-        })),
-      );
-    } catch (err) {
-      console.error("GET /control-reproductivo/reproductores/:granja Error:", err);
-      res.status(500).json({ error: "Error al obtener piletas reproductoras" });
-    }
-  }
-
-  static async getFamiliaPorPileta(req, res) {
-    try {
-      const piletaId = toInt(req.params.piletaId);
-      if (!piletaId) return res.json(null);
-
-      const filas = await prisma.controlReproductivo.findMany({
-        where: { pileta_origen_reproductora_id: piletaId },
-        orderBy: { id: "desc" },
-        take: 20,
-        select: { familia: true },
-      });
-      const conFamilia = filas.find((row) => row.familia != null && row.familia !== "");
-      if (conFamilia?.familia) return res.json({ familia: conFamilia.familia });
-
-      res.json(null);
-    } catch (error) {
-      console.error("GET /control-reproductivo/familia-por-pileta/:piletaId Error:", error);
-      res.status(500).json({ error: "Error cargando familia" });
     }
   }
 }

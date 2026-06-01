@@ -31,7 +31,6 @@ model Usuario {
   esta_activo        Boolean            @default(true)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
-  controlReproductivo ControlReproductivo[]
   alimentacion       Alimentacion[]
   banos              Bano[]
   biometrias         Biometria[]
@@ -194,7 +193,6 @@ model Pileta {
   alevinaje                               alevinaje[]
   incubacion                              incubacion[]
   controlReproductivo                     ControlReproductivo[]
-  controlReproductivoOrigen               ControlReproductivo[] @relation("ControlReproPiletaOrigen")
   alimentacion                            Alimentacion[]
   biometrias                              Biometria[]
   engorda                                 Engorda[]
@@ -862,48 +860,33 @@ model HistorialPeso {
   id        Int         @id @default(autoincrement())
   peso      Decimal     @db.Decimal(10, 3)
   fecha     DateTime    @default(now()) @db.Date
-  alevinaje     alevinaje[]
-  engorda       Engorda[]
-  reproductores Reproductor[]
+  alevinaje             alevinaje[]
+  engorda               Engorda[]
+  reproductores         Reproductor[]
+  controlReproductivo   ControlReproductivo[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")
   @@schema("public")
 }
 
-/// Camada reproductiva (huevos, ovadas, lote). Antes tabla `alevinaje` / `alevinaje_old`.
+/// Inventario operativo en pileta tipo `reproductores` (cantidad, alimento, peso).
 model ControlReproductivo {
-  id                            Int          @id @default(autoincrement())
-  pileta_id                     Int
-  pileta_origen_reproductora_id Int?         @map("pileta_origen_reproductora_id")
-  fecha                         DateTime     @default(now()) @db.Date
-  lote                          String       @db.VarChar(60)
-  familia                       String?      @db.VarChar(60)
-  huevos_ml                     Decimal?     @db.Decimal(10, 2)
-  ovadas                        Int          @default(0)
-  machos                        Int          @default(0)
-  hembras                       Int          @default(0)
-  cantidad_total                Int          @default(0)
-  alevines_iniciales            Int
-  mortalidad                    Int          @default(0)
-  mortalidad_porcentaje         Decimal      @db.Decimal(6, 2)
-  observacion_id                Int?
-  biometria_id                  Int?
-  siembra_origen_id             Int?         @map("siembra_origen_id")
-  usuario_id                    Int
-  created_at                    DateTime     @default(now()) @db.Timestamp(6)
-  updated_at                    DateTime     @updatedAt @db.Timestamp(6)
-  biometrias                    Biometria?   @relation(fields: [biometria_id], references: [id])
-  observacion                   observacion? @relation(fields: [observacion_id], references: [id])
-  piletas                       Pileta       @relation(fields: [pileta_id], references: [id])
-  pileta_origen_reproductora    Pileta?      @relation("ControlReproPiletaOrigen", fields: [pileta_origen_reproductora_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  siembra_origen                siembra?     @relation("ControlReproSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
-  usuario                       Usuario      @relation(fields: [usuario_id], references: [id])
+  id                Int            @id @default(autoincrement())
+  pileta_id         Int
+  cantidad_total    Int            @default(0)
+  cantidad_alimento Int            @default(0)
+  observacion_id    Int?
+  biometria_id      Int?
+  siembra_origen_id Int?           @map("siembra_origen_id")
+  peso              Int?
+  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
+  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
+  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
+  siembra_origen    siembra?       @relation("ControlReproSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
-  @@unique([pileta_id, lote])
-  @@index([fecha(sort: Desc)])
-  @@index([lote])
-  @@index([pileta_origen_reproductora_id])
+  @@index([pileta_id])
   @@map("control_reproductivo")
   @@schema("public")
 }
