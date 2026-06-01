@@ -142,34 +142,64 @@ model UnidadNegocio {
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `reproductores`. Varios registros por pileta; el último por `id` es el vigente.
+/// Lote de reproductores activo en pileta tipo `reproductores`. Varios registros por pileta; el último por `id` es el vigente.
 model Reproductor {
-  id                 Int            @id @default(autoincrement())
-  pileta_id          Int
-  machos             Int            @default(0)
-  genetica_machos    String?        @db.VarChar(60)
-  familia_machos     String?        @db.VarChar(60)
-  procedencia_machos String?        @db.VarChar(100)
-  hembras            Int            @default(0)
-  genetica_hembras   String?        @db.VarChar(60)
-  familia_hembras    String?        @db.VarChar(60)
-  procedencia_hembras String?       @db.VarChar(100)
-  cantidad_total     Int            @default(0)
-  ratio              String?        @db.VarChar(20)
-  talla              Decimal?       @db.Decimal(10, 2)
-  cantidad_alimento  Int            @default(0)
-  observacion_id     Int?
-  biometria_id       Int?
-  siembra_origen_id  Int?           @map("siembra_origen_id")
-  peso               Int?
-  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
-  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
-  siembra_origen    siembra?       @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  id                    Int             @id @default(autoincrement())
+  pileta_id             Int
+  fecha_siembra         DateTime?       @db.Date @map("fecha_siembra")
+  lote_genetico         String?         @db.VarChar(120) @map("lote_genetico")
+  activo                Boolean         @default(true)
+  machos                Int             @default(0)
+  genetica_machos       String?         @db.VarChar(60)
+  familia_machos        String?         @db.VarChar(60)
+  procedencia_machos    String?         @db.VarChar(100)
+  hembras               Int             @default(0)
+  genetica_hembras      String?         @db.VarChar(60)
+  familia_hembras       String?         @db.VarChar(60)
+  procedencia_hembras   String?         @db.VarChar(100)
+  cantidad_total        Int             @default(0)
+  ratio                 String?         @db.VarChar(20)
+  talla                 Decimal?        @db.Decimal(10, 2)
+  cantidad_alimento     Int             @default(0)
+  observacion_id        Int?
+  biometria_id          Int?
+  siembra_origen_id     Int?            @map("siembra_origen_id")
+  peso                  Int?
+  biometrias            Biometria?      @relation(fields: [biometria_id], references: [id])
+  historial_peso        HistorialPeso?  @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  observacion           observacion?    @relation(fields: [observacion_id], references: [id])
+  piletas               Pileta          @relation(fields: [pileta_id], references: [id])
+  siembra_origen        siembra?        @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  eventos_cosecha       EventoCosecha[]
 
   @@index([pileta_id])
+  @@index([activo])
+  @@index([pileta_id, activo])
   @@map("reproductores")
+  @@schema("public")
+}
+
+/// Evento de cosecha / desove que enlaza un lote de reproductores con la incubación.
+model EventoCosecha {
+  id                 Int          @id @default(autoincrement())
+  codigo             String       @unique @db.VarChar(24)
+  reproductor_id     Int          @map("reproductor_id")
+  pileta_id          Int          @map("pileta_id")
+  fecha_cosecha      DateTime     @db.Date @map("fecha_cosecha")
+  tipo_cosecha       TipoCosecha  @map("tipo_cosecha")
+  estadio_desarrollo String?      @db.VarChar(80) @map("estadio_desarrollo")
+  volumen_ml         Decimal?     @db.Decimal(12, 2) @map("volumen_ml")
+  observacion_id     Int?
+  created_at         DateTime     @default(now()) @db.Timestamp(6)
+  reproductor        Reproductor  @relation(fields: [reproductor_id], references: [id], onDelete: Restrict)
+  piletas            Pileta       @relation(fields: [pileta_id], references: [id])
+  observacion        observacion? @relation(fields: [observacion_id], references: [id])
+  incubacion         incubacion?
+
+  @@index([pileta_id])
+  @@index([reproductor_id])
+  @@index([fecha_cosecha(sort: Desc)])
+  @@map("evento_cosecha")
   @@schema("public")
 }
 
@@ -192,7 +222,7 @@ model Pileta {
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
   incubacion                              incubacion[]
-  controlReproductivo                     ControlReproductivo[]
+  eventos_cosecha                         EventoCosecha[]
   alimentacion                            Alimentacion[]
   biometrias                              Biometria[]
   engorda                                 Engorda[]
@@ -581,7 +611,6 @@ model Biometria {
   observacionBiometria observacion? @relation("ObservacionBiometria")
   alevinaje             alevinaje[]
   incubacion            incubacion[]
-  controlReproductivo   ControlReproductivo[]
   piletas               Pileta        @relation(fields: [pileta_id], references: [id], onDelete: Cascade)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
   engorda               Engorda[]
@@ -835,24 +864,27 @@ model alevinaje {
 
 /// Inventario operativo en pileta tipo `incubacion` (lote, huevos/ml, fechas de estancia).
 model incubacion {
-  id                Int           @id @default(autoincrement())
+  id                Int            @id @default(autoincrement())
   pileta_id         Int
-  lote              String        @db.VarChar(60)
-  huevos_ml         Decimal?      @db.Decimal(10, 2)
-  fecha_ingreso     DateTime?     @db.Date
+  lote              String         @db.VarChar(60)
+  huevos_ml         Decimal?       @db.Decimal(10, 2)
+  fecha_ingreso     DateTime?      @db.Date
   dias_en_pileta    Int?
-  fecha_egreso      DateTime?     @db.Date
+  fecha_egreso      DateTime?      @db.Date
+  evento_cosecha_id Int?           @unique @map("evento_cosecha_id")
   observacion_id    Int?
   biometria_id      Int?
-  siembra_origen_id Int?          @map("siembra_origen_id")
-  biometrias        Biometria?    @relation(fields: [biometria_id], references: [id])
-  observacion       observacion?  @relation(fields: [observacion_id], references: [id])
-  piletas           Pileta        @relation(fields: [pileta_id], references: [id])
-  siembra_origen    siembra?      @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  siembra_origen_id Int?           @map("siembra_origen_id")
+  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
+  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
+  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
+  evento_cosecha    EventoCosecha? @relation(fields: [evento_cosecha_id], references: [id], onDelete: SetNull)
+  siembra_origen    siembra?       @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
   @@unique([pileta_id, lote])
   @@index([pileta_id])
   @@index([lote])
+  @@index([evento_cosecha_id])
   @@schema("public")
 }
 
@@ -863,31 +895,9 @@ model HistorialPeso {
   alevinaje             alevinaje[]
   engorda               Engorda[]
   reproductores         Reproductor[]
-  controlReproductivo   ControlReproductivo[]
 
   @@index([fecha(sort: Desc)])
   @@map("historial_peso")
-  @@schema("public")
-}
-
-/// Inventario operativo en pileta tipo `reproductores` (cantidad, alimento, peso).
-model ControlReproductivo {
-  id                Int            @id @default(autoincrement())
-  pileta_id         Int
-  cantidad_total    Int            @default(0)
-  cantidad_alimento Int            @default(0)
-  observacion_id    Int?
-  biometria_id      Int?
-  siembra_origen_id Int?           @map("siembra_origen_id")
-  peso              Int?
-  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
-  historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
-  siembra_origen    siembra?       @relation("ControlReproSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
-
-  @@index([pileta_id])
-  @@map("control_reproductivo")
   @@schema("public")
 }
 
@@ -920,7 +930,7 @@ model observacion {
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
   alevinaje          alevinaje[]
   incubacion         incubacion[]
-  controlReproductivo ControlReproductivo[]
+  eventosCosecha     EventoCosecha[]
   alimentacion       Alimentacion[]
   banos              Bano[]
   engorda            Engorda[]
@@ -955,7 +965,6 @@ model siembra {
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
   alevinajes_como_origen                  alevinaje[]           @relation("AlevinajeSiembraOrigen")
   incubaciones_como_origen                incubacion[]          @relation("IncubacionSiembraOrigen")
-  controlReproductivos_como_origen        ControlReproductivo[] @relation("ControlReproSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores_como_origen               Reproductor[]     @relation("ReproductorSiembraOrigen")
   venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
@@ -1005,6 +1014,14 @@ enum PiletaTipo {
   reproductores
   engorda
   incubacion
+
+  @@schema("public")
+}
+
+enum TipoCosecha {
+  huevo
+  larva_saco
+  alevin_nadando
 
   @@schema("public")
 }

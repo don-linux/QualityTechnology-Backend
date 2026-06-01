@@ -1,0 +1,32 @@
+/**
+ * Genera código EV-AAAA-NNN (ej. EV-2026-001) para el año calendario actual.
+ * @param {import("@prisma/client").Prisma.TransactionClient} tx
+ */
+export async function generarCodigoEventoCosecha(tx) {
+  const year = new Date().getFullYear();
+  const prefix = `EV-${year}-`;
+  const last = await tx.eventoCosecha.findFirst({
+    where: { codigo: { startsWith: prefix } },
+    orderBy: { codigo: "desc" },
+    select: { codigo: true },
+  });
+  let n = 1;
+  if (last?.codigo) {
+    const part = last.codigo.slice(prefix.length);
+    n = (parseInt(part, 10) || 0) + 1;
+  }
+  return `${prefix}${String(n).padStart(3, "0")}`;
+}
+
+export const TIPOS_COSECHA_VALIDOS = ["huevo", "larva_saco", "alevin_nadando"];
+
+export function normalizarTipoCosecha(value) {
+  const t = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+  if (t === "larva_con_saco" || t === "larva_saco") return "larva_saco";
+  if (t === "alevin_nadando" || t === "alevin") return "alevin_nadando";
+  if (t === "huevo" || t === "huevos") return "huevo";
+  return TIPOS_COSECHA_VALIDOS.includes(t) ? t : null;
+}

@@ -131,6 +131,12 @@ class ReproductorController {
           error: "Debe indicar al menos un macho o una hembra (total de reproductores mayor a 0)",
         });
       }
+      if (!campos.fecha_siembra) {
+        return res.status(400).json({ error: "fecha_siembra (cuándo se armó el grupo) es obligatoria" });
+      }
+      if (!campos.lote_genetico) {
+        return res.status(400).json({ error: "lote_genetico (origen genético de padres) es obligatorio" });
+      }
 
       const pil = await prisma.pileta.findUnique({
         where: { id: piletaId },
@@ -191,10 +197,28 @@ class ReproductorController {
           proceso: "reproductor",
         });
 
+        await tx.reproductor.updateMany({
+          where: { pileta_id: piletaId, activo: true },
+          data: { activo: false },
+        });
+
+        const fechaSiembra =
+          campos.fecha_siembra ??
+          (siembraOrigenId
+            ? (
+                await tx.siembra.findUnique({
+                  where: { id: siembraOrigenId },
+                  select: { fecha: true },
+                })
+              )?.fecha
+            : null);
+
         const creadoNuevo = await tx.reproductor.create({
           data: {
             pileta_id: piletaId,
             ...campos,
+            fecha_siembra: fechaSiembra ?? campos.fecha_siembra,
+            activo: true,
             cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
@@ -209,7 +233,7 @@ class ReproductorController {
 
       res.status(201).json({
         success: true,
-        mensaje: "Registro periódico de reproductores guardado",
+        mensaje: "Lote de reproductores activo registrado",
         data: serializeReproductor(creado),
       });
     } catch (err) {

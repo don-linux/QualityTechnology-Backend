@@ -91,6 +91,12 @@ const incubacionInclude = {
       },
     },
   },
+  evento_cosecha: {
+    include: {
+      piletas: true,
+      reproductor: { include: { piletas: true } },
+    },
+  },
 };
 
 class IncubacionController {
@@ -141,6 +147,9 @@ class IncubacionController {
         pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
       );
       const loteRaw = pick(req.body, "lote", "fc_lote", "no_lote");
+      const eventoCosechaIdBody = toInt(
+        pick(req.body, "evento_cosecha_id", "fi_evento_cosecha_id"),
+      );
       const fechaIngreso = toDateOrNull(
         pick(req.body, "fecha_ingreso", "fd_fecha_ingreso", "fecha"),
       );
@@ -149,10 +158,12 @@ class IncubacionController {
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id (pileta de incubación) es obligatorio" });
       }
-      if (!loteRaw) {
-        return res.status(400).json({ error: "lote es obligatorio" });
+      if (!loteRaw && !eventoCosechaIdBody) {
+        return res.status(400).json({
+          error: "lote es obligatorio, o seleccione un evento de cosecha pendiente",
+        });
       }
-      if (!fechaIngreso) {
+      if (!fechaIngreso && !eventoCosechaIdBody) {
         return res.status(400).json({ error: "fecha_ingreso es obligatoria" });
       }
 
@@ -167,7 +178,7 @@ class IncubacionController {
         });
       }
 
-      const lote = normalizarLote(loteRaw);
+      const lote = loteRaw ? normalizarLote(loteRaw) : null;
       const huevosMl = toDecimal(pick(req.body, "huevos_ml", "fn_huevos_ml"));
       const diasBody = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
       const diasEnPileta =
@@ -177,10 +188,43 @@ class IncubacionController {
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
       const siembraOrigenId = toInt(pick(req.body, "siembra_origen_id"));
       const biometriaId = toInt(pick(req.body, "biometria_id"));
+      const eventoCosechaId = toInt(
+        pick(req.body, "evento_cosecha_id", "fi_evento_cosecha_id"),
+      );
 
       const creado = await prisma.$transaction(async (tx) => {
         if (siembraOrigenId) {
           await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+        }
+
+        let huevosFinal = huevosMl;
+        let fechaIngresoFinal = fechaIngreso;
+        let loteFinal = lote;
+
+        if (eventoCosechaId) {
+          const ev = await tx.eventoCosecha.findUnique({
+            where: { id: eventoCosechaId },
+            include: { incubacion: { select: { id: true } } },
+          });
+          if (!ev) {
+            const err = new Error("evento_cosecha_id inválido");
+            err.code = "BAD_EVENTO";
+            throw err;
+          }
+          if (ev.incubacion) {
+            const err = new Error("El evento de cosecha ya fue recibido en incubación");
+            err.code = "EVENTO_YA_RECIBIDO";
+            throw err;
+          }
+          if (huevosFinal == null && ev.volumen_ml != null) {
+            huevosFinal = Number(ev.volumen_ml);
+          }
+          if (!fechaIngresoFinal && ev.fecha_cosecha) {
+            fechaIngresoFinal = ev.fecha_cosecha;
+          }
+          if (!loteFinal && ev.codigo) {
+            loteFinal = normalizarLote(ev.codigo.replace(/^EV-/, "INC-"));
+          }
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
@@ -188,17 +232,20 @@ class IncubacionController {
           proceso: "incubacion",
         });
 
+        const diasCalc = calcularDiasEnPileta(fechaIngresoFinal, fechaEgreso);
+
         const creadoNuevo = await tx.incubacion.create({
           data: {
             pileta_id: piletaId,
-            lote,
-            huevos_ml: huevosMl,
-            fecha_ingreso: fechaIngreso,
-            dias_en_pileta: diasEnPileta,
+            lote: loteFinal,
+            huevos_ml: huevosFinal,
+            fecha_ingreso: fechaIngresoFinal,
+            dias_en_pileta: diasBody != null ? diasBody : diasCalc,
             fecha_egreso: fechaEgreso,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
             siembra_origen_id: siembraOrigenId ?? null,
+            evento_cosecha_id: eventoCosechaId ?? null,
           },
           include: incubacionInclude,
         });
@@ -213,14 +260,21 @@ class IncubacionController {
         data: serializeIncubacion(creado),
       });
     } catch (err) {
-      if (err.code === "BAD_LOTE" || err.code === "BAD_SIEMBRA") {
+      if (
+        err.code === "BAD_LOTE" ||
+        err.code === "BAD_SIEMBRA" ||
+        err.code === "BAD_EVENTO" ||
+        err.code === "EVENTO_YA_RECIBIDO"
+      ) {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "SIEMBRA_DESTINO") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un lote con ese código en la pileta" });
+        return res.status(409).json({
+          error: "Ya existe un lote con ese código en la pileta o el evento ya está vinculado",
+        });
       }
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta o referencias inválidas" });

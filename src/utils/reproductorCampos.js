@@ -30,7 +30,13 @@ function sliceStr(value, max) {
   return String(value).trim().slice(0, max) || null;
 }
 
-/** Campos persistidos de un alta/actualización de inventario reproductor. */
+function toDateOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Campos persistidos de un alta/actualización de lote de reproductores. */
 export function parseReproductorCampos(body) {
   const machos = Math.max(0, toIntRepro(pick(body, "machos", "fn_machos"), 0) ?? 0);
   const hembras = Math.max(0, toIntRepro(pick(body, "hembras", "fn_hembras"), 0) ?? 0);
@@ -41,10 +47,21 @@ export function parseReproductorCampos(body) {
   const cantidad_total =
     cantidadExplicita != null && cantidadExplicita >= 0 ? cantidadExplicita : machos + hembras;
 
+  const activoRaw = pick(body, "activo", "fb_activo");
+  const activo =
+    activoRaw === undefined || activoRaw === null || activoRaw === ""
+      ? true
+      : activoRaw === true || activoRaw === "true" || activoRaw === 1 || activoRaw === "1";
+
   return {
     machos,
     hembras,
     cantidad_total,
+    fecha_siembra: toDateOrNull(
+      pick(body, "fecha_siembra", "fd_fecha_siembra", "fecha_siembra_reproductores"),
+    ),
+    lote_genetico: sliceStr(pick(body, "lote_genetico", "fc_lote_genetico"), 120),
+    activo,
     genetica_machos: sliceStr(pick(body, "genetica_machos", "fc_genetica_machos"), 60),
     familia_machos: sliceStr(pick(body, "familia_machos", "fc_familia_machos"), 60),
     procedencia_machos: sliceStr(pick(body, "procedencia_machos", "fc_procedencia_machos"), 100),
