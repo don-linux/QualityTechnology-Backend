@@ -264,6 +264,7 @@ class ReproductorController {
 
       const updateData = {};
       let piletaId = prev.pileta_id;
+      let piletaCambiada = false;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
         const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
@@ -280,9 +281,14 @@ class ReproductorController {
         }
         updateData.pileta_id = nid;
         piletaId = nid;
+        piletaCambiada = true;
       }
 
       const tocaInventarioRepro =
+        req.body.fecha_siembra !== undefined ||
+        req.body.fd_fecha_siembra !== undefined ||
+        req.body.lote_genetico !== undefined ||
+        req.body.fc_lote_genetico !== undefined ||
         req.body.machos !== undefined ||
         req.body.fn_machos !== undefined ||
         req.body.hembras !== undefined ||
@@ -308,6 +314,9 @@ class ReproductorController {
           select: {
             machos: true,
             hembras: true,
+            fecha_siembra: true,
+            lote_genetico: true,
+            activo: true,
             genetica_machos: true,
             familia_machos: true,
             procedencia_machos: true,
@@ -318,6 +327,12 @@ class ReproductorController {
           },
         });
         const merged = {
+          fecha_siembra:
+            pick(req.body, "fecha_siembra", "fd_fecha_siembra", "fecha_siembra_reproductores") ??
+            prevFull?.fecha_siembra,
+          lote_genetico:
+            pick(req.body, "lote_genetico", "fc_lote_genetico") ?? prevFull?.lote_genetico,
+          activo: pick(req.body, "activo", "fb_activo") ?? prevFull?.activo,
           machos:
             req.body.machos !== undefined || req.body.fn_machos !== undefined
               ? pick(req.body, "machos", "fn_machos")
@@ -393,12 +408,12 @@ class ReproductorController {
           include: reproductorInclude,
         });
 
-        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
+        if (updateData.cantidad_total !== undefined || piletaCambiada) {
           const vigente = await cantidadVigenteEnPileta(tx, piletaId, "reproductores");
           await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
         }
 
-        if (updateData.pileta_id !== undefined && prev.pileta_id !== piletaId) {
+        if (piletaCambiada && prev.pileta_id !== piletaId) {
           const vigentePrev = await cantidadVigenteEnPileta(tx, prev.pileta_id, "reproductores");
           await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigentePrev);
         }
