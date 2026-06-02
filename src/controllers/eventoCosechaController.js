@@ -6,6 +6,7 @@ import {
   generarCodigoEventoCosecha,
   normalizarTipoCosecha,
 } from "../utils/eventoCosechaCodigo.js";
+import { registrarDesoveEnInventarioReproductor } from "../utils/reproductorInventario.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -51,10 +52,19 @@ const eventoInclude = {
 };
 
 async function resolverLoteReproductorActivo(tx, { reproductorId, piletaId }) {
+  const select = {
+    id: true,
+    pileta_id: true,
+    activo: true,
+    estado_ciclo: true,
+    hembras: true,
+    desovez: true,
+  };
+
   if (reproductorId) {
     const row = await tx.reproductor.findUnique({
       where: { id: reproductorId },
-      select: { id: true, pileta_id: true, activo: true },
+      select,
     });
     if (!row) {
       const err = new Error("Lote de reproductores no encontrado");
@@ -64,6 +74,11 @@ async function resolverLoteReproductorActivo(tx, { reproductorId, piletaId }) {
     if (!row.activo) {
       const err = new Error("El lote de reproductores no está activo");
       err.code = "LOTE_INACTIVO";
+      throw err;
+    }
+    if (row.estado_ciclo === "agotado") {
+      const err = new Error("El lote de reproductores está agotado y no admite más cosechas");
+      err.code = "LOTE_AGOTADO";
       throw err;
     }
     return row;
@@ -76,11 +91,23 @@ async function resolverLoteReproductorActivo(tx, { reproductorId, piletaId }) {
   }
 
   const row = await tx.reproductor.findFirst({
-    where: { pileta_id: piletaId, activo: true },
+    where: { pileta_id: piletaId, activo: true, estado_ciclo: "activo" },
     orderBy: { id: "desc" },
-    select: { id: true, pileta_id: true, activo: true },
+    select,
   });
   if (!row) {
+    const agotado = await tx.reproductor.findFirst({
+      where: { pileta_id: piletaId, activo: true, estado_ciclo: "agotado" },
+      orderBy: { id: "desc" },
+      select: { id: true },
+    });
+    if (agotado) {
+      const err = new Error(
+        "El lote de reproductores en la pileta está agotado. Registre un nuevo grupo en el módulo 1.",
+      );
+      err.code = "LOTE_AGOTADO";
+      throw err;
+    }
     const err = new Error(
       "No hay un lote de reproductores activo en la pileta indicada. Regístrelo en el módulo 1.",
     );
@@ -154,6 +181,17 @@ class EventoCosechaController {
       const volumen = toDecimal(
         pick(req.body, "volumen_ml", "fn_volumen_ml", "volumen_o_contrapeso", "huevos_ml"),
       );
+      const hembrasOvadas = toInt(
+        pick(req.body, "hembras_ovadas", "fn_hembras_ovadas", "ovadas"),
+        null,
+      );
+      const marcarAgotado =
+        req.body.marcar_agotado === true ||
+        req.body.fb_marcar_agotado === true ||
+        String(pick(req.body, "estado_ciclo", "fc_estado_ciclo") ?? "")
+          .trim()
+          .toLowerCase() === "agotado";
+      const estadoCicloBody = pick(req.body, "estado_ciclo", "fc_estado_ciclo");
 
       if (!fechaCosecha) {
         return res.status(400).json({ error: "fecha_cosecha es obligatoria" });
@@ -161,6 +199,11 @@ class EventoCosechaController {
       if (!tipoCosecha) {
         return res.status(400).json({
           error: "tipo_cosecha inválido. Use: huevo, larva_saco o alevin_nadando",
+        });
+      }
+      if (hembrasOvadas == null || hembrasOvadas < 1) {
+        return res.status(400).json({
+          error: "hembras_ovadas es obligatoria y debe ser al menos 1",
         });
       }
 
@@ -173,6 +216,15 @@ class EventoCosechaController {
           piletaId: piletaIdBody,
         });
 
+        const hembrasDisponibles = lote.hembras ?? 0;
+        if (hembrasOvadas > hembrasDisponibles) {
+          const err = new Error(
+            `hembras_ovadas (${hembrasOvadas}) supera las hembras del lote (${hembrasDisponibles})`,
+          );
+          err.code = "VALIDACION";
+          throw err;
+        }
+
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId: lote.pileta_id,
           proceso: "evento_cosecha",
@@ -180,7 +232,7 @@ class EventoCosechaController {
 
         const codigo = await generarCodigoEventoCosecha(tx);
 
-        return tx.eventoCosecha.create({
+        const evento = await tx.eventoCosecha.create({
           data: {
             codigo,
             reproductor_id: lote.id,
@@ -189,10 +241,19 @@ class EventoCosechaController {
             tipo_cosecha: tipoCosecha,
             estadio_desarrollo: estadio ? String(estadio).trim().slice(0, 80) : null,
             volumen_ml: volumen,
+            hembras_ovadas: hembrasOvadas,
             observacion_id: obsId,
           },
           include: eventoInclude,
         });
+
+        await registrarDesoveEnInventarioReproductor(tx, {
+          reproductorId: lote.id,
+          estadoCiclo: estadoCicloBody,
+          marcarAgotado,
+        });
+
+        return evento;
       });
 
       res.status(201).json({
@@ -205,6 +266,7 @@ class EventoCosechaController {
         err.code === "VALIDACION" ||
         err.code === "SIN_LOTE_ACTIVO" ||
         err.code === "LOTE_INACTIVO" ||
+        err.code === "LOTE_AGOTADO" ||
         err.code === "NOT_FOUND"
       ) {
         return res.status(400).json({ error: err.message });
@@ -247,6 +309,13 @@ class EventoCosechaController {
         updateData.volumen_ml = toDecimal(
           pick(req.body, "volumen_ml", "fn_volumen_ml", "volumen_o_contrapeso"),
         );
+      }
+      if (req.body.hembras_ovadas !== undefined || req.body.fn_hembras_ovadas !== undefined) {
+        const ho = toInt(pick(req.body, "hembras_ovadas", "fn_hembras_ovadas", "ovadas"), null);
+        if (ho == null || ho < 1) {
+          return res.status(400).json({ error: "hembras_ovadas debe ser al menos 1" });
+        }
+        updateData.hembras_ovadas = ho;
       }
 
       const usuarioId = req.user.usuario_id;

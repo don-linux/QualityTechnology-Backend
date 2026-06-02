@@ -219,6 +219,8 @@ class ReproductorController {
             ...campos,
             fecha_siembra: fechaSiembra ?? campos.fecha_siembra,
             activo: true,
+            desovez: 0,
+            estado_ciclo: "activo",
             cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
@@ -306,7 +308,9 @@ class ReproductorController {
         req.body.procedencia_hembras !== undefined ||
         req.body.fc_procedencia_hembras !== undefined ||
         req.body.talla !== undefined ||
-        req.body.fn_talla !== undefined;
+        req.body.fn_talla !== undefined ||
+        req.body.estado_ciclo !== undefined ||
+        req.body.fc_estado_ciclo !== undefined;
 
       if (tocaInventarioRepro) {
         const prevFull = await prisma.reproductor.findUnique({
@@ -324,6 +328,8 @@ class ReproductorController {
             familia_hembras: true,
             procedencia_hembras: true,
             talla: true,
+            desovez: true,
+            estado_ciclo: true,
           },
         });
         const merged = {
@@ -356,6 +362,8 @@ class ReproductorController {
             pick(req.body, "procedencia_hembras", "fc_procedencia_hembras") ??
             prevFull?.procedencia_hembras,
           talla: pick(req.body, "talla", "fn_talla") ?? prevFull?.talla,
+          estado_ciclo:
+            pick(req.body, "estado_ciclo", "fc_estado_ciclo") ?? prevFull?.estado_ciclo,
         };
         const campos = parseReproductorCampos(merged);
         if (campos.cantidad_total <= 0) {

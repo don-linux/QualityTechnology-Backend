@@ -247,6 +247,11 @@ export function serializeReproductor(r) {
     fc_lote_genetico: r.lote_genetico ?? null,
     activo: r.activo !== false,
     fb_activo: r.activo !== false,
+    desovez: r.desovez ?? 0,
+    fn_desovez: r.desovez ?? 0,
+    estado_ciclo: r.estado_ciclo ?? "activo",
+    fc_estado_ciclo: r.estado_ciclo ?? "activo",
+    estado_ciclo_label: ESTADO_CICLO_LABEL[r.estado_ciclo] ?? r.estado_ciclo ?? "Activo",
     machos,
     fn_machos: machos,
     genetica_machos: r.genetica_machos ?? null,
@@ -606,6 +611,11 @@ const TIPO_COSECHA_LABEL = {
   alevin_nadando: "Alevín nadando",
 };
 
+const ESTADO_CICLO_LABEL = {
+  activo: "Activo",
+  agotado: "Agotado",
+};
+
 export function serializeEventoCosecha(e) {
   if (!e) return null;
   const rep = e.reproductor ?? null;
@@ -638,6 +648,8 @@ export function serializeEventoCosecha(e) {
     fc_estadio_desarrollo: e.estadio_desarrollo ?? null,
     volumen_ml: e.volumen_ml != null ? Number(e.volumen_ml) : null,
     fn_volumen_ml: e.volumen_ml != null ? Number(e.volumen_ml) : null,
+    hembras_ovadas: e.hembras_ovadas ?? 0,
+    fn_hembras_ovadas: e.hembras_ovadas ?? 0,
     pendiente_incubacion: pendienteIncubacion,
     incubacion_id: e.incubacion?.id ?? null,
     incubacion_lote: e.incubacion?.lote ?? null,

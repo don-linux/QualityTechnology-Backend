@@ -53,6 +53,20 @@ export function parseReproductorCampos(body) {
       ? true
       : activoRaw === true || activoRaw === "true" || activoRaw === 1 || activoRaw === "1";
 
+  const desovezRaw = pick(body, "desovez", "fn_desovez");
+  const desovez =
+    desovezRaw !== undefined
+      ? Math.max(0, toIntRepro(desovezRaw, 0) ?? 0)
+      : undefined;
+
+  const estadoCicloRaw = pick(body, "estado_ciclo", "fc_estado_ciclo");
+  const estado_ciclo =
+    estadoCicloRaw !== undefined
+      ? String(estadoCicloRaw).trim().toLowerCase() === "agotado"
+        ? "agotado"
+        : "activo"
+      : undefined;
+
   return {
     machos,
     hembras,
@@ -62,6 +76,8 @@ export function parseReproductorCampos(body) {
     ),
     lote_genetico: sliceStr(pick(body, "lote_genetico", "fc_lote_genetico"), 120),
     activo,
+    ...(desovez !== undefined ? { desovez } : {}),
+    ...(estado_ciclo !== undefined ? { estado_ciclo } : {}),
     genetica_machos: sliceStr(pick(body, "genetica_machos", "fc_genetica_machos"), 60),
     familia_machos: sliceStr(pick(body, "familia_machos", "fc_familia_machos"), 60),
     procedencia_machos: sliceStr(pick(body, "procedencia_machos", "fc_procedencia_machos"), 100),

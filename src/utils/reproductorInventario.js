@@ -87,6 +87,8 @@ export async function descontarReproductorPorEgresoHaciaAlevinaje(tx, piletaOrig
       peso: true,
       biometria_id: true,
       observacion_id: true,
+      desovez: true,
+      estado_ciclo: true,
     },
   });
 
@@ -172,11 +174,108 @@ export async function descontarReproductorPorEgresoHaciaAlevinaje(tx, piletaOrig
     biometria_id: vigente.biometria_id ?? null,
     observacion_id: obsId,
     siembra_origen_id: siembraOrigenId,
+    desovez: vigente.desovez ?? 0,
+    estado_ciclo: vigente.estado_ciclo ?? "activo",
   };
 
   await tx.reproductor.create({ data: base });
 
   await aplicarEstadoPiletaPorCantidad(tx, ori, cantidadActual);
+}
+
+const VIGENTE_REPRODUCTOR_SELECT = {
+  id: true,
+  pileta_id: true,
+  fecha_siembra: true,
+  lote_genetico: true,
+  activo: true,
+  machos: true,
+  hembras: true,
+  cantidad_total: true,
+  genetica_machos: true,
+  familia_machos: true,
+  procedencia_machos: true,
+  genetica_hembras: true,
+  familia_hembras: true,
+  procedencia_hembras: true,
+  talla: true,
+  cantidad_alimento: true,
+  peso: true,
+  biometria_id: true,
+  siembra_origen_id: true,
+  desovez: true,
+  estado_ciclo: true,
+};
+
+function normalizarEstadoCiclo(value) {
+  const v = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (v === "agotado") return "agotado";
+  if (v === "activo") return "activo";
+  return null;
+}
+
+/**
+ * Tras un evento de cosecha, crea un registro periódico con desovez incrementado.
+ * @param {import("@prisma/client").Prisma.TransactionClient} tx
+ * @param {{
+ *   reproductorId: number,
+ *   estadoCiclo?: string|null,
+ *   marcarAgotado?: boolean,
+ * }} opciones
+ */
+export async function registrarDesoveEnInventarioReproductor(tx, opciones = {}) {
+  const reproductorId = toInt(opciones.reproductorId);
+  if (!reproductorId) return null;
+
+  const vigente = await tx.reproductor.findUnique({
+    where: { id: reproductorId },
+    select: VIGENTE_REPRODUCTOR_SELECT,
+  });
+  if (!vigente) {
+    const err = new Error("Lote de reproductores no encontrado");
+    err.code = "NOT_FOUND";
+    throw err;
+  }
+
+  const nuevoDesovez = (vigente.desovez ?? 0) + 1;
+  let estadoCiclo = vigente.estado_ciclo ?? "activo";
+  if (opciones.marcarAgotado === true) {
+    estadoCiclo = "agotado";
+  } else {
+    const parsed = normalizarEstadoCiclo(opciones.estadoCiclo);
+    if (parsed) estadoCiclo = parsed;
+  }
+
+  const machos = vigente.machos ?? 0;
+  const hembras = vigente.hembras ?? 0;
+
+  return tx.reproductor.create({
+    data: {
+      pileta_id: vigente.pileta_id,
+      fecha_siembra: vigente.fecha_siembra,
+      lote_genetico: vigente.lote_genetico,
+      activo: true,
+      machos,
+      hembras,
+      cantidad_total: vigente.cantidad_total ?? machos + hembras,
+      genetica_machos: vigente.genetica_machos,
+      familia_machos: vigente.familia_machos,
+      procedencia_machos: vigente.procedencia_machos,
+      genetica_hembras: vigente.genetica_hembras,
+      familia_hembras: vigente.familia_hembras,
+      procedencia_hembras: vigente.procedencia_hembras,
+      ratio: calcularRatioReproductor(machos, hembras),
+      talla: vigente.talla,
+      cantidad_alimento: vigente.cantidad_alimento ?? 0,
+      peso: vigente.peso ?? null,
+      biometria_id: vigente.biometria_id ?? null,
+      siembra_origen_id: vigente.siembra_origen_id ?? null,
+      desovez: nuevoDesovez,
+      estado_ciclo: estadoCiclo,
+    },
+  });
 }
 
 function errValidacion(message) {
