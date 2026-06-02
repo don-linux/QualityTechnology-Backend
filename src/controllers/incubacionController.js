@@ -1,7 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeIncubacion } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import {
+  aplicarEstadoPiletaPorCantidad,
+  registrarMovimientoReproductorAIncubacion,
+} from "../utils/reproductorInventario.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 import {
@@ -185,39 +188,54 @@ class IncubacionController {
       );
 
       const creado = await prisma.$transaction(async (tx) => {
-        if (siembraOrigenId) {
-          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
-        }
-
+        let siembraOrigenIdFinal = siembraOrigenId;
         let huevosFinal = huevosMl;
         let fechaIngresoFinal = fechaIngreso;
         let loteFinal = lote;
+        let eventoCosecha = null;
 
         if (eventoCosechaId) {
-          const ev = await tx.eventoCosecha.findUnique({
+          eventoCosecha = await tx.eventoCosecha.findUnique({
             where: { id: eventoCosechaId },
             include: {
               incubacion: { select: { id: true } },
               reproductor: { select: { lote_genetico: true } },
             },
           });
-          if (!ev) {
+          if (!eventoCosecha) {
             const err = new Error("evento_cosecha_id inválido");
             err.code = "BAD_EVENTO";
             throw err;
           }
-          if (ev.incubacion) {
+          if (eventoCosecha.incubacion) {
             const err = new Error("El evento de cosecha ya fue recibido en incubación");
             err.code = "EVENTO_YA_RECIBIDO";
             throw err;
           }
-          if (huevosFinal == null && ev.volumen_ml != null) {
-            huevosFinal = Number(ev.volumen_ml);
+          if (huevosFinal == null && eventoCosecha.volumen_ml != null) {
+            huevosFinal = Number(eventoCosecha.volumen_ml);
           }
-          if (!fechaIngresoFinal && ev.fecha_cosecha) {
-            fechaIngresoFinal = ev.fecha_cosecha;
+          if (!fechaIngresoFinal && eventoCosecha.fecha_cosecha) {
+            fechaIngresoFinal = eventoCosecha.fecha_cosecha;
           }
-          loteFinal = loteGeneticoDesdeEventoCosecha(ev);
+          loteFinal = loteGeneticoDesdeEventoCosecha(eventoCosecha);
+        }
+
+        if (siembraOrigenIdFinal) {
+          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenIdFinal, piletaId);
+        } else if (eventoCosecha) {
+          const mov = await registrarMovimientoReproductorAIncubacion(tx, {
+            piletaOrigenId: eventoCosecha.pileta_id,
+            piletaDestinoId: piletaId,
+            cantidad: eventoCosecha.hembras_ovadas,
+            usuarioId,
+            observacion: obsTexto,
+            fechaMovimiento: fechaIngresoFinal,
+            eventoCodigo: eventoCosecha.codigo,
+            loteGenetico: loteFinal,
+            huevosMl: huevosFinal,
+          });
+          siembraOrigenIdFinal = mov.siembraId;
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
@@ -237,7 +255,7 @@ class IncubacionController {
             fecha_egreso: fechaEgreso,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
-            siembra_origen_id: siembraOrigenId ?? null,
+            siembra_origen_id: siembraOrigenIdFinal ?? null,
             evento_cosecha_id: eventoCosechaId ?? null,
           },
           include: incubacionInclude,
@@ -262,7 +280,10 @@ class IncubacionController {
       ) {
         return res.status(400).json({ error: err.message });
       }
-      if (err.code === "SIEMBRA_DESTINO") {
+      if (err.code === "SIEMBRA_DESTINO" || err.code === "SIEMBRA_FAIL") {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "VALIDACION") {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2002") {

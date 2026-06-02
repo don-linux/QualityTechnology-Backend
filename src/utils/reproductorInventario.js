@@ -449,3 +449,74 @@ export async function registrarSeleccionInternaDesdeEngorda(
   }
   return ids;
 }
+
+async function assertPiletaIncubacion(tx, piletaId) {
+  const id = toInt(piletaId);
+  if (!id) throw errValidacion("pileta destino inválida");
+
+  const pil = await tx.pileta.findUnique({
+    where: { id },
+    select: { id: true, nombre: true, tipo: true },
+  });
+  if (!pil) throw errValidacion("Pileta destino no encontrada");
+  if (pil.tipo !== "incubacion") {
+    throw errValidacion(`La pileta destino '${pil.nombre}' debe ser de incubación`);
+  }
+  return pil;
+}
+
+/**
+ * Recepción de cosecha en incubación: registra siembra reproductores → incubación (solo trazabilidad).
+ * @returns {Promise<{ siembraId: number, observacionTrazabilidad: string|null }>}
+ */
+export async function registrarMovimientoReproductorAIncubacion(
+  tx,
+  {
+    piletaOrigenId,
+    piletaDestinoId,
+    cantidad,
+    usuarioId,
+    observacion,
+    fechaMovimiento,
+    eventoCodigo,
+    loteGenetico,
+    huevosMl,
+  },
+) {
+  const origen = toInt(piletaOrigenId);
+  const destino = toInt(piletaDestinoId);
+  const cant = Math.max(1, Math.floor(Number(cantidad) || 0));
+  if (!origen || !destino) {
+    throw errValidacion("Origen y destino son obligatorios para incubación");
+  }
+  if (origen === destino) {
+    throw errValidacion("La pileta de reproductores no puede ser la misma pileta de incubación");
+  }
+
+  await assertPiletaReproductores(tx, origen);
+  await assertPiletaIncubacion(tx, destino);
+
+  const partes = [];
+  if (eventoCodigo) partes.push(`Evento: ${eventoCodigo}`);
+  if (loteGenetico) partes.push(`Lote: ${loteGenetico}`);
+  if (huevosMl != null && Number.isFinite(Number(huevosMl))) {
+    partes.push(`${Number(huevosMl)} ml`);
+  }
+  const obsBase = observacion?.trim?.() ? String(observacion).trim() : "";
+  const obsCompleta = [obsBase, ...partes].filter(Boolean).join(" · ") || null;
+
+  const siembraId = await crearSiembraMovimiento(tx, {
+    piletaOrigenId: origen,
+    piletaDestinoId: destino,
+    cantidadEntera: cant,
+    usuarioId,
+    fechaMovimiento,
+  });
+  if (!siembraId) {
+    const err = new Error("No se pudo crear el movimiento de trazabilidad hacia incubación");
+    err.code = "SIEMBRA_FAIL";
+    throw err;
+  }
+
+  return { siembraId, observacionTrazabilidad: obsCompleta };
+}

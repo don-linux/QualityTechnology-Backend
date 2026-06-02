@@ -1,7 +1,7 @@
 import prisma from "../prisma.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import {
-  ETAPAS_TRAZABILIDAD,
+  ETAPAS_PILETA_MOVIMIENTOS,
   serializarMovimientoSiembra,
 } from "../utils/siembraMovimiento.js";
 import {
@@ -66,6 +66,15 @@ const siembraTrazabilidadInclude = {
       observacion: { select: { comentario: true } },
     },
   },
+  incubaciones_como_origen: {
+    orderBy: { id: "desc" },
+    take: 1,
+    select: {
+      lote: true,
+      evento_cosecha: { select: { codigo: true } },
+      observacion: { select: { comentario: true } },
+    },
+  },
   venta: {
     select: {
       id: true,
@@ -77,13 +86,13 @@ const siembraTrazabilidadInclude = {
 };
 
 class TrazabilidadController {
-  /** Movimientos `siembra` donde origen o destino es pileta de alevinaje o engorda. */
+  /** Movimientos `siembra` donde origen o destino es pileta de inventario trazable. */
   static async getMovimientos(req, res) {
     try {
       const ubicClause = piletaWhereUbicacionFromRequest(req);
       if (!ubicClause) return res.json([]);
 
-      const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_TRAZABILIDAD } };
+      const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_PILETA_MOVIMIENTOS } };
 
       const rows = await prisma.siembra.findMany({
         where: {
