@@ -654,15 +654,36 @@ export function serializeEventoCosecha(e) {
     incubacion_id: e.incubacion?.id ?? null,
     fi_incubacion_id: e.incubacion?.id ?? null,
     incubacion_lote: e.incubacion?.lote ?? null,
+    lote: e.incubacion?.lote ?? null,
+    fc_lote: e.incubacion?.lote ?? null,
     fi_pileta_destino_id: e.incubacion?.pileta_id ?? null,
+    pileta_destino_id: e.incubacion?.pileta_id ?? null,
     incubacion_pileta_id: e.incubacion?.pileta_id ?? null,
     incubacion_pileta_nombre: e.incubacion?.piletas?.nombre ?? null,
+    nombre_pileta_destino: e.incubacion?.piletas?.nombre ?? null,
+    fc_granja_incubacion: e.incubacion?.piletas?.ubicacion?.nombre ?? null,
+    huevos_ml:
+      e.incubacion?.huevos_ml != null
+        ? Number(e.incubacion.huevos_ml)
+        : e.volumen_ml != null
+          ? Number(e.volumen_ml)
+          : null,
+    fn_huevos_ml:
+      e.incubacion?.huevos_ml != null
+        ? Number(e.incubacion.huevos_ml)
+        : e.volumen_ml != null
+          ? Number(e.volumen_ml)
+          : null,
+    dias_en_pileta: e.incubacion?.dias_en_pileta ?? null,
+    fn_dias_en_pileta: e.incubacion?.dias_en_pileta ?? null,
     fecha_ingreso: e.incubacion?.fecha_ingreso ?? null,
     fd_fecha_ingreso: e.incubacion?.fecha_ingreso ?? null,
     fecha_egreso: e.incubacion?.fecha_egreso ?? null,
     fd_fecha_egreso: e.incubacion?.fecha_egreso ?? null,
     fc_observacion: e.observacion?.comentario ?? null,
     observacion: e.observacion?.comentario ?? null,
+    fc_observacion_incubacion: e.incubacion?.observacion?.comentario ?? null,
+    observacion_incubacion: e.incubacion?.observacion?.comentario ?? null,
     observacion_id: e.observacion_id ?? null,
     created_at: e.created_at ?? null,
   };

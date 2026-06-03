@@ -47,9 +47,23 @@ const eventoInclude = {
       id: true,
       lote: true,
       pileta_id: true,
+      huevos_ml: true,
+      dias_en_pileta: true,
       fecha_ingreso: true,
       fecha_egreso: true,
-      piletas: { select: { nombre: true } },
+      observacion_id: true,
+      observacion: true,
+      piletas: {
+        select: {
+          nombre: true,
+          ubicacion: true,
+          observaciones: {
+            orderBy: { created_at: "desc" },
+            take: 1,
+            select: { comentario: true, proceso: true, created_at: true },
+          },
+        },
+      },
     },
   },
 };
