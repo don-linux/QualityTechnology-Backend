@@ -7,6 +7,7 @@ import {
   normalizarTipoCosecha,
 } from "../utils/eventoCosechaCodigo.js";
 import { registrarDesoveEnInventarioReproductor } from "../utils/reproductorInventario.js";
+import { crearIncubacionDesdeEventoCosecha } from "../utils/incubacionRegistro.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -46,6 +47,8 @@ const eventoInclude = {
       id: true,
       lote: true,
       pileta_id: true,
+      fecha_ingreso: true,
+      fecha_egreso: true,
       piletas: { select: { nombre: true } },
     },
   },
@@ -207,6 +210,27 @@ class EventoCosechaController {
         });
       }
 
+      const piletaDestinoIncubacion = toInt(
+        pick(
+          req.body,
+          "pileta_destino_incubacion_id",
+          "fi_pileta_destino_id",
+          "pileta_destino_id",
+        ),
+      );
+      const fechaIngresoIncubacion = toDateOrNull(
+        pick(req.body, "fecha_ingreso", "fd_fecha_ingreso"),
+      );
+      const fechaEgresoIncubacion = toDateOrNull(
+        pick(req.body, "fecha_egreso", "fd_fecha_egreso"),
+      );
+
+      if (!piletaDestinoIncubacion) {
+        return res.status(400).json({
+          error: "pileta_destino_incubacion_id (pileta de incubación) es obligatoria",
+        });
+      }
+
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
 
@@ -253,12 +277,28 @@ class EventoCosechaController {
           marcarAgotado,
         });
 
-        return evento;
+        await crearIncubacionDesdeEventoCosecha(tx, {
+          eventoCosecha: evento,
+          piletaDestinoId: piletaDestinoIncubacion,
+          usuarioId,
+          fechaIngreso: fechaIngresoIncubacion ?? fechaCosecha,
+          fechaEgreso: fechaEgresoIncubacion,
+          huevosMl: volumen,
+          observacion: obsTexto,
+          include: eventoInclude,
+        });
+
+        const eventoCompleto = await tx.eventoCosecha.findUnique({
+          where: { id: evento.id },
+          include: eventoInclude,
+        });
+
+        return eventoCompleto;
       });
 
       res.status(201).json({
         success: true,
-        mensaje: "Evento de cosecha registrado",
+        mensaje: "Evento de cosecha e ingreso a incubación registrados",
         data: serializeEventoCosecha(creado),
       });
     } catch (err) {
@@ -267,7 +307,9 @@ class EventoCosechaController {
         err.code === "SIN_LOTE_ACTIVO" ||
         err.code === "LOTE_INACTIVO" ||
         err.code === "LOTE_AGOTADO" ||
-        err.code === "NOT_FOUND"
+        err.code === "NOT_FOUND" ||
+        err.code === "EVENTO_YA_RECIBIDO" ||
+        err.code === "BAD_LOTE_GENETICO"
       ) {
         return res.status(400).json({ error: err.message });
       }

@@ -11,6 +11,7 @@ import {
   loteGeneticoDesdeEventoCosecha,
   normalizarLoteIncubacion,
 } from "../utils/incubacionLote.js";
+import { calcularDiasEnPileta } from "../utils/incubacionRegistro.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -35,15 +36,6 @@ function toDateOrNull(value) {
   if (value === undefined || value === null || value === "") return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function calcularDiasEnPileta(fechaIngreso, fechaEgreso) {
-  if (!fechaIngreso) return null;
-  const inicio = new Date(fechaIngreso);
-  const fin = fechaEgreso ? new Date(fechaEgreso) : new Date();
-  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return null;
-  const diff = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.max(0, diff);
 }
 
 async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaIncubacionId) {
