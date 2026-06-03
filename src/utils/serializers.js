@@ -551,26 +551,52 @@ export function serializeIncubacion(i) {
   const obsBio = i.biometrias?.observacionBiometria;
   const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
   const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const huevos = i.huevos_ml != null ? Number(i.huevos_ml) : null;
 
   return {
     fi_id: i.id,
     fi_incubacion_id: i.id,
     id: i.id,
     incubacion_id: i.id,
+    codigo: i.codigo ?? null,
+    fc_codigo: i.codigo ?? null,
+    fc_id_evento: i.codigo ?? null,
     pileta_id: i.pileta_id,
     fi_pileta_destino_id: i.pileta_id,
     pileta_destino_id: i.pileta_id,
+    incubacion_pileta_id: i.pileta_id,
+    incubacion_pileta_nombre: i.piletas?.nombre ?? null,
     nombre_pileta_destino: i.piletas?.nombre ?? null,
     nombre_pileta: i.piletas?.nombre ?? null,
     fc_granja: i.piletas?.ubicacion?.nombre ?? null,
+    // Estanque de reproductores de origen (datos de cosecha fusionados)
+    pileta_origen_id: i.pileta_origen_id ?? null,
+    fi_pileta_origen_id: i.pileta_origen_id ?? null,
+    nombre_pileta_origen: i.pileta_origen?.nombre ?? null,
+    pileta_origen_reproduccion: i.pileta_origen?.nombre ?? null,
+    reproductor_id: i.reproductor_id ?? null,
+    fi_reproductor_id: i.reproductor_id ?? null,
     lote: i.lote ?? null,
     fc_lote: i.lote ?? null,
-    lote_genetico:
-      i.evento_cosecha?.reproductor?.lote_genetico ?? i.lote ?? null,
-    fc_lote_genetico:
-      i.evento_cosecha?.reproductor?.lote_genetico ?? i.lote ?? null,
-    huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
-    fn_huevos_ml: i.huevos_ml != null ? Number(i.huevos_ml) : null,
+    lote_genetico: i.lote ?? null,
+    fc_lote_genetico: i.lote ?? null,
+    // Datos del desove
+    tipo_cosecha: i.tipo_cosecha ?? null,
+    fc_tipo_cosecha: i.tipo_cosecha ?? null,
+    tipo_cosecha_label: TIPO_COSECHA_LABEL[i.tipo_cosecha] ?? i.tipo_cosecha ?? null,
+    tipo_cosecha_origen: i.tipo_cosecha ?? null,
+    estadio_desarrollo: i.estadio_desarrollo ?? null,
+    fc_estadio_desarrollo: i.estadio_desarrollo ?? null,
+    hembras_ovadas: i.hembras_ovadas ?? 0,
+    fn_hembras_ovadas: i.hembras_ovadas ?? 0,
+    fecha_cosecha: i.fecha_cosecha ?? null,
+    fd_fecha_cosecha: i.fecha_cosecha ?? null,
+    // Volumen del desove (= huevos/ml en incubación)
+    huevos_ml: huevos,
+    fn_huevos_ml: huevos,
+    volumen_ml: huevos,
+    fn_volumen_ml: huevos,
+    // Estancia en incubación
     fecha_ingreso: i.fecha_ingreso ?? null,
     fd_fecha_ingreso: i.fecha_ingreso ?? null,
     dias_en_pileta: i.dias_en_pileta ?? null,
@@ -578,14 +604,6 @@ export function serializeIncubacion(i) {
     fecha_egreso: i.fecha_egreso ?? null,
     fd_fecha_egreso: i.fecha_egreso ?? null,
     evento_cosecha_id: i.evento_cosecha_id ?? null,
-    fi_evento_cosecha_id: i.evento_cosecha_id ?? null,
-    evento_cosecha_codigo: i.evento_cosecha?.codigo ?? null,
-    fc_evento_cosecha: i.evento_cosecha?.codigo ?? null,
-    tipo_cosecha_origen: i.evento_cosecha?.tipo_cosecha ?? null,
-    pileta_origen_reproduccion:
-      i.evento_cosecha?.piletas?.nombre ??
-      i.evento_cosecha?.reproductor?.piletas?.nombre ??
-      null,
     siembra_origen_id: i.siembra_origen_id ?? null,
     siembra_origen_pileta:
       i.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,

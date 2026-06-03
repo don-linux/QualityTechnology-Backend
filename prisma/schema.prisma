@@ -175,6 +175,7 @@ model Reproductor {
   piletas               Pileta          @relation(fields: [pileta_id], references: [id])
   siembra_origen        siembra?        @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
   eventos_cosecha       EventoCosecha[]
+  incubaciones          incubacion[]
 
   @@index([pileta_id])
   @@index([activo])
@@ -227,7 +228,8 @@ model Pileta {
   created_at                              DateTime           @default(now()) @db.Timestamp(6)
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
-  incubacion                              incubacion[]
+  incubacion                              incubacion[]       @relation("IncubacionPiletaDestino")
+  incubacion_origen                       incubacion[]       @relation("IncubacionPiletaOrigen")
   eventos_cosecha                         EventoCosecha[]
   alimentacion                            Alimentacion[]
   biometrias                              Biometria[]
@@ -868,27 +870,40 @@ model alevinaje {
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `incubacion` (lote, huevos/ml, fechas de estancia).
+/// Inventario operativo en pileta tipo `incubacion`. Tabla única del módulo de Cosecha e
+/// Incubación: incluye los datos del desove/cosecha (tipo, hembras ovadas, estadio, fecha y
+/// estanque de reproductores de origen) fusionados con los de la estancia en incubación.
 model incubacion {
-  id                Int            @id @default(autoincrement())
-  pileta_id         Int
-  lote              String         @db.VarChar(60)
-  huevos_ml         Decimal?       @db.Decimal(10, 2)
-  fecha_ingreso     DateTime?      @db.Date
-  dias_en_pileta    Int?
-  fecha_egreso      DateTime?      @db.Date
-  evento_cosecha_id Int?           @unique @map("evento_cosecha_id")
-  observacion_id    Int?
-  biometria_id      Int?
-  siembra_origen_id Int?           @map("siembra_origen_id")
-  biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
-  observacion       observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
-  evento_cosecha    EventoCosecha? @relation(fields: [evento_cosecha_id], references: [id], onDelete: SetNull)
-  siembra_origen    siembra?       @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  id                 Int            @id @default(autoincrement())
+  codigo             String?        @unique @db.VarChar(24)
+  pileta_id          Int
+  pileta_origen_id   Int?
+  reproductor_id     Int?
+  lote               String         @db.VarChar(60)
+  tipo_cosecha       TipoCosecha?
+  estadio_desarrollo String?        @db.VarChar(80)
+  hembras_ovadas     Int            @default(0)
+  fecha_cosecha      DateTime?      @db.Date
+  huevos_ml          Decimal?       @db.Decimal(10, 2)
+  fecha_ingreso      DateTime?      @db.Date
+  dias_en_pileta     Int?
+  fecha_egreso       DateTime?      @db.Date
+  evento_cosecha_id  Int?           @unique @map("evento_cosecha_id")
+  observacion_id     Int?
+  biometria_id       Int?
+  siembra_origen_id  Int?           @map("siembra_origen_id")
+  biometrias         Biometria?     @relation(fields: [biometria_id], references: [id])
+  observacion        observacion?   @relation(fields: [observacion_id], references: [id])
+  piletas            Pileta         @relation("IncubacionPiletaDestino", fields: [pileta_id], references: [id])
+  pileta_origen      Pileta?        @relation("IncubacionPiletaOrigen", fields: [pileta_origen_id], references: [id], onDelete: SetNull)
+  reproductor        Reproductor?   @relation(fields: [reproductor_id], references: [id], onDelete: SetNull)
+  evento_cosecha     EventoCosecha? @relation(fields: [evento_cosecha_id], references: [id], onDelete: SetNull)
+  siembra_origen     siembra?       @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
   @@unique([pileta_id, lote])
   @@index([pileta_id])
+  @@index([pileta_origen_id])
+  @@index([reproductor_id])
   @@index([lote])
   @@index([evento_cosecha_id])
   @@schema("public")

@@ -71,6 +71,7 @@ const siembraTrazabilidadInclude = {
     take: 1,
     select: {
       lote: true,
+      codigo: true,
       evento_cosecha: { select: { codigo: true } },
       observacion: { select: { comentario: true } },
     },

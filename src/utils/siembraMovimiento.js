@@ -102,8 +102,9 @@ export function serializarMovimientoSiembra(s) {
   if (obsUsuario) obsParts.push(obsUsuario);
 
   const incMeta = s.incubaciones_como_origen?.[0];
-  if (incMeta?.evento_cosecha?.codigo) {
-    const tag = `Evento: ${incMeta.evento_cosecha.codigo}`;
+  const incCodigo = incMeta?.codigo ?? incMeta?.evento_cosecha?.codigo ?? null;
+  if (incCodigo) {
+    const tag = `Evento: ${incCodigo}`;
     if (!obsUsuario || !obsUsuario.includes(tag)) obsParts.push(tag);
   }
   if (incMeta?.lote) {

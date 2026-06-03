@@ -28,7 +28,6 @@ import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
 import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
 import incubacionRoutes from "./src/routes/incubacionRoutes.js";
 import trazabilidadRoutes from "./src/routes/trazabilidadRoutes.js";
-import eventoCosechaRoutes from "./src/routes/eventoCosechaRoutes.js";
 import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
 
@@ -117,7 +116,6 @@ api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alevinaje", alevinajeRoutes);
 api.use("/incubacion", incubacionRoutes);
-api.use("/eventos-cosecha", eventoCosechaRoutes);
 api.use("/historial-peso", historialPesoRoutes);
 api.use("/siembras", siembraRoutes);
 api.use("/trazabilidad", trazabilidadRoutes);

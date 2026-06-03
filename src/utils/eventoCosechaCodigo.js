@@ -18,6 +18,26 @@ export async function generarCodigoEventoCosecha(tx) {
   return `${prefix}${String(n).padStart(3, "0")}`;
 }
 
+/**
+ * Genera código EV-AAAA-NNN para el desove almacenado en `incubacion` (tabla fusionada).
+ * @param {import("@prisma/client").Prisma.TransactionClient} tx
+ */
+export async function generarCodigoDesoveIncubacion(tx) {
+  const year = new Date().getFullYear();
+  const prefix = `EV-${year}-`;
+  const last = await tx.incubacion.findFirst({
+    where: { codigo: { startsWith: prefix } },
+    orderBy: { codigo: "desc" },
+    select: { codigo: true },
+  });
+  let n = 1;
+  if (last?.codigo) {
+    const part = last.codigo.slice(prefix.length);
+    n = (parseInt(part, 10) || 0) + 1;
+  }
+  return `${prefix}${String(n).padStart(3, "0")}`;
+}
+
 export const TIPOS_COSECHA_VALIDOS = ["huevo", "larva_saco", "alevin_nadando"];
 
 export function normalizarTipoCosecha(value) {

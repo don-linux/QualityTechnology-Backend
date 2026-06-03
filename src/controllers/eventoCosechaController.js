@@ -264,7 +264,7 @@ class EventoCosechaController {
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId: lote.pileta_id,
+          piletaId: piletaDestinoIncubacion,
           proceso: "evento_cosecha",
         });
 
@@ -380,10 +380,14 @@ class EventoCosechaController {
         const piletaId = toInt(pick(req.body, "pileta_id"));
         const ev = await prisma.eventoCosecha.findUnique({
           where: { id },
-          select: { pileta_id: true, observacion_id: true },
+          select: {
+            pileta_id: true,
+            observacion_id: true,
+            incubacion: { select: { pileta_id: true } },
+          },
         });
         const obsId = await crearObservacionSiHay(prisma, obsTexto, usuarioId, {
-          piletaId: piletaId ?? ev?.pileta_id,
+          piletaId: piletaId ?? ev?.incubacion?.pileta_id ?? ev?.pileta_id,
           proceso: "evento_cosecha",
         });
         if (obsId != null) updateData.observacion_id = obsId;
