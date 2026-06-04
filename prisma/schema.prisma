@@ -886,6 +886,9 @@ model incubacion {
   hembras_ovadas     Int            @default(0)
   fecha_cosecha      DateTime?      @db.Date
   huevos_ml          Decimal?       @db.Decimal(10, 2)
+  /// Volumen / contrapeso (ml o g) capturado por cada tipo de cosecha seleccionado: mapa { tipo: número }.
+  /// `huevos_ml` conserva la suma total para trazabilidad y compatibilidad.
+  volumen_por_tipo   Json?          @map("volumen_por_tipo")
   fecha_ingreso      DateTime?      @db.Date
   dias_en_pileta     Int?
   fecha_egreso       DateTime?      @db.Date

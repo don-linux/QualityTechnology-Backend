@@ -559,6 +559,25 @@ export function serializeIncubacion(i) {
       : [];
   const tipoCosechaLabel =
     tiposCosecha.map((t) => TIPO_COSECHA_LABEL[t] ?? t).join(", ") || null;
+  const volumenPorTipo = (() => {
+    const raw = i.volumen_por_tipo;
+    const mapa = {};
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      for (const [clave, valor] of Object.entries(raw)) {
+        if (valor != null && Number.isFinite(Number(valor))) mapa[clave] = Number(valor);
+      }
+    }
+    // Compatibilidad: registros de un solo tipo creados antes del desglose por tipo.
+    if (Object.keys(mapa).length === 0 && tiposCosecha.length === 1 && huevos != null) {
+      mapa[tiposCosecha[0]] = huevos;
+    }
+    return mapa;
+  })();
+  const volumenesCosecha = tiposCosecha.map((t) => ({
+    tipo: t,
+    label: TIPO_COSECHA_LABEL[t] ?? t,
+    volumen: volumenPorTipo[t] ?? null,
+  }));
 
   return {
     fi_id: i.id,
@@ -599,11 +618,14 @@ export function serializeIncubacion(i) {
     fn_hembras_ovadas: i.hembras_ovadas ?? 0,
     fecha_cosecha: i.fecha_cosecha ?? null,
     fd_fecha_cosecha: i.fecha_cosecha ?? null,
-    // Volumen del desove (= huevos/ml en incubación)
+    // Volumen del desove (total = huevos/ml en incubación) y desglose por tipo
     huevos_ml: huevos,
     fn_huevos_ml: huevos,
     volumen_ml: huevos,
     fn_volumen_ml: huevos,
+    volumen_por_tipo: volumenPorTipo,
+    fc_volumen_por_tipo: volumenPorTipo,
+    volumenes_cosecha: volumenesCosecha,
     // Estancia en incubación
     fecha_ingreso: i.fecha_ingreso ?? null,
     fd_fecha_ingreso: i.fecha_ingreso ?? null,

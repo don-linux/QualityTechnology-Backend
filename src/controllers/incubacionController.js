@@ -14,6 +14,7 @@ import { resolverLoteReproductorActivo } from "../utils/reproductorLote.js";
 import {
   generarCodigoDesoveIncubacion,
   normalizarTiposCosecha,
+  normalizarVolumenPorTipo,
 } from "../utils/eventoCosechaCodigo.js";
 
 function pick(body, ...keys) {
@@ -135,16 +136,23 @@ class IncubacionController {
         pick(req.body, "hembras_ovadas", "fn_hembras_ovadas", "ovadas"),
         null,
       );
-      const huevosMl = toDecimal(
-        pick(
-          req.body,
-          "huevos_ml",
-          "fn_huevos_ml",
-          "volumen_ml",
-          "fn_volumen_ml",
-          "volumen_o_contrapeso",
-        ),
+      const volumenPorTipo = normalizarVolumenPorTipo(
+        pick(req.body, "volumen_por_tipo", "fc_volumen_por_tipo", "volumenes_por_tipo"),
+        tiposCosecha,
       );
+      const volumenes = Object.values(volumenPorTipo);
+      const huevosMl = volumenes.length
+        ? volumenes.reduce((acc, n) => acc + n, 0)
+        : toDecimal(
+            pick(
+              req.body,
+              "huevos_ml",
+              "fn_huevos_ml",
+              "volumen_ml",
+              "fn_volumen_ml",
+              "volumen_o_contrapeso",
+            ),
+          );
       const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso", "fd_fecha_ingreso"));
       const fechaEgreso = toDateOrNull(pick(req.body, "fecha_egreso", "fd_fecha_egreso"));
       const diasBody = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
@@ -245,6 +253,7 @@ class IncubacionController {
             hembras_ovadas: hembrasOvadas,
             fecha_cosecha: fechaCosecha,
             huevos_ml: huevosMl,
+            volumen_por_tipo: volumenPorTipo,
             fecha_ingreso: fechaIngresoFinal,
             dias_en_pileta: diasBody != null ? diasBody : diasCalc,
             fecha_egreso: fechaEgreso,
@@ -308,12 +317,14 @@ class IncubacionController {
           pileta_id: true,
           fecha_ingreso: true,
           fecha_egreso: true,
+          tipo_cosecha: true,
         },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
       let piletaId = prev.pileta_id;
+      let tiposActualizados = null;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
         const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
@@ -345,6 +356,7 @@ class IncubacionController {
             .json({ error: "tipo_cosecha inválido. Seleccione al menos una opción" });
         }
         updateData.tipo_cosecha = tipos;
+        tiposActualizados = tipos;
       }
       if (req.body.estadio_desarrollo !== undefined || req.body.fc_estadio_desarrollo !== undefined) {
         const e = pick(req.body, "estadio_desarrollo", "fc_estadio_desarrollo");
@@ -366,14 +378,28 @@ class IncubacionController {
         updateData.lote = normalizarLoteIncubacion(pick(req.body, "lote", "fc_lote", "no_lote"));
       }
       if (
+        req.body.volumen_por_tipo !== undefined ||
+        req.body.fc_volumen_por_tipo !== undefined ||
         req.body.huevos_ml !== undefined ||
         req.body.fn_huevos_ml !== undefined ||
         req.body.volumen_ml !== undefined ||
         req.body.fn_volumen_ml !== undefined
       ) {
-        updateData.huevos_ml = toDecimal(
-          pick(req.body, "huevos_ml", "fn_huevos_ml", "volumen_ml", "fn_volumen_ml"),
+        const tiposBase = tiposActualizados ?? prev.tipo_cosecha ?? [];
+        const mapa = normalizarVolumenPorTipo(
+          pick(req.body, "volumen_por_tipo", "fc_volumen_por_tipo"),
+          tiposBase.length ? tiposBase : null,
         );
+        const valores = Object.values(mapa);
+        if (valores.length) {
+          updateData.volumen_por_tipo = mapa;
+          updateData.huevos_ml = valores.reduce((acc, n) => acc + n, 0);
+        } else {
+          updateData.volumen_por_tipo = {};
+          updateData.huevos_ml = toDecimal(
+            pick(req.body, "huevos_ml", "fn_huevos_ml", "volumen_ml", "fn_volumen_ml"),
+          );
+        }
       }
       if (req.body.fecha_ingreso !== undefined || req.body.fd_fecha_ingreso !== undefined) {
         const fi = toDateOrNull(pick(req.body, "fecha_ingreso", "fd_fecha_ingreso", "fecha"));

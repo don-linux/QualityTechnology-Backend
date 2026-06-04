@@ -50,3 +50,35 @@ export function normalizarTiposCosecha(value) {
   }
   return tipos;
 }
+
+/**
+ * Normaliza el mapa de volumen/contrapeso por tipo de cosecha.
+ * Acepta un objeto (o JSON en cadena) con claves de tipo y valores numéricos.
+ * Conserva sólo claves válidas (y, si se indica, presentes en `tiposPermitidos`)
+ * con valores numéricos finitos >= 0.
+ * @param {unknown} value
+ * @param {string[]|null} [tiposPermitidos]
+ * @returns {Record<string, number>}
+ */
+export function normalizarVolumenPorTipo(value, tiposPermitidos = null) {
+  let obj = value;
+  if (typeof obj === "string") {
+    try {
+      obj = JSON.parse(obj);
+    } catch {
+      obj = null;
+    }
+  }
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return {};
+  const permitido = tiposPermitidos ? new Set(tiposPermitidos) : null;
+  const salida = {};
+  for (const [clave, valor] of Object.entries(obj)) {
+    const tipo = normalizarTipoCosecha(clave);
+    if (!tipo) continue;
+    if (permitido && !permitido.has(tipo)) continue;
+    if (valor === "" || valor === null || valor === undefined) continue;
+    const num = Number(valor);
+    if (Number.isFinite(num) && num >= 0) salida[tipo] = num;
+  }
+  return salida;
+}
