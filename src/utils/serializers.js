@@ -7,6 +7,7 @@ import {
   cantidadVigenteDesdeRegistrosPeriodicos,
   ultimoRegistroPorPileta,
 } from "./inventarioVigente.js";
+import { calcularDiasEnPileta } from "./incubacionRegistro.js";
 
 export function serializeRol(rol) {
   if (!rol) return null;
@@ -578,6 +579,13 @@ export function serializeIncubacion(i) {
     label: TIPO_COSECHA_LABEL[t] ?? t,
     volumen: volumenPorTipo[t] ?? null,
   }));
+  // Días en incubación calculados al vuelo (ingreso -> egreso o día actual),
+  // para que la columna avance mientras el lote sigue incubando en lugar de
+  // quedarse congelada con el valor guardado al registrar.
+  const diasEnIncubacion =
+    i.fecha_ingreso != null
+      ? calcularDiasEnPileta(i.fecha_ingreso, i.fecha_egreso)
+      : (i.dias_en_pileta ?? null);
 
   return {
     fi_id: i.id,
@@ -629,8 +637,10 @@ export function serializeIncubacion(i) {
     // Estancia en incubación
     fecha_ingreso: i.fecha_ingreso ?? null,
     fd_fecha_ingreso: i.fecha_ingreso ?? null,
-    dias_en_pileta: i.dias_en_pileta ?? null,
-    fn_dias_en_pileta: i.dias_en_pileta ?? null,
+    dias_en_pileta: diasEnIncubacion,
+    fn_dias_en_pileta: diasEnIncubacion,
+    dias_en_incubacion: diasEnIncubacion,
+    fn_dias_en_incubacion: diasEnIncubacion,
     fecha_egreso: i.fecha_egreso ?? null,
     fd_fecha_egreso: i.fecha_egreso ?? null,
     evento_cosecha_id: i.evento_cosecha_id ?? null,
