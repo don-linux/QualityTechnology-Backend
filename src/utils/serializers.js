@@ -552,6 +552,13 @@ export function serializeIncubacion(i) {
   const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
   const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
   const huevos = i.huevos_ml != null ? Number(i.huevos_ml) : null;
+  const tiposCosecha = Array.isArray(i.tipo_cosecha)
+    ? i.tipo_cosecha
+    : i.tipo_cosecha
+      ? [i.tipo_cosecha]
+      : [];
+  const tipoCosechaLabel =
+    tiposCosecha.map((t) => TIPO_COSECHA_LABEL[t] ?? t).join(", ") || null;
 
   return {
     fi_id: i.id,
@@ -580,11 +587,12 @@ export function serializeIncubacion(i) {
     fc_lote: i.lote ?? null,
     lote_genetico: i.lote ?? null,
     fc_lote_genetico: i.lote ?? null,
-    // Datos del desove
-    tipo_cosecha: i.tipo_cosecha ?? null,
-    fc_tipo_cosecha: i.tipo_cosecha ?? null,
-    tipo_cosecha_label: TIPO_COSECHA_LABEL[i.tipo_cosecha] ?? i.tipo_cosecha ?? null,
-    tipo_cosecha_origen: i.tipo_cosecha ?? null,
+    // Datos del desove (multi-selección de tipos)
+    tipo_cosecha: tiposCosecha,
+    fc_tipo_cosecha: tiposCosecha,
+    tipos_cosecha: tiposCosecha,
+    tipo_cosecha_label: tipoCosechaLabel,
+    tipo_cosecha_origen: tiposCosecha,
     estadio_desarrollo: i.estadio_desarrollo ?? null,
     fc_estadio_desarrollo: i.estadio_desarrollo ?? null,
     hembras_ovadas: i.hembras_ovadas ?? 0,

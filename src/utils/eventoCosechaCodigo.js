@@ -30,3 +30,23 @@ export function normalizarTipoCosecha(value) {
   if (t === "huevo" || t === "huevos") return "huevo";
   return TIPOS_COSECHA_VALIDOS.includes(t) ? t : null;
 }
+
+/**
+ * Normaliza una selección de tipos de cosecha (multi-selección) a un arreglo de
+ * valores válidos, sin duplicados. Acepta un arreglo, un valor único o una
+ * cadena separada por comas.
+ * @returns {string[]} tipos válidos (puede ser un arreglo vacío)
+ */
+export function normalizarTiposCosecha(value) {
+  const crudos = Array.isArray(value)
+    ? value
+    : value === undefined || value === null || value === ""
+      ? []
+      : String(value).split(",");
+  const tipos = [];
+  for (const crudo of crudos) {
+    const t = normalizarTipoCosecha(crudo);
+    if (t && !tipos.includes(t)) tipos.push(t);
+  }
+  return tipos;
+}

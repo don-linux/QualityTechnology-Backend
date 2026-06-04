@@ -13,7 +13,7 @@ import { calcularDiasEnPileta } from "../utils/incubacionRegistro.js";
 import { resolverLoteReproductorActivo } from "../utils/reproductorLote.js";
 import {
   generarCodigoDesoveIncubacion,
-  normalizarTipoCosecha,
+  normalizarTiposCosecha,
 } from "../utils/eventoCosechaCodigo.js";
 
 function pick(body, ...keys) {
@@ -127,8 +127,8 @@ class IncubacionController {
       const fechaCosecha = toDateOrNull(
         pick(req.body, "fecha_cosecha", "fd_fecha_cosecha", "fecha"),
       );
-      const tipoCosecha = normalizarTipoCosecha(
-        pick(req.body, "tipo_cosecha", "fc_tipo_cosecha", "tipo"),
+      const tiposCosecha = normalizarTiposCosecha(
+        pick(req.body, "tipo_cosecha", "fc_tipo_cosecha", "tipos_cosecha", "fc_tipos_cosecha", "tipo"),
       );
       const estadio = pick(req.body, "estadio_desarrollo", "fc_estadio_desarrollo", "estadio");
       const hembrasOvadas = toInt(
@@ -165,9 +165,10 @@ class IncubacionController {
       if (!fechaCosecha) {
         return res.status(400).json({ error: "fecha_cosecha es obligatoria" });
       }
-      if (!tipoCosecha) {
+      if (!tiposCosecha.length) {
         return res.status(400).json({
-          error: "tipo_cosecha inválido. Use: huevo, larva_saco o alevin_nadando",
+          error:
+            "tipo_cosecha es obligatorio. Seleccione al menos una opción: huevo, larva_saco o alevin_nadando",
         });
       }
       if (hembrasOvadas == null || hembrasOvadas < 1) {
@@ -239,7 +240,7 @@ class IncubacionController {
             pileta_origen_id: lote.pileta_id,
             reproductor_id: lote.id,
             lote: loteGenetico,
-            tipo_cosecha: tipoCosecha,
+            tipo_cosecha: tiposCosecha,
             estadio_desarrollo: estadio ? String(estadio).trim().slice(0, 80) : null,
             hembras_ovadas: hembrasOvadas,
             fecha_cosecha: fechaCosecha,
@@ -329,10 +330,21 @@ class IncubacionController {
         piletaId = nid;
       }
 
-      if (req.body.tipo_cosecha !== undefined || req.body.fc_tipo_cosecha !== undefined) {
-        const t = normalizarTipoCosecha(pick(req.body, "tipo_cosecha", "fc_tipo_cosecha"));
-        if (!t) return res.status(400).json({ error: "tipo_cosecha inválido" });
-        updateData.tipo_cosecha = t;
+      if (
+        req.body.tipo_cosecha !== undefined ||
+        req.body.fc_tipo_cosecha !== undefined ||
+        req.body.tipos_cosecha !== undefined ||
+        req.body.fc_tipos_cosecha !== undefined
+      ) {
+        const tipos = normalizarTiposCosecha(
+          pick(req.body, "tipo_cosecha", "fc_tipo_cosecha", "tipos_cosecha", "fc_tipos_cosecha"),
+        );
+        if (!tipos.length) {
+          return res
+            .status(400)
+            .json({ error: "tipo_cosecha inválido. Seleccione al menos una opción" });
+        }
+        updateData.tipo_cosecha = tipos;
       }
       if (req.body.estadio_desarrollo !== undefined || req.body.fc_estadio_desarrollo !== undefined) {
         const e = pick(req.body, "estadio_desarrollo", "fc_estadio_desarrollo");

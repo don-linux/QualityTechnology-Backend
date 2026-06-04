@@ -880,7 +880,8 @@ model incubacion {
   pileta_origen_id   Int?
   reproductor_id     Int?
   lote               String         @db.VarChar(60)
-  tipo_cosecha       TipoCosecha?
+  /// Tipos de cosecha del desove. Permite seleccionar más de una opción (huevo, larva con saco, alevín nadando).
+  tipo_cosecha       TipoCosecha[]  @default([])
   estadio_desarrollo String?        @db.VarChar(80)
   hembras_ovadas     Int            @default(0)
   fecha_cosecha      DateTime?      @db.Date
