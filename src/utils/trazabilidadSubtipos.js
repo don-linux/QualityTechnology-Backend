@@ -1,5 +1,11 @@
 /** Subtipos de movimiento en trazabilidad (UI y validación). */
 export const SUBTIPOS_TRAZABILIDAD = {
+  INCUBACION_A_ALEVINAJE: {
+    label: "De incubación a alevinaje",
+    modo: "TRASLADO",
+    etapaOrigen: "incubacion",
+    etapaDestino: "alevinaje",
+  },
   ALEVINAJE_A_ALEVINAJE: {
     label: "De alevinaje a alevinaje",
     modo: "TRASLADO",
@@ -168,6 +174,7 @@ export function labelSubtipoMovimiento(pilOr, pilDest, esVenta, mortalidadRegist
 
   const o = String(pilOr?.tipo ?? "").toLowerCase();
   const d = String(pilDest?.tipo ?? "").toLowerCase();
+  if (o === "incubacion" && d === "alevinaje") return SUBTIPOS_TRAZABILIDAD.INCUBACION_A_ALEVINAJE.label;
   if (o === "alevinaje" && d === "alevinaje") return SUBTIPOS_TRAZABILIDAD.ALEVINAJE_A_ALEVINAJE.label;
   if (o === "alevinaje" && d === "engorda") return SUBTIPOS_TRAZABILIDAD.ALEVINAJE_A_ENGORDA.label;
   if (o === "engorda" && d === "engorda") return SUBTIPOS_TRAZABILIDAD.ENGORDA_A_ENGORDA.label;

@@ -7,6 +7,7 @@ import {
 import {
   registrarMortalidadTrazabilidad,
   registrarMovimientoTrazabilidad,
+  registrarMovimientoIncubacionAAlevinaje,
   registrarVentaDesdeListaEspera,
   parseFechaMovimiento,
   etapaRequeridaParaTipoVenta,
@@ -15,6 +16,7 @@ import {
   resolverSubtipoMovimiento,
   validarPiletasSegunSubtipo,
 } from "../utils/trazabilidadSubtipos.js";
+import { resolverHistorialPesoId } from "./historialPesoController.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -124,7 +126,7 @@ class TrazabilidadController {
       if (!tipoMov) {
         return res.status(400).json({
           error:
-            "tipo_movimiento inválido. Use: ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
+            "tipo_movimiento inválido. Use: INCUBACION_A_ALEVINAJE, ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
         });
       }
       const piletaOrigenId = toInt(
@@ -152,6 +154,24 @@ class TrazabilidadController {
             subtipoConfig: resuelto.config,
             piletaOrigenId,
             piletaDestinoId,
+          });
+        }
+
+        if (resuelto?.subtipo === "INCUBACION_A_ALEVINAJE") {
+          const pesoHistorialId = await resolverHistorialPesoId(tx, {
+            peso_kg: pick(req.body, "peso_kg", "peso_valor", "fn_peso"),
+            fecha_peso:
+              pick(req.body, "fecha_peso", "fd_fecha_peso") ??
+              pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),
+          });
+          return registrarMovimientoIncubacionAAlevinaje(tx, {
+            piletaOrigenId,
+            piletaDestinoId,
+            cantidad,
+            usuarioId,
+            observacion,
+            fechaMovimiento,
+            pesoHistorialId,
           });
         }
 
