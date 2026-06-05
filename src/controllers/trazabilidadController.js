@@ -1,7 +1,12 @@
 import prisma from "../prisma.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import {
+  piletaWhereUbicacionFromRequest,
+  primerUbicacionIdValido,
+  resolverUbicacionFlexible,
+} from "../utils/granjaUbicacion.js";
 import {
   ETAPAS_PILETA_MOVIMIENTOS,
+  ETAPAS_TRAZABILIDAD,
   serializarMovimientoSiembra,
 } from "../utils/siembraMovimiento.js";
 import {
@@ -43,7 +48,7 @@ const siembraTrazabilidadInclude = {
       id: true,
       nombre: true,
       tipo: true,
-      ubicacion: { select: { nombre: true } },
+      ubicacion: { select: { id: true, nombre: true } },
     },
   },
   piletas_siembra_pileta_destinoTopiletas: {
@@ -51,7 +56,7 @@ const siembraTrazabilidadInclude = {
       id: true,
       nombre: true,
       tipo: true,
-      ubicacion: { select: { nombre: true } },
+      ubicacion: { select: { id: true, nombre: true } },
     },
   },
   alevinajes_como_origen: {
@@ -92,16 +97,36 @@ class TrazabilidadController {
   /** Movimientos `siembra` donde origen o destino es pileta de inventario trazable. */
   static async getMovimientos(req, res) {
     try {
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      let ubicClause = piletaWhereUbicacionFromRequest(req);
+      const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
+      const granjaQ =
+        typeof req.query?.granja === "string"
+          ? req.query.granja.trim()
+          : typeof req.params?.granja === "string"
+            ? req.params.granja.trim()
+            : "";
+
+      if (!ubicIdQ && granjaQ) {
+        const flex = await resolverUbicacionFlexible(granjaQ);
+        if (flex?.ubicacionId != null) {
+          ubicClause = { ubicacionId: flex.ubicacionId };
+        }
+      }
+
       if (!ubicClause) return res.json([]);
 
-      const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_PILETA_MOVIMIENTOS } };
+      const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_TRAZABILIDAD } };
+      const piletaOrigenEnUbic = { ...ubicClause, tipo: { in: ETAPAS_PILETA_MOVIMIENTOS } };
 
       const rows = await prisma.siembra.findMany({
         where: {
           OR: [
-            { piletas_siembra_pileta_destinoTopiletas: piletaEnUbic },
-            { piletas_siembra_pileta_origenTopiletas: piletaEnUbic },
+            { piletas_siembra_pileta_destinoTopiletas: piletaOrigenEnUbic },
+            { piletas_siembra_pileta_origenTopiletas: piletaOrigenEnUbic },
+            {
+              venta_id: { not: null },
+              piletas_siembra_pileta_origenTopiletas: piletaEnUbic,
+            },
           ],
         },
         include: siembraTrazabilidadInclude,

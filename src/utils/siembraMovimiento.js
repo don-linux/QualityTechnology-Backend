@@ -138,6 +138,9 @@ export function serializarMovimientoSiembra(s) {
     destinoLabel = "Externo";
   }
 
+  const ubicacionId = pilDest?.ubicacion?.id ?? pilOr?.ubicacion?.id ?? null;
+  const granjaNombre = pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null;
+
   return {
     fi_movimiento_id: s.id,
     origen: pilOr?.nombre ?? "Externo",
@@ -149,7 +152,8 @@ export function serializarMovimientoSiembra(s) {
     etapa,
     fc_etapa: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
     fc_subtipo_movimiento: subtipoLabel,
-    fc_granja: pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null,
+    ubicacion_id: ubicacionId,
+    fc_granja: granjaNombre,
     es_venta: esVenta,
     venta_id: s.venta_id ?? s.venta?.id ?? null,
   };
