@@ -781,6 +781,8 @@ export function serializeVenta(v) {
     estado_pago: v.estadoPago,
     fc_empresa: v.empresa,
     empresa: v.empresa,
+    fc_locacion: v.empresa,
+    locacion: v.empresa,
     fc_encargado_venta: v.vendedor_nombre,
     vendedor_nombre: v.vendedor_nombre,
     fc_observaciones: v.observacion?.comentario ?? null,
