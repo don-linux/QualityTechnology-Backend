@@ -715,17 +715,27 @@ function nombreEmpleado(e) {
 export function serializeCliente(c) {
   if (!c) return null;
   const ejecutivoId = c.ejecutivoEmpleadoId ?? c.ejecutivo?.id ?? null;
+  const unidadNegocioId = c.unidadNegocioId ?? c.unidadNegocio?.id ?? null;
   return {
     fi_cliente_id: c.id,
     cliente_id: c.id,
     nombre: c.nombre,
     fc_razon_social: c.nombre,
+    rfc: c.rfc ?? null,
+    fc_rfc: c.rfc ?? null,
+    unidad_negocio_id: unidadNegocioId,
+    fi_unidad_negocio_id: unidadNegocioId,
+    unidad_negocio_nombre: c.unidadNegocio?.nombre ?? null,
     empresa: c.empresa ?? null,
     fc_nombre_contacto: c.empresa ?? null,
     telefono: c.telefono ?? null,
     fc_telefono: c.telefono ?? null,
     email: c.email ?? null,
     fc_correo: c.email ?? null,
+    localidad: c.localidad ?? null,
+    fc_localidad: c.localidad ?? null,
+    estado: c.estado ?? null,
+    fc_estado: c.estado ?? null,
     ejecutivo_empleado_id: ejecutivoId,
     fi_ejecutivo_empleado_id: ejecutivoId,
     ejecutivo_nombre: nombreEmpleado(c.ejecutivo) ?? null,

@@ -136,6 +136,7 @@ model UnidadNegocio {
   created_at  DateTime   @default(now()) @db.Timestamp(6)
   updated_at  DateTime   @updatedAt @db.Timestamp(6)
   ubicacion   ubicacion? @relation(fields: [ubicacionId], references: [id])
+  clientes    Cliente[]
 
   @@index([ubicacionId])
   @@map("unidades_negocio")
@@ -408,19 +409,25 @@ model Vacacion {
 }
 
 model Cliente {
-  id                  Int           @id @default(autoincrement())
-  nombre              String        @db.VarChar(150)
-  empresa             String?       @db.VarChar(150)
-  telefono            String?       @db.VarChar(20)
-  email               String?       @db.VarChar(100)
-  ejecutivoEmpleadoId Int?          @map("ejecutivo_empleado_id")
-  esta_activo         Boolean       @default(true)
-  created_at          DateTime      @default(now()) @db.Timestamp(6)
-  updated_at          DateTime      @updatedAt @db.Timestamp(6)
-  ejecutivo           Empleado?     @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
+  id                  Int            @id @default(autoincrement())
+  nombre              String         @db.VarChar(150)
+  rfc                 String?        @db.VarChar(20)
+  empresa             String?        @db.VarChar(150)
+  telefono            String?        @db.VarChar(20)
+  email               String?        @db.VarChar(100)
+  localidad           String?        @db.VarChar(150)
+  estado              String?        @db.VarChar(100)
+  unidadNegocioId     Int?           @map("unidad_negocio_id")
+  ejecutivoEmpleadoId Int?           @map("ejecutivo_empleado_id")
+  esta_activo         Boolean        @default(true)
+  created_at          DateTime       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime       @updatedAt @db.Timestamp(6)
+  unidadNegocio       UnidadNegocio? @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
+  ejecutivo           Empleado?      @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
   lista_espera        ListaEspera[]
 
   @@index([nombre])
+  @@index([unidadNegocioId])
   @@index([ejecutivoEmpleadoId])
   @@map("clientes")
   @@schema("public")
