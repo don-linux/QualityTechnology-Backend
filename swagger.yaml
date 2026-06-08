@@ -3054,38 +3054,6 @@ paths:
         '204':
           description: "Proveedor eliminado"
 
-  /flujo-caja/clientes:
-    get:
-      summary: "Obtener lista de clientes (para flujo de caja)"
-      responses:
-        '200':
-          description: "Listado de clientes"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    nombre:
-                      type: string
-
-  /flujo-caja/proveedores:
-    get:
-      summary: "Obtener lista de proveedores (para flujo de caja)"
-      responses:
-        '200':
-          description: "Listado de proveedores"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    nombre:
-                      type: string
-
   /flujo-caja/tesoreria/{granja}:
     get:
       summary: "Obtener tesorería por granja"
@@ -3126,80 +3094,17 @@ paths:
                   $ref: '#/components/schemas/FlujoCajaMovimiento'
 
   /flujo-caja:
-    post:
-      summary: "Registrar movimiento de flujo de caja (soporta factura)"
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                facturaFile:
-                  type: string
-                  format: binary
-                fc_granja:
-                  type: string
-                fd_fecha:
-                  type: string
-                  format: date
-                fn_ingreso:
-                  type: number
-                fn_egreso:
-                  type: number
-                fc_observaciones:
-                  type: string
-                fc_cuenta:
-                  type: string
-                fc_categoria:
-                  type: string
-                fc_subcategoria:
-                  type: string
-                fc_beneficiario:
-                  type: string
-                fc_noproyecto:
-                  type: string
-                fc_estatus:
-                  type: string
-      responses:
-        '201':
-          description: "Movimiento registrado"
-        '400':
-          description: "Solicitud inválida (por ejemplo cuenta inexistente o saldo insuficiente)"
-        '500':
-          description: "Error del servidor"
-
-  /flujo-caja/{id}:
-    put:
-      summary: "Actualizar movimiento de flujo de caja"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FlujoCajaMovimiento'
+    get:
+      summary: "Obtener todos los movimientos de flujo de caja (bitacora de solo lectura)"
       responses:
         '200':
-          description: "Movimiento actualizado"
-        '500':
-          description: "Error del servidor"
-    delete:
-      summary: "Eliminar movimiento de flujo de caja"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: "Eliminado"
+          description: "Listado de movimientos"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlujoCajaMovimiento'
 
   /tesoreria:
     get:
