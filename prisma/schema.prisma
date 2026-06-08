@@ -523,7 +523,7 @@ model Cuenta {
   saldoActual    Decimal  @default(0) @map("saldo_actual") @db.Decimal(15, 2)
   esta_activa    Boolean  @default(true)
   created_at     DateTime @default(now()) @db.Timestamp(6)
-  updated_at     DateTime @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
 
   @@index([nombre])
   @@index([esta_activa])
