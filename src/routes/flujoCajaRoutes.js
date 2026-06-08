@@ -30,7 +30,6 @@ const upload = multer({ storage });
 router.get("/", flujoCajaController.getAll);
 router.get("/clientes", flujoCajaController.getClientes);
 router.get("/proveedores", flujoCajaController.getProveedores);
-router.get("/tesoreria/:granja", flujoCajaController.getTesoreriaByGranja);
 router.get("/:granja", flujoCajaController.getByGranja);
 router.post("/", upload.single("facturaFile"), flujoCajaController.create);
 router.put("/:id", flujoCajaController.update);

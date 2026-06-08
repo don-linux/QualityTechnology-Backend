@@ -4,9 +4,8 @@ import { resolverUbicacion } from "../utils/ubicacion.js";
 
 // FlujoCaja en el schema actual renombra `cuenta` -> `cuenta_nombre` y `mes`
 // -> `mes_periodo`. Los campos `noproyecto` y `factura` ya no existen y se
-// ignoran. La vista `vw_tesoreria_general` que consume getTesoreriaByGranja
-// puede no existir; el endpoint mantiene el contrato pero quien lo invoque
-// recibira lo que la vista exponga (si esta presente).
+// ignoran. El flujo de caja ya no se separa por ubicacion: `ubicacion_id` es
+// opcional y `getAll` lista todos los movimientos.
 
 function toDecimal(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -68,30 +67,6 @@ class FlujoCajaController {
     } catch (err) {
       console.error("Error al obtener movimientos:", err);
       res.status(500).json({ error: "Error al obtener movimientos" });
-    }
-  }
-
-  static async getTesoreriaByGranja(req, res) {
-    try {
-      const ubicacion = await resolverUbicacion(req.params.granja);
-      if (!ubicacion) return res.json([]);
-
-      const rows = await prisma.$queryRaw`
-        SELECT
-          granja          AS fc_granja,
-          mes             AS fc_mes,
-          categoria       AS fc_categoria,
-          total_ingreso   AS total_ingresos,
-          total_egreso    AS total_egresos,
-          saldo_neto      AS saldo
-        FROM vw_tesoreria_general
-        WHERE granja = ${ubicacion.nombre}
-        ORDER BY mes ASC
-      `;
-      res.json(rows);
-    } catch (err) {
-      console.error("Error al obtener tesoreria:", err);
-      res.status(500).json({ error: "Error al obtener datos de tesoreria" });
     }
   }
 
