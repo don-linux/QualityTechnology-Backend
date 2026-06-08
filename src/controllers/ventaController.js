@@ -20,6 +20,9 @@ function toDateOrNull(value) {
 
 function calcularMes(value) {
   if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 7);
+  }
   const s = String(value);
   return s.length >= 7 ? s.slice(0, 7) : null;
 }
