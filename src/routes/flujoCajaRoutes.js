@@ -27,6 +27,7 @@ const upload = multer({ storage });
 /* =========================================================
    RUTAS DE FLUJO DE CAJA
 ========================================================= */
+router.get("/", flujoCajaController.getAll);
 router.get("/clientes", flujoCajaController.getClientes);
 router.get("/proveedores", flujoCajaController.getProveedores);
 router.get("/tesoreria/:granja", flujoCajaController.getTesoreriaByGranja);

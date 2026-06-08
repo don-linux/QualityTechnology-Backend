@@ -534,7 +534,7 @@ model Cuenta {
 
 model FlujoCaja {
   id            Int       @id @default(autoincrement())
-  ubicacionId   Int       @map("ubicacion_id")
+  ubicacionId   Int?      @map("ubicacion_id")
   fecha         DateTime  @db.Date
   ingreso       Decimal   @default(0) @db.Decimal(12, 2)
   egreso        Decimal   @default(0) @db.Decimal(12, 2)
@@ -548,7 +548,7 @@ model FlujoCaja {
   usuario_id    Int?
   created_at    DateTime  @default(now()) @db.Timestamp(6)
   updated_at    DateTime  @db.Timestamp(6)
-  ubicacion     ubicacion @relation(fields: [ubicacionId], references: [id])
+  ubicacion     ubicacion? @relation(fields: [ubicacionId], references: [id])
   usuarios      Usuario?  @relation(fields: [usuario_id], references: [id])
 
   @@index([fecha(sort: Desc)])

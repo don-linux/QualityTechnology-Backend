@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeFlujoCaja } from "../utils/serializers.js";
-import { resolverOCrearUbicacion, resolverUbicacion } from "../utils/ubicacion.js";
+import { resolverUbicacion } from "../utils/ubicacion.js";
 
 // FlujoCaja en el schema actual renombra `cuenta` -> `cuenta_nombre` y `mes`
 // -> `mes_periodo`. Los campos `noproyecto` y `factura` ya no existen y se
@@ -58,6 +58,19 @@ class FlujoCajaController {
     }
   }
 
+  static async getAll(req, res) {
+    try {
+      const movimientos = await prisma.flujoCaja.findMany({
+        include: { ubicacion: true },
+        orderBy: { fecha: "desc" },
+      });
+      res.json(movimientos.map(serializeFlujoCaja));
+    } catch (err) {
+      console.error("Error al obtener movimientos:", err);
+      res.status(500).json({ error: "Error al obtener movimientos" });
+    }
+  }
+
   static async getTesoreriaByGranja(req, res) {
     try {
       const ubicacion = await resolverUbicacion(req.params.granja);
@@ -102,7 +115,6 @@ class FlujoCajaController {
   static async create(req, res) {
     try {
       const {
-        fc_granja,
         fd_fecha,
         fc_descripcion,
         fc_cuenta,
@@ -114,9 +126,6 @@ class FlujoCajaController {
 
       const fechaParsed = toDateOrNull(fd_fecha);
       if (!fechaParsed) return res.status(400).json({ error: "fd_fecha invalida" });
-
-      const ubicacion = await resolverOCrearUbicacion(fc_granja);
-      if (!ubicacion) return res.status(400).json({ error: "fc_granja invalida" });
 
       const ingreso = Math.max(toDecimal(req.body.fn_ingreso) ?? 0, 0);
       const egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
@@ -146,7 +155,6 @@ class FlujoCajaController {
       const movimiento = await prisma.$transaction(async (tx) => {
         const creado = await tx.flujoCaja.create({
           data: {
-            ubicacionId: ubicacion.ubicacionId,
             fecha: fechaParsed,
             ingreso,
             egreso,
@@ -185,7 +193,6 @@ class FlujoCajaController {
 
     try {
       const {
-        fc_granja,
         fd_fecha,
         fc_descripcion,
         fc_cuenta,
@@ -196,11 +203,6 @@ class FlujoCajaController {
       } = req.body;
 
       const updateData = {};
-      if (fc_granja !== undefined) {
-        const ubicacion = await resolverOCrearUbicacion(fc_granja);
-        if (!ubicacion) return res.status(400).json({ error: "fc_granja invalida" });
-        updateData.ubicacionId = ubicacion.ubicacionId;
-      }
       const fechaParsed = toDateOrNull(fd_fecha);
       if (fechaParsed) {
         updateData.fecha = fechaParsed;
