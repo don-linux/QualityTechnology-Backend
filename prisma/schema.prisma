@@ -471,6 +471,7 @@ model Venta {
   usuarios        Usuario      @relation(fields: [usuario_id], references: [id])
   siembras        siembra[]
   lista_espera    ListaEspera[]
+  flujo_caja      FlujoCaja[]
 
   @@index([fecha(sort: Desc)])
   @@index([estadoPago])
@@ -546,10 +547,12 @@ model FlujoCaja {
   estatus       String?   @db.VarChar(20)
   mes_periodo   String?   @db.VarChar(7)
   usuario_id    Int?
+  venta_id      Int?      @map("venta_id")
   created_at    DateTime  @default(now()) @db.Timestamp(6)
   updated_at    DateTime  @db.Timestamp(6)
   ubicacion     ubicacion? @relation(fields: [ubicacionId], references: [id])
   usuarios      Usuario?  @relation(fields: [usuario_id], references: [id])
+  venta         Venta?    @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([fecha(sort: Desc)])
   @@index([categoria])
@@ -557,6 +560,7 @@ model FlujoCaja {
   @@index([cuenta_nombre])
   @@index([mes_periodo])
   @@index([ubicacionId])
+  @@index([venta_id])
   @@map("flujo_caja")
   @@schema("public")
 }

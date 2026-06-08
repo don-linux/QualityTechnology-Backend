@@ -660,6 +660,9 @@ components:
           type: string
         fc_mes:
           type: string
+        fi_venta_id:
+          type: integer
+          nullable: true
 
     TesoreriaOverview:
       type: object
@@ -2465,6 +2468,91 @@ paths:
       responses:
         '200':
           description: "Venta eliminada"
+        '500':
+          description: "Error del servidor"
+
+  /ventas/{id}/pagos:
+    get:
+      summary: "Listar pagos de una venta"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Historial de pagos (movimientos de flujo de caja ligados a la venta)"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlujoCajaMovimiento'
+        '404':
+          description: "Venta no encontrada"
+        '500':
+          description: "Error del servidor"
+    post:
+      summary: "Registrar pago (abono) de una venta"
+      description: "Crea un ingreso en flujo de caja ligado a la venta, suma al saldo de la cuenta y actualiza monto_abonado/estado_pago (ADEUDO, PARCIAL, LIQUIDADO)."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fc_cuenta
+                - fn_monto
+              properties:
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_cuenta:
+                  type: string
+                fn_monto:
+                  type: number
+                fc_descripcion:
+                  type: string
+      responses:
+        '201':
+          description: "Pago registrado"
+        '400':
+          description: "Solicitud invalida (monto, cuenta o adeudo)"
+        '404':
+          description: "Venta no encontrada"
+        '500':
+          description: "Error del servidor"
+
+  /ventas/{id}/pagos/{movId}:
+    delete:
+      summary: "Anular pago de una venta"
+      description: "Revierte el abono en la venta, resta el saldo de la cuenta y elimina el movimiento de flujo de caja."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: movId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Pago anulado"
+        '400':
+          description: "No se puede anular (saldo insuficiente o movimiento invalido)"
+        '404':
+          description: "Pago o venta no encontrados"
         '500':
           description: "Error del servidor"
 

@@ -167,6 +167,17 @@ class FlujoCajaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
+      const existente = await prisma.flujoCaja.findUnique({
+        where: { id },
+        select: { venta_id: true },
+      });
+      if (!existente) return res.status(404).json({ error: "Movimiento no encontrado" });
+      if (existente.venta_id != null) {
+        return res.status(400).json({
+          error: "Este movimiento es un pago de venta; gestionalo desde Control de Ventas",
+        });
+      }
+
       const {
         fd_fecha,
         fc_descripcion,
@@ -214,6 +225,17 @@ class FlujoCajaController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
+      const existente = await prisma.flujoCaja.findUnique({
+        where: { id },
+        select: { venta_id: true },
+      });
+      if (!existente) return res.status(404).json({ error: "Movimiento no encontrado" });
+      if (existente.venta_id != null) {
+        return res.status(400).json({
+          error: "Este movimiento es un pago de venta; gestionalo desde Control de Ventas",
+        });
+      }
+
       await prisma.flujoCaja.delete({ where: { id } });
       res.sendStatus(204);
     } catch (err) {

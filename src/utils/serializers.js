@@ -896,6 +896,8 @@ export function serializeFlujoCaja(f) {
     fc_mes: f.mes_periodo,
     mes_periodo: f.mes_periodo,
     fi_usuario_id: f.usuario_id ?? null,
+    venta_id: f.venta_id ?? null,
+    fi_venta_id: f.venta_id ?? null,
   };
 }
 
