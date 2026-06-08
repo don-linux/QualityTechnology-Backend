@@ -39,13 +39,6 @@ export function calcularEstadoPago(montoTotal, montoAbonado) {
   return "PARCIAL";
 }
 
-function descripcionPago(venta, nota) {
-  const folio = venta.folio ? `Folio ${venta.folio}` : `Venta #${venta.id}`;
-  const base = `Pago de venta — ${folio}`;
-  const extra = nota?.trim?.() ? String(nota).trim() : "";
-  return extra ? `${base} — ${extra}` : base;
-}
-
 class VentaController {
   static async getAll(req, res) {
     try {
@@ -86,7 +79,6 @@ class VentaController {
     const monto = toDecimal(req.body.fn_monto ?? req.body.monto);
     const cuentaNombre = req.body.fc_cuenta ?? req.body.cuenta_nombre ?? null;
     const fechaParsed = toDateOrNull(req.body.fd_fecha ?? req.body.fecha) ?? new Date();
-    const nota = req.body.fc_descripcion ?? req.body.descripcion ?? null;
     const observaciones = req.body.fc_observaciones ?? req.body.observaciones ?? null;
 
     if (!monto || monto <= 0) {
@@ -129,7 +121,6 @@ class VentaController {
             fecha: fechaParsed,
             ingreso: montoPago,
             egreso: 0,
-            descripcion: descripcionPago(venta, nota),
             observaciones: observaciones?.trim?.() ? String(observaciones).trim() : null,
             cuenta_nombre: String(cuentaNombre),
             categoria: "VENTAS",

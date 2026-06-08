@@ -91,7 +91,6 @@ class FlujoCajaController {
     try {
       const {
         fd_fecha,
-        fc_descripcion,
         fc_observaciones,
         fc_cuenta,
         fc_categoria,
@@ -138,7 +137,6 @@ class FlujoCajaController {
             fecha: fechaParsed,
             ingreso,
             egreso,
-            descripcion: fc_descripcion ?? null,
             observaciones: fc_observaciones ?? null,
             cuenta_nombre: fc_cuenta ?? null,
             categoria: fc_categoria ?? null,
@@ -186,7 +184,6 @@ class FlujoCajaController {
 
       const {
         fd_fecha,
-        fc_descripcion,
         fc_observaciones,
         fc_cuenta,
         fc_categoria,
@@ -211,7 +208,6 @@ class FlujoCajaController {
       if (req.body.fn_egreso !== undefined) {
         updateData.egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
       }
-      if (fc_descripcion !== undefined) updateData.descripcion = fc_descripcion ?? null;
       if (fc_observaciones !== undefined) updateData.observaciones = fc_observaciones ?? null;
       if (fc_cuenta !== undefined) updateData.cuenta_nombre = fc_cuenta ?? null;
       if (fc_categoria !== undefined) updateData.categoria = fc_categoria ?? null;

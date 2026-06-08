@@ -642,7 +642,7 @@ components:
           type: number
         fn_egreso:
           type: number
-        fc_descripcion:
+        fc_observaciones:
           type: string
         fc_cuenta:
           type: string
@@ -2519,7 +2519,7 @@ paths:
                   type: string
                 fn_monto:
                   type: number
-                fc_descripcion:
+                fc_observaciones:
                   type: string
       responses:
         '201':
@@ -3147,7 +3147,7 @@ paths:
                   type: number
                 fn_egreso:
                   type: number
-                fc_descripcion:
+                fc_observaciones:
                   type: string
                 fc_cuenta:
                   type: string

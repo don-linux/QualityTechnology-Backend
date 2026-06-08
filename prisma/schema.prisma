@@ -539,7 +539,6 @@ model FlujoCaja {
   fecha         DateTime  @db.Date
   ingreso       Decimal   @default(0) @db.Decimal(12, 2)
   egreso        Decimal   @default(0) @db.Decimal(12, 2)
-  descripcion   String?   @db.VarChar(200)
   observaciones String?   @db.VarChar(500)
   cuenta_nombre String?   @db.VarChar(50)
   categoria     String?   @db.VarChar(100)

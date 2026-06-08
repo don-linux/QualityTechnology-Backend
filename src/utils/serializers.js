@@ -881,8 +881,6 @@ export function serializeFlujoCaja(f) {
     ingreso: f.ingreso,
     fn_egreso: f.egreso,
     egreso: f.egreso,
-    fc_descripcion: f.descripcion,
-    descripcion: f.descripcion,
     fc_observaciones: f.observaciones,
     observaciones: f.observaciones,
     fc_cuenta: f.cuenta_nombre,
