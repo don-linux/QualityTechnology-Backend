@@ -883,6 +883,8 @@ export function serializeFlujoCaja(f) {
     egreso: f.egreso,
     fc_descripcion: f.descripcion,
     descripcion: f.descripcion,
+    fc_observaciones: f.observaciones,
+    observaciones: f.observaciones,
     fc_cuenta: f.cuenta_nombre,
     cuenta_nombre: f.cuenta_nombre,
     fc_categoria: f.categoria,

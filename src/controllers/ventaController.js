@@ -87,12 +87,16 @@ class VentaController {
     const cuentaNombre = req.body.fc_cuenta ?? req.body.cuenta_nombre ?? null;
     const fechaParsed = toDateOrNull(req.body.fd_fecha ?? req.body.fecha) ?? new Date();
     const nota = req.body.fc_descripcion ?? req.body.descripcion ?? null;
+    const observaciones = req.body.fc_observaciones ?? req.body.observaciones ?? null;
 
     if (!monto || monto <= 0) {
       return res.status(400).json({ error: "El monto debe ser mayor a cero" });
     }
     if (!cuentaNombre) {
       return res.status(400).json({ error: "La cuenta es obligatoria" });
+    }
+    if (observaciones != null && String(observaciones).length > 500) {
+      return res.status(400).json({ error: "Las observaciones no pueden exceder 500 caracteres" });
     }
 
     try {
@@ -126,6 +130,7 @@ class VentaController {
             ingreso: montoPago,
             egreso: 0,
             descripcion: descripcionPago(venta, nota),
+            observaciones: observaciones?.trim?.() ? String(observaciones).trim() : null,
             cuenta_nombre: String(cuentaNombre),
             categoria: "VENTAS",
             subcategoria: venta.tipoVenta,

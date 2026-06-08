@@ -92,6 +92,7 @@ class FlujoCajaController {
       const {
         fd_fecha,
         fc_descripcion,
+        fc_observaciones,
         fc_cuenta,
         fc_categoria,
         fc_subcategoria,
@@ -101,6 +102,10 @@ class FlujoCajaController {
 
       const fechaParsed = toDateOrNull(fd_fecha);
       if (!fechaParsed) return res.status(400).json({ error: "fd_fecha invalida" });
+
+      if (fc_observaciones != null && String(fc_observaciones).length > 500) {
+        return res.status(400).json({ error: "Las observaciones no pueden exceder 500 caracteres" });
+      }
 
       const ingreso = Math.max(toDecimal(req.body.fn_ingreso) ?? 0, 0);
       const egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
@@ -134,6 +139,7 @@ class FlujoCajaController {
             ingreso,
             egreso,
             descripcion: fc_descripcion ?? null,
+            observaciones: fc_observaciones ?? null,
             cuenta_nombre: fc_cuenta ?? null,
             categoria: fc_categoria ?? null,
             subcategoria: fc_subcategoria ?? null,
@@ -181,12 +187,17 @@ class FlujoCajaController {
       const {
         fd_fecha,
         fc_descripcion,
+        fc_observaciones,
         fc_cuenta,
         fc_categoria,
         fc_subcategoria,
         fc_beneficiario,
         fc_estatus,
       } = req.body;
+
+      if (fc_observaciones != null && String(fc_observaciones).length > 500) {
+        return res.status(400).json({ error: "Las observaciones no pueden exceder 500 caracteres" });
+      }
 
       const updateData = {};
       const fechaParsed = toDateOrNull(fd_fecha);
@@ -201,6 +212,7 @@ class FlujoCajaController {
         updateData.egreso = Math.max(toDecimal(req.body.fn_egreso) ?? 0, 0);
       }
       if (fc_descripcion !== undefined) updateData.descripcion = fc_descripcion ?? null;
+      if (fc_observaciones !== undefined) updateData.observaciones = fc_observaciones ?? null;
       if (fc_cuenta !== undefined) updateData.cuenta_nombre = fc_cuenta ?? null;
       if (fc_categoria !== undefined) updateData.categoria = fc_categoria ?? null;
       if (fc_subcategoria !== undefined) updateData.subcategoria = fc_subcategoria ?? null;
