@@ -574,7 +574,7 @@ model Alimentacion {
   fechaSiembra        DateTime?    @map("fecha_siembra") @db.Date
   origenAlevines      String?      @map("origen_alevines") @db.VarChar(200)
   pesoPromedioEntrada Decimal?     @map("peso_promedio_entrada") @db.Decimal(12, 3)
-  totalAlimentoKg     Decimal?     @map("total_alimento_kg") @db.Decimal(12, 3)
+  totalAlimentoGramos Decimal?     @map("total_alimento_gramos") @db.Decimal(12, 3)
   mortalidad          Int?
   recambioAgua        String?      @map("recambio_agua") @db.VarChar(50)
   temperatura_agua    Decimal?     @db.Decimal(6, 2)

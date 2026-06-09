@@ -184,7 +184,7 @@ class TrazabilidadController {
 
         if (resuelto?.subtipo === "INCUBACION_A_ALEVINAJE") {
           const pesoHistorialId = await resolverHistorialPesoId(tx, {
-            peso_kg: pick(req.body, "peso_kg", "peso_valor", "fn_peso"),
+            peso_gramos: pick(req.body, "peso_gramos", "peso_valor", "fn_peso"),
             fecha_peso:
               pick(req.body, "fecha_peso", "fd_fecha_peso") ??
               pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),

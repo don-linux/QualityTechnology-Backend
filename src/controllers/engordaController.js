@@ -270,7 +270,7 @@ class EngordaController {
         await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
 
         if (
-          req.body.peso_kg !== undefined ||
+          req.body.peso_gramos !== undefined ||
           req.body.peso_valor !== undefined ||
           req.body.historial_peso_id !== undefined ||
           req.body.peso_id !== undefined

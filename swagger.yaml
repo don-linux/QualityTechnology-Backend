@@ -803,7 +803,7 @@ components:
         fd_fecha:
           type: string
           format: date
-        fn_total_alimento_kg:
+        fn_total_alimento_gramos:
           type: number
         fn_mortalidad:
           type: number
