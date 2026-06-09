@@ -9,7 +9,7 @@ class PuestoController {
   static async getAll(req, res) {
     try {
       const puestos = await prisma.puesto.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(puestos.map(serializePuesto));
     } catch (err) {

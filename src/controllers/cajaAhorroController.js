@@ -32,7 +32,7 @@ class CajaAhorroController {
       }
       const registros = await prisma.caja_ahorro.findMany({
         where: { granja: { equals: granja, mode: "insensitive" } },
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(registros.map(serializeCajaAhorroResumen));
     } catch (err) {

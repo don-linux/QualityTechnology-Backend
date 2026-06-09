@@ -9,7 +9,7 @@ class TipoPiletaController {
   static async getAll(req, res) {
     try {
       const items = await prisma.tipoPileta.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(items.map(serializeTipoPileta));
     } catch (err) {

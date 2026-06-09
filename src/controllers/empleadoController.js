@@ -47,7 +47,7 @@ class EmpleadoController {
     try {
       const empleados = await prisma.empleado.findMany({
         include: empleadoInclude,
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(empleados.map(serializeEmpleado));
     } catch (err) {

@@ -79,7 +79,7 @@ class UnidadNegocioController {
   static async getAll(req, res) {
     try {
       const unidades = await prisma.unidadNegocio.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       const nombres = await mapUbicacionesNombres(unidades.map((u) => u.ubicacionId));
       res.json(
