@@ -141,6 +141,10 @@ export function serializarMovimientoSiembra(s) {
   const ubicacionId = pilDest?.ubicacion?.id ?? pilOr?.ubicacion?.id ?? null;
   const granjaNombre = pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null;
 
+  const usuario = s.usuarios ?? null;
+  const usuarioNombre = usuario?.nombre ?? null;
+  const usuarioRol = usuario?.rol?.nombre ?? null;
+
   return {
     fi_movimiento_id: s.id,
     origen: pilOr?.nombre ?? "Externo",
@@ -156,5 +160,10 @@ export function serializarMovimientoSiembra(s) {
     fc_granja: granjaNombre,
     es_venta: esVenta,
     venta_id: s.venta_id ?? s.venta?.id ?? null,
+    usuario_id: s.usuario_id ?? usuario?.id ?? null,
+    usuario_nombre: usuarioNombre,
+    fc_usuario: usuarioNombre,
+    rol_nombre: usuarioRol,
+    fc_rol: usuarioRol,
   };
 }

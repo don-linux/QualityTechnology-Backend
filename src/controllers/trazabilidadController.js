@@ -91,6 +91,13 @@ const siembraTrazabilidadInclude = {
       tipoVenta: true,
     },
   },
+  usuarios: {
+    select: {
+      id: true,
+      nombre: true,
+      rol: { select: { nombre: true } },
+    },
+  },
 };
 
 class TrazabilidadController {
