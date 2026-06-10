@@ -12,6 +12,36 @@ export function normalizarGranjaParam(value) {
 }
 
 /**
+ * Clave de la granja/unidad de negocio asignada a un rol. Misma convención que el
+ * frontend (`AuthProvider` / `resolveUnidadByRol`): roles que incluyen "gam" →
+ * Medellín, "gac" → La Ceiba. `null` = sin restricción (administradores y roles
+ * generales ven todas las unidades).
+ *
+ * @param {string} rolNombre — nombre del rol del JWT (`req.user.rol`)
+ * @returns {"medellin" | "ceiba" | null}
+ */
+export function granjaClaveDeRol(rolNombre) {
+  const rol = normalizarGranjaParam(rolNombre);
+  if (!rol) return null;
+  if (rol.includes("gam")) return "medellin";
+  if (rol.includes("gac")) return "ceiba";
+  return null;
+}
+
+/**
+ * Indica si un texto de granja/empresa (`ventas.empresa`, `lista_espera.granja`)
+ * pertenece a la granja indicada por su clave. Compara normalizado por subcadena
+ * para cubrir variantes ("Medellin", "Granja Acuicola Medellin", etc.).
+ *
+ * @param {string} texto
+ * @param {"medellin" | "ceiba" | null} granjaClave — `null` no restringe
+ */
+export function textoPerteneceAGranja(texto, granjaClave) {
+  if (!granjaClave) return true;
+  return normalizarGranjaParam(texto).includes(granjaClave);
+}
+
+/**
  * Construye filtros sobre `ubicacion.nombre` que coincidan con el nombre corto del
  * catálogo (Unidad de Negocio), abreviaturas típicas o el nombre registrado en BD.
  *
