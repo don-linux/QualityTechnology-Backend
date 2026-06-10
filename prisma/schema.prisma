@@ -137,6 +137,7 @@ model UnidadNegocio {
   updated_at  DateTime   @updatedAt @db.Timestamp(6)
   ubicacion   ubicacion? @relation(fields: [ubicacionId], references: [id])
   clientes    Cliente[]
+  empleados   Empleado[]
 
   @@index([ubicacionId])
   @@map("unidades_negocio")
@@ -320,6 +321,7 @@ model Empleado {
   usuarioId       Int?                 @unique @map("usuario_id")
   puestoId        Int?                 @map("puesto_id")
   departamentoId  Int?                 @map("departamento_id")
+  unidadNegocioId Int?                 @map("unidad_negocio_id")
   sueldo_base     Decimal?             @db.Decimal(12, 2)
   fecha_ingreso   DateTime?            @db.Date
   esta_activo     Boolean              @default(true)
@@ -329,6 +331,7 @@ model Empleado {
   documentos      DocumentoEmpleado[]
   departamento    Departamento?        @relation(fields: [departamentoId], references: [id])
   puesto          Puesto?              @relation(fields: [puestoId], references: [id])
+  unidadNegocio   UnidadNegocio?       @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
   usuario         Usuario?             @relation(fields: [usuarioId], references: [id])
   nominas         Nomina[]
   vacaciones      Vacacion[]
@@ -337,6 +340,7 @@ model Empleado {
   @@index([departamentoId])
   @@index([puestoId])
   @@index([usuarioId])
+  @@index([unidadNegocioId])
   @@map("empleados")
   @@schema("public")
 }

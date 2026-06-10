@@ -97,12 +97,21 @@ export function serializeUnidadNegocio(u) {
   };
 }
 
-export function serializeEmpleado(e) {
+export function serializeEmpleado(e, opts = {}) {
   if (!e) return null;
   const nombre = e.nombre;
   const apellidoPaterno = e.apellidoPaterno;
   const apellidoMaterno = e.apellidoMaterno ?? null;
   const fechaIngreso = e.fecha_ingreso ?? null;
+  const unidadNegocioId =
+    e.unidadNegocioId ??
+    e.unidadNegocio?.id ??
+    opts.unidad_negocio_id ??
+    null;
+  const unidadNegocioNombre =
+    e.unidadNegocio?.nombre ??
+    opts.unidad_negocio_nombre ??
+    null;
   return {
     empleado_id: e.id,
     fi_empleado_id: e.id,
@@ -111,8 +120,8 @@ export function serializeEmpleado(e) {
     fi_departamento_id: e.departamentoId ?? null,
     puesto_id: e.puestoId ?? null,
     fi_puesto_id: e.puestoId ?? null,
-    unidad_negocio_id: null,
-    fi_unidad_negocio_id: null,
+    unidad_negocio_id: unidadNegocioId,
+    fi_unidad_negocio_id: unidadNegocioId,
     nombre,
     apellido_paterno: apellidoPaterno,
     apellido_materno: apellidoMaterno,
@@ -127,7 +136,7 @@ export function serializeEmpleado(e) {
     fb_activo: e.esta_activo,
     departamento_nombre: e.departamento?.nombre ?? null,
     puesto_nombre: e.puesto?.nombre ?? null,
-    unidad_negocio_nombre: null,
+    unidad_negocio_nombre: unidadNegocioNombre,
     usuario_nombre: e.usuario?.nombre ?? null,
   };
 }

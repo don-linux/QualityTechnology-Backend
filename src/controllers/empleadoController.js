@@ -10,7 +10,8 @@ import { revokeAllByUser } from "../services/refreshTokenService.js";
 const empleadoInclude = {
   departamento: true,
   puesto: true,
-  usuario: true,
+  unidadNegocio: true,
+  usuario: { include: { rol: true } },
 };
 
 function isValidDate(value) {
@@ -33,6 +34,7 @@ function parseEmpleadoData(body) {
   return {
     departamentoId: pick(body, "departamento_id", "fi_departamento_id"),
     puestoId: pick(body, "puesto_id", "fi_puesto_id"),
+    unidadNegocioId: pick(body, "unidad_negocio_id", "fi_unidad_negocio_id"),
     usuarioId: pick(body, "usuario_id", "fi_usuario_id"),
     nombre: pick(body, "nombre", "fc_nombre"),
     apellidoPaterno: pick(body, "apellido_paterno", "fc_apellido_paterno"),
@@ -93,6 +95,7 @@ class EmpleadoController {
           apellidoMaterno: data.apellidoMaterno ?? null,
           departamentoId: Number(data.departamentoId),
           ...(data.puestoId ? { puestoId: Number(data.puestoId) } : {}),
+          ...(data.unidadNegocioId ? { unidadNegocioId: Number(data.unidadNegocioId) } : {}),
           ...(data.usuarioId ? { usuarioId: Number(data.usuarioId) } : {}),
           ...(data.sueldoBase !== undefined ? { sueldo_base: data.sueldoBase } : {}),
           ...(data.fechaIngreso ? { fecha_ingreso: toDateOrNull(data.fechaIngreso) } : {}),
@@ -124,6 +127,9 @@ class EmpleadoController {
       const updateData = {};
       if (data.departamentoId !== undefined) updateData.departamentoId = Number(data.departamentoId);
       if (data.puestoId !== undefined) updateData.puestoId = data.puestoId ? Number(data.puestoId) : null;
+      if (data.unidadNegocioId !== undefined) {
+        updateData.unidadNegocioId = data.unidadNegocioId ? Number(data.unidadNegocioId) : null;
+      }
       if (data.usuarioId !== undefined) updateData.usuarioId = data.usuarioId ? Number(data.usuarioId) : null;
       if (data.nombre !== undefined) updateData.nombre = data.nombre;
       if (data.apellidoPaterno !== undefined) updateData.apellidoPaterno = data.apellidoPaterno;

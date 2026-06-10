@@ -11,34 +11,73 @@ export function normalizarGranjaParam(value) {
     .toLowerCase();
 }
 
+const STOP_UNIDAD_MATCH = new Set(
+  ["granja", "acuicola", "la", "el", "de", "y", "del", "los", "las"].map(normalizarGranjaParam),
+);
+
 /**
- * Clave de la granja/unidad de negocio asignada a un rol. Misma convención que el
- * frontend (`AuthProvider` / `resolveUnidadByRol`): roles que incluyen "gam" →
- * Medellín, "gac" → La Ceiba. `null` = sin restricción (administradores y roles
- * generales ven todas las unidades).
- *
- * @param {string} rolNombre — nombre del rol del JWT (`req.user.rol`)
- * @returns {"medellin" | "ceiba" | null}
+ * Indica si dos nombres de unidad de negocio / granja se refieren a la misma:
+ * igualdad normalizada o subcadena significativa (≥4 caracteres, sin palabras
+ * genéricas). Cubre variantes como "Medellin" vs "Granja Acuicola Medellin".
  */
-export function granjaClaveDeRol(rolNombre) {
-  const rol = normalizarGranjaParam(rolNombre);
-  if (!rol) return null;
-  if (rol.includes("gam")) return "medellin";
-  if (rol.includes("gac")) return "ceiba";
-  return null;
+export function nombresUnidadCoinciden(a, b) {
+  const na = normalizarGranjaParam(a);
+  const nb = normalizarGranjaParam(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  const shorter = na.length <= nb.length ? na : nb;
+  const longer = na.length <= nb.length ? nb : na;
+  if (shorter.length < 4 || !longer.includes(shorter)) return false;
+  return !STOP_UNIDAD_MATCH.has(shorter);
 }
 
 /**
- * Indica si un texto de granja/empresa (`ventas.empresa`, `lista_espera.granja`)
- * pertenece a la granja indicada por su clave. Compara normalizado por subcadena
- * para cubrir variantes ("Medellin", "Granja Acuicola Medellin", etc.).
+ * Alcance de visibilidad por unidad de negocio del usuario autenticado, resuelto
+ * contra BD a partir del empleado vinculado (`empleados.unidad_negocio_id`):
+ *
+ * 1. Rol `esRoot` → sin restricción (`esRoot: true`).
+ * 2. Unidad de negocio del empleado vinculado al usuario.
+ * 3. Sin empleado o sin unidad asignada → `unidad: null` (no ve registros de ventas).
+ *
+ * @param {{ usuario_id?: number }} jwtUser — `req.user` del authMiddleware
+ * @returns {Promise<{ esRoot: boolean, unidad: { id: number, nombre: string } | null }>}
+ */
+export async function alcanceUnidadNegocio(jwtUser) {
+  const usuarioId = Number(jwtUser?.usuario_id);
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return { esRoot: false, unidad: null };
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: usuarioId },
+    include: {
+      rol: true,
+      empleados: { include: { unidadNegocio: true } },
+    },
+  });
+  if (!usuario) return { esRoot: false, unidad: null };
+  if (usuario.rol?.esRoot) return { esRoot: true, unidad: null };
+
+  const unidadEmpleado = usuario.empleados?.unidadNegocio;
+  if (unidadEmpleado) {
+    return { esRoot: false, unidad: { id: unidadEmpleado.id, nombre: unidadEmpleado.nombre } };
+  }
+
+  return { esRoot: false, unidad: null };
+}
+
+/**
+ * Visibilidad de un registro (por su texto de empresa/granja: `ventas.empresa`,
+ * `lista_espera.granja`) dentro del alcance del usuario:
+ * root ve todo; con unidad asignada solo lo que coincide; sin unidad, nada.
  *
  * @param {string} texto
- * @param {"medellin" | "ceiba" | null} granjaClave — `null` no restringe
+ * @param {{ esRoot: boolean, unidad: { nombre: string } | null }} alcance
  */
-export function textoPerteneceAGranja(texto, granjaClave) {
-  if (!granjaClave) return true;
-  return normalizarGranjaParam(texto).includes(granjaClave);
+export function textoEnAlcanceUnidad(texto, alcance) {
+  if (alcance?.esRoot) return true;
+  if (!alcance?.unidad) return false;
+  return nombresUnidadCoinciden(texto, alcance.unidad.nombre);
 }
 
 /**
@@ -173,4 +212,35 @@ export async function resolverUbicacionFlexible(granjaParam) {
     }
   }
   return best ? { ubicacionId: best.id, nombre: best.nombre } : null;
+}
+
+/**
+ * Resuelve unidad de negocio tipo granja a partir del nombre del rol (gam → Medellín, gac → Ceiba).
+ * Misma convención que el frontend (`resolveUnidadByRol`).
+ *
+ * @param {Array<{ id: number, nombre: string }>} unidades
+ * @param {string} rolNombre
+ * @returns {{ id: number, nombre: string } | null}
+ */
+export function resolveUnidadNegocioFromRol(unidades, rolNombre) {
+  const rol = normalizarGranjaParam(rolNombre);
+  if (!rol) return null;
+
+  const granjas = (unidades || []).filter((u) =>
+    normalizarGranjaParam(u.nombre).includes("granja"),
+  );
+
+  if (rol.includes("gam")) {
+    return (
+      granjas.find((u) => normalizarGranjaParam(u.nombre).includes("medellin")) ?? null
+    );
+  }
+
+  if (rol.includes("gac")) {
+    return (
+      granjas.find((u) => normalizarGranjaParam(u.nombre).includes("ceiba")) ?? null
+    );
+  }
+
+  return null;
 }

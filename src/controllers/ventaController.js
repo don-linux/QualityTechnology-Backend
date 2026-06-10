@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeFlujoCaja, serializeVenta } from "../utils/serializers.js";
-import { granjaClaveDeRol, textoPerteneceAGranja } from "../utils/granjaUbicacion.js";
+import { alcanceUnidadNegocio, textoEnAlcanceUnidad } from "../utils/granjaUbicacion.js";
 
 function toInt(value) {
   const n = Number(value);
@@ -40,22 +40,23 @@ export function calcularEstadoPago(montoTotal, montoAbonado) {
   return "PARCIAL";
 }
 
-/** La venta solo es visible si pertenece a la unidad de negocio del rol del usuario. */
-function ventaVisibleParaUsuario(venta, req) {
-  return textoPerteneceAGranja(venta?.empresa, granjaClaveDeRol(req.user?.rol));
+/** La venta solo es visible dentro del alcance de unidad de negocio del usuario (resuelto en BD). */
+async function ventaVisibleParaUsuario(venta, req) {
+  const alcance = await alcanceUnidadNegocio(req.user);
+  return textoEnAlcanceUnidad(venta?.empresa, alcance);
 }
 
 class VentaController {
   static async getAll(req, res) {
     try {
-      const granjaUsuario = granjaClaveDeRol(req.user?.rol);
+      const alcance = await alcanceUnidadNegocio(req.user);
       const ventas = await prisma.venta.findMany({
         include: { observacion: true },
         orderBy: [{ fecha: "desc" }, { id: "desc" }],
       });
-      const visibles = granjaUsuario
-        ? ventas.filter((v) => textoPerteneceAGranja(v.empresa, granjaUsuario))
-        : ventas;
+      const visibles = alcance.esRoot
+        ? ventas
+        : ventas.filter((v) => textoEnAlcanceUnidad(v.empresa, alcance));
       res.json(visibles.map(serializeVenta));
     } catch (err) {
       console.error("Error al obtener ventas:", err);
@@ -70,7 +71,7 @@ class VentaController {
     try {
       const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
       if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
-      if (!ventaVisibleParaUsuario(venta, req)) {
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
         return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
       }
 
@@ -107,7 +108,7 @@ class VentaController {
     try {
       const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
       if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
-      if (!ventaVisibleParaUsuario(venta, req)) {
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
         return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
       }
 
@@ -196,7 +197,7 @@ class VentaController {
 
       const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
       if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
-      if (!ventaVisibleParaUsuario(venta, req)) {
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
         return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
       }
 
