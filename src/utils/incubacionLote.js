@@ -12,3 +12,10 @@ export function normalizarLoteIncubacion(value) {
   }
   return lote.slice(0, 60);
 }
+
+/** Devuelve null si el valor está vacío (campos opcionales como alevinaje). */
+export function normalizarLoteOpcional(value) {
+  const lote = String(value ?? "").trim();
+  if (!lote) return null;
+  return lote.slice(0, 60);
+}

@@ -869,6 +869,8 @@ model TipoPileta {
 model alevinaje {
   id                Int           @id @default(autoincrement())
   pileta_id         Int
+  /// Lote genético heredado de incubación o capturado manualmente.
+  lote              String?       @db.VarChar(60)
   cantidad_total    Int           @default(0)
   cantidad_alimento Int           @default(0)
   observacion_id    Int?
@@ -882,6 +884,7 @@ model alevinaje {
   siembra_origen    siembra?      @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
   @@index([pileta_id])
+  @@index([lote])
   @@schema("public")
 }
 

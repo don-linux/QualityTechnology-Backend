@@ -5,6 +5,7 @@ import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.j
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
 import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
 import { calcularDiasEnPileta } from "./incubacionRegistro.js";
+import { resolverLoteAlevinaje } from "./alevinajeLote.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -97,7 +98,17 @@ async function descontarInventarioOrigen(
 
 async function sumarInventarioDestino(
   tx,
-  { piletaDestinoId, tipoDestino, cantidad, siembraOrigenId, usuarioId, observacion, pesoHistorialId = null },
+  {
+    piletaDestinoId,
+    tipoDestino,
+    cantidad,
+    siembraOrigenId,
+    usuarioId,
+    observacion,
+    pesoHistorialId = null,
+    lote = null,
+    piletaOrigenId = null,
+  },
 ) {
   const proceso = tipoDestino === "alevinaje" ? "alevinaje" : "engorda";
   const obsId = await crearObservacionSiHay(tx, observacion, usuarioId, {
@@ -106,9 +117,16 @@ async function sumarInventarioDestino(
   });
 
   if (tipoDestino === "alevinaje") {
+    const loteResuelto = await resolverLoteAlevinaje(tx, {
+      loteBody: lote,
+      piletaId: piletaDestinoId,
+      siembraOrigenId,
+      piletaOrigenId,
+    });
     await tx.alevinaje.create({
       data: {
         pileta_id: piletaDestinoId,
+        lote: loteResuelto,
         cantidad_total: cantidad,
         cantidad_alimento: 0,
         observacion_id: obsId,
@@ -137,6 +155,7 @@ const vigenteSelectRestauracion = {
   peso: true,
   biometria_id: true,
   observacion_id: true,
+  lote: true,
 };
 
 /**
@@ -187,7 +206,7 @@ async function restaurarInventarioPorDevolucionVenta(
   };
 
   if (tipoPileta === "alevinaje") {
-    await tx.alevinaje.create({ data });
+    await tx.alevinaje.create({ data: { ...data, lote: vigente?.lote ?? null } });
   } else {
     await tx.engorda.create({ data });
   }
@@ -301,6 +320,7 @@ export async function registrarMovimientoTrazabilidad(
       siembraOrigenId: siembraId,
       usuarioId,
       observacion,
+      piletaOrigenId: origen,
     });
   }
 
@@ -408,6 +428,8 @@ export async function registrarMovimientoIncubacionAAlevinaje(
     usuarioId,
     observacion: obsCompleta,
     pesoHistorialId,
+    lote: inc.lote ?? null,
+    piletaOrigenId: origen,
   });
 
   return siembraId;

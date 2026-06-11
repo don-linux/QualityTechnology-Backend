@@ -6,6 +6,8 @@ import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { parseLoteDesdeBody, resolverLoteAlevinaje } from "../utils/alevinajeLote.js";
+import { normalizarLoteOpcional } from "../utils/incubacionLote.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -166,9 +168,18 @@ class AlevinajeController {
 
         const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
 
+        const loteBody = parseLoteDesdeBody(req.body, pick);
+        const lote = await resolverLoteAlevinaje(tx, {
+          loteBody,
+          piletaId,
+          siembraOrigenId,
+          piletaOrigenId: origenPiletaId,
+        });
+
         const creadoNuevo = await tx.alevinaje.create({
           data: {
             pileta_id: piletaId,
+            lote,
             cantidad_total: cantidadTotal,
             cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
@@ -249,6 +260,17 @@ class AlevinajeController {
       }
       if (req.body.biometria_id !== undefined) {
         updateData.biometria_id = toInt(req.body.biometria_id);
+      }
+
+      if (
+        req.body.lote !== undefined ||
+        req.body.fc_lote !== undefined ||
+        req.body.lote_genetico !== undefined ||
+        req.body.fc_lote_genetico !== undefined
+      ) {
+        updateData.lote = normalizarLoteOpcional(
+          pick(req.body, "lote", "fc_lote", "lote_genetico", "fc_lote_genetico"),
+        );
       }
 
       const usuarioId = req.user.usuario_id;
