@@ -12,6 +12,12 @@ const clienteInclude = {
       apellidoMaterno: true,
     },
   },
+  unidadNegocio: {
+    select: {
+      id: true,
+      nombre: true,
+    },
+  },
 };
 
 function normalizeText(value) {
@@ -33,9 +39,15 @@ function pick(body, ...keys) {
 
 function buildClientePayload(body) {
   const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"));
+  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "");
   const empresa = normalizeText(pick(body, "empresa", "fc_nombre_contacto") ?? "");
   const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
   const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
+  const localidad = normalizeText(pick(body, "localidad", "fc_localidad") ?? "");
+  const estado = normalizeText(pick(body, "estado", "fc_estado") ?? "");
+  const unidadNegocioId = parseRequiredId(
+    pick(body, "unidad_negocio_id", "fi_unidad_negocio_id"),
+  );
   const ejecutivoEmpleadoId = parseRequiredId(
     pick(body, "ejecutivo_empleado_id", "fi_ejecutivo_empleado_id", "ejecutivo_id"),
   );
@@ -43,19 +55,47 @@ function buildClientePayload(body) {
   if (!nombre) {
     return { error: "Campo obligatorio: nombre" };
   }
+  if (!rfc) {
+    return { error: "Campo obligatorio: rfc" };
+  }
+  if (rfc.length > 20) {
+    return { error: "rfc debe tener maximo 20 caracteres" };
+  }
+  if (!unidadNegocioId) {
+    return { error: "Campo obligatorio: unidad de negocio" };
+  }
+  if (!empresa) {
+    return { error: "Campo obligatorio: nombre de contacto" };
+  }
+  if (!telefono) {
+    return { error: "Campo obligatorio: telefono" };
+  }
+  if (!email) {
+    return { error: "Campo obligatorio: correo" };
+  }
+  if (!localidad) {
+    return { error: "Campo obligatorio: localidad" };
+  }
+  if (!estado) {
+    return { error: "Campo obligatorio: estado" };
+  }
   if (!ejecutivoEmpleadoId) {
     return { error: "Campo obligatorio: ejecutivo (empleado)" };
   }
-  if (email && !EMAIL_RE.test(email)) {
+  if (!EMAIL_RE.test(email)) {
     return { error: "email debe tener formato de correo electronico valido" };
   }
 
   return {
     payload: {
       nombre,
-      empresa: empresa || null,
-      telefono: telefono || null,
-      email: email || null,
+      rfc,
+      empresa,
+      telefono,
+      email,
+      localidad,
+      estado,
+      unidadNegocioId,
       ejecutivoEmpleadoId,
     },
   };
@@ -74,6 +114,23 @@ async function assertEmpleadoEjecutivoValido(empleadoId) {
   if (!emp.esta_activo) {
     const err = new Error("El ejecutivo seleccionado no está activo");
     err.code = "EJECUTIVO_INACTIVO";
+    throw err;
+  }
+}
+
+async function assertUnidadNegocioValida(unidadNegocioId) {
+  const unidad = await prisma.unidadNegocio.findUnique({
+    where: { id: unidadNegocioId },
+    select: { id: true, esta_activo: true },
+  });
+  if (!unidad) {
+    const err = new Error("Unidad de negocio no encontrada");
+    err.code = "UDN_NOT_FOUND";
+    throw err;
+  }
+  if (!unidad.esta_activo) {
+    const err = new Error("La unidad de negocio seleccionada no está activa");
+    err.code = "UDN_INACTIVA";
     throw err;
   }
 }
@@ -126,6 +183,7 @@ class ClienteController {
       const { error, payload } = buildClientePayload(req.body);
       if (error) return res.status(400).json({ error });
 
+      await assertUnidadNegocioValida(payload.unidadNegocioId);
       await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
 
       const cliente = await prisma.cliente.create({
@@ -134,11 +192,16 @@ class ClienteController {
       });
       res.status(201).json(serializeCliente(cliente));
     } catch (err) {
-      if (err.code === "EJECUTIVO_NOT_FOUND" || err.code === "EJECUTIVO_INACTIVO") {
+      if (
+        err.code === "EJECUTIVO_NOT_FOUND"
+        || err.code === "EJECUTIVO_INACTIVO"
+        || err.code === "UDN_NOT_FOUND"
+        || err.code === "UDN_INACTIVA"
+      ) {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Ejecutivo (empleado) inválido" });
+        return res.status(400).json({ error: "Referencia inválida (ejecutivo o unidad de negocio)" });
       }
       console.error("Error al registrar cliente:", err);
       res.status(500).json({ error: "Error al registrar cliente" });
@@ -153,6 +216,7 @@ class ClienteController {
       const { error, payload } = buildClientePayload(req.body);
       if (error) return res.status(400).json({ error });
 
+      await assertUnidadNegocioValida(payload.unidadNegocioId);
       await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
 
       const cliente = await prisma.cliente.update({
@@ -163,11 +227,16 @@ class ClienteController {
       res.json(serializeCliente(cliente));
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
-      if (err.code === "EJECUTIVO_NOT_FOUND" || err.code === "EJECUTIVO_INACTIVO") {
+      if (
+        err.code === "EJECUTIVO_NOT_FOUND"
+        || err.code === "EJECUTIVO_INACTIVO"
+        || err.code === "UDN_NOT_FOUND"
+        || err.code === "UDN_INACTIVA"
+      ) {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Ejecutivo (empleado) inválido" });
+        return res.status(400).json({ error: "Referencia inválida (ejecutivo o unidad de negocio)" });
       }
       console.error("Error al actualizar cliente:", err);
       res.status(500).json({ error: "Error al actualizar cliente" });

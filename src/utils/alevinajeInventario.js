@@ -56,6 +56,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
       peso: true,
       biometria_id: true,
       observacion_id: true,
+      lote: true,
     },
   });
 
@@ -88,6 +89,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   await tx.alevinaje.create({
     data: {
       pileta_id: ori,
+      lote: vigente.lote ?? null,
       cantidad_total: restante,
       cantidad_alimento: vigente.cantidad_alimento ?? 0,
       peso: vigente.peso ?? null,

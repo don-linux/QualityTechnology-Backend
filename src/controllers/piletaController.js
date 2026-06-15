@@ -8,7 +8,7 @@ import {
 } from "../utils/granjaUbicacion.js";
 import { validateEstadoConservacion } from "../constants/estadosConservacionPileta.js";
 
-const PIL_TIPOS_VALIDOS = ["alevinaje", "reproductores", "engorda"];
+const PIL_TIPOS_VALIDOS = ["alevinaje", "reproductores", "engorda", "incubacion"];
 
 /** Normaliza `?tipo=Alevinaje` / `Engorda` hacia enums Prisma (minúsculas). */
 function normalizarTipoPiletaQuery(raw) {
@@ -97,7 +97,14 @@ const piletaInclude = {
   ubicacion: true,
   tipoPileta: true,
   reproductores: {
-    select: { machos: true, hembras: true },
+    select: {
+      id: true,
+      pileta_id: true,
+      machos: true,
+      hembras: true,
+      cantidad_total: true,
+      cantidad_alimento: true,
+    },
   },
   engorda: {
     select: {
@@ -113,6 +120,17 @@ const piletaInclude = {
       pileta_id: true,
       cantidad_total: true,
       cantidad_alimento: true,
+    },
+  },
+  incubacion: {
+    select: {
+      id: true,
+      pileta_id: true,
+      lote: true,
+      huevos_ml: true,
+      fecha_ingreso: true,
+      dias_en_pileta: true,
+      fecha_egreso: true,
     },
   },
   observaciones: {
@@ -278,7 +296,7 @@ class PiletaController {
         });
       }
       if (!material) return res.status(400).json({ error: "material es obligatorio" });
-      if (!tipo) return res.status(400).json({ error: "tipo es obligatorio (alevinaje|reproductores|engorda)" });
+      if (!tipo) return res.status(400).json({ error: "tipo es obligatorio (alevinaje|reproductores|engorda|incubacion)" });
 
       const estadoConservacionCheck = validateEstadoConservacion(estadoConservacionRaw, {
         required: true,

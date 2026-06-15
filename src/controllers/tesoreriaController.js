@@ -5,7 +5,6 @@ function mapTesoreriaRow(r) {
   const fc_categoria = r.fc_categoria ?? r.categoria ?? null;
   const fc_subcategoria = r.fc_subcategoria ?? r.subcategoria ?? null;
   return {
-    fc_granja: r.fc_granja ?? r.granja ?? null,
     fc_mes,
     fc_categoria,
     fc_subcategoria,
@@ -22,14 +21,10 @@ function mapTesoreriaRow(r) {
 class TesoreriaController {
   static async getOverview(req, res) {
     try {
-      const { granja, categoria, anio } = req.query;
+      const { categoria, anio } = req.query;
       const filters = [];
       const params = [];
 
-      if (granja) {
-        params.push(String(granja));
-        filters.push(`UPPER(granja) = UPPER($${params.length}::text)`);
-      }
       if (categoria) {
         params.push(String(categoria));
         filters.push(`UPPER(categoria) = UPPER($${params.length}::text)`);
@@ -44,7 +39,6 @@ class TesoreriaController {
 
       const sql = `
         SELECT
-          granja          AS fc_granja,
           mes             AS fc_mes,
           categoria       AS fc_categoria,
           subcategoria    AS fc_subcategoria,
@@ -53,7 +47,7 @@ class TesoreriaController {
           saldo_neto
         FROM vw_tesoreria_general
         ${whereClause}
-        ORDER BY granja, mes, categoria, subcategoria NULLS LAST
+        ORDER BY mes, categoria, subcategoria NULLS LAST
       `;
 
       const rows = await prisma.$queryRawUnsafe(sql, ...params);

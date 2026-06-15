@@ -34,7 +34,7 @@ class CuentaController {
   static async getAll(req, res) {
     try {
       const cuentas = await prisma.cuenta.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(cuentas.map(serializeCuenta));
     } catch (err) {

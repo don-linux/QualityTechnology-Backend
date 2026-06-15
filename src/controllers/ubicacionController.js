@@ -10,7 +10,7 @@ class UbicacionController {
   static async getAll(req, res) {
     try {
       const ubicaciones = await prisma.ubicacion.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(ubicaciones.map(serializeUbicacion));
     } catch (err) {

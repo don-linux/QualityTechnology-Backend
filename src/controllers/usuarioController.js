@@ -8,6 +8,7 @@ import {
   revokeRefreshToken,
   revokeAllByUser,
 } from "../services/refreshTokenService.js";
+import { alcanceUnidadNegocio } from "../utils/granjaUbicacion.js";
 
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 10;
 const JWT_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || "8h";
@@ -94,8 +95,6 @@ class UsuarioController {
             );
           }
 
-          // unidad_negocio_id ya no existe en el modelo Empleado del schema actual
-          // y se ignora si llega en el body.
           await tx.empleado.create({
             data: {
               usuarioId: usuario.id,
@@ -104,6 +103,7 @@ class UsuarioController {
               apellidoMaterno: apellido_materno ?? null,
               departamentoId: Number(departamento_id),
               puestoId: puesto_id ? Number(puesto_id) : null,
+              ...(unidad_negocio_id ? { unidadNegocioId: Number(unidad_negocio_id) } : {}),
             },
           });
         }
@@ -245,6 +245,9 @@ class UsuarioController {
 
       const refreshToken = await createRefreshToken(usuario.id);
 
+      // Unidad de negocio efectiva (empleado vinculado); root no tiene restricción.
+      const alcance = await alcanceUnidadNegocio({ usuario_id: usuario.id });
+
       res.json({
         mensaje: "Inicio de sesion exitoso",
         token,
@@ -253,6 +256,9 @@ class UsuarioController {
           id: usuario.id,
           nombre: usuario.nombre,
           rol: usuario.rol.nombre,
+          es_root: usuario.rol.esRoot,
+          unidad_negocio_id: alcance.unidad?.id ?? null,
+          unidad_negocio_nombre: alcance.unidad?.nombre ?? null,
         },
         modulos,
       });

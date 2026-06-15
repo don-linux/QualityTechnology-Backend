@@ -4,6 +4,7 @@ import {
   cancelarVentaTrazabilidad,
   ventaRequiereTrazabilidad,
 } from "../utils/trazabilidadInventario.js";
+import { alcanceUnidadNegocio, textoEnAlcanceUnidad } from "../utils/granjaUbicacion.js";
 
 // Al registrar una próxima venta solo se guarda el pedido.
 // La venta y el movimiento de trazabilidad se crean desde el módulo Trazabilidad (tipo VENTA).
@@ -168,11 +169,15 @@ function mapErrorTrazabilidad(err, res) {
 class ListaEsperaController {
   static async getAll(req, res) {
     try {
+      const alcance = await alcanceUnidadNegocio(req.user);
       const lista = await prisma.listaEspera.findMany({
         include: { clientes: true, pileta_origen: true },
         orderBy: { id: "desc" },
       });
-      res.json(lista.map(serializeListaEspera));
+      const visibles = alcance.esRoot
+        ? lista
+        : lista.filter((l) => textoEnAlcanceUnidad(l.granja, alcance));
+      res.json(visibles.map(serializeListaEspera));
     } catch (err) {
       console.error("Error al obtener lista de espera:", err);
       res.status(500).json({ error: "Error al obtener lista de espera" });

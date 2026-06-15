@@ -43,7 +43,7 @@
 - Field logs / bitacoras: `/biometrias`, `/plagas`, `/ceiba/alimentacion`, `/ceiba/insumos`, `/recepcion_insumos`, `/visitas`, `/medellin/banos`, `/medellin/parametros`, `/medellin/medicamentos`, `/medellin/recambios`, `/medellin/inventario`
 
 ## File upload paths
-- `src/routes/flujoCajaRoutes.js` stores invoice files in `uploads/facturas/`.
+- `src/routes/flujoCajaRoutes.js` only serves previously uploaded invoice files from `uploads/facturas/` (the module is now read-only; movements are created automatically by other modules such as sale payments in `ventaController`).
 - `src/routes/bitacoras/bitacoraVisitaRoutes.js` stores uploaded images in `uploads/`.
 
 ## Verified gaps and legacy notes

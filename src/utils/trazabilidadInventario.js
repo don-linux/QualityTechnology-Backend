@@ -4,6 +4,8 @@ import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
 import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
+import { calcularDiasEnPileta } from "./incubacionRegistro.js";
+import { resolverLoteAlevinaje } from "./alevinajeLote.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -96,7 +98,17 @@ async function descontarInventarioOrigen(
 
 async function sumarInventarioDestino(
   tx,
-  { piletaDestinoId, tipoDestino, cantidad, siembraOrigenId, usuarioId, observacion },
+  {
+    piletaDestinoId,
+    tipoDestino,
+    cantidad,
+    siembraOrigenId,
+    usuarioId,
+    observacion,
+    pesoHistorialId = null,
+    lote = null,
+    piletaOrigenId = null,
+  },
 ) {
   const proceso = tipoDestino === "alevinaje" ? "alevinaje" : "engorda";
   const obsId = await crearObservacionSiHay(tx, observacion, usuarioId, {
@@ -105,13 +117,21 @@ async function sumarInventarioDestino(
   });
 
   if (tipoDestino === "alevinaje") {
+    const loteResuelto = await resolverLoteAlevinaje(tx, {
+      loteBody: lote,
+      piletaId: piletaDestinoId,
+      siembraOrigenId,
+      piletaOrigenId,
+    });
     await tx.alevinaje.create({
       data: {
         pileta_id: piletaDestinoId,
+        lote: loteResuelto,
         cantidad_total: cantidad,
         cantidad_alimento: 0,
         observacion_id: obsId,
         siembra_origen_id: siembraOrigenId,
+        peso: pesoHistorialId,
       },
     });
     await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
@@ -135,6 +155,7 @@ const vigenteSelectRestauracion = {
   peso: true,
   biometria_id: true,
   observacion_id: true,
+  lote: true,
 };
 
 /**
@@ -185,7 +206,7 @@ async function restaurarInventarioPorDevolucionVenta(
   };
 
   if (tipoPileta === "alevinaje") {
-    await tx.alevinaje.create({ data });
+    await tx.alevinaje.create({ data: { ...data, lote: vigente?.lote ?? null } });
   } else {
     await tx.engorda.create({ data });
   }
@@ -299,8 +320,117 @@ export async function registrarMovimientoTrazabilidad(
       siembraOrigenId: siembraId,
       usuarioId,
       observacion,
+      piletaOrigenId: origen,
     });
   }
+
+  return siembraId;
+}
+
+async function obtenerPiletaPorTipo(tx, piletaId, tipoEsperado, rol) {
+  const id = toInt(piletaId);
+  if (!id) throw errValidacion(`pileta_${rol}_id es obligatorio`);
+
+  const pil = await tx.pileta.findUnique({
+    where: { id },
+    select: { id: true, nombre: true, tipo: true },
+  });
+  if (!pil) {
+    const err = new Error(`Pileta de ${rol} no encontrada`);
+    err.code = "PILETA_NOT_FOUND";
+    throw err;
+  }
+  if (pil.tipo !== tipoEsperado) {
+    const err = new Error(
+      `La pileta de ${rol} '${pil.nombre}' debe ser de etapa ${tipoEsperado}, no '${pil.tipo}'`,
+    );
+    err.code = "PILETA_TIPO_INVALIDO";
+    throw err;
+  }
+  return pil;
+}
+
+/**
+ * Traslado incubación → alevinaje: gradúa el lote de incubación a inventario contable.
+ * La incubación no maneja cantidad numérica (solo ocupada/egresada), por lo que la cantidad
+ * de alevines la declara el usuario. Libera la pileta de incubación (marca `fecha_egreso`)
+ * y crea el inventario inicial en la pileta de alevinaje destino con su peso biométrico.
+ * @returns {Promise<number>} id de siembra
+ */
+export async function registrarMovimientoIncubacionAAlevinaje(
+  tx,
+  { piletaOrigenId, piletaDestinoId, cantidad, usuarioId, observacion, fechaMovimiento, pesoHistorialId = null },
+) {
+  const origen = toInt(piletaOrigenId);
+  const dest = toInt(piletaDestinoId);
+  const cant = Math.floor(Number(cantidad) || 0);
+
+  if (!origen || !dest) {
+    throw errValidacion(
+      "pileta_origen_id (incubación) y pileta_destino_id (alevinaje) son obligatorios",
+    );
+  }
+  if (origen === dest) {
+    throw errValidacion("Origen y destino no pueden ser la misma pileta");
+  }
+  if (cant <= 0) {
+    throw errValidacion("La cantidad de alevines debe ser mayor a cero");
+  }
+
+  const pilOr = await obtenerPiletaPorTipo(tx, origen, "incubacion", "origen");
+  await obtenerPiletaPorTipo(tx, dest, "alevinaje", "destino");
+
+  const inc = await tx.incubacion.findFirst({
+    where: { pileta_id: origen, fecha_egreso: null },
+    orderBy: { id: "desc" },
+    select: { id: true, fecha_ingreso: true, lote: true, codigo: true },
+  });
+  if (!inc) {
+    throw errValidacion(
+      `La pileta de incubación '${pilOr.nombre}' no tiene un lote activo para trasladar`,
+    );
+  }
+
+  const siembraId = await crearSiembraMovimiento(tx, {
+    piletaOrigenId: origen,
+    piletaDestinoId: dest,
+    cantidadEntera: cant,
+    usuarioId,
+    fechaMovimiento,
+  });
+  if (!siembraId) {
+    const err = new Error("No se pudo crear el movimiento de siembra");
+    err.code = "SIEMBRA_FAIL";
+    throw err;
+  }
+
+  const fechaEgreso = fechaMovimiento ?? new Date();
+  await tx.incubacion.update({
+    where: { id: inc.id },
+    data: {
+      fecha_egreso: fechaEgreso,
+      dias_en_pileta: calcularDiasEnPileta(inc.fecha_ingreso, fechaEgreso),
+    },
+  });
+  await aplicarEstadoPiletaPorCantidad(tx, origen, 0);
+
+  const partes = [];
+  if (inc.codigo) partes.push(`Evento: ${inc.codigo}`);
+  if (inc.lote) partes.push(`Lote: ${inc.lote}`);
+  const obsBase = observacion?.trim?.() ? String(observacion).trim() : "";
+  const obsCompleta = [obsBase, ...partes].filter(Boolean).join(" · ") || null;
+
+  await sumarInventarioDestino(tx, {
+    piletaDestinoId: dest,
+    tipoDestino: "alevinaje",
+    cantidad: cant,
+    siembraOrigenId: siembraId,
+    usuarioId,
+    observacion: obsCompleta,
+    pesoHistorialId,
+    lote: inc.lote ?? null,
+    piletaOrigenId: origen,
+  });
 
   return siembraId;
 }

@@ -9,7 +9,7 @@ class DepartamentoController {
   static async getAll(req, res) {
     try {
       const departamentos = await prisma.departamento.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(departamentos.map(serializeDepartamento));
     } catch (err) {

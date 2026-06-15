@@ -12,7 +12,7 @@ class TipoDocumentoController {
   static async getAll(req, res) {
     try {
       const tipos = await prisma.tipoDocumento.findMany({
-        orderBy: { id: "asc" },
+        orderBy: { id: "desc" },
       });
       res.json(tipos.map(serializeTipoDocumento));
     } catch (err) {

@@ -1,12 +1,18 @@
 import prisma from "../prisma.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import {
+  piletaWhereUbicacionFromRequest,
+  primerUbicacionIdValido,
+  resolverUbicacionFlexible,
+} from "../utils/granjaUbicacion.js";
+import {
+  ETAPAS_PILETA_MOVIMIENTOS,
   ETAPAS_TRAZABILIDAD,
   serializarMovimientoSiembra,
 } from "../utils/siembraMovimiento.js";
 import {
   registrarMortalidadTrazabilidad,
   registrarMovimientoTrazabilidad,
+  registrarMovimientoIncubacionAAlevinaje,
   registrarVentaDesdeListaEspera,
   parseFechaMovimiento,
   etapaRequeridaParaTipoVenta,
@@ -15,6 +21,7 @@ import {
   resolverSubtipoMovimiento,
   validarPiletasSegunSubtipo,
 } from "../utils/trazabilidadSubtipos.js";
+import { resolverHistorialPesoId } from "./historialPesoController.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -41,7 +48,7 @@ const siembraTrazabilidadInclude = {
       id: true,
       nombre: true,
       tipo: true,
-      ubicacion: { select: { nombre: true } },
+      ubicacion: { select: { id: true, nombre: true } },
     },
   },
   piletas_siembra_pileta_destinoTopiletas: {
@@ -49,7 +56,7 @@ const siembraTrazabilidadInclude = {
       id: true,
       nombre: true,
       tipo: true,
-      ubicacion: { select: { nombre: true } },
+      ubicacion: { select: { id: true, nombre: true } },
     },
   },
   alevinajes_como_origen: {
@@ -66,6 +73,16 @@ const siembraTrazabilidadInclude = {
       observacion: { select: { comentario: true } },
     },
   },
+  incubaciones_como_origen: {
+    orderBy: { id: "desc" },
+    take: 1,
+    select: {
+      lote: true,
+      codigo: true,
+      evento_cosecha: { select: { codigo: true } },
+      observacion: { select: { comentario: true } },
+    },
+  },
   venta: {
     select: {
       id: true,
@@ -74,22 +91,49 @@ const siembraTrazabilidadInclude = {
       tipoVenta: true,
     },
   },
+  usuarios: {
+    select: {
+      id: true,
+      nombre: true,
+      rol: { select: { nombre: true } },
+    },
+  },
 };
 
 class TrazabilidadController {
-  /** Movimientos `siembra` donde origen o destino es pileta de alevinaje o engorda. */
+  /** Movimientos `siembra` donde origen o destino es pileta de inventario trazable. */
   static async getMovimientos(req, res) {
     try {
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      let ubicClause = piletaWhereUbicacionFromRequest(req);
+      const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
+      const granjaQ =
+        typeof req.query?.granja === "string"
+          ? req.query.granja.trim()
+          : typeof req.params?.granja === "string"
+            ? req.params.granja.trim()
+            : "";
+
+      if (!ubicIdQ && granjaQ) {
+        const flex = await resolverUbicacionFlexible(granjaQ);
+        if (flex?.ubicacionId != null) {
+          ubicClause = { ubicacionId: flex.ubicacionId };
+        }
+      }
+
       if (!ubicClause) return res.json([]);
 
       const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_TRAZABILIDAD } };
+      const piletaOrigenEnUbic = { ...ubicClause, tipo: { in: ETAPAS_PILETA_MOVIMIENTOS } };
 
       const rows = await prisma.siembra.findMany({
         where: {
           OR: [
-            { piletas_siembra_pileta_destinoTopiletas: piletaEnUbic },
-            { piletas_siembra_pileta_origenTopiletas: piletaEnUbic },
+            { piletas_siembra_pileta_destinoTopiletas: piletaOrigenEnUbic },
+            { piletas_siembra_pileta_origenTopiletas: piletaOrigenEnUbic },
+            {
+              venta_id: { not: null },
+              piletas_siembra_pileta_origenTopiletas: piletaEnUbic,
+            },
           ],
         },
         include: siembraTrazabilidadInclude,
@@ -114,7 +158,7 @@ class TrazabilidadController {
       if (!tipoMov) {
         return res.status(400).json({
           error:
-            "tipo_movimiento inválido. Use: ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
+            "tipo_movimiento inválido. Use: INCUBACION_A_ALEVINAJE, ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
         });
       }
       const piletaOrigenId = toInt(
@@ -142,6 +186,24 @@ class TrazabilidadController {
             subtipoConfig: resuelto.config,
             piletaOrigenId,
             piletaDestinoId,
+          });
+        }
+
+        if (resuelto?.subtipo === "INCUBACION_A_ALEVINAJE") {
+          const pesoHistorialId = await resolverHistorialPesoId(tx, {
+            peso_gramos: pick(req.body, "peso_gramos", "peso_valor", "fn_peso"),
+            fecha_peso:
+              pick(req.body, "fecha_peso", "fd_fecha_peso") ??
+              pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),
+          });
+          return registrarMovimientoIncubacionAAlevinaje(tx, {
+            piletaOrigenId,
+            piletaDestinoId,
+            cantidad,
+            usuarioId,
+            observacion,
+            fechaMovimiento,
+            pesoHistorialId,
           });
         }
 

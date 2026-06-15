@@ -17,7 +17,7 @@
 - `token`: JWT Bearer para rutas protegidas
 - `username`, `password`: credenciales para login
 - `granja`, `listaId`, `rolId`, `moduloId`: parámetros reutilizables
-- `clienteId`, `proveedorId`, `ventaId`, `movimientoId`, `cuentaNombre`, `fiUsuarioId`, `runTag`, `invalidToken`: variables auxiliares para los flujos de Rondas
+- `clienteId`, `proveedorId`, `ventaId`, `fiUsuarioId`, `runTag`, `invalidToken`: variables auxiliares para los flujos de Rondas
 
 ## Nota
 
@@ -27,11 +27,10 @@ La colección está organizada para pruebas funcionales rápidas y smoke. Puedes
 
 Carpeta `Auto/` con un request por cada endpoint montado en `index.mjs` (incluye bitácoras, RRHH, ubicaciones, unidades de negocio, documentos de empleado y actas administrativas).
 
-- Total: **234 requests**
-- Organización por método: `Auto/GET` (90), `Auto/POST` (46), `Auto/PUT` (36), `Auto/PATCH` (14), `Auto/DELETE` (48)
+- Total: **229 requests**
+- Organización por método: `Auto/GET` (88), `Auto/POST` (45), `Auto/PUT` (35), `Auto/PATCH` (14), `Auto/DELETE` (47)
 - Los endpoints protegidos ya incluyen `Authorization: Bearer {{token}}`. Las rutas públicas (`POST /api/usuarios/login` y `POST /api/usuarios/refresh`) no envían el header.
 - Los uploads multipart se generan con `body:multipart-form` y un campo `@file()` placeholder:
-   - `POST /api/flujo-caja` (`facturaFile`)
    - `POST /api/visitas` y `PUT /api/visitas/:id` (`fc_foto_identificacion`)
    - `POST /api/documentos-empleado/mis-documentos/upload` y `POST /api/documentos-empleado/:empleadoId/upload` (`archivo`)
    - `POST /api/actas-administrativas/:empleadoId/upload` (`archivo`)
@@ -79,13 +78,10 @@ Ejecuta en secuencia del `01` al `10`.
 ### Ronda 03 (funcional avanzada)
 
 - Flujo `lista-espera -> convertir -> venta -> cleanup`.
-- Flujo `flujo-caja` con `create/update/delete`.
-- Incluye request opcional multipart con archivo de factura (`07B`).
+- Nota: el `flujo-caja` es ahora una bitácora de solo lectura; sus movimientos se generan automáticamente (p. ej. pagos de ventas), por lo que ya no se prueban `create/update/delete`.
 - Variables usadas:
    - `listaId`
    - `ventaId`
-   - `movimientoId`
-   - `cuentaNombre`
    - `granja`
 
 ### Ronda 04 (seguridad)

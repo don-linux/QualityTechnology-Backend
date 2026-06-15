@@ -56,11 +56,21 @@ export function crearSiembraVenta(
   return tx.siembra.create({ data }).then((s) => s.id);
 }
 
+/** Etapas con ajuste de inventario vía API manual de trazabilidad. */
 export const ETAPAS_TRAZABILIDAD = ["alevinaje", "engorda"];
+
+/** Etapas visibles en el listado de movimientos (incluye flujo reproductivo). */
+export const ETAPAS_PILETA_MOVIMIENTOS = [
+  ...ETAPAS_TRAZABILIDAD,
+  "reproductores",
+  "incubacion",
+];
 
 const ETAPA_LABEL = {
   alevinaje: "Alevinaje",
   engorda: "Engorda",
+  reproductores: "Reproductores",
+  incubacion: "Incubación",
 };
 
 export function labelEtapa(tipo) {
@@ -69,7 +79,7 @@ export function labelEtapa(tipo) {
 }
 
 export function resolverEtapaMovimiento(pilOr, pilDest) {
-  const tipos = new Set(ETAPAS_TRAZABILIDAD);
+  const tipos = new Set(ETAPAS_PILETA_MOVIMIENTOS);
   if (pilDest?.tipo && tipos.has(pilDest.tipo)) return pilDest.tipo;
   if (pilOr?.tipo && tipos.has(pilOr.tipo)) return pilOr.tipo;
   return pilDest?.tipo ?? pilOr?.tipo ?? null;
@@ -86,9 +96,22 @@ export function serializarMovimientoSiembra(s) {
 
   const obsAlev = s.alevinajes_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsEng = s.engordas_como_origen?.[0]?.observacion?.comentario?.trim();
+  const obsInc = s.incubaciones_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsParts = [];
-  const obsUsuario = obsAlev || obsEng;
+  const obsUsuario = obsAlev || obsEng || obsInc;
   if (obsUsuario) obsParts.push(obsUsuario);
+
+  const incMeta = s.incubaciones_como_origen?.[0];
+  const incCodigo = incMeta?.codigo ?? incMeta?.evento_cosecha?.codigo ?? null;
+  if (incCodigo) {
+    const tag = `Evento: ${incCodigo}`;
+    if (!obsUsuario || !obsUsuario.includes(tag)) obsParts.push(tag);
+  }
+  if (incMeta?.lote) {
+    const tagLote = `Lote: ${incMeta.lote}`;
+    if (!obsUsuario || !obsUsuario.includes(incMeta.lote)) obsParts.push(tagLote);
+  }
+
   if (mortalidad > 0) obsParts.push(`Mortalidad: ${mortalidad}`);
   if (esVenta && s.venta?.folio) {
     const folioTag = `Folio: ${s.venta.folio}`;
@@ -115,6 +138,13 @@ export function serializarMovimientoSiembra(s) {
     destinoLabel = "Externo";
   }
 
+  const ubicacionId = pilDest?.ubicacion?.id ?? pilOr?.ubicacion?.id ?? null;
+  const granjaNombre = pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null;
+
+  const usuario = s.usuarios ?? null;
+  const usuarioNombre = usuario?.nombre ?? null;
+  const usuarioRol = usuario?.rol?.nombre ?? null;
+
   return {
     fi_movimiento_id: s.id,
     origen: pilOr?.nombre ?? "Externo",
@@ -126,8 +156,14 @@ export function serializarMovimientoSiembra(s) {
     etapa,
     fc_etapa: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
     fc_subtipo_movimiento: subtipoLabel,
-    fc_granja: pilDest?.ubicacion?.nombre ?? pilOr?.ubicacion?.nombre ?? null,
+    ubicacion_id: ubicacionId,
+    fc_granja: granjaNombre,
     es_venta: esVenta,
     venta_id: s.venta_id ?? s.venta?.id ?? null,
+    usuario_id: s.usuario_id ?? usuario?.id ?? null,
+    usuario_nombre: usuarioNombre,
+    fc_usuario: usuarioNombre,
+    rol_nombre: usuarioRol,
+    fc_rol: usuarioRol,
   };
 }

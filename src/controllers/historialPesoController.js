@@ -23,19 +23,19 @@ export function serializeHistorialPeso(row) {
   return {
     id: row.id,
     peso: row.peso != null ? Number(row.peso) : null,
-    peso_kg: row.peso != null ? Number(row.peso) : null,
+    peso_gramos: row.peso != null ? Number(row.peso) : null,
     fecha: row.fecha,
     fd_fecha: row.fecha,
   };
 }
 
-/** Crea fila en `historial_peso` si el body trae valor en kg (y fecha opcional). */
+/** Crea fila en `historial_peso` si el body trae valor en gramos (y fecha opcional). */
 export async function resolverHistorialPesoId(tx, body) {
-  const pesoKgBody = toDecimal(body?.peso_kg ?? body?.peso_valor ?? body?.fn_peso);
-  if (pesoKgBody != null) {
+  const pesoGramosBody = toDecimal(body?.peso_gramos ?? body?.peso_valor ?? body?.fn_peso);
+  if (pesoGramosBody != null) {
     const creado = await tx.historialPeso.create({
       data: {
-        peso: pesoKgBody,
+        peso: pesoGramosBody,
         fecha:
           toDateOrNull(body?.fecha_peso ?? body?.fd_fecha_peso ?? body?.fecha) ?? new Date(),
       },
@@ -89,13 +89,13 @@ class HistorialPesoController {
 
   static async create(req, res) {
     try {
-      const pesoKg = toDecimal(req.body?.peso ?? req.body?.peso_kg);
-      if (pesoKg == null || pesoKg < 0) {
-        return res.status(400).json({ error: "peso (kg) es obligatorio y debe ser >= 0" });
+      const pesoGramos = toDecimal(req.body?.peso ?? req.body?.peso_gramos);
+      if (pesoGramos == null || pesoGramos < 0) {
+        return res.status(400).json({ error: "peso (g) es obligatorio y debe ser >= 0" });
       }
       const row = await prisma.historialPeso.create({
         data: {
-          peso: pesoKg,
+          peso: pesoGramos,
           fecha: toDateOrNull(req.body?.fecha) ?? new Date(),
         },
       });

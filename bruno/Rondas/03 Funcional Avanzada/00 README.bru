@@ -14,8 +14,10 @@ notes {
 
   Objetivo:
   - Validar flujo Lista de Espera -> Convertir a Venta -> Cleanup.
-  - Validar Flujo Caja create/update/delete.
-  - Incluir variante opcional multipart para carga de factura.
+
+  Nota: El flujo de caja es ahora una bitacora de solo lectura; los
+  movimientos se generan automaticamente (p. ej. pagos de ventas), por
+  lo que ya no se prueban create/update/delete aqui.
 
   Antes de iniciar:
   1) Ejecuta 01 Login.
@@ -26,9 +28,4 @@ notes {
   - Ejecuta 03 y 04.
   - Toma venta_id de 04 -> {{ventaId}}.
   - Ejecuta 05 y 06.
-
-  Flujo B (Flujo Caja):
-  - Ejecuta 07 (JSON) o 07B (multipart opcional manual).
-  - Toma fi_movimiento_id -> {{movimientoId}}.
-  - Ejecuta 08 y 09.
 }

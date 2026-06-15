@@ -1,26 +1,16 @@
 import prisma from "../prisma.js";
-import { serializeVenta } from "../utils/serializers.js";
-import { crearObservacionSiHay } from "../utils/observacion.js";
-import {
-  registrarVentaTrazabilidad,
-  ventaRequiereTrazabilidad,
-} from "../utils/trazabilidadInventario.js";
-
-// Venta en el schema actual renombra varios campos: cliente -> cliente_nombre,
-// cantidadVendida -> cantidad, precioVenta -> precio_unitario, abonado ->
-// monto_abonado, encargadoVenta -> vendedor_nombre, fechaVenta -> fecha,
-// usuarioId -> usuario_id (campo JS directo, sin @map). monto_adeudo se
-// calcula en la DB. Aceptamos los aliases fc_/fn_/fd_ por compatibilidad.
-
-function sanitize(value) {
-  if (!value) return 0;
-  const n = Number(String(value).replace(/,/g, ""));
-  return Number.isFinite(n) ? n : 0;
-}
+import { serializeFlujoCaja, serializeVenta } from "../utils/serializers.js";
+import { alcanceUnidadNegocio, textoEnAlcanceUnidad } from "../utils/granjaUbicacion.js";
 
 function toInt(value) {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function toDecimal(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 function toDateOrNull(value) {
@@ -29,229 +19,244 @@ function toDateOrNull(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function calcularEstado(total, abonado) {
+function calcularMes(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 7);
+  }
+  const s = String(value);
+  return s.length >= 7 ? s.slice(0, 7) : null;
+}
+
+function redondearMonto(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+export function calcularEstadoPago(montoTotal, montoAbonado) {
+  const total = redondearMonto(montoTotal);
+  const abonado = redondearMonto(montoAbonado);
   if (abonado <= 0) return "ADEUDO";
-  if (abonado < total) return "PARCIAL";
-  return "PAGADO";
+  if (abonado >= total) return "LIQUIDADO";
+  return "PARCIAL";
+}
+
+/** La venta solo es visible dentro del alcance de unidad de negocio del usuario (resuelto en BD). */
+async function ventaVisibleParaUsuario(venta, req) {
+  const alcance = await alcanceUnidadNegocio(req.user);
+  return textoEnAlcanceUnidad(venta?.empresa, alcance);
 }
 
 class VentaController {
-  static async getClientes(req, res) {
-    try {
-      const clientes = await prisma.cliente.findMany({
-        select: { id: true, nombre: true },
-        orderBy: { nombre: "asc" },
-      });
-      res.json(clientes.map((c) => ({ id: c.id, nombre: c.nombre })));
-    } catch (err) {
-      console.error("Error al obtener clientes:", err);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async getEncargados(req, res) {
-    try {
-      const { empresa } = req.params;
-      const empresaNorm = String(empresa || "").toUpperCase();
-      if (!["MEDELLIN", "CEIBA"].includes(empresaNorm)) {
-        return res.json([]);
-      }
-
-      const empleados = await prisma.empleado.findMany({
-        where: { esta_activo: true },
-        select: {
-          id: true,
-          nombre: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-        },
-      });
-      const result = empleados
-        .map((e) => ({
-          id: e.id,
-          nombre: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
-            .filter(Boolean)
-            .join(" "),
-        }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      res.json(result);
-    } catch (err) {
-      console.error("Error al obtener encargados:", err);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
   static async getAll(req, res) {
     try {
+      const alcance = await alcanceUnidadNegocio(req.user);
       const ventas = await prisma.venta.findMany({
         include: { observacion: true },
         orderBy: [{ fecha: "desc" }, { id: "desc" }],
       });
-      res.json(ventas.map(serializeVenta));
+      const visibles = alcance.esRoot
+        ? ventas
+        : ventas.filter((v) => textoEnAlcanceUnidad(v.empresa, alcance));
+      res.json(visibles.map(serializeVenta));
     } catch (err) {
       console.error("Error al obtener ventas:", err);
       res.status(500).json({ error: err.message });
     }
   }
 
-  static async create(req, res) {
+  static async getPagos(req, res) {
+    const ventaId = toInt(req.params.id);
+    if (!ventaId) return res.status(400).json({ error: "id invalido" });
+
     try {
-      const {
-        fc_folio,
-        fd_fecha_venta,
-        fc_cliente,
-        fc_tipo_venta,
-        fc_encargado_venta,
-        fc_observaciones,
-        fc_empresa,
-      } = req.body;
-
-      const clienteNombre = req.body.cliente_nombre ?? fc_cliente;
-      const empresa = req.body.empresa ?? fc_empresa;
-      const tipoVenta = req.body.tipo_venta ?? fc_tipo_venta;
-      const vendedor = req.body.vendedor_nombre ?? fc_encargado_venta;
-      const folio = req.body.folio ?? fc_folio;
-      const fechaIn = req.body.fecha ?? fd_fecha_venta;
-      const observaciones = req.body.observaciones ?? fc_observaciones;
-
-      const cantidad = sanitize(req.body.cantidad ?? req.body.fn_cantidad_vendida);
-      const precioUnitario = sanitize(req.body.precio_unitario ?? req.body.fn_precio_venta);
-      const montoAbonado = sanitize(req.body.monto_abonado ?? req.body.fn_abonado);
-
-      if (!clienteNombre) return res.status(400).json({ error: "cliente_nombre obligatorio" });
-      if (!empresa) return res.status(400).json({ error: "empresa obligatoria" });
-      if (cantidad <= 0 || precioUnitario <= 0) {
-        return res.status(400).json({ error: "cantidad o precio_unitario invalidos" });
+      const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+      if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
+        return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
       }
 
-      const fecha = toDateOrNull(fechaIn) ?? new Date();
-      const montoTotal = cantidad * precioUnitario;
-      const estadoPago = calcularEstado(montoTotal, montoAbonado);
-      const piletaOrigenId = toInt(
-        req.body.pileta_origen_id ?? req.body.origen_pileta_id ?? req.body.fi_pileta_origen_id,
-      );
+      const pagos = await prisma.flujoCaja.findMany({
+        where: { venta_id: ventaId },
+        orderBy: [{ fecha: "desc" }, { id: "desc" }],
+      });
+      res.json(pagos.map(serializeFlujoCaja));
+    } catch (err) {
+      console.error("Error al obtener pagos de venta:", err);
+      res.status(500).json({ error: "Error al obtener pagos de la venta" });
+    }
+  }
 
-      if (ventaRequiereTrazabilidad(tipoVenta) && !piletaOrigenId) {
+  static async registrarPago(req, res) {
+    const ventaId = toInt(req.params.id);
+    if (!ventaId) return res.status(400).json({ error: "id invalido" });
+
+    const monto = toDecimal(req.body.fn_monto ?? req.body.monto);
+    const cuentaNombre = req.body.fc_cuenta ?? req.body.cuenta_nombre ?? null;
+    const fechaParsed = toDateOrNull(req.body.fd_fecha ?? req.body.fecha) ?? new Date();
+    const observaciones = req.body.fc_observaciones ?? req.body.observaciones ?? null;
+
+    if (!monto || monto <= 0) {
+      return res.status(400).json({ error: "El monto debe ser mayor a cero" });
+    }
+    if (!cuentaNombre) {
+      return res.status(400).json({ error: "La cuenta es obligatoria" });
+    }
+    if (observaciones != null && String(observaciones).length > 500) {
+      return res.status(400).json({ error: "Las observaciones no pueden exceder 500 caracteres" });
+    }
+
+    try {
+      const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+      if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
+        return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
+      }
+
+      const adeudo = redondearMonto(venta.monto_adeudo);
+      const montoPago = redondearMonto(monto);
+      if (montoPago > adeudo) {
         return res.status(400).json({
-          error: "pileta_origen_id es obligatorio para ventas de alevines o mojarra",
+          error: `El monto excede el adeudo. Adeudo actual: $${adeudo.toFixed(2)}.`,
         });
       }
 
-      const venta = await prisma.$transaction(async (tx) => {
-        const obsId = await crearObservacionSiHay(tx, observaciones, req.user.usuario_id);
-        const ventaNueva = await tx.venta.create({
+      const cuenta = await prisma.cuenta.findFirst({
+        where: { nombre: String(cuentaNombre), esta_activa: true },
+      });
+      if (!cuenta) {
+        return res.status(400).json({ error: "La cuenta seleccionada no existe o no esta activa." });
+      }
+
+      const nuevoAbonado = redondearMonto(Number(venta.monto_abonado) + montoPago);
+      const nuevoEstado = calcularEstadoPago(venta.montoTotal, nuevoAbonado);
+      const saldoActual = redondearMonto(Number(cuenta.saldoActual) + montoPago);
+      const mes = calcularMes(fechaParsed);
+
+      const resultado = await prisma.$transaction(async (tx) => {
+        const movimiento = await tx.flujoCaja.create({
           data: {
-            folio: folio ?? null,
-            fecha,
-            cliente_nombre: String(clienteNombre),
-            tipoVenta: String(tipoVenta ?? ""),
-            cantidad,
-            precio_unitario: precioUnitario,
-            montoTotal,
-            monto_abonado: montoAbonado,
-            estadoPago,
-            empresa: String(empresa),
-            vendedor_nombre: vendedor ?? null,
-            observacionId: obsId,
+            fecha: fechaParsed,
+            ingreso: montoPago,
+            egreso: 0,
+            observaciones: observaciones?.trim?.() ? String(observaciones).trim() : null,
+            cuenta_nombre: String(cuentaNombre),
+            categoria: "VENTAS",
+            subcategoria: venta.tipoVenta,
+            beneficiario: venta.cliente_nombre,
+            estatus: nuevoEstado,
+            mes_periodo: mes,
             usuario_id: req.user.usuario_id,
+            venta_id: ventaId,
+          },
+        });
+
+        await tx.cuenta.update({
+          where: { id: cuenta.id },
+          data: { saldoActual },
+        });
+
+        const ventaActualizada = await tx.venta.update({
+          where: { id: ventaId },
+          data: {
+            monto_abonado: nuevoAbonado,
+            estadoPago: nuevoEstado,
           },
           include: { observacion: true },
         });
 
-        if (ventaRequiereTrazabilidad(tipoVenta)) {
-          await registrarVentaTrazabilidad(tx, {
-            piletaOrigenId,
-            cantidad,
-            ventaId: ventaNueva.id,
-            usuarioId: req.user.usuario_id,
-            tipoVenta,
-            observacion: observaciones,
-            fechaMovimiento: fecha,
-          });
-        }
-
-        return ventaNueva;
+        return { movimiento, ventaActualizada };
       });
 
       res.status(201).json({
-        mensaje: "Venta registrada correctamente",
-        data: serializeVenta(venta),
+        mensaje: "Pago registrado correctamente",
+        venta: serializeVenta(resultado.ventaActualizada),
+        movimiento: serializeFlujoCaja(resultado.movimiento),
+        nuevoSaldo: saldoActual,
       });
     } catch (err) {
-      if (err.code === "VALIDACION" || err.code === "PILETA_TIPO_INVALIDO" || err.code === "PILETA_NOT_FOUND") {
-        return res.status(400).json({ error: err.message });
-      }
-      if (err.code === "ALEV_CANTIDAD_INSUFICIENTE" || err.code === "ENGORDA_CANTIDAD_INSUFICIENTE") {
-        return res.status(400).json({ error: err.message });
-      }
-      console.error("Error al registrar venta:", err);
-      res.status(500).json({ error: err.message });
+      console.error("Error al registrar pago de venta:", err);
+      res.status(500).json({ error: "Error al registrar pago de venta" });
     }
   }
 
-  static async update(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
+  static async anularPago(req, res) {
+    const ventaId = toInt(req.params.id);
+    const movId = toInt(req.params.movId);
+    if (!ventaId || !movId) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const cantidad = sanitize(req.body.cantidad ?? req.body.fn_cantidad_vendida);
-      const precioUnitario = sanitize(req.body.precio_unitario ?? req.body.fn_precio_venta);
-      const montoAbonado = sanitize(req.body.monto_abonado ?? req.body.fn_abonado);
-      const montoTotal = cantidad * precioUnitario;
-      const estadoPago = calcularEstado(montoTotal, montoAbonado);
+      const movimiento = await prisma.flujoCaja.findUnique({ where: { id: movId } });
+      if (!movimiento || movimiento.venta_id !== ventaId) {
+        return res.status(404).json({ error: "Pago no encontrado para esta venta" });
+      }
 
-      const folio = req.body.folio ?? req.body.fc_folio;
-      const fechaIn = req.body.fecha ?? req.body.fd_fecha_venta;
-      const clienteNombre = req.body.cliente_nombre ?? req.body.fc_cliente;
-      const tipoVenta = req.body.tipo_venta ?? req.body.fc_tipo_venta;
-      const vendedor = req.body.vendedor_nombre ?? req.body.fc_encargado_venta;
-      const empresa = req.body.empresa ?? req.body.fc_empresa;
-      const observaciones = req.body.observaciones ?? req.body.fc_observaciones;
+      const ingreso = redondearMonto(movimiento.ingreso);
+      if (ingreso <= 0) {
+        return res.status(400).json({ error: "El movimiento no es un pago de ingreso valido" });
+      }
 
-      const venta = await prisma.$transaction(async (tx) => {
-        const updateData = {
-          folio: folio ?? null,
-          fecha: toDateOrNull(fechaIn) ?? undefined,
-          cliente_nombre: clienteNombre ?? undefined,
-          tipoVenta: tipoVenta ?? undefined,
-          cantidad,
-          precio_unitario: precioUnitario,
-          montoTotal,
-          monto_abonado: montoAbonado,
-          estadoPago,
-          empresa: empresa ?? undefined,
-          vendedor_nombre: vendedor ?? null,
-        };
-        if (observaciones !== undefined) {
-          const obsId = await crearObservacionSiHay(tx, observaciones, req.user.usuario_id);
-          if (obsId) updateData.observacionId = obsId;
-        }
-        return tx.venta.update({
-          where: { id },
-          data: updateData,
+      const venta = await prisma.venta.findUnique({ where: { id: ventaId } });
+      if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
+        return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
+      }
+
+      const abonadoActual = redondearMonto(venta.monto_abonado);
+      if (ingreso > abonadoActual) {
+        return res.status(400).json({ error: "No se puede anular: el abono registrado es inconsistente" });
+      }
+
+      const cuentaNombre = movimiento.cuenta_nombre;
+      if (!cuentaNombre) {
+        return res.status(400).json({ error: "El pago no tiene cuenta asociada" });
+      }
+
+      const cuenta = await prisma.cuenta.findFirst({
+        where: { nombre: String(cuentaNombre), esta_activa: true },
+      });
+      if (!cuenta) {
+        return res.status(400).json({ error: "La cuenta del pago ya no existe o no esta activa" });
+      }
+
+      const saldoActual = redondearMonto(Number(cuenta.saldoActual));
+      if (ingreso > saldoActual) {
+        return res.status(400).json({
+          error: `Saldo insuficiente en "${cuentaNombre}" para anular el pago. Disponible: $${saldoActual.toFixed(2)}.`,
+        });
+      }
+
+      const nuevoAbonado = redondearMonto(abonadoActual - ingreso);
+      const nuevoEstado = calcularEstadoPago(venta.montoTotal, nuevoAbonado);
+      const nuevoSaldo = redondearMonto(saldoActual - ingreso);
+
+      const ventaActualizada = await prisma.$transaction(async (tx) => {
+        await tx.cuenta.update({
+          where: { id: cuenta.id },
+          data: { saldoActual: nuevoSaldo },
+        });
+
+        const actualizada = await tx.venta.update({
+          where: { id: ventaId },
+          data: {
+            monto_abonado: nuevoAbonado,
+            estadoPago: nuevoEstado,
+          },
           include: { observacion: true },
         });
+
+        await tx.flujoCaja.delete({ where: { id: movId } });
+        return actualizada;
       });
 
-      res.json({ mensaje: "Venta actualizada correctamente", data: serializeVenta(venta) });
+      res.json({
+        mensaje: "Pago anulado correctamente",
+        venta: serializeVenta(ventaActualizada),
+        nuevoSaldo,
+      });
     } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Venta no encontrada" });
-      console.error("Error al actualizar venta:", err);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async delete(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-
-    try {
-      await prisma.venta.delete({ where: { id } });
-      res.json({ mensaje: "Venta eliminada" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Venta no encontrada" });
-      console.error("Error al eliminar venta:", err);
-      res.status(500).json({ error: err.message });
+      if (err.code === "P2025") return res.status(404).json({ error: "Pago no encontrado" });
+      console.error("Error al anular pago de venta:", err);
+      res.status(500).json({ error: "Error al anular pago de venta" });
     }
   }
 }

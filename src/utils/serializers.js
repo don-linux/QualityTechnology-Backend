@@ -3,7 +3,11 @@
  * preservando el contrato HTTP esperado por el frontend existente.
  */
 
-import { cantidadVigenteDesdeRegistrosPeriodicos } from "./inventarioVigente.js";
+import {
+  cantidadVigenteDesdeRegistrosPeriodicos,
+  ultimoRegistroPorPileta,
+} from "./inventarioVigente.js";
+import { calcularDiasEnPileta } from "./incubacionRegistro.js";
 
 export function serializeRol(rol) {
   if (!rol) return null;
@@ -93,12 +97,21 @@ export function serializeUnidadNegocio(u) {
   };
 }
 
-export function serializeEmpleado(e) {
+export function serializeEmpleado(e, opts = {}) {
   if (!e) return null;
   const nombre = e.nombre;
   const apellidoPaterno = e.apellidoPaterno;
   const apellidoMaterno = e.apellidoMaterno ?? null;
   const fechaIngreso = e.fecha_ingreso ?? null;
+  const unidadNegocioId =
+    e.unidadNegocioId ??
+    e.unidadNegocio?.id ??
+    opts.unidad_negocio_id ??
+    null;
+  const unidadNegocioNombre =
+    e.unidadNegocio?.nombre ??
+    opts.unidad_negocio_nombre ??
+    null;
   return {
     empleado_id: e.id,
     fi_empleado_id: e.id,
@@ -107,8 +120,8 @@ export function serializeEmpleado(e) {
     fi_departamento_id: e.departamentoId ?? null,
     puesto_id: e.puestoId ?? null,
     fi_puesto_id: e.puestoId ?? null,
-    unidad_negocio_id: null,
-    fi_unidad_negocio_id: null,
+    unidad_negocio_id: unidadNegocioId,
+    fi_unidad_negocio_id: unidadNegocioId,
     nombre,
     apellido_paterno: apellidoPaterno,
     apellido_materno: apellidoMaterno,
@@ -123,7 +136,7 @@ export function serializeEmpleado(e) {
     fb_activo: e.esta_activo,
     departamento_nombre: e.departamento?.nombre ?? null,
     puesto_nombre: e.puesto?.nombre ?? null,
-    unidad_negocio_nombre: null,
+    unidad_negocio_nombre: unidadNegocioNombre,
     usuario_nombre: e.usuario?.nombre ?? null,
   };
 }
@@ -203,61 +216,122 @@ export function toNumberSafe(value) {
   return value;
 }
 
+function diasDesdeFecha(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const f = new Date(fecha);
+  if (Number.isNaN(f.getTime())) return null;
+  f.setHours(0, 0, 0, 0);
+  return Math.floor((hoy - f) / (1000 * 60 * 60 * 24));
+}
+
 export function serializeReproductor(r) {
   if (!r) return null;
-  const listaObs = r.piletas?.observaciones;
-  const ultObs = Array.isArray(listaObs) ? listaObs[0] : null;
-  const fechaBioDirecta = r.biometrias?.fecha ?? null;
-  const fechaBioUltimaPileta = r.piletas?.biometrias?.[0]?.fecha ?? null;
-  const fd_fecha_biometria = fechaBioDirecta ?? fechaBioUltimaPileta ?? null;
+  const piletaUlt = Array.isArray(r.piletas?.observaciones) ? r.piletas.observaciones[0] : null;
+  const obsBio = r.biometrias?.observacionBiometria;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const fechaBioPileta = r.piletas?.biometrias?.[0]?.fecha ?? null;
+  const fechaBiometria = r.biometrias?.fecha ?? fechaBioPileta ?? null;
+  const fechaSiembra = r.fecha_siembra ?? r.siembra_origen?.fecha ?? null;
+  const machos = r.machos ?? 0;
+  const hembras = r.hembras ?? 0;
+  const cantidad = r.cantidad_total ?? machos + hembras;
 
   return {
     fi_reproductor_id: r.id,
+    fi_id: r.id,
+    id: r.id,
     reproductor_id: r.id,
     pileta_id: r.pileta_id,
+    fi_pileta_destino_id: r.pileta_id,
+    pileta_destino_id: r.pileta_id,
     nombre_instalacion: r.piletas?.nombre ?? null,
     nombre_pileta: r.piletas?.nombre ?? null,
-    fn_machos: r.machos,
-    fn_hembras: r.hembras,
-    fn_cantidad: Number(r.machos || 0) + Number(r.hembras || 0),
-    fn_talla: r.talla,
-    talla: r.talla,
-    fc_ratio: r.ratio,
-    ratio: r.ratio,
-    fc_linea: r.linea,
-    linea: r.linea,
-    fc_familia: r.familia,
-    familia: r.familia,
-    siembra_id: r.siembra_id ?? null,
-    biometria_id: r.biometria_id ?? null,
-    /** Fecha del movimiento `siembra` vinculado (traslado/ingreso a esta pileta). */
-    fd_fecha_siembra: r.siembra?.fecha ?? null,
-    /** Última biometría: puntero del reproductor o, si no hay, la más reciente de la pileta. */
-    fd_fecha_biometria,
-    /** Alta del inventario repro (fallback para “días en pila” si aún no hay siembra vinculada). */
-    fd_alta_reproductor: r.created_at ?? null,
+    nombre_pileta_destino: r.piletas?.nombre ?? null,
     fc_granja: r.piletas?.ubicacion?.nombre ?? null,
-    fi_usuario_id: r.usuarioId,
+    fecha_siembra: fechaSiembra,
+    fd_fecha_siembra_reproductores: fechaSiembra,
+    lote_genetico: r.lote_genetico ?? null,
+    fc_lote_genetico: r.lote_genetico ?? null,
+    activo: r.activo !== false,
+    fb_activo: r.activo !== false,
+    desovez: r.desovez ?? 0,
+    fn_desovez: r.desovez ?? 0,
+    estado_ciclo: r.estado_ciclo ?? "activo",
+    fc_estado_ciclo: r.estado_ciclo ?? "activo",
+    estado_ciclo_label: ESTADO_CICLO_LABEL[r.estado_ciclo] ?? r.estado_ciclo ?? "Activo",
+    machos,
+    fn_machos: machos,
+    genetica_machos: r.genetica_machos ?? null,
+    fc_genetica_machos: r.genetica_machos ?? null,
+    familia_machos: r.familia_machos ?? null,
+    fc_familia_machos: r.familia_machos ?? null,
+    procedencia_machos: r.procedencia_machos ?? null,
+    fc_procedencia_machos: r.procedencia_machos ?? null,
+    hembras,
+    fn_hembras: hembras,
+    genetica_hembras: r.genetica_hembras ?? null,
+    fc_genetica_hembras: r.genetica_hembras ?? null,
+    familia_hembras: r.familia_hembras ?? null,
+    fc_familia_hembras: r.familia_hembras ?? null,
+    procedencia_hembras: r.procedencia_hembras ?? null,
+    fc_procedencia_hembras: r.procedencia_hembras ?? null,
+    cantidad_total: cantidad,
+    cantidad,
+    fn_cantidad: cantidad,
+    ratio: r.ratio ?? null,
+    fc_ratio: r.ratio ?? null,
+    talla: r.talla != null ? Number(r.talla) : null,
+    fn_talla: r.talla != null ? Number(r.talla) : null,
+    cantidad_alimento: r.cantidad_alimento ?? 0,
+    siembra_origen_id: r.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: r.siembra_origen?.cantidad
+      ? Number(r.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: fechaSiembra,
+    origen_pileta_id: r.siembra_origen?.pileta_origen ?? null,
+    origen_nombre_pileta: r.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    fd_fecha_siembra: fechaSiembra,
+    fn_dias_en_pila: diasDesdeFecha(fechaSiembra),
+    dias_en_pila: diasDesdeFecha(fechaSiembra),
+    biometria_id: r.biometria_id ?? null,
+    fd_fecha_biometria: fechaBiometria,
+    fn_dias_biometria: diasDesdeFecha(fechaBiometria),
+    dias_transcurridos_biometria: diasDesdeFecha(fechaBiometria),
     fc_observacion: r.observacion?.comentario ?? null,
-    observacion_id: r.observacionId ?? null,
-    fc_ultima_observacion_pileta: ultObs?.comentario ?? null,
-    fc_ultima_observacion_proceso: ultObs?.proceso ?? null,
-    fd_ultima_observacion_pileta: ultObs?.created_at ?? null,
+    observacion: r.observacion?.comentario ?? null,
+    observacion_id: r.observacion_id ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
   };
 }
 
-/** Inventario vigente en la pileta, sin importar etapa (reproductores, alevinaje o engorda). */
+/** Inventario vigente en la pileta, sin importar etapa (reproductores, alevinaje, incubacion o engorda). */
 export function calcularCantidadPileta(p) {
   if (!p) return 0;
 
-  const rep = p.reproductores;
-  if (rep) {
-    return Number(rep.machos || 0) + Number(rep.hembras || 0) || 0;
+  const repRows = Array.isArray(p.reproductores) ? p.reproductores : p.reproductores ? [p.reproductores] : [];
+  if (repRows.length > 0) {
+    return cantidadVigenteDesdeRegistrosPeriodicos(repRows);
   }
 
   const engRows = Array.isArray(p.engorda) ? p.engorda : p.engorda ? [p.engorda] : [];
   if (engRows.length > 0) {
     return cantidadVigenteDesdeRegistrosPeriodicos(engRows);
+  }
+
+  const incRows = Array.isArray(p.incubacion) ? p.incubacion : [];
+  if (incRows.length > 0) {
+    const ultimo = ultimoRegistroPorPileta(incRows, { piletaKey: "pileta_id", idKey: "id" });
+    const row = ultimo[0];
+    return row && !row.fecha_egreso ? 1 : 0;
   }
 
   const rows = Array.isArray(p.alevinaje) ? p.alevinaje : [];
@@ -344,7 +418,7 @@ export function serializeEngorda(e) {
     cantidad_alimento: e.cantidad_alimento ?? 0,
     historial_peso_id: e.peso ?? null,
     peso: hp?.peso != null ? Number(hp.peso) : null,
-    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    peso_gramos: hp?.peso != null ? Number(hp.peso) : null,
     fecha_peso: hp?.fecha ?? null,
     fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: e.siembra_origen_id ?? null,
@@ -419,7 +493,7 @@ export function serializeSiembra(s) {
       : s.cantidad != null
         ? Number(s.cantidad)
         : null;
-  const familiaOrigen = pilOr?.reproductores?.familia ?? null;
+  const familiaOrigen = null;
 
   return {
     fi_siembra_id: s.id,
@@ -455,11 +529,15 @@ export function serializeAlevinaje(a) {
     nombre_pileta_destino: a.piletas?.nombre ?? null,
     nombre_pileta: a.piletas?.nombre ?? null,
     fc_granja: a.piletas?.ubicacion?.nombre ?? null,
+    lote: a.lote ?? null,
+    fc_lote: a.lote ?? null,
+    lote_genetico: a.lote ?? null,
+    fc_lote_genetico: a.lote ?? null,
     cantidad_total: a.cantidad_total ?? 0,
     cantidad_alimento: a.cantidad_alimento ?? 0,
     historial_peso_id: a.peso ?? null,
     peso: hp?.peso != null ? Number(hp.peso) : null,
-    peso_kg: hp?.peso != null ? Number(hp.peso) : null,
+    peso_gramos: hp?.peso != null ? Number(hp.peso) : null,
     fecha_peso: hp?.fecha ?? null,
     fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: a.siembra_origen_id ?? null,
@@ -481,53 +559,133 @@ export function serializeAlevinaje(a) {
   };
 }
 
-export function serializeControlReproductivo(r) {
-  if (!r) return null;
+export function serializeIncubacion(i) {
+  if (!i) return null;
+  const piletaUlt = Array.isArray(i.piletas?.observaciones) ? i.piletas.observaciones[0] : null;
+  const obsBio = i.biometrias?.observacionBiometria;
+  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
+  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
+  const huevos = i.huevos_ml != null ? Number(i.huevos_ml) : null;
+  const tiposCosecha = Array.isArray(i.tipo_cosecha)
+    ? i.tipo_cosecha
+    : i.tipo_cosecha
+      ? [i.tipo_cosecha]
+      : [];
+  const tipoCosechaLabel =
+    tiposCosecha.map((t) => TIPO_COSECHA_LABEL[t] ?? t).join(", ") || null;
+  const volumenPorTipo = (() => {
+    const raw = i.volumen_por_tipo;
+    const mapa = {};
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      for (const [clave, valor] of Object.entries(raw)) {
+        if (valor != null && Number.isFinite(Number(valor))) mapa[clave] = Number(valor);
+      }
+    }
+    // Compatibilidad: registros de un solo tipo creados antes del desglose por tipo.
+    if (Object.keys(mapa).length === 0 && tiposCosecha.length === 1 && huevos != null) {
+      mapa[tiposCosecha[0]] = huevos;
+    }
+    return mapa;
+  })();
+  const volumenesCosecha = tiposCosecha.map((t) => ({
+    tipo: t,
+    label: TIPO_COSECHA_LABEL[t] ?? t,
+    volumen: volumenPorTipo[t] ?? null,
+  }));
+  // Días en incubación calculados al vuelo (ingreso -> egreso o día actual),
+  // para que la columna avance mientras el lote sigue incubando en lugar de
+  // quedarse congelada con el valor guardado al registrar.
+  const diasEnIncubacion =
+    i.fecha_ingreso != null
+      ? calcularDiasEnPileta(i.fecha_ingreso, i.fecha_egreso)
+      : (i.dias_en_pileta ?? null);
+
   return {
-    fi_id: r.id,
-    id: r.id,
-    pileta_id: r.pileta_id,
-    fi_pileta_destino_id: r.pileta_id,
-    pileta_destino_id: r.pileta_id,
-    nombre_pileta_destino: r.piletas?.nombre ?? null,
-    nombre_pileta: r.piletas?.nombre ?? null,
-    fc_granja: r.piletas?.ubicacion?.nombre ?? null,
-    pileta_origen_reproductora_id: r.pileta_origen_reproductora_id ?? null,
-    fi_instalacion_id: r.pileta_origen_reproductora_id ?? null,
-    instalacion_id: r.pileta_origen_reproductora_id ?? null,
-    nombre_pileta_origen: r.pileta_origen_reproductora?.nombre ?? null,
-    nombre_instalacion: r.pileta_origen_reproductora?.nombre ?? null,
-    fecha: r.fecha ?? null,
-    fd_fecha: r.fecha ?? null,
-    lote: r.lote ?? null,
-    fc_lote: r.lote ?? null,
-    familia: r.familia ?? null,
-    fc_familia: r.familia ?? null,
-    huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
-    fn_huevos_ml: r.huevos_ml != null ? Number(r.huevos_ml) : null,
-    ovadas: r.ovadas ?? 0,
-    fn_ovadas: r.ovadas ?? 0,
-    machos: r.machos ?? 0,
-    fn_machos: r.machos ?? 0,
-    hembras: r.hembras ?? 0,
-    fn_hembras: r.hembras ?? 0,
-    cantidad_total: r.cantidad_total ?? 0,
-    fn_cantidad_total: r.cantidad_total ?? 0,
-    alevines_iniciales: r.alevines_iniciales ?? 0,
-    fn_alevines_iniciales: r.alevines_iniciales ?? 0,
-    mortalidad: r.mortalidad ?? 0,
-    fn_mortalidad: r.mortalidad ?? 0,
-    mortalidad_porcentaje:
-      r.mortalidad_porcentaje != null ? Number(r.mortalidad_porcentaje) : 0,
-    siembra_origen_id: r.siembra_origen_id ?? null,
-    biometria_id: r.biometria_id ?? null,
-    fc_observacion: r.observacion?.comentario ?? null,
-    observacion: r.observacion?.comentario ?? null,
-    observacion_id: r.observacion_id ?? null,
-    created_at: r.created_at ?? null,
-    updated_at: r.updated_at ?? null,
+    fi_id: i.id,
+    fi_incubacion_id: i.id,
+    id: i.id,
+    incubacion_id: i.id,
+    codigo: i.codigo ?? null,
+    fc_codigo: i.codigo ?? null,
+    fc_id_evento: i.codigo ?? null,
+    pileta_id: i.pileta_id,
+    fi_pileta_destino_id: i.pileta_id,
+    pileta_destino_id: i.pileta_id,
+    incubacion_pileta_id: i.pileta_id,
+    incubacion_pileta_nombre: i.piletas?.nombre ?? null,
+    nombre_pileta_destino: i.piletas?.nombre ?? null,
+    nombre_pileta: i.piletas?.nombre ?? null,
+    fc_granja: i.piletas?.ubicacion?.nombre ?? null,
+    // Estanque de reproductores de origen (datos de cosecha fusionados)
+    pileta_origen_id: i.pileta_origen_id ?? null,
+    fi_pileta_origen_id: i.pileta_origen_id ?? null,
+    nombre_pileta_origen: i.pileta_origen?.nombre ?? null,
+    pileta_origen_reproduccion: i.pileta_origen?.nombre ?? null,
+    reproductor_id: i.reproductor_id ?? null,
+    fi_reproductor_id: i.reproductor_id ?? null,
+    lote: i.lote ?? null,
+    fc_lote: i.lote ?? null,
+    lote_genetico: i.lote ?? null,
+    fc_lote_genetico: i.lote ?? null,
+    // Datos del desove (multi-selección de tipos)
+    tipo_cosecha: tiposCosecha,
+    fc_tipo_cosecha: tiposCosecha,
+    tipos_cosecha: tiposCosecha,
+    tipo_cosecha_label: tipoCosechaLabel,
+    tipo_cosecha_origen: tiposCosecha,
+    estadio_desarrollo: i.estadio_desarrollo ?? null,
+    fc_estadio_desarrollo: i.estadio_desarrollo ?? null,
+    hembras_ovadas: i.hembras_ovadas ?? 0,
+    fn_hembras_ovadas: i.hembras_ovadas ?? 0,
+    fecha_cosecha: i.fecha_cosecha ?? null,
+    fd_fecha_cosecha: i.fecha_cosecha ?? null,
+    // Volumen del desove (total = huevos/ml en incubación) y desglose por tipo
+    huevos_ml: huevos,
+    fn_huevos_ml: huevos,
+    volumen_ml: huevos,
+    fn_volumen_ml: huevos,
+    volumen_por_tipo: volumenPorTipo,
+    fc_volumen_por_tipo: volumenPorTipo,
+    volumenes_cosecha: volumenesCosecha,
+    // Estancia en incubación
+    fecha_ingreso: i.fecha_ingreso ?? null,
+    fd_fecha_ingreso: i.fecha_ingreso ?? null,
+    dias_en_pileta: diasEnIncubacion,
+    fn_dias_en_pileta: diasEnIncubacion,
+    dias_en_incubacion: diasEnIncubacion,
+    fn_dias_en_incubacion: diasEnIncubacion,
+    fecha_egreso: i.fecha_egreso ?? null,
+    fd_fecha_egreso: i.fecha_egreso ?? null,
+    evento_cosecha_id: i.evento_cosecha_id ?? null,
+    siembra_origen_id: i.siembra_origen_id ?? null,
+    siembra_origen_pileta:
+      i.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
+    siembra_origen_cantidad: i.siembra_origen?.cantidad
+      ? Number(i.siembra_origen.cantidad)
+      : null,
+    siembra_origen_fecha: i.siembra_origen?.fecha ?? null,
+    biometria_id: i.biometria_id ?? null,
+    fc_observacion: i.observacion?.comentario ?? null,
+    observacion: i.observacion?.comentario ?? null,
+    observacion_id: i.observacion_id ?? null,
+    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
+    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
+    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
+    fc_observacion_biometria: obsBioComentario,
+    fd_observacion_biometria: obsBioFecha,
   };
 }
+
+const TIPO_COSECHA_LABEL = {
+  huevo: "Huevo",
+  larva_saco: "Larva con saco",
+  alevin_nadando: "Alevín nadando",
+};
+
+const ESTADO_CICLO_LABEL = {
+  activo: "Activo",
+  agotado: "Agotado",
+};
 
 export function serializeInventarioAlevin(a) {
   if (!a) return null;
@@ -570,17 +728,27 @@ function nombreEmpleado(e) {
 export function serializeCliente(c) {
   if (!c) return null;
   const ejecutivoId = c.ejecutivoEmpleadoId ?? c.ejecutivo?.id ?? null;
+  const unidadNegocioId = c.unidadNegocioId ?? c.unidadNegocio?.id ?? null;
   return {
     fi_cliente_id: c.id,
     cliente_id: c.id,
     nombre: c.nombre,
     fc_razon_social: c.nombre,
+    rfc: c.rfc ?? null,
+    fc_rfc: c.rfc ?? null,
+    unidad_negocio_id: unidadNegocioId,
+    fi_unidad_negocio_id: unidadNegocioId,
+    unidad_negocio_nombre: c.unidadNegocio?.nombre ?? null,
     empresa: c.empresa ?? null,
     fc_nombre_contacto: c.empresa ?? null,
     telefono: c.telefono ?? null,
     fc_telefono: c.telefono ?? null,
     email: c.email ?? null,
     fc_correo: c.email ?? null,
+    localidad: c.localidad ?? null,
+    fc_localidad: c.localidad ?? null,
+    estado: c.estado ?? null,
+    fc_estado: c.estado ?? null,
     ejecutivo_empleado_id: ejecutivoId,
     fi_ejecutivo_empleado_id: ejecutivoId,
     ejecutivo_nombre: nombreEmpleado(c.ejecutivo) ?? null,
@@ -636,6 +804,8 @@ export function serializeVenta(v) {
     estado_pago: v.estadoPago,
     fc_empresa: v.empresa,
     empresa: v.empresa,
+    fc_locacion: v.empresa,
+    locacion: v.empresa,
     fc_encargado_venta: v.vendedor_nombre,
     vendedor_nombre: v.vendedor_nombre,
     fc_observaciones: v.observacion?.comentario ?? null,
@@ -724,8 +894,8 @@ export function serializeFlujoCaja(f) {
     ingreso: f.ingreso,
     fn_egreso: f.egreso,
     egreso: f.egreso,
-    fc_descripcion: f.descripcion,
-    descripcion: f.descripcion,
+    fc_observaciones: f.observaciones,
+    observaciones: f.observaciones,
     fc_cuenta: f.cuenta_nombre,
     cuenta_nombre: f.cuenta_nombre,
     fc_categoria: f.categoria,
@@ -739,6 +909,8 @@ export function serializeFlujoCaja(f) {
     fc_mes: f.mes_periodo,
     mes_periodo: f.mes_periodo,
     fi_usuario_id: f.usuario_id ?? null,
+    venta_id: f.venta_id ?? null,
+    fi_venta_id: f.venta_id ?? null,
   };
 }
 
@@ -824,7 +996,7 @@ export function serializeAlimentacion(a) {
     fd_fecha_siembra: a.fechaSiembra,
     fc_origen_alevines: a.origenAlevines,
     fd_fecha: a.fecha,
-    fn_total_alimento_kg: toNumberSafe(a.totalAlimentoKg),
+    fn_total_alimento_gramos: toNumberSafe(a.totalAlimentoGramos),
     fn_mortalidad: a.mortalidad,
     fc_recambio_agua: a.recambioAgua,
     fn_temp_agua: toNumberSafe(a.temperatura_agua),
