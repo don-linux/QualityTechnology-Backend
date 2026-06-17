@@ -6,6 +6,7 @@ import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { obtenerAlimentacionInternaAlevinaje } from "../utils/alimentacionInternaService.js";
 import { parseLoteDesdeBody, resolverLoteAlevinaje } from "../utils/alevinajeLote.js";
 import { normalizarLoteOpcional } from "../utils/incubacionLote.js";
 
@@ -66,6 +67,20 @@ const alevinajeInclude = {
 };
 
 class AlevinajeController {
+  static async getAlimentacionInterna(req, res) {
+    try {
+      const piletaId = toInt(req.params.piletaId);
+      if (!piletaId) return res.status(400).json({ error: "piletaId invalido" });
+      const data = await obtenerAlimentacionInternaAlevinaje(prisma, piletaId);
+      if (!data) return res.status(404).json({ error: "Pileta no encontrada" });
+      res.json(data);
+    } catch (err) {
+      console.error("GET /alevinaje/piletas/:piletaId/alimentacion-interna Error:", err);
+      res.status(500).json({ error: "Error obteniendo alimentacion interna" });
+    }
+  }
+
+
   static async getAll(req, res) {
     try {
       const piletaIdQ = toInt(req.query.pileta_id);

@@ -1,0 +1,1445 @@
+{
+  "cantidad_base": 18500,
+  "filas": [
+    {
+      "dia": 1,
+      "peso_promedio_g": 1.0,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 18.5,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 1.85
+    },
+    {
+      "dia": 2,
+      "peso_promedio_g": 1.571429,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 29.071429,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 2.907143
+    },
+    {
+      "dia": 3,
+      "peso_promedio_g": 2.142857,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 39.642857,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 3.964286
+    },
+    {
+      "dia": 4,
+      "peso_promedio_g": 2.714286,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 50.214286,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 5.021429
+    },
+    {
+      "dia": 5,
+      "peso_promedio_g": 3.285714,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 60.785714,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 6.078571
+    },
+    {
+      "dia": 6,
+      "peso_promedio_g": 3.857143,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 71.357143,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 7.135714
+    },
+    {
+      "dia": 7,
+      "peso_promedio_g": 4.428571,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 81.928571,
+      "tasa_alimentacion_pct": 0.1,
+      "kg_alimento_base_dia": 8.192857
+    },
+    {
+      "dia": 8,
+      "peso_promedio_g": 5.0,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 92.5,
+      "tasa_alimentacion_pct": 0.09,
+      "kg_alimento_base_dia": 8.325
+    },
+    {
+      "dia": 9,
+      "peso_promedio_g": 5.714286,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 105.714286,
+      "tasa_alimentacion_pct": 0.09,
+      "kg_alimento_base_dia": 9.514286
+    },
+    {
+      "dia": 10,
+      "peso_promedio_g": 6.428571,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 118.928571,
+      "tasa_alimentacion_pct": 0.09,
+      "kg_alimento_base_dia": 10.703571
+    },
+    {
+      "dia": 11,
+      "peso_promedio_g": 7.142857,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 132.142857,
+      "tasa_alimentacion_pct": 0.09,
+      "kg_alimento_base_dia": 11.892857
+    },
+    {
+      "dia": 12,
+      "peso_promedio_g": 7.857143,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 145.357143,
+      "tasa_alimentacion_pct": 0.09,
+      "kg_alimento_base_dia": 13.082143
+    },
+    {
+      "dia": 13,
+      "peso_promedio_g": 8.571429,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 158.571429,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 12.685714
+    },
+    {
+      "dia": 14,
+      "peso_promedio_g": 9.285714,
+      "tipo_alimento": "0.3 - 52% Proteina",
+      "biomasa_base_kg": 171.785714,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 13.742857
+    },
+    {
+      "dia": 15,
+      "peso_promedio_g": 10.0,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 185.0,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 14.8
+    },
+    {
+      "dia": 16,
+      "peso_promedio_g": 10.714286,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 198.214286,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 15.857143
+    },
+    {
+      "dia": 17,
+      "peso_promedio_g": 11.428571,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 211.428571,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 16.914286
+    },
+    {
+      "dia": 18,
+      "peso_promedio_g": 12.142857,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 224.642857,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 17.971429
+    },
+    {
+      "dia": 19,
+      "peso_promedio_g": 12.857143,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 237.857143,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 19.028571
+    },
+    {
+      "dia": 20,
+      "peso_promedio_g": 13.571429,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 251.071429,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 20.085714
+    },
+    {
+      "dia": 21,
+      "peso_promedio_g": 14.285714,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 264.285714,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 21.142857
+    },
+    {
+      "dia": 22,
+      "peso_promedio_g": 15.0,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 277.5,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 22.2
+    },
+    {
+      "dia": 23,
+      "peso_promedio_g": 15.714286,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 290.714286,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 23.257143
+    },
+    {
+      "dia": 24,
+      "peso_promedio_g": 16.428571,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 303.928571,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 24.314286
+    },
+    {
+      "dia": 25,
+      "peso_promedio_g": 17.142857,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 317.142857,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 25.371429
+    },
+    {
+      "dia": 26,
+      "peso_promedio_g": 17.857143,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 330.357143,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 26.428571
+    },
+    {
+      "dia": 27,
+      "peso_promedio_g": 18.571429,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 343.571429,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 27.485714
+    },
+    {
+      "dia": 28,
+      "peso_promedio_g": 19.285714,
+      "tipo_alimento": "1.5 - 45% Proteina",
+      "biomasa_base_kg": 356.785714,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 28.542857
+    },
+    {
+      "dia": 29,
+      "peso_promedio_g": 20.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 370.0,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 29.6
+    },
+    {
+      "dia": 30,
+      "peso_promedio_g": 21.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 385.714286,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 30.857143
+    },
+    {
+      "dia": 31,
+      "peso_promedio_g": 22.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 411.428571,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 32.914286
+    },
+    {
+      "dia": 32,
+      "peso_promedio_g": 24.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 437.142857,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 34.971429
+    },
+    {
+      "dia": 33,
+      "peso_promedio_g": 25.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 462.857143,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 37.028571
+    },
+    {
+      "dia": 34,
+      "peso_promedio_g": 27.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 488.571429,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 39.085714
+    },
+    {
+      "dia": 35,
+      "peso_promedio_g": 28.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 514.285714,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 41.142857
+    },
+    {
+      "dia": 36,
+      "peso_promedio_g": 30.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 540.0,
+      "tasa_alimentacion_pct": 0.08,
+      "kg_alimento_base_dia": 43.2
+    },
+    {
+      "dia": 37,
+      "peso_promedio_g": 33.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 604.285714,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 42.3
+    },
+    {
+      "dia": 38,
+      "peso_promedio_g": 37.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 668.571429,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 46.8
+    },
+    {
+      "dia": 39,
+      "peso_promedio_g": 40.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 732.857143,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 51.3
+    },
+    {
+      "dia": 40,
+      "peso_promedio_g": 44.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 797.142857,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 55.8
+    },
+    {
+      "dia": 41,
+      "peso_promedio_g": 47.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 861.428571,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 60.3
+    },
+    {
+      "dia": 42,
+      "peso_promedio_g": 51.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 925.714286,
+      "tasa_alimentacion_pct": 0.07,
+      "kg_alimento_base_dia": 64.8
+    },
+    {
+      "dia": 43,
+      "peso_promedio_g": 55.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 990.0,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 59.4
+    },
+    {
+      "dia": 44,
+      "peso_promedio_g": 58.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1054.285714,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 63.257143
+    },
+    {
+      "dia": 45,
+      "peso_promedio_g": 62.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1118.571429,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 67.114286
+    },
+    {
+      "dia": 46,
+      "peso_promedio_g": 65.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1182.857143,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 70.971429
+    },
+    {
+      "dia": 47,
+      "peso_promedio_g": 69.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1247.142857,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 74.828571
+    },
+    {
+      "dia": 48,
+      "peso_promedio_g": 72.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1311.428571,
+      "tasa_alimentacion_pct": 0.06,
+      "kg_alimento_base_dia": 78.685714
+    },
+    {
+      "dia": 49,
+      "peso_promedio_g": 76.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1375.714286,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 68.785714
+    },
+    {
+      "dia": 50,
+      "peso_promedio_g": 80.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1440.0,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 72.0
+    },
+    {
+      "dia": 51,
+      "peso_promedio_g": 83.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1504.285714,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 75.214286
+    },
+    {
+      "dia": 52,
+      "peso_promedio_g": 87.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1568.571429,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 78.428571
+    },
+    {
+      "dia": 53,
+      "peso_promedio_g": 90.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1632.857143,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 81.642857
+    },
+    {
+      "dia": 54,
+      "peso_promedio_g": 94.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1697.142857,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 84.857143
+    },
+    {
+      "dia": 55,
+      "peso_promedio_g": 97.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1761.428571,
+      "tasa_alimentacion_pct": 0.05,
+      "kg_alimento_base_dia": 88.071429
+    },
+    {
+      "dia": 56,
+      "peso_promedio_g": 101.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1825.714286,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 63.9
+    },
+    {
+      "dia": 57,
+      "peso_promedio_g": 105.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1890.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 66.15
+    },
+    {
+      "dia": 58,
+      "peso_promedio_g": 108.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 1954.285714,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 68.4
+    },
+    {
+      "dia": 59,
+      "peso_promedio_g": 112.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2018.571429,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 70.65
+    },
+    {
+      "dia": 60,
+      "peso_promedio_g": 115.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2025.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 70.875
+    },
+    {
+      "dia": 61,
+      "peso_promedio_g": 119.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2087.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 73.0625
+    },
+    {
+      "dia": 62,
+      "peso_promedio_g": 122.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2150.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 75.25
+    },
+    {
+      "dia": 63,
+      "peso_promedio_g": 126.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2212.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 77.4375
+    },
+    {
+      "dia": 64,
+      "peso_promedio_g": 130.0,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2275.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 79.625
+    },
+    {
+      "dia": 65,
+      "peso_promedio_g": 133.571429,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2337.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 81.8125
+    },
+    {
+      "dia": 66,
+      "peso_promedio_g": 137.142857,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2400.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 84.0
+    },
+    {
+      "dia": 67,
+      "peso_promedio_g": 140.714286,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2462.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 86.1875
+    },
+    {
+      "dia": 68,
+      "peso_promedio_g": 144.285714,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2525.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 88.375
+    },
+    {
+      "dia": 69,
+      "peso_promedio_g": 147.857143,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2587.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 90.5625
+    },
+    {
+      "dia": 70,
+      "peso_promedio_g": 151.428571,
+      "tipo_alimento": "2.5 - 45% Proteina",
+      "biomasa_base_kg": 2650.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 92.75
+    },
+    {
+      "dia": 71,
+      "peso_promedio_g": 155.0,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 2712.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 94.9375
+    },
+    {
+      "dia": 72,
+      "peso_promedio_g": 158.571429,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 2775.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 97.125
+    },
+    {
+      "dia": 73,
+      "peso_promedio_g": 162.142857,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 2837.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 99.3125
+    },
+    {
+      "dia": 74,
+      "peso_promedio_g": 165.714286,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 2900.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 101.5
+    },
+    {
+      "dia": 75,
+      "peso_promedio_g": 169.285714,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 2962.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 103.6875
+    },
+    {
+      "dia": 76,
+      "peso_promedio_g": 172.857143,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3025.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 105.875
+    },
+    {
+      "dia": 77,
+      "peso_promedio_g": 176.428571,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3087.5,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 108.0625
+    },
+    {
+      "dia": 78,
+      "peso_promedio_g": 180.0,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3150.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 110.25
+    },
+    {
+      "dia": 79,
+      "peso_promedio_g": 184.285714,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3225.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 112.875
+    },
+    {
+      "dia": 80,
+      "peso_promedio_g": 188.571429,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3300.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 115.5
+    },
+    {
+      "dia": 81,
+      "peso_promedio_g": 192.857143,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3375.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 118.125
+    },
+    {
+      "dia": 82,
+      "peso_promedio_g": 197.142857,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3450.0,
+      "tasa_alimentacion_pct": 0.035,
+      "kg_alimento_base_dia": 120.75
+    },
+    {
+      "dia": 83,
+      "peso_promedio_g": 201.428571,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3525.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 88.125
+    },
+    {
+      "dia": 84,
+      "peso_promedio_g": 205.714286,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3600.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 90.0
+    },
+    {
+      "dia": 85,
+      "peso_promedio_g": 210.0,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3675.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 91.875
+    },
+    {
+      "dia": 86,
+      "peso_promedio_g": 214.285714,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3750.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 93.75
+    },
+    {
+      "dia": 87,
+      "peso_promedio_g": 218.571429,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3825.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 95.625
+    },
+    {
+      "dia": 88,
+      "peso_promedio_g": 222.857143,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3900.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 97.5
+    },
+    {
+      "dia": 89,
+      "peso_promedio_g": 227.142857,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3975.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 99.375
+    },
+    {
+      "dia": 90,
+      "peso_promedio_g": 231.428571,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 3934.285714,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 98.357143
+    },
+    {
+      "dia": 91,
+      "peso_promedio_g": 235.714286,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4007.142857,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 100.178571
+    },
+    {
+      "dia": 92,
+      "peso_promedio_g": 240.0,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4080.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 102.0
+    },
+    {
+      "dia": 93,
+      "peso_promedio_g": 244.285714,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4152.857143,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 103.821429
+    },
+    {
+      "dia": 94,
+      "peso_promedio_g": 248.571429,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4225.714286,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 105.642857
+    },
+    {
+      "dia": 95,
+      "peso_promedio_g": 252.857143,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4298.571429,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 107.464286
+    },
+    {
+      "dia": 96,
+      "peso_promedio_g": 257.142857,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4371.428571,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 109.285714
+    },
+    {
+      "dia": 97,
+      "peso_promedio_g": 261.428571,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4444.285714,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 111.107143
+    },
+    {
+      "dia": 98,
+      "peso_promedio_g": 265.714286,
+      "tipo_alimento": "3.5 - 32% Proteina",
+      "biomasa_base_kg": 4517.142857,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 112.928571
+    },
+    {
+      "dia": 99,
+      "peso_promedio_g": 270.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4590.0,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 114.75
+    },
+    {
+      "dia": 100,
+      "peso_promedio_g": 274.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4662.857143,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 116.571429
+    },
+    {
+      "dia": 101,
+      "peso_promedio_g": 278.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4735.714286,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 118.392857
+    },
+    {
+      "dia": 102,
+      "peso_promedio_g": 282.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4808.571429,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 120.214286
+    },
+    {
+      "dia": 103,
+      "peso_promedio_g": 287.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4881.428571,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 122.035714
+    },
+    {
+      "dia": 104,
+      "peso_promedio_g": 291.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 4954.285714,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 123.857143
+    },
+    {
+      "dia": 105,
+      "peso_promedio_g": 295.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5027.142857,
+      "tasa_alimentacion_pct": 0.025,
+      "kg_alimento_base_dia": 125.678571
+    },
+    {
+      "dia": 106,
+      "peso_promedio_g": 300.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5100.0,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 102.0
+    },
+    {
+      "dia": 107,
+      "peso_promedio_g": 304.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5172.857143,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 103.457143
+    },
+    {
+      "dia": 108,
+      "peso_promedio_g": 308.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5245.714286,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 104.914286
+    },
+    {
+      "dia": 109,
+      "peso_promedio_g": 312.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5318.571429,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 106.371429
+    },
+    {
+      "dia": 110,
+      "peso_promedio_g": 317.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5391.428571,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 107.828571
+    },
+    {
+      "dia": 111,
+      "peso_promedio_g": 321.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5464.285714,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 109.285714
+    },
+    {
+      "dia": 112,
+      "peso_promedio_g": 325.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5537.142857,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 110.742857
+    },
+    {
+      "dia": 113,
+      "peso_promedio_g": 330.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5610.0,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 112.2
+    },
+    {
+      "dia": 114,
+      "peso_promedio_g": 334.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5682.857143,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 113.657143
+    },
+    {
+      "dia": 115,
+      "peso_promedio_g": 338.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5755.714286,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 115.114286
+    },
+    {
+      "dia": 116,
+      "peso_promedio_g": 342.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5828.571429,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 116.571429
+    },
+    {
+      "dia": 117,
+      "peso_promedio_g": 347.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5901.428571,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 118.028571
+    },
+    {
+      "dia": 118,
+      "peso_promedio_g": 351.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5974.285714,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 119.485714
+    },
+    {
+      "dia": 119,
+      "peso_promedio_g": 355.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6047.142857,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 120.942857
+    },
+    {
+      "dia": 120,
+      "peso_promedio_g": 360.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 5940.0,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 118.8
+    },
+    {
+      "dia": 121,
+      "peso_promedio_g": 364.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6010.714286,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 120.214286
+    },
+    {
+      "dia": 122,
+      "peso_promedio_g": 368.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6081.428571,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 121.628571
+    },
+    {
+      "dia": 123,
+      "peso_promedio_g": 372.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6152.142857,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 123.042857
+    },
+    {
+      "dia": 124,
+      "peso_promedio_g": 377.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6222.857143,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 124.457143
+    },
+    {
+      "dia": 125,
+      "peso_promedio_g": 381.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6293.571429,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 125.871429
+    },
+    {
+      "dia": 126,
+      "peso_promedio_g": 385.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6364.285714,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 127.285714
+    },
+    {
+      "dia": 127,
+      "peso_promedio_g": 390.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6435.0,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 128.7
+    },
+    {
+      "dia": 128,
+      "peso_promedio_g": 394.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6505.714286,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 130.114286
+    },
+    {
+      "dia": 129,
+      "peso_promedio_g": 398.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6576.428571,
+      "tasa_alimentacion_pct": 0.02,
+      "kg_alimento_base_dia": 131.528571
+    },
+    {
+      "dia": 130,
+      "peso_promedio_g": 402.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6647.142857,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 119.648571
+    },
+    {
+      "dia": 131,
+      "peso_promedio_g": 407.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6717.857143,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 120.921429
+    },
+    {
+      "dia": 132,
+      "peso_promedio_g": 411.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6788.571429,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 122.194286
+    },
+    {
+      "dia": 133,
+      "peso_promedio_g": 415.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6859.285714,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 123.467143
+    },
+    {
+      "dia": 134,
+      "peso_promedio_g": 420.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 6930.0,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 124.74
+    },
+    {
+      "dia": 135,
+      "peso_promedio_g": 424.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7000.714286,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 126.012857
+    },
+    {
+      "dia": 136,
+      "peso_promedio_g": 428.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7071.428571,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 127.285714
+    },
+    {
+      "dia": 137,
+      "peso_promedio_g": 432.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7142.142857,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 128.558571
+    },
+    {
+      "dia": 138,
+      "peso_promedio_g": 437.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7212.857143,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 129.831429
+    },
+    {
+      "dia": 139,
+      "peso_promedio_g": 441.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7283.571429,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 131.104286
+    },
+    {
+      "dia": 140,
+      "peso_promedio_g": 445.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7354.285714,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 132.377143
+    },
+    {
+      "dia": 141,
+      "peso_promedio_g": 450.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7425.0,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 133.65
+    },
+    {
+      "dia": 142,
+      "peso_promedio_g": 454.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7495.714286,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 134.922857
+    },
+    {
+      "dia": 143,
+      "peso_promedio_g": 458.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7566.428571,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 136.195714
+    },
+    {
+      "dia": 144,
+      "peso_promedio_g": 462.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7637.142857,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 137.468571
+    },
+    {
+      "dia": 145,
+      "peso_promedio_g": 467.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7707.857143,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 138.741429
+    },
+    {
+      "dia": 146,
+      "peso_promedio_g": 471.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7778.571429,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 140.014286
+    },
+    {
+      "dia": 147,
+      "peso_promedio_g": 475.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7849.285714,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 141.287143
+    },
+    {
+      "dia": 148,
+      "peso_promedio_g": 480.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7920.0,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 142.56
+    },
+    {
+      "dia": 149,
+      "peso_promedio_g": 484.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7990.714286,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 143.832857
+    },
+    {
+      "dia": 150,
+      "peso_promedio_g": 488.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7817.142857,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 140.708571
+    },
+    {
+      "dia": 151,
+      "peso_promedio_g": 492.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7885.714286,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 141.942857
+    },
+    {
+      "dia": 152,
+      "peso_promedio_g": 497.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 7954.285714,
+      "tasa_alimentacion_pct": 0.018,
+      "kg_alimento_base_dia": 143.177143
+    },
+    {
+      "dia": 153,
+      "peso_promedio_g": 501.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8022.857143,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 120.342857
+    },
+    {
+      "dia": 154,
+      "peso_promedio_g": 505.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8091.428571,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 121.371429
+    },
+    {
+      "dia": 155,
+      "peso_promedio_g": 510.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8160.0,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 122.4
+    },
+    {
+      "dia": 156,
+      "peso_promedio_g": 514.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8228.571429,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 123.428571
+    },
+    {
+      "dia": 157,
+      "peso_promedio_g": 518.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8297.142857,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 124.457143
+    },
+    {
+      "dia": 158,
+      "peso_promedio_g": 522.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8365.714286,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 125.485714
+    },
+    {
+      "dia": 159,
+      "peso_promedio_g": 527.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8434.285714,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 126.514286
+    },
+    {
+      "dia": 160,
+      "peso_promedio_g": 531.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8502.857143,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 127.542857
+    },
+    {
+      "dia": 161,
+      "peso_promedio_g": 535.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8571.428571,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 128.571429
+    },
+    {
+      "dia": 162,
+      "peso_promedio_g": 540.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8640.0,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 129.6
+    },
+    {
+      "dia": 163,
+      "peso_promedio_g": 544.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8708.571429,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 130.628571
+    },
+    {
+      "dia": 164,
+      "peso_promedio_g": 548.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8777.142857,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 131.657143
+    },
+    {
+      "dia": 165,
+      "peso_promedio_g": 552.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8845.714286,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 132.685714
+    },
+    {
+      "dia": 166,
+      "peso_promedio_g": 557.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8914.285714,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 133.714286
+    },
+    {
+      "dia": 167,
+      "peso_promedio_g": 561.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 8982.857143,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 134.742857
+    },
+    {
+      "dia": 168,
+      "peso_promedio_g": 565.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9051.428571,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 135.771429
+    },
+    {
+      "dia": 169,
+      "peso_promedio_g": 570.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9120.0,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 136.8
+    },
+    {
+      "dia": 170,
+      "peso_promedio_g": 574.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9188.571429,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 137.828571
+    },
+    {
+      "dia": 171,
+      "peso_promedio_g": 578.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9257.142857,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 138.857143
+    },
+    {
+      "dia": 172,
+      "peso_promedio_g": 582.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9325.714286,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 139.885714
+    },
+    {
+      "dia": 173,
+      "peso_promedio_g": 587.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9394.285714,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 140.914286
+    },
+    {
+      "dia": 174,
+      "peso_promedio_g": 591.428571,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9462.857143,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 141.942857
+    },
+    {
+      "dia": 175,
+      "peso_promedio_g": 595.714286,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9531.428571,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 142.971429
+    },
+    {
+      "dia": 176,
+      "peso_promedio_g": 600.0,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9600.0,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 144.0
+    },
+    {
+      "dia": 177,
+      "peso_promedio_g": 604.285714,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9668.571429,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 145.028571
+    },
+    {
+      "dia": 178,
+      "peso_promedio_g": 608.571429,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9737.142857,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 146.057143
+    },
+    {
+      "dia": 179,
+      "peso_promedio_g": 612.857143,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9805.714286,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 147.085714
+    },
+    {
+      "dia": 180,
+      "peso_promedio_g": 617.142857,
+      "tipo_alimento": "5.0 - 30% Proteina",
+      "biomasa_base_kg": 9874.285714,
+      "tasa_alimentacion_pct": 0.015,
+      "kg_alimento_base_dia": 148.114286
+    }
+  ]
+}

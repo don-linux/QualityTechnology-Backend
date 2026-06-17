@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+router.get("/piletas/:piletaId/alimentacion-interna", alevinajeController.getAlimentacionInterna);
 router.get("/", alevinajeController.getAll);
 router.get("/:id", alevinajeController.getById);
 router.post("/", alevinajeController.create);

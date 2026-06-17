@@ -13,6 +13,7 @@ import usuarioRoutes from "./src/routes/usuarioRoutes.js";
 import piletaRoutes from "./src/routes/piletaRoutes.js";
 import reproductorRoutes from "./src/routes/reproductorRoutes.js";
 import engordaRoutes from "./src/routes/engordaRoutes.js";
+import cicloEngordaRoutes from "./src/routes/cicloEngordaRoutes.js";
 import clienteRoutes from "./src/routes/clienteRoutes.js";
 import ventaRoutes from "./src/routes/ventaRoutes.js";
 import listaEsperaRoutes from "./src/routes/listaEsperaRoutes.js";
@@ -33,7 +34,6 @@ import siembraRoutes from "./src/routes/siembraRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
-import bitacoraAlimentacionRoutes from './src/routes/bitacoras/bitacoraAlimentacionRoutes.js';
 import bitacoraInsumoRoutes from './src/routes/bitacoras/bitacoraInsumoRoutes.js';
 import bitacoraPlagaRoutes from './src/routes/bitacoras/bitacoraPlagaRoutes.js';
 import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
@@ -114,6 +114,7 @@ api.use("/roles-modulos", rolesModulosRoutes);
 api.use("/piletas", piletaRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
+api.use("/ciclos-engorda", cicloEngordaRoutes);
 api.use("/alevinaje", alevinajeRoutes);
 api.use("/incubacion", incubacionRoutes);
 api.use("/historial-peso", historialPesoRoutes);
@@ -151,7 +152,6 @@ api.use("/tipos-pileta", tipoPiletaRoutes);
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);
 api.use("/plagas", bitacoraPlagaRoutes);
-api.use("/alimentacion", bitacoraAlimentacionRoutes);
 api.use("/insumos", bitacoraInsumoRoutes);
 api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/visitas", bitacoraVisitaRoutes);

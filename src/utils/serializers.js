@@ -407,6 +407,7 @@ export function serializeEngorda(e) {
     id: e.id,
     engorda_id: e.id,
     pileta_id: e.pileta_id,
+    ciclo_id: e.ciclo_id ?? null,
     fi_pileta_destino_id: e.pileta_id,
     pileta_destino_id: e.pileta_id,
     nombre_pileta_destino: e.piletas?.nombre ?? null,
@@ -984,30 +985,29 @@ export function serializeBiometria(b) {
   };
 }
 
-export function serializeAlimentacion(a) {
-  if (!a) return null;
+
+
+export function serializeCicloEngorda(c) {
+  if (!c) return null;
   return {
-    fi_id: a.id,
-    id: a.id,
-    fc_mes: a.mes,
-    fn_num_instalacion: a.pileta_id ?? null,
-    pileta_id: a.pileta_id ?? null,
-    fn_peso_promedio_entrada: toNumberSafe(a.pesoPromedioEntrada),
-    fd_fecha_siembra: a.fechaSiembra,
-    fc_origen_alevines: a.origenAlevines,
-    fd_fecha: a.fecha,
-    fn_total_alimento_gramos: toNumberSafe(a.totalAlimentoGramos),
-    fn_mortalidad: a.mortalidad,
-    fc_recambio_agua: a.recambioAgua,
-    fn_temp_agua: toNumberSafe(a.temperatura_agua),
-    temperatura_agua: toNumberSafe(a.temperatura_agua),
-    fn_amonio: toNumberSafe(a.amonio),
-    fn_ph: toNumberSafe(a.ph),
-    fc_observaciones: a.observacion?.comentario ?? null,
-    observacion_id: a.observacionId ?? null,
-    fi_usuario_id: a.usuarioId,
-    ubicacion: a.ubicacion?.nombre ?? null,
-    ubicacion_id: a.ubicacionId,
+    fi_ciclo_id: c.id,
+    fi_id: c.id,
+    id: c.id,
+    pileta_id: c.pileta_id,
+    nombre_pileta: c.pileta?.nombre ?? null,
+    fc_granja: c.pileta?.ubicacion?.nombre ?? null,
+    siembra_ingreso_id: c.siembra_ingreso_id ?? null,
+    fecha_inicio: c.fecha_inicio,
+    fd_fecha_inicio: c.fecha_inicio,
+    fecha_cierre: c.fecha_cierre ?? null,
+    fd_fecha_cierre: c.fecha_cierre ?? null,
+    estado: c.estado,
+    fc_estado: c.estado,
+    cantidad_inicial: c.cantidad_inicial ?? 0,
+    lote: c.lote ?? null,
+    fc_lote: c.lote ?? null,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
   };
 }
 
@@ -1044,6 +1044,10 @@ export function serializeBitacoraInsumo(row) {
     fc_encargado_entrega: row.encargadoEntrega,
     fc_encargado_recepcion: row.encargadoRecepcion,
     fi_usuario_id: row.usuarioId,
+    fc_tipo_movimiento: row.tipo_movimiento ?? "ingreso",
+    tipo_movimiento: row.tipo_movimiento ?? "ingreso",
+    pileta_id: row.pileta_id ?? null,
+    fi_pileta_id: row.pileta_id ?? null,
     ubicacion: row.ubicacion?.nombre ?? null,
     ubicacion_id: row.ubicacionId,
   };

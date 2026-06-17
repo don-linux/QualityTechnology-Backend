@@ -10,6 +10,7 @@ router.use(authMiddleware);
 /* =========================================================
    RUTAS DE ENGORDA
 ========================================================= */
+router.get("/piletas/:piletaId/alimentacion-interna", engordaController.getAlimentacionInterna);
 router.get("/", engordaController.getAll);
 router.get("/granja/:granja", engordaController.getByGranja);
 router.get("/:id", engordaController.getById);

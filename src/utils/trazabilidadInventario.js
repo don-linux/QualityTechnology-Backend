@@ -4,6 +4,10 @@ import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
 import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
+import {
+  sincronizarCicloTrasMovimientoEngorda,
+  sincronizarCicloTrasEgresoEngorda,
+} from "./cicloEngordaService.js";
 import { calcularDiasEnPileta } from "./incubacionRegistro.js";
 import { resolverLoteAlevinaje } from "./alevinajeLote.js";
 
@@ -138,7 +142,7 @@ async function sumarInventarioDestino(
     return;
   }
 
-  await tx.engorda.create({
+  const nuevoEngorda = await tx.engorda.create({
     data: {
       pileta_id: piletaDestinoId,
       cantidad_total: cantidad,
@@ -148,6 +152,13 @@ async function sumarInventarioDestino(
     },
   });
   await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
+  await sincronizarCicloTrasMovimientoEngorda(tx, {
+    piletaId: piletaDestinoId,
+    cantidadNueva: cantidad,
+    siembraIngresoId: siembraOrigenId,
+    lote,
+    engordaId: nuevoEngorda.id,
+  });
 }
 
 const vigenteSelectRestauracion = {
@@ -543,6 +554,10 @@ export async function registrarVentaTrazabilidad(
     procesoObservacion: "venta",
     folioVenta: ventaRow?.folio ?? String(venta),
   });
+
+  if (pilOr.tipo === "engorda") {
+    await sincronizarCicloTrasEgresoEngorda(tx, origen, { porVenta: true, ventaId: venta });
+  }
 
   return siembraId;
 }

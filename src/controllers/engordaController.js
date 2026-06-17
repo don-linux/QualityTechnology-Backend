@@ -6,6 +6,8 @@ import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { obtenerAlimentacionInternaEngorda } from "../utils/alimentacionInternaService.js";
+import { sincronizarCicloTrasMovimientoEngorda, sincronizarCicloTrasEgresoEngorda } from "../utils/cicloEngordaService.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -64,6 +66,20 @@ const engordaInclude = {
 };
 
 class EngordaController {
+  static async getAlimentacionInterna(req, res) {
+    try {
+      const piletaId = toInt(req.params.piletaId);
+      if (!piletaId) return res.status(400).json({ error: "piletaId invalido" });
+      const data = await obtenerAlimentacionInternaEngorda(prisma, piletaId);
+      if (!data) return res.status(404).json({ error: "Pileta no encontrada" });
+      res.json(data);
+    } catch (err) {
+      console.error("GET /engorda/piletas/:piletaId/alimentacion-interna Error:", err);
+      res.status(500).json({ error: "Error obteniendo alimentacion interna" });
+    }
+  }
+
+
   static async getAll(req, res) {
     try {
       const piletaIdQ = toInt(req.query.pileta_id);
@@ -184,6 +200,14 @@ class EngordaController {
         });
 
         await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+
+        await sincronizarCicloTrasMovimientoEngorda(tx, {
+          piletaId,
+          cantidadNueva: cantidadTotal,
+          siembraIngresoId: siembraOrigenId,
+          engordaId: creadoNuevo.id,
+        });
+
         return creadoNuevo;
       });
 
@@ -297,6 +321,12 @@ class EngordaController {
         if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
           const vigente = await cantidadVigenteEnPileta(tx, piletaId, "engorda");
           await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+          await sincronizarCicloTrasMovimientoEngorda(tx, {
+            piletaId,
+            cantidadNueva: vigente,
+            siembraIngresoId: siembraOrigenFuturo,
+            engordaId: row.id,
+          });
         }
 
         if (updateData.pileta_id !== undefined && prev.pileta_id !== piletaId) {
@@ -339,6 +369,7 @@ class EngordaController {
         await tx.engorda.delete({ where: { id } });
         const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "engorda");
         await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
+        await sincronizarCicloTrasEgresoEngorda(tx, prev.pileta_id);
       });
 
       res.json({ mensaje: "Registro eliminado" });

@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeFlujoCaja, serializeVenta } from "../utils/serializers.js";
+import { generarTablaAlimentacion } from "../utils/tablaAlimentacionPlantilla.js";
 import { alcanceUnidadNegocio, textoEnAlcanceUnidad } from "../utils/granjaUbicacion.js";
 
 function toInt(value) {
@@ -61,6 +62,41 @@ class VentaController {
     } catch (err) {
       console.error("Error al obtener ventas:", err);
       res.status(500).json({ error: err.message });
+    }
+  }
+
+
+  static async getTablaAlimentacion(req, res) {
+    const ventaId = toInt(req.params.id);
+    if (!ventaId) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const venta = await prisma.venta.findUnique({
+        where: { id: ventaId },
+        include: { observacion: true },
+      });
+      if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+      if (!(await ventaVisibleParaUsuario(venta, req))) {
+        return res.status(403).json({ error: "La venta pertenece a otra unidad de negocio" });
+      }
+
+      const tabla = generarTablaAlimentacion({
+        cantidad: venta.cantidad,
+        tipoVenta: venta.tipoVenta,
+        cliente: venta.cliente_nombre,
+        fechaInicio: venta.fecha,
+      });
+
+      res.json({
+        ...tabla,
+        cliente: venta.cliente_nombre,
+        folio: venta.folio,
+        fecha_venta: venta.fecha,
+        fecha_generacion: new Date().toISOString().slice(0, 10),
+      });
+    } catch (err) {
+      console.error("Error al generar tabla de alimentacion:", err);
+      res.status(500).json({ error: "Error al generar tabla de alimentacion" });
     }
   }
 

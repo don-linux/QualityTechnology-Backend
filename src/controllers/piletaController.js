@@ -221,7 +221,7 @@ class PiletaController {
       const vinculoPileta = {
         OR: [
           { pileta_id: id },
-          { alimentacion: { some: { pileta_id: id } } },
+          { insumos: { some: { pileta_id: id } } },
           { recambios: { some: { pileta_id: id } } },
           { inventarioAlevines: { some: { pileta_id: id } } },
           { biometria: { is: { pileta_id: id } } },

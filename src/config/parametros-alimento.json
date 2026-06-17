@@ -1,0 +1,92 @@
+[
+  {
+    "descripcion": "0.3 mm 5215 Aqua 52% Proteina",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 10,
+    "precio_bulto": 495.0,
+    "precio_kg": 49.5,
+    "nota": null
+  },
+  {
+    "descripcion": "0.4 mm Microteck (MCK) Hormonado",
+    "marca": "PEDREGAL",
+    "proveedor": "JYY Agropecuaria",
+    "presentacion_kg": 25,
+    "precio_bulto": 2196.0,
+    "precio_kg": 87.84,
+    "nota": null
+  },
+  {
+    "descripcion": "0.4 mm Microteck (MCK) Sin Hormonar",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 25,
+    "precio_bulto": 986.0,
+    "precio_kg": 39.44,
+    "nota": null
+  },
+  {
+    "descripcion": "1.5 mm 4515 Aqua 45% Proteina",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 25,
+    "precio_bulto": 800.0,
+    "precio_kg": 32.0,
+    "nota": null
+  },
+  {
+    "descripcion": "2.5 mm 4515 Aqua 45% Proteina",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 25,
+    "precio_bulto": 587.5,
+    "precio_kg": 23.5,
+    "nota": null
+  },
+  {
+    "descripcion": "3.5 mm 3205 Aqua 32% Proteina",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 25,
+    "precio_bulto": 422.5,
+    "precio_kg": 16.9,
+    "nota": null
+  },
+  {
+    "descripcion": "5.0 mm 3005 Aqua 30% Proteina",
+    "marca": "VIMIFOS",
+    "proveedor": "Rodolfo Sanchez",
+    "presentacion_kg": 25,
+    "precio_bulto": 422.5,
+    "precio_kg": 16.9,
+    "nota": null
+  },
+  {
+    "descripcion": "Dyno Alimento para perro",
+    "marca": "DYNO",
+    "proveedor": "JYY Agropecuaria",
+    "presentacion_kg": 25,
+    "precio_bulto": 410.00199999999995,
+    "precio_kg": 16.40008,
+    "nota": null
+  },
+  {
+    "descripcion": "Melaza",
+    "marca": "GENERICO",
+    "proveedor": "JYY Agropecuaria",
+    "presentacion_kg": 25,
+    "precio_bulto": 180.0,
+    "precio_kg": 7.2,
+    "nota": "No genera IVA"
+  },
+  {
+    "descripcion": "Sal Refinada Sin Yodo",
+    "marca": "GENERICO",
+    "proveedor": "JYY Agropecuaria",
+    "presentacion_kg": 50,
+    "precio_bulto": 213.0,
+    "precio_kg": 4.26,
+    "nota": "No genera IVA"
+  }
+]

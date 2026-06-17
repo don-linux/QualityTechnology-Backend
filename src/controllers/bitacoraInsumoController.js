@@ -10,8 +10,17 @@ const LIMITES_INSUMOS = {
   fc_observaciones: 500,
   fc_encargado_entrega: 100,
   fc_encargado_recepcion: 100,
+  fc_tipo_movimiento: 10,
   ubicacion: 50,
 };
+
+const TIPOS_MOVIMIENTO_INSUMO = new Set(["ingreso", "egreso"]);
+
+function resolverTipoMovimiento(body, fallback = "ingreso") {
+  const raw = body.fc_tipo_movimiento ?? body.tipo_movimiento ?? fallback;
+  const tipo = String(raw).trim().toLowerCase();
+  return TIPOS_MOVIMIENTO_INSUMO.has(tipo) ? tipo : null;
+}
 
 const validarLongitudesInsumos = (body) => {
   const etiquetas = {
@@ -21,6 +30,7 @@ const validarLongitudesInsumos = (body) => {
     fc_observaciones: "Las observaciones",
     fc_encargado_entrega: "El encargado de entrega",
     fc_encargado_recepcion: "El encargado de recepción",
+    fc_tipo_movimiento: "El tipo de movimiento",
     ubicacion: "La ubicación",
   };
   for (const [campo, max] of Object.entries(LIMITES_INSUMOS)) {
@@ -32,7 +42,7 @@ const validarLongitudesInsumos = (body) => {
   return null;
 };
 
-const inc = { ubicacion: true, observacion: true };
+const inc = { ubicacion: true, observacion: true, piletas: true };
 
 class BitacoraInsumoController {
   static async getAll(req, res) {
@@ -72,6 +82,10 @@ class BitacoraInsumoController {
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
       const fi_usuario_id = req.user.usuario_id;
+      const tipoMovimiento = resolverTipoMovimiento(req.body);
+      if (!tipoMovimiento) {
+        return res.status(400).json({ error: "tipo_movimiento debe ser ingreso o egreso" });
+      }
       const {
         fd_fecha,
         fc_cantidad_udm,
@@ -80,6 +94,8 @@ class BitacoraInsumoController {
         fc_observaciones,
         fc_encargado_entrega,
         fc_encargado_recepcion,
+        pileta_id,
+        fi_pileta_id,
       } = req.body;
 
       const id = await prisma.$transaction(async (tx) => {
@@ -90,9 +106,12 @@ class BitacoraInsumoController {
           usuarioId: fi_usuario_id,
         });
 
+        const piletaId = tipoMovimiento === "egreso" ? pileta_id ?? fi_pileta_id : null;
         const row = await tx.insumo.create({
           data: {
             ubicacionId: u.ubicacionId,
+            pileta_id: piletaId ? Number(piletaId) : null,
+            tipo_movimiento: tipoMovimiento,
             fecha: fd_fecha ? new Date(fd_fecha) : new Date(),
             cantidadUdm: fc_cantidad_udm || null,
             numero_lote: fc_num_lote || null,
@@ -137,6 +156,10 @@ class BitacoraInsumoController {
       }
 
       const fi_usuario_id = req.user.usuario_id;
+      const tipoMovimiento = resolverTipoMovimiento(req.body, existing.tipo_movimiento ?? "ingreso");
+      if (!tipoMovimiento) {
+        return res.status(400).json({ error: "tipo_movimiento debe ser ingreso o egreso" });
+      }
       const {
         fd_fecha,
         fc_cantidad_udm,
@@ -145,6 +168,8 @@ class BitacoraInsumoController {
         fc_observaciones,
         fc_encargado_entrega,
         fc_encargado_recepcion,
+        pileta_id,
+        fi_pileta_id,
       } = req.body;
 
       await prisma.$transaction(async (tx) => {
@@ -158,10 +183,13 @@ class BitacoraInsumoController {
           usuarioId: fi_usuario_id,
         });
 
+        const piletaId = tipoMovimiento === "egreso" ? pileta_id ?? fi_pileta_id : null;
         await tx.insumo.update({
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
+            pileta_id: piletaId != null && piletaId !== "" ? Number(piletaId) : null,
+            tipo_movimiento: tipoMovimiento,
             fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
             cantidadUdm: fc_cantidad_udm || null,
             numero_lote: fc_num_lote || null,

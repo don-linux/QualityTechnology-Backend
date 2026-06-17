@@ -31,7 +31,6 @@ model Usuario {
   esta_activo        Boolean            @default(true)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
-  alimentacion       Alimentacion[]
   banos              Bano[]
   biometrias         Biometria[]
   empleados          Empleado?
@@ -233,9 +232,10 @@ model Pileta {
   incubacion                              incubacion[]       @relation("IncubacionPiletaDestino")
   incubacion_origen                       incubacion[]       @relation("IncubacionPiletaOrigen")
   eventos_cosecha                         EventoCosecha[]
-  alimentacion                            Alimentacion[]
   biometrias                              Biometria[]
+  ciclos_engorda                          CicloEngorda[]
   engorda                                 Engorda[]
+  insumos                                 Insumo[]
   inventario_alevines                     InventarioAlevin[]
   observaciones                           observacion[]
   tipoPileta                              TipoPileta?        @relation(fields: [tipoPiletaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -259,6 +259,7 @@ model Pileta {
 model Engorda {
   id                Int            @id @default(autoincrement())
   pileta_id         Int
+  ciclo_id          Int?
   cantidad_total    Int            @default(0)
   cantidad_alimento Int            @default(0)
   observacion_id    Int?
@@ -266,13 +267,37 @@ model Engorda {
   siembra_origen_id Int?           @map("siembra_origen_id")
   peso              Int?
   biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
+  ciclo             CicloEngorda?  @relation(fields: [ciclo_id], references: [id], onDelete: SetNull)
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion       observacion?   @relation(fields: [observacion_id], references: [id])
   piletas           Pileta         @relation(fields: [pileta_id], references: [id])
   siembra_origen    siembra?       @relation("EngordaSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
   @@index([pileta_id])
+  @@index([ciclo_id])
   @@map("engorda")
+  @@schema("public")
+}
+
+/// Proyecto/ciclo productivo en pileta de engorda (desde siembra hasta cierre o venta).
+model CicloEngorda {
+  id                 Int       @id @default(autoincrement())
+  pileta_id          Int
+  siembra_ingreso_id Int?      @map("siembra_ingreso_id")
+  fecha_inicio       DateTime  @db.Date
+  fecha_cierre       DateTime? @db.Date
+  estado             String    @default("activo") @db.VarChar(20)
+  cantidad_inicial   Int       @default(0)
+  lote               String?   @db.VarChar(60)
+  created_at         DateTime  @default(now()) @db.Timestamp(6)
+  updated_at         DateTime  @updatedAt @db.Timestamp(6)
+  pileta             Pileta    @relation(fields: [pileta_id], references: [id])
+  siembra_ingreso    siembra?  @relation("CicloEngordaSiembraIngreso", fields: [siembra_ingreso_id], references: [id], onDelete: SetNull)
+  engordas           Engorda[]
+
+  @@index([pileta_id])
+  @@index([estado])
+  @@map("ciclos_engorda")
   @@schema("public")
 }
 
@@ -569,35 +594,6 @@ model FlujoCaja {
   @@schema("public")
 }
 
-model Alimentacion {
-  id                  Int          @id @default(autoincrement())
-  ubicacionId         Int          @map("ubicacion_id")
-  fecha               DateTime?    @db.Date
-  mes                 String?      @db.VarChar(20)
-  pileta_id           Int?
-  fechaSiembra        DateTime?    @map("fecha_siembra") @db.Date
-  origenAlevines      String?      @map("origen_alevines") @db.VarChar(200)
-  pesoPromedioEntrada Decimal?     @map("peso_promedio_entrada") @db.Decimal(12, 3)
-  totalAlimentoGramos Decimal?     @map("total_alimento_gramos") @db.Decimal(12, 3)
-  mortalidad          Int?
-  recambioAgua        String?      @map("recambio_agua") @db.VarChar(50)
-  temperatura_agua    Decimal?     @db.Decimal(6, 2)
-  amonio              Decimal?     @db.Decimal(10, 4)
-  ph                  Decimal?     @db.Decimal(5, 2)
-  observacionId       Int?         @map("observacion_id")
-  usuarioId           Int          @map("usuario_id")
-  created_at          DateTime     @default(now()) @db.Timestamp(6)
-  updated_at          DateTime     @updatedAt @db.Timestamp(6)
-  observacion         observacion? @relation(fields: [observacionId], references: [id])
-  piletas             Pileta?      @relation(fields: [pileta_id], references: [id])
-  ubicacion           ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario             Usuario      @relation(fields: [usuarioId], references: [id])
-
-  @@index([ubicacionId])
-  @@index([usuarioId])
-  @@map("alimentacion")
-  @@schema("public")
-}
 
 model Bano {
   id            Int          @id @default(autoincrement())
@@ -648,6 +644,8 @@ model Biometria {
 model Insumo {
   id                 Int          @id @default(autoincrement())
   ubicacionId        Int          @map("ubicacion_id")
+  pileta_id          Int?
+  tipo_movimiento    String       @default("ingreso") @db.VarChar(10)
   fecha              DateTime     @db.Date
   cantidadUdm        String?      @map("cantidad_udm") @db.VarChar(100)
   numero_lote        String?      @db.VarChar(100)
@@ -659,10 +657,12 @@ model Insumo {
   created_at         DateTime     @default(now()) @db.Timestamp(6)
   updated_at         DateTime     @updatedAt @db.Timestamp(6)
   observacion        observacion? @relation(fields: [observacionId], references: [id])
+  piletas            Pileta?      @relation(fields: [pileta_id], references: [id], onDelete: SetNull)
   ubicacion          ubicacion    @relation(fields: [ubicacionId], references: [id])
   usuario            Usuario?     @relation(fields: [usuarioId], references: [id])
 
   @@index([ubicacionId])
+  @@index([pileta_id])
   @@index([usuarioId])
   @@map("insumos")
   @@schema("public")
@@ -974,7 +974,6 @@ model observacion {
   alevinaje          alevinaje[]
   incubacion         incubacion[]
   eventosCosecha     EventoCosecha[]
-  alimentacion       Alimentacion[]
   banos              Bano[]
   engorda            Engorda[]
   insumos            Insumo[]
@@ -1009,6 +1008,7 @@ model siembra {
   alevinajes_como_origen                  alevinaje[]           @relation("AlevinajeSiembraOrigen")
   incubaciones_como_origen                incubacion[]          @relation("IncubacionSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
+  ciclos_engorda_ingreso                  CicloEngorda[]    @relation("CicloEngordaSiembraIngreso")
   reproductores_como_origen               Reproductor[]     @relation("ReproductorSiembraOrigen")
   venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
   piletas_siembra_pileta_destinoTopiletas Pileta?       @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
@@ -1028,7 +1028,6 @@ model ubicacion {
   direccion          String?            @db.VarChar(255)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
-  alimentacion       Alimentacion[]
   banos              Bano[]
   flujoCaja          FlujoCaja[]
   insumos            Insumo[]
