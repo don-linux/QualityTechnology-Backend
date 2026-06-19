@@ -5,6 +5,7 @@ import helmet from "helmet";
 import fs from "node:fs";
 import swaggerUi from "swagger-ui-express";
 import { parse } from "yaml";
+import { formatosTextoMiddleware } from "./src/middleware/formatosTextoMiddleware.js";
 
 // Importar rutas
 
@@ -98,6 +99,7 @@ app.use(
 
 // Para leer JSON en las peticiones
 app.use(express.json());
+app.use(formatosTextoMiddleware);
 
 // ============================================================================
 // Router con prefijo /api

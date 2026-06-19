@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeProveedor } from "../utils/serializers.js";
+import { normalizeTextoCampo } from "../utils/formatosTexto.js";
 
 // Proveedor en el schema actual conserva: nombre, rfc, telefono, email,
 // direccion, esta_activo. Los campos antiguos (razon_social,
@@ -9,9 +10,8 @@ import { serializeProveedor } from "../utils/serializers.js";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-function normalizeText(value) {
-  if (value === undefined || value === null) return "";
-  return String(value).trim();
+function normalizeText(value, fieldName) {
+  return normalizeTextoCampo(value, fieldName);
 }
 
 function parseRequiredId(value) {
@@ -27,11 +27,11 @@ function pick(body, ...keys) {
 }
 
 function buildPayload(body) {
-  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"));
-  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "");
-  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
-  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
-  const direccion = normalizeText(pick(body, "direccion", "fc_direccion", "fc_localidad") ?? "");
+  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"), "fc_razon_social");
+  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "", "fc_rfc");
+  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "", "fc_telefono");
+  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "", "fc_correo");
+  const direccion = normalizeText(pick(body, "direccion", "fc_direccion", "fc_localidad") ?? "", "fc_direccion");
 
   if (!nombre) return { error: "Campo obligatorio: nombre" };
   if (rfc && rfc.length > 13) return { error: "rfc debe tener maximo 13 caracteres" };

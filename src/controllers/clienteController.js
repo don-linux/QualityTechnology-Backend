@@ -1,5 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeCliente } from "../utils/serializers.js";
+import { normalizeTextoCampo } from "../utils/formatosTexto.js";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -20,9 +21,8 @@ const clienteInclude = {
   },
 };
 
-function normalizeText(value) {
-  if (value === undefined || value === null) return "";
-  return String(value).trim();
+function normalizeText(value, fieldName) {
+  return normalizeTextoCampo(value, fieldName);
 }
 
 function parseRequiredId(value) {
@@ -38,13 +38,13 @@ function pick(body, ...keys) {
 }
 
 function buildClientePayload(body) {
-  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"));
-  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "");
-  const empresa = normalizeText(pick(body, "empresa", "fc_nombre_contacto") ?? "");
-  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
-  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
-  const localidad = normalizeText(pick(body, "localidad", "fc_localidad") ?? "");
-  const estado = normalizeText(pick(body, "estado", "fc_estado") ?? "");
+  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"), "fc_razon_social");
+  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "", "fc_rfc");
+  const empresa = normalizeText(pick(body, "empresa", "fc_nombre_contacto") ?? "", "fc_nombre_contacto");
+  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "", "fc_telefono");
+  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "", "fc_correo");
+  const localidad = normalizeText(pick(body, "localidad", "fc_localidad") ?? "", "fc_localidad");
+  const estado = normalizeText(pick(body, "estado", "fc_estado") ?? "", "fc_estado");
   const unidadNegocioId = parseRequiredId(
     pick(body, "unidad_negocio_id", "fi_unidad_negocio_id"),
   );
