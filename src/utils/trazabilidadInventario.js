@@ -128,8 +128,6 @@ async function sumarInventarioDestino(
         pileta_id: piletaDestinoId,
         lote: loteResuelto,
         cantidad_total: cantidad,
-        cantidad_alimento: 0,
-        observacion_id: obsId,
         siembra_origen_id: siembraOrigenId,
         peso: pesoHistorialId,
       },
@@ -150,7 +148,13 @@ async function sumarInventarioDestino(
   await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
 }
 
-const vigenteSelectRestauracion = {
+const vigenteSelectRestauracionAlevinaje = {
+  peso: true,
+  biometria_id: true,
+  lote: true,
+};
+
+const vigenteSelectRestauracionEngorda = {
   cantidad_alimento: true,
   peso: true,
   biometria_id: true,
@@ -160,7 +164,7 @@ const vigenteSelectRestauracion = {
 
 /**
  * Devolución por cancelación de venta: suma al stock vigente (no reemplaza).
- * Crea registro periódico nuevo, hereda peso/observación del vigente anterior.
+ * Crea registro periódico nuevo, hereda peso del vigente anterior.
  */
 async function restaurarInventarioPorDevolucionVenta(
   tx,
@@ -178,12 +182,12 @@ async function restaurarInventarioPorDevolucionVenta(
       ? await tx.alevinaje.findFirst({
           where: { pileta_id: pid },
           orderBy: { id: "desc" },
-          select: vigenteSelectRestauracion,
+          select: vigenteSelectRestauracionAlevinaje,
         })
       : await tx.engorda.findFirst({
           where: { pileta_id: pid },
           orderBy: { id: "desc" },
-          select: vigenteSelectRestauracion,
+          select: vigenteSelectRestauracionEngorda,
         });
 
   const obsId = usuarioId
@@ -195,20 +199,31 @@ async function restaurarInventarioPorDevolucionVenta(
       )
     : null;
 
-  const data = {
-    pileta_id: pid,
-    cantidad_total: nuevaCantidad,
-    cantidad_alimento: vigente?.cantidad_alimento ?? 0,
-    peso: vigente?.peso ?? null,
-    biometria_id: vigente?.biometria_id ?? null,
-    observacion_id: obsId,
-    siembra_origen_id: toInt(siembraOrigenId ?? null),
-  };
+  const siembraId = toInt(siembraOrigenId ?? null);
 
   if (tipoPileta === "alevinaje") {
-    await tx.alevinaje.create({ data: { ...data, lote: vigente?.lote ?? null } });
+    await tx.alevinaje.create({
+      data: {
+        pileta_id: pid,
+        cantidad_total: nuevaCantidad,
+        peso: vigente?.peso ?? null,
+        biometria_id: vigente?.biometria_id ?? null,
+        siembra_origen_id: siembraId,
+        lote: vigente?.lote ?? null,
+      },
+    });
   } else {
-    await tx.engorda.create({ data });
+    await tx.engorda.create({
+      data: {
+        pileta_id: pid,
+        cantidad_total: nuevaCantidad,
+        cantidad_alimento: vigente?.cantidad_alimento ?? 0,
+        peso: vigente?.peso ?? null,
+        biometria_id: vigente?.biometria_id ?? null,
+        observacion_id: obsId,
+        siembra_origen_id: siembraId,
+      },
+    });
   }
 
   await aplicarEstadoPiletaPorCantidad(tx, pid, nuevaCantidad);

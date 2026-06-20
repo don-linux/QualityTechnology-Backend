@@ -514,10 +514,6 @@ export function serializeSiembra(s) {
 
 export function serializeAlevinaje(a) {
   if (!a) return null;
-  const piletaUlt = Array.isArray(a.piletas?.observaciones) ? a.piletas.observaciones[0] : null;
-  const obsBio = a.biometrias?.observacionBiometria;
-  const obsBioComentario = obsBio?.comentario ?? piletaUlt?.comentario ?? null;
-  const obsBioFecha = obsBio?.created_at ?? piletaUlt?.created_at ?? null;
   const hp = a.historial_peso ?? null;
 
   return {
@@ -534,12 +530,9 @@ export function serializeAlevinaje(a) {
     lote_genetico: a.lote ?? null,
     fc_lote_genetico: a.lote ?? null,
     cantidad_total: a.cantidad_total ?? 0,
-    cantidad_alimento: a.cantidad_alimento ?? 0,
     historial_peso_id: a.peso ?? null,
     peso: hp?.peso != null ? Number(hp.peso) : null,
     peso_gramos: hp?.peso != null ? Number(hp.peso) : null,
-    fecha_peso: hp?.fecha ?? null,
-    fd_fecha_peso: hp?.fecha ?? null,
     siembra_origen_id: a.siembra_origen_id ?? null,
     siembra_origen_pileta:
       a.siembra_origen?.piletas_siembra_pileta_origenTopiletas?.nombre ?? null,
@@ -548,14 +541,6 @@ export function serializeAlevinaje(a) {
       : null,
     siembra_origen_fecha: a.siembra_origen?.fecha ?? null,
     biometria_id: a.biometria_id ?? null,
-    fc_observacion: a.observacion?.comentario ?? null,
-    observacion: a.observacion?.comentario ?? null,
-    observacion_id: a.observacion_id ?? null,
-    fc_ultima_observacion_pileta: piletaUlt?.comentario ?? null,
-    fc_ultima_observacion_proceso: piletaUlt?.proceso ?? null,
-    fd_ultima_observacion_pileta: piletaUlt?.created_at ?? null,
-    fc_observacion_biometria: obsBioComentario,
-    fd_observacion_biometria: obsBioFecha,
   };
 }
 

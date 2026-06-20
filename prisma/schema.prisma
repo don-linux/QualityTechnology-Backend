@@ -865,21 +865,18 @@ model TipoPileta {
   @@schema("catalogos")
 }
 
-/// Inventario operativo en pileta tipo `alevinaje` (cantidad, alimento, peso).
+/// Inventario operativo en pileta tipo `alevinaje` (cantidad, lote, talla).
 model alevinaje {
   id                Int           @id @default(autoincrement())
   pileta_id         Int
   /// Lote genético heredado de incubación o capturado manualmente.
   lote              String?       @db.VarChar(60)
   cantidad_total    Int           @default(0)
-  cantidad_alimento Int           @default(0)
-  observacion_id    Int?
   biometria_id      Int?
   siembra_origen_id Int?          @map("siembra_origen_id")
   peso              Int?
   biometrias        Biometria?    @relation(fields: [biometria_id], references: [id])
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  observacion       observacion?  @relation(fields: [observacion_id], references: [id])
   piletas           Pileta        @relation(fields: [pileta_id], references: [id])
   siembra_origen    siembra?      @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
@@ -971,7 +968,6 @@ model observacion {
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   pileta             Pileta?            @relation(fields: [pileta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
-  alevinaje          alevinaje[]
   incubacion         incubacion[]
   eventosCosecha     EventoCosecha[]
   alimentacion       Alimentacion[]

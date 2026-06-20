@@ -52,10 +52,8 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
     select: {
       id: true,
       cantidad_total: true,
-      cantidad_alimento: true,
       peso: true,
       biometria_id: true,
-      observacion_id: true,
       lote: true,
     },
   });
@@ -71,30 +69,28 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   const siembraOrigenId = toInt(opciones.siembraOrigenId ?? null);
   const obsTexto = opciones.observacion?.trim?.() ? String(opciones.observacion).trim() : "";
   const usuarioId = toInt(opciones.usuarioId ?? null);
-  const obsId = usuarioId
-    ? await crearObservacionEgresoInventario(
-        tx,
-        {
-          textoNuevo: obsTexto,
-          folioVenta: opciones.folioVenta ?? null,
-        },
-        usuarioId,
-        {
-          piletaId: ori,
-          proceso: opciones.procesoObservacion ?? "trazabilidad",
-        },
-      )
-    : null;
+  if (usuarioId) {
+    await crearObservacionEgresoInventario(
+      tx,
+      {
+        textoNuevo: obsTexto,
+        folioVenta: opciones.folioVenta ?? null,
+      },
+      usuarioId,
+      {
+        piletaId: ori,
+        proceso: opciones.procesoObservacion ?? "trazabilidad",
+      },
+    );
+  }
 
   await tx.alevinaje.create({
     data: {
       pileta_id: ori,
       lote: vigente.lote ?? null,
       cantidad_total: restante,
-      cantidad_alimento: vigente.cantidad_alimento ?? 0,
       peso: vigente.peso ?? null,
       biometria_id: vigente.biometria_id ?? null,
-      observacion_id: obsId,
       siembra_origen_id: siembraOrigenId,
     },
   });

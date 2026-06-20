@@ -119,7 +119,6 @@ const piletaInclude = {
       id: true,
       pileta_id: true,
       cantidad_total: true,
-      cantidad_alimento: true,
     },
   },
   incubacion: {

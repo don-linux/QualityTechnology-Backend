@@ -1,6 +1,5 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
-import { crearObservacionSiHay } from "../utils/observacion.js";
 import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
@@ -46,15 +45,8 @@ const alevinajeInclude = {
   piletas: {
     include: {
       ubicacion: true,
-      observaciones: {
-        orderBy: { created_at: "desc" },
-        take: 1,
-        select: { comentario: true, proceso: true, created_at: true },
-      },
     },
   },
-  observacion: true,
-  biometrias: { include: { observacionBiometria: true } },
   siembra_origen: {
     include: {
       piletas_siembra_pileta_origenTopiletas: {
@@ -116,10 +108,6 @@ class AlevinajeController {
         0,
         toInt(pick(req.body, "cantidad_total", "fn_cantidad_total", "alevines_iniciales"), 0) ?? 0,
       );
-      const cantidadAlimento = Math.max(
-        0,
-        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
-      );
 
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id (pileta de alevinaje) es obligatorio" });
@@ -140,7 +128,6 @@ class AlevinajeController {
       }
 
       const usuarioId = req.user.usuario_id;
-      const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
       const origenPiletaId = toInt(
         pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
@@ -161,11 +148,6 @@ class AlevinajeController {
           await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
         }
 
-        const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId,
-          proceso: "alevinaje",
-        });
-
         const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
 
         const loteBody = parseLoteDesdeBody(req.body, pick);
@@ -181,8 +163,6 @@ class AlevinajeController {
             pileta_id: piletaId,
             lote,
             cantidad_total: cantidadTotal,
-            cantidad_alimento: cantidadAlimento,
-            observacion_id: obsId,
             biometria_id: biometriaId ?? null,
             siembra_origen_id: siembraOrigenId ?? null,
             peso: pesoHistorialId,
@@ -250,11 +230,6 @@ class AlevinajeController {
         updateData.cantidad_total = ct;
       }
 
-      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
-        updateData.cantidad_alimento =
-          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
-      }
-
       if (req.body.siembra_origen_id !== undefined) {
         updateData.siembra_origen_id = toInt(req.body.siembra_origen_id);
       }
@@ -273,12 +248,6 @@ class AlevinajeController {
         );
       }
 
-      const usuarioId = req.user.usuario_id;
-      const obsTextoExplicito =
-        req.body.observacion !== undefined ||
-        req.body.fc_observacion !== undefined ||
-        req.body.observaciones !== undefined;
-
       const siembraOrigenFuturo =
         updateData.siembra_origen_id !== undefined
           ? updateData.siembra_origen_id
@@ -294,16 +263,6 @@ class AlevinajeController {
           req.body.peso_id !== undefined
         ) {
           updateData.peso = await resolverHistorialPesoId(tx, req.body);
-        }
-
-        if (obsTextoExplicito) {
-          const obsId = await crearObservacionSiHay(
-            tx,
-            pick(req.body, "observacion", "fc_observacion", "observaciones"),
-            usuarioId,
-            { piletaId, proceso: "alevinaje" },
-          );
-          if (obsId) updateData.observacion_id = obsId;
         }
 
         const row = await tx.alevinaje.update({

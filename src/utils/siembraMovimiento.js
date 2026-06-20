@@ -94,11 +94,10 @@ export function serializarMovimientoSiembra(s) {
   const netas = Math.max(0, brutas - mortalidad);
   const esVenta = Boolean(s.venta_id ?? s.venta?.id);
 
-  const obsAlev = s.alevinajes_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsEng = s.engordas_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsInc = s.incubaciones_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsParts = [];
-  const obsUsuario = obsAlev || obsEng || obsInc;
+  const obsUsuario = obsEng || obsInc;
   if (obsUsuario) obsParts.push(obsUsuario);
 
   const incMeta = s.incubaciones_como_origen?.[0];

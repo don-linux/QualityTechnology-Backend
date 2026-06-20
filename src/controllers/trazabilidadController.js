@@ -59,13 +59,6 @@ const siembraTrazabilidadInclude = {
       ubicacion: { select: { id: true, nombre: true } },
     },
   },
-  alevinajes_como_origen: {
-    orderBy: { id: "desc" },
-    take: 1,
-    select: {
-      observacion: { select: { comentario: true } },
-    },
-  },
   engordas_como_origen: {
     orderBy: { id: "desc" },
     take: 1,
