@@ -9,12 +9,13 @@ export const FORMATOS_TEXTO = {
 const LOCALE = "es";
 
 const CLAVES_SIN_FORMATO =
-  /(correo|email|password|rfc|codigo|busqueda|usuario|token|url|foto|mime)/i;
+  /(correo|email|password|contrase|contrasena|rfc|codigo|busqueda|usuario|token|url|foto|mime)/i;
 
 export function debeAplicarFormatoTextoCampo(fieldName) {
   if (!fieldName) return false;
   const k = String(fieldName).toLowerCase();
 
+  if (k === "nombre") return false;
   if (CLAVES_SIN_FORMATO.test(k)) return false;
   if (/(^|_)id$/.test(k) || k.endsWith("_id")) return false;
   if (/^fd_|fecha|hora/.test(k)) return false;
