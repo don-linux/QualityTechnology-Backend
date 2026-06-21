@@ -37,7 +37,6 @@ model Usuario {
   empleados          Empleado?
   equipos            Equipo[]
   flujo_caja         FlujoCaja[]
-  insumos            Insumo[]
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   observacion        observacion[]
@@ -645,29 +644,6 @@ model Biometria {
   @@schema("public")
 }
 
-model Insumo {
-  id                 Int          @id @default(autoincrement())
-  ubicacionId        Int          @map("ubicacion_id")
-  fecha              DateTime     @db.Date
-  cantidadUdm        String?      @map("cantidad_udm") @db.VarChar(100)
-  numero_lote        String?      @db.VarChar(100)
-  descripcion        String?      @db.VarChar(300)
-  encargadoEntrega   String?      @map("encargado_entrega") @db.VarChar(100)
-  encargadoRecepcion String?      @map("encargado_recepcion") @db.VarChar(100)
-  observacionId      Int?         @map("observacion_id")
-  usuarioId          Int?         @map("usuario_id")
-  created_at         DateTime     @default(now()) @db.Timestamp(6)
-  updated_at         DateTime     @updatedAt @db.Timestamp(6)
-  observacion        observacion? @relation(fields: [observacionId], references: [id])
-  ubicacion          ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario            Usuario?     @relation(fields: [usuarioId], references: [id])
-
-  @@index([ubicacionId])
-  @@index([usuarioId])
-  @@map("insumos")
-  @@schema("public")
-}
-
 model InventarioAlevin {
   id                   Int          @id @default(autoincrement())
   ubicacionId          Int          @map("ubicacion_id")
@@ -973,7 +949,6 @@ model observacion {
   alimentacion       Alimentacion[]
   banos              Bano[]
   engorda            Engorda[]
-  insumos            Insumo[]
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
@@ -1027,7 +1002,6 @@ model ubicacion {
   alimentacion       Alimentacion[]
   banos              Bano[]
   flujoCaja          FlujoCaja[]
-  insumos            Insumo[]
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   parametros         Parametro[]

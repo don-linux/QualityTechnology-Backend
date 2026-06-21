@@ -1014,26 +1014,6 @@ export function serializeBano(row) {
   };
 }
 
-export function serializeBitacoraInsumo(row) {
-  if (!row) return null;
-  return {
-    fi_id: row.id,
-    id: row.id,
-    fd_fecha: row.fecha,
-    fc_cantidad_udm: row.cantidadUdm,
-    fc_num_lote: row.numero_lote,
-    numero_lote: row.numero_lote,
-    fc_descripcion: row.descripcion,
-    fc_observaciones: row.observacion?.comentario ?? null,
-    observacion_id: row.observacionId ?? null,
-    fc_encargado_entrega: row.encargadoEntrega,
-    fc_encargado_recepcion: row.encargadoRecepcion,
-    fi_usuario_id: row.usuarioId,
-    ubicacion: row.ubicacion?.nombre ?? null,
-    ubicacion_id: row.ubicacionId,
-  };
-}
-
 export function serializeParametro(row) {
   if (!row) return null;
   return {

@@ -27,7 +27,6 @@ const MODULOS = [
   ["Biometrias", "/biometrias", true],
   ["Plagas", "/plagas", true],
   ["Alimentacion", "/alimentacion", true],
-  ["Insumos", "/insumos", true],
   ["Recepcion Insumos", "/recepcion_insumos", true],
   ["Visitas", "/visitas", true],
   ["Banos", "/banos", true],

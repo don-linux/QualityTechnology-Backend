@@ -34,7 +34,6 @@ import siembraRoutes from "./src/routes/siembraRoutes.js";
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
 import bitacoraAlimentacionRoutes from './src/routes/bitacoras/bitacoraAlimentacionRoutes.js';
-import bitacoraInsumoRoutes from './src/routes/bitacoras/bitacoraInsumoRoutes.js';
 import bitacoraPlagaRoutes from './src/routes/bitacoras/bitacoraPlagaRoutes.js';
 import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
 import bitacoraVisitaRoutes from './src/routes/bitacoras/bitacoraVisitaRoutes.js';
@@ -152,7 +151,6 @@ api.use("/tipos-pileta", tipoPiletaRoutes);
 api.use("/biometrias", bitacoraBiometriaRoutes);
 api.use("/plagas", bitacoraPlagaRoutes);
 api.use("/alimentacion", bitacoraAlimentacionRoutes);
-api.use("/insumos", bitacoraInsumoRoutes);
 api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/visitas", bitacoraVisitaRoutes);
 api.use("/banos", bitacoraBanoRoutes);

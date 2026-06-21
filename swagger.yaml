@@ -761,29 +761,6 @@ components:
         fi_colecta_id:
           type: integer
 
-    CeibaInsumo:
-      type: object
-      properties:
-        fi_id:
-          type: integer
-        fd_fecha:
-          type: string
-          format: date
-        fc_cantidad_udm:
-          type: string
-        fc_num_lote:
-          type: string
-        fc_descripcion:
-          type: string
-        fc_observaciones:
-          type: string
-        fc_encargado_entrega:
-          type: string
-        fc_encargado_recepcion:
-          type: string
-        fi_usuario_id:
-          type: integer
-
     BitacoraAlimentacion:
       type: object
       properties:
@@ -3689,54 +3666,6 @@ paths:
         '200':
           description: "Eliminado(s)"
 
-  /insumos:
-    get:
-      summary: "Listar insumos"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Listado"
-    post:
-      summary: "Crear insumo"
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CeibaInsumo'
-      responses:
-        '201':
-          description: "Creado"
-    put:
-      summary: "Actualizar insumo"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CeibaInsumo'
-      responses:
-        '200':
-          description: "Actualizado"
-    delete:
-      summary: "Eliminar insumo(s)"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Eliminado(s)"
-
   /recepcion_insumos:
     get:
       summary: "Listar recepción de insumos"
@@ -4093,14 +4022,6 @@ paths:
       responses:
         '204':
           description: "Eliminado"
-
-  /bitacoras/insumos:
-    get:
-      summary: "(Alias) Listar insumos"
-      description: "Ruta agrupada para documentación. Use /insumos según el prefijo real."
-      responses:
-        '200':
-          description: "Listado"
 
   /health:
     get:
