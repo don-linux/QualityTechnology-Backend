@@ -82,9 +82,13 @@ export function serializeTipoDocumento(t) {
   if (!t) return null;
   return {
     tipo_documento_id: t.id,
+    fi_tipo_documento_id: t.id,
     nombre: t.nombre,
+    fc_nombre: t.nombre,
     obligatorio: t.obligatorio ?? null,
+    fb_obligatorio: t.obligatorio ?? null,
     activo: t.esta_activo,
+    fb_activo: t.esta_activo,
   };
 }
 
@@ -128,6 +132,8 @@ export function serializeEmpleado(e, opts = {}) {
     fc_nombre: nombre,
     fc_apellido_paterno: apellidoPaterno,
     fc_apellido_materno: apellidoMaterno,
+    fecha_nacimiento: e.fechaNacimiento ?? null,
+    fd_fecha_nacimiento: e.fechaNacimiento ?? null,
     sueldo_base: e.sueldo_base ?? null,
     fecha_ingreso: fechaIngreso,
     fecha_contratacion: fechaIngreso,
@@ -145,13 +151,21 @@ export function serializeDocumentoEmpleado(d) {
   if (!d) return null;
   return {
     documento_id: d.id,
+    fi_documento_id: d.id,
     empleado_id: d.empleadoId,
+    fi_empleado_id: d.empleadoId,
     tipo_documento_id: d.tipoDocumentoId ?? null,
+    fi_tipo_documento_id: d.tipoDocumentoId ?? null,
     ruta_archivo: d.rutaArchivo,
+    fc_ruta_archivo: d.rutaArchivo,
     nombre_original: d.nombre_archivo,
+    fc_nombre_original: d.nombre_archivo,
     fecha_carga: d.created_at,
+    fd_fecha_carga: d.created_at,
     tipo_nombre: d.tipoDocumento?.nombre ?? null,
+    fc_tipo_nombre: d.tipoDocumento?.nombre ?? null,
     obligatorio: null,
+    fb_obligatorio: null,
   };
 }
 

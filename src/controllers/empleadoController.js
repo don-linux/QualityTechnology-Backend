@@ -2,11 +2,12 @@ import prisma from "../prisma.js";
 import { serializeEmpleado } from "../utils/serializers.js";
 import { revokeAllByUser } from "../services/refreshTokenService.js";
 
-// El modelo Empleado del schema actual solo conserva los campos basicos:
-// nombre, apellido_paterno, apellido_materno, usuario_id, puesto_id,
-// departamento_id, sueldo_base, fecha_ingreso y esta_activo. Los campos
-// extendidos (genero, ciudad, fechas extra, uniformes, comentarios, etc.)
-// que existian en la version anterior se aceptan pero se ignoran.
+// El modelo Empleado del schema actual conserva los campos basicos:
+// nombre, apellido_paterno, apellido_materno, fecha_nacimiento, usuario_id,
+// puesto_id, departamento_id, unidad_negocio_id, sueldo_base, fecha_ingreso
+// y esta_activo. Otros campos extendidos (genero, ciudad, uniformes,
+// comentarios, etc.) que existian en la version anterior se aceptan pero se
+// ignoran.
 const empleadoInclude = {
   departamento: true,
   puesto: true,
@@ -39,6 +40,7 @@ function parseEmpleadoData(body) {
     nombre: pick(body, "nombre", "fc_nombre"),
     apellidoPaterno: pick(body, "apellido_paterno", "fc_apellido_paterno"),
     apellidoMaterno: pick(body, "apellido_materno", "fc_apellido_materno"),
+    fechaNacimiento: pick(body, "fecha_nacimiento", "fd_fecha_nacimiento"),
     sueldoBase: pick(body, "sueldo_base", "fn_sueldo_base"),
     fechaIngreso: pick(body, "fecha_ingreso", "fd_fecha_ingreso", "fecha_contratacion", "fd_fecha_contratacion"),
   };
@@ -86,6 +88,9 @@ class EmpleadoController {
     if (data.fechaIngreso && !isValidDate(data.fechaIngreso)) {
       return res.status(400).json({ error: "fecha_ingreso debe tener formato YYYY-MM-DD" });
     }
+    if (data.fechaNacimiento && !isValidDate(data.fechaNacimiento)) {
+      return res.status(400).json({ error: "fecha_nacimiento debe tener formato YYYY-MM-DD" });
+    }
 
     try {
       const empleado = await prisma.empleado.create({
@@ -99,6 +104,7 @@ class EmpleadoController {
           ...(data.usuarioId ? { usuarioId: Number(data.usuarioId) } : {}),
           ...(data.sueldoBase !== undefined ? { sueldo_base: data.sueldoBase } : {}),
           ...(data.fechaIngreso ? { fecha_ingreso: toDateOrNull(data.fechaIngreso) } : {}),
+          ...(data.fechaNacimiento ? { fechaNacimiento: toDateOrNull(data.fechaNacimiento) } : {}),
         },
         include: empleadoInclude,
       });
@@ -122,6 +128,9 @@ class EmpleadoController {
     if (data.fechaIngreso && !isValidDate(data.fechaIngreso)) {
       return res.status(400).json({ error: "fecha_ingreso debe tener formato YYYY-MM-DD" });
     }
+    if (data.fechaNacimiento && !isValidDate(data.fechaNacimiento)) {
+      return res.status(400).json({ error: "fecha_nacimiento debe tener formato YYYY-MM-DD" });
+    }
 
     try {
       const updateData = {};
@@ -136,6 +145,7 @@ class EmpleadoController {
       if (data.apellidoMaterno !== undefined) updateData.apellidoMaterno = data.apellidoMaterno || null;
       if (data.sueldoBase !== undefined) updateData.sueldo_base = data.sueldoBase;
       if (data.fechaIngreso !== undefined) updateData.fecha_ingreso = toDateOrNull(data.fechaIngreso);
+      if (data.fechaNacimiento !== undefined) updateData.fechaNacimiento = toDateOrNull(data.fechaNacimiento);
 
       const empleado = await prisma.empleado.update({
         where: { id: Number(id) },
@@ -266,6 +276,9 @@ class EmpleadoController {
       if (!data.nombre || !data.apellidoPaterno) {
         return res.status(400).json({ error: "Nombre y apellido paterno son obligatorios" });
       }
+      if (data.fechaNacimiento && !isValidDate(data.fechaNacimiento)) {
+        return res.status(400).json({ error: "fecha_nacimiento debe tener formato YYYY-MM-DD" });
+      }
 
       const actualizado = await prisma.empleado.update({
         where: { id: empleado.id },
@@ -273,6 +286,9 @@ class EmpleadoController {
           nombre: data.nombre,
           apellidoPaterno: data.apellidoPaterno,
           apellidoMaterno: data.apellidoMaterno ?? null,
+          ...(data.fechaNacimiento !== undefined
+            ? { fechaNacimiento: toDateOrNull(data.fechaNacimiento) }
+            : {}),
         },
         include: empleadoInclude,
       });
