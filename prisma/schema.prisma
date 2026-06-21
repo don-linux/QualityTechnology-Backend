@@ -175,8 +175,8 @@ model Reproductor {
   observacion           observacion?    @relation(fields: [observacion_id], references: [id])
   piletas               Pileta          @relation(fields: [pileta_id], references: [id])
   siembra_origen        siembra?        @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
-  eventos_cosecha       EventoCosecha[]
-  incubaciones          incubacion[]
+  eventos_cosecha            EventoCosecha[]
+  eficiencias_reproductivas  eficiencia_reproductiva[]
 
   @@index([pileta_id])
   @@index([activo])
@@ -186,7 +186,7 @@ model Reproductor {
   @@schema("public")
 }
 
-/// Evento de cosecha / desove que enlaza un lote de reproductores con la incubación.
+/// Evento de cosecha / desove que enlaza un lote de reproductores con la eficiencia reproductiva.
 model EventoCosecha {
   id                 Int          @id @default(autoincrement())
   codigo             String       @unique @db.VarChar(24)
@@ -201,8 +201,8 @@ model EventoCosecha {
   created_at         DateTime     @default(now()) @db.Timestamp(6)
   reproductor        Reproductor  @relation(fields: [reproductor_id], references: [id], onDelete: Restrict)
   piletas            Pileta       @relation(fields: [pileta_id], references: [id])
-  observacion        observacion? @relation(fields: [observacion_id], references: [id])
-  incubacion         incubacion?
+  observacion             observacion?            @relation(fields: [observacion_id], references: [id])
+  eficiencia_reproductiva eficiencia_reproductiva?
 
   @@index([pileta_id])
   @@index([reproductor_id])
@@ -229,8 +229,8 @@ model Pileta {
   created_at                              DateTime           @default(now()) @db.Timestamp(6)
   updated_at                              DateTime           @updatedAt @db.Timestamp(6)
   alevinaje                               alevinaje[]
-  incubacion                              incubacion[]       @relation("IncubacionPiletaDestino")
-  incubacion_origen                       incubacion[]       @relation("IncubacionPiletaOrigen")
+  eficiencia_reproductiva                 eficiencia_reproductiva[] @relation("EficienciaReproductivaPiletaDestino")
+  eficiencia_reproductiva_origen          eficiencia_reproductiva[] @relation("EficienciaReproductivaPiletaOrigen")
   eventos_cosecha                         EventoCosecha[]
   alimentacion                            Alimentacion[]
   biometrias                              Biometria[]
@@ -630,9 +630,9 @@ model Biometria {
   encargado             String?       @db.VarChar(120)
   usuarioId             Int           @map("usuario_id")
   created_at            DateTime      @default(now()) @db.Timestamp(6)
-  observacionBiometria observacion? @relation("ObservacionBiometria")
-  alevinaje             alevinaje[]
-  incubacion            incubacion[]
+  observacionBiometria    observacion?            @relation("ObservacionBiometria")
+  alevinaje               alevinaje[]
+  eficiencia_reproductiva eficiencia_reproductiva[]
   piletas               Pileta        @relation(fields: [pileta_id], references: [id], onDelete: Cascade)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
   engorda               Engorda[]
@@ -845,7 +845,7 @@ model TipoPileta {
 model alevinaje {
   id                Int           @id @default(autoincrement())
   pileta_id         Int
-  /// Lote genético heredado de incubación o capturado manualmente.
+  /// Lote genético heredado de eficiencia reproductiva o capturado manualmente.
   lote              String?       @db.VarChar(60)
   cantidad_total    Int           @default(0)
   biometria_id      Int?
@@ -861,10 +861,10 @@ model alevinaje {
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `incubacion`. Tabla única del módulo de Cosecha e
-/// Incubación: incluye los datos del desove/cosecha (tipo, hembras ovadas, estadio, fecha y
-/// estanque de reproductores de origen) fusionados con los de la estancia en incubación.
-model incubacion {
+/// Inventario operativo en pileta tipo `incubacion`. Tabla única del módulo de Eficiencia
+/// reproductiva: incluye los datos del desove/cosecha (tipo, hembras ovadas, estadio, fecha y
+/// estanque de reproductores de origen) fusionados con los de la estancia en eficiencia reproductiva.
+model eficiencia_reproductiva {
   id                 Int            @id @default(autoincrement())
   codigo             String?        @unique @db.VarChar(24)
   pileta_id          Int
@@ -889,11 +889,11 @@ model incubacion {
   siembra_origen_id  Int?           @map("siembra_origen_id")
   biometrias         Biometria?     @relation(fields: [biometria_id], references: [id])
   observacion        observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas            Pileta         @relation("IncubacionPiletaDestino", fields: [pileta_id], references: [id])
-  pileta_origen      Pileta?        @relation("IncubacionPiletaOrigen", fields: [pileta_origen_id], references: [id], onDelete: SetNull)
+  piletas            Pileta         @relation("EficienciaReproductivaPiletaDestino", fields: [pileta_id], references: [id])
+  pileta_origen      Pileta?        @relation("EficienciaReproductivaPiletaOrigen", fields: [pileta_origen_id], references: [id], onDelete: SetNull)
   reproductor        Reproductor?   @relation(fields: [reproductor_id], references: [id], onDelete: SetNull)
   evento_cosecha     EventoCosecha? @relation(fields: [evento_cosecha_id], references: [id], onDelete: SetNull)
-  siembra_origen     siembra?       @relation("IncubacionSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
+  siembra_origen     siembra?       @relation("EficienciaReproductivaSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
   @@unique([pileta_id, lote])
   @@index([pileta_id])
@@ -901,6 +901,7 @@ model incubacion {
   @@index([reproductor_id])
   @@index([lote])
   @@index([evento_cosecha_id])
+  @@map("eficiencia_reproductiva")
   @@schema("public")
 }
 
@@ -944,8 +945,8 @@ model observacion {
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   pileta             Pileta?            @relation(fields: [pileta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
-  incubacion         incubacion[]
-  eventosCosecha     EventoCosecha[]
+  eficiencia_reproductiva eficiencia_reproductiva[]
+  eventosCosecha          EventoCosecha[]
   alimentacion       Alimentacion[]
   banos              Bano[]
   engorda            Engorda[]
@@ -978,7 +979,7 @@ model siembra {
   usuario_id                              Int
   created_at                              DateTime      @default(now()) @db.Timestamp(6)
   alevinajes_como_origen                  alevinaje[]           @relation("AlevinajeSiembraOrigen")
-  incubaciones_como_origen                incubacion[]          @relation("IncubacionSiembraOrigen")
+  eficiencias_reproductivas_como_origen   eficiencia_reproductiva[] @relation("EficienciaReproductivaSiembraOrigen")
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores_como_origen               Reproductor[]     @relation("ReproductorSiembraOrigen")
   venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)

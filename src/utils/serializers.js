@@ -7,7 +7,7 @@ import {
   cantidadVigenteDesdeRegistrosPeriodicos,
   ultimoRegistroPorPileta,
 } from "./inventarioVigente.js";
-import { calcularDiasEnPileta } from "./incubacionRegistro.js";
+import { calcularDiasEnPileta } from "./eficienciaReproductivaRegistro.js";
 
 export function serializeRol(rol) {
   if (!rol) return null;
@@ -327,7 +327,7 @@ export function calcularCantidadPileta(p) {
     return cantidadVigenteDesdeRegistrosPeriodicos(engRows);
   }
 
-  const incRows = Array.isArray(p.incubacion) ? p.incubacion : [];
+  const incRows = Array.isArray(p.eficiencia_reproductiva) ? p.eficiencia_reproductiva : [];
   if (incRows.length > 0) {
     const ultimo = ultimoRegistroPorPileta(incRows, { piletaKey: "pileta_id", idKey: "id" });
     const row = ultimo[0];
@@ -544,7 +544,7 @@ export function serializeAlevinaje(a) {
   };
 }
 
-export function serializeIncubacion(i) {
+export function serializeEficienciaReproductiva(i) {
   if (!i) return null;
   const piletaUlt = Array.isArray(i.piletas?.observaciones) ? i.piletas.observaciones[0] : null;
   const obsBio = i.biometrias?.observacionBiometria;
@@ -577,18 +577,17 @@ export function serializeIncubacion(i) {
     label: TIPO_COSECHA_LABEL[t] ?? t,
     volumen: volumenPorTipo[t] ?? null,
   }));
-  // Días en incubación calculados al vuelo (ingreso -> egreso o día actual),
-  // para que la columna avance mientras el lote sigue incubando en lugar de
-  // quedarse congelada con el valor guardado al registrar.
-  const diasEnIncubacion =
+  const diasEnEficienciaReproductiva =
     i.fecha_ingreso != null
       ? calcularDiasEnPileta(i.fecha_ingreso, i.fecha_egreso)
       : (i.dias_en_pileta ?? null);
 
   return {
     fi_id: i.id,
+    fi_eficiencia_reproductiva_id: i.id,
     fi_incubacion_id: i.id,
     id: i.id,
+    eficiencia_reproductiva_id: i.id,
     incubacion_id: i.id,
     codigo: i.codigo ?? null,
     fc_codigo: i.codigo ?? null,
@@ -596,12 +595,13 @@ export function serializeIncubacion(i) {
     pileta_id: i.pileta_id,
     fi_pileta_destino_id: i.pileta_id,
     pileta_destino_id: i.pileta_id,
+    eficiencia_reproductiva_pileta_id: i.pileta_id,
     incubacion_pileta_id: i.pileta_id,
+    eficiencia_reproductiva_pileta_nombre: i.piletas?.nombre ?? null,
     incubacion_pileta_nombre: i.piletas?.nombre ?? null,
     nombre_pileta_destino: i.piletas?.nombre ?? null,
     nombre_pileta: i.piletas?.nombre ?? null,
     fc_granja: i.piletas?.ubicacion?.nombre ?? null,
-    // Estanque de reproductores de origen (datos de cosecha fusionados)
     pileta_origen_id: i.pileta_origen_id ?? null,
     fi_pileta_origen_id: i.pileta_origen_id ?? null,
     nombre_pileta_origen: i.pileta_origen?.nombre ?? null,
@@ -612,7 +612,6 @@ export function serializeIncubacion(i) {
     fc_lote: i.lote ?? null,
     lote_genetico: i.lote ?? null,
     fc_lote_genetico: i.lote ?? null,
-    // Datos del desove (multi-selección de tipos)
     tipo_cosecha: tiposCosecha,
     fc_tipo_cosecha: tiposCosecha,
     tipos_cosecha: tiposCosecha,
@@ -624,7 +623,6 @@ export function serializeIncubacion(i) {
     fn_hembras_ovadas: i.hembras_ovadas ?? 0,
     fecha_cosecha: i.fecha_cosecha ?? null,
     fd_fecha_cosecha: i.fecha_cosecha ?? null,
-    // Volumen del desove (total = huevos/ml en incubación) y desglose por tipo
     huevos_ml: huevos,
     fn_huevos_ml: huevos,
     volumen_ml: huevos,
@@ -632,13 +630,14 @@ export function serializeIncubacion(i) {
     volumen_por_tipo: volumenPorTipo,
     fc_volumen_por_tipo: volumenPorTipo,
     volumenes_cosecha: volumenesCosecha,
-    // Estancia en incubación
     fecha_ingreso: i.fecha_ingreso ?? null,
     fd_fecha_ingreso: i.fecha_ingreso ?? null,
-    dias_en_pileta: diasEnIncubacion,
-    fn_dias_en_pileta: diasEnIncubacion,
-    dias_en_incubacion: diasEnIncubacion,
-    fn_dias_en_incubacion: diasEnIncubacion,
+    dias_en_pileta: diasEnEficienciaReproductiva,
+    fn_dias_en_pileta: diasEnEficienciaReproductiva,
+    dias_en_eficiencia_reproductiva: diasEnEficienciaReproductiva,
+    fn_dias_en_eficiencia_reproductiva: diasEnEficienciaReproductiva,
+    dias_en_incubacion: diasEnEficienciaReproductiva,
+    fn_dias_en_incubacion: diasEnEficienciaReproductiva,
     fecha_egreso: i.fecha_egreso ?? null,
     fd_fecha_egreso: i.fecha_egreso ?? null,
     evento_cosecha_id: i.evento_cosecha_id ?? null,

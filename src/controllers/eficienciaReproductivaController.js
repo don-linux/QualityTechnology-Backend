@@ -1,21 +1,21 @@
 import prisma from "../prisma.js";
-import { serializeIncubacion } from "../utils/serializers.js";
+import { serializeEficienciaReproductiva } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import {
   aplicarEstadoPiletaPorCantidad,
-  registrarMovimientoReproductorAIncubacion,
+  registrarMovimientoReproductorAEficienciaReproductiva,
   registrarDesoveEnInventarioReproductor,
 } from "../utils/reproductorInventario.js";
 import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
-import { normalizarLoteIncubacion } from "../utils/incubacionLote.js";
-import { calcularDiasEnPileta } from "../utils/incubacionRegistro.js";
+import { normalizarLoteEficienciaReproductiva } from "../utils/eficienciaReproductivaLote.js";
+import { calcularDiasEnPileta } from "../utils/eficienciaReproductivaRegistro.js";
 import { resolverLoteReproductorActivo } from "../utils/reproductorLote.js";
 import {
-  generarCodigoDesoveIncubacion,
+  generarCodigoDesoveEficienciaReproductiva,
   normalizarTiposCosecha,
   normalizarVolumenPorTipo,
-} from "../utils/eventoCosechaCodigo.js";
+} from "../utils/eficienciaReproductivaCodigo.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -42,7 +42,7 @@ function toDateOrNull(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-const incubacionInclude = {
+const eficienciaReproductivaInclude = {
   piletas: {
     include: {
       ubicacion: true,
@@ -67,7 +67,7 @@ const incubacionInclude = {
   },
 };
 
-class IncubacionController {
+class EficienciaReproductivaController {
   static async getAll(req, res) {
     try {
       const piletaIdQ = toInt(req.query.pileta_id);
@@ -76,9 +76,9 @@ class IncubacionController {
       if (ubicClause) where.piletas = ubicClause;
       if (piletaIdQ) where.pileta_id = piletaIdQ;
 
-      const rows = await prisma.incubacion.findMany({
+      const rows = await prisma.eficiencia_reproductiva.findMany({
         where,
-        include: incubacionInclude,
+        include: eficienciaReproductivaInclude,
         orderBy: { id: "desc" },
       });
 
@@ -86,10 +86,10 @@ class IncubacionController {
         req.query.historial === "1" ||
         String(req.query.historial || "").toLowerCase() === "true";
       const vista = historial ? rows : ultimoRegistroPorPileta(rows);
-      res.json(vista.map(serializeIncubacion));
+      res.json(vista.map(serializeEficienciaReproductiva));
     } catch (err) {
-      console.error("GET /incubacion Error:", err);
-      res.status(500).json({ error: "Error obteniendo registros de incubación" });
+      console.error("GET /eficiencia-reproductiva Error:", err);
+      res.status(500).json({ error: "Error obteniendo registros de eficiencia reproductiva" });
     }
   }
 
@@ -97,21 +97,21 @@ class IncubacionController {
     try {
       const id = toInt(req.params.id);
       if (!id) return res.status(400).json({ error: "id invalido" });
-      const row = await prisma.incubacion.findUnique({
+      const row = await prisma.eficiencia_reproductiva.findUnique({
         where: { id },
-        include: incubacionInclude,
+        include: eficienciaReproductivaInclude,
       });
       if (!row) return res.status(404).json({ error: "Registro no encontrado" });
-      res.json(serializeIncubacion(row));
+      res.json(serializeEficienciaReproductiva(row));
     } catch (err) {
-      console.error("GET /incubacion/:id Error:", err);
+      console.error("GET /eficiencia-reproductiva/:id Error:", err);
       res.status(500).json({ error: "Error obteniendo registro" });
     }
   }
 
   /**
    * Registra un desove (cosecha) y su ingreso a la pileta de incubación en un solo paso.
-   * Toda la información vive en la tabla `incubacion`; se conservan los efectos de inventario:
+   * Toda la información vive en la tabla `eficiencia_reproductiva`; se conservan los efectos de inventario:
    * contador de desovez del reproductor, descuento de hembras y movimiento `siembra`.
    */
   static async create(req, res) {
@@ -168,7 +168,7 @@ class IncubacionController {
       const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
 
       if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de incubación) es obligatorio" });
+        return res.status(400).json({ error: "pileta_id (pileta de eficiencia reproductiva) es obligatorio" });
       }
       if (!fechaCosecha) {
         return res.status(400).json({ error: "fecha_cosecha es obligatoria" });
@@ -192,7 +192,7 @@ class IncubacionController {
       if (!pil) return res.status(400).json({ error: "Pileta no existe" });
       if (pil.tipo !== "incubacion") {
         return res.status(400).json({
-          error: `La pileta '${pil.nombre}' debe ser tipo incubación`,
+          error: `La pileta '${pil.nombre}' debe ser tipo incubación (eficiencia reproductiva)`,
         });
       }
 
@@ -218,11 +218,11 @@ class IncubacionController {
           err.code = "BAD_LOTE_GENETICO";
           throw err;
         }
-        const loteGenetico = normalizarLoteIncubacion(lote.lote_genetico);
-        const codigo = await generarCodigoDesoveIncubacion(tx);
+        const loteGenetico = normalizarLoteEficienciaReproductiva(lote.lote_genetico);
+        const codigo = await generarCodigoDesoveEficienciaReproductiva(tx);
         const fechaIngresoFinal = fechaIngreso ?? fechaCosecha;
 
-        const mov = await registrarMovimientoReproductorAIncubacion(tx, {
+        const mov = await registrarMovimientoReproductorAEficienciaReproductiva(tx, {
           piletaOrigenId: lote.pileta_id,
           piletaDestinoId: piletaId,
           cantidad: hembrasOvadas,
@@ -236,12 +236,12 @@ class IncubacionController {
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
           piletaId,
-          proceso: "incubacion",
+          proceso: "eficiencia_reproductiva",
         });
 
         const diasCalc = calcularDiasEnPileta(fechaIngresoFinal, fechaEgreso);
 
-        const creadoNuevo = await tx.incubacion.create({
+        const creadoNuevo = await tx.eficiencia_reproductiva.create({
           data: {
             codigo,
             pileta_id: piletaId,
@@ -261,7 +261,7 @@ class IncubacionController {
             biometria_id: biometriaId ?? null,
             siembra_origen_id: mov.siembraId,
           },
-          include: incubacionInclude,
+          include: eficienciaReproductivaInclude,
         });
 
         await registrarDesoveEnInventarioReproductor(tx, {
@@ -277,8 +277,8 @@ class IncubacionController {
 
       res.status(201).json({
         success: true,
-        mensaje: "Cosecha e ingreso a incubación registrados",
-        data: serializeIncubacion(creado),
+        mensaje: "Cosecha e ingreso a eficiencia reproductiva registrados",
+        data: serializeEficienciaReproductiva(creado),
       });
     } catch (err) {
       if (
@@ -295,14 +295,14 @@ class IncubacionController {
       }
       if (err.code === "P2002") {
         return res.status(409).json({
-          error: "Ya existe un registro de incubación con ese código o lote en la pileta",
+          error: "Ya existe un registro de eficiencia reproductiva con ese código o lote en la pileta",
         });
       }
       if (err.code === "P2003") {
         return res.status(400).json({ error: "Pileta o referencias inválidas" });
       }
-      console.error("POST /incubacion Error:", err);
-      res.status(500).json({ error: "Error creando registro de incubación", detalle: err.message });
+      console.error("POST /eficiencia-reproductiva Error:", err);
+      res.status(500).json({ error: "Error creando registro de eficiencia reproductiva", detalle: err.message });
     }
   }
 
@@ -311,7 +311,7 @@ class IncubacionController {
       const id = toInt(req.params.id);
       if (!id) return res.status(400).json({ error: "id invalido" });
 
-      const prev = await prisma.incubacion.findUnique({
+      const prev = await prisma.eficiencia_reproductiva.findUnique({
         where: { id },
         select: {
           pileta_id: true,
@@ -335,7 +335,7 @@ class IncubacionController {
         });
         if (!pd) return res.status(400).json({ error: "Pileta no existe" });
         if (pd.tipo !== "incubacion") {
-          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo incubación` });
+          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo incubación (eficiencia reproductiva)` });
         }
         updateData.pileta_id = nid;
         piletaId = nid;
@@ -375,7 +375,7 @@ class IncubacionController {
         updateData.fecha_cosecha = f;
       }
       if (req.body.lote !== undefined || req.body.fc_lote !== undefined) {
-        updateData.lote = normalizarLoteIncubacion(pick(req.body, "lote", "fc_lote", "no_lote"));
+        updateData.lote = normalizarLoteEficienciaReproductiva(pick(req.body, "lote", "fc_lote", "no_lote"));
       }
       if (
         req.body.volumen_por_tipo !== undefined ||
@@ -428,7 +428,7 @@ class IncubacionController {
             tx,
             pick(req.body, "observacion", "fc_observacion", "observaciones"),
             usuarioId,
-            { piletaId, proceso: "incubacion" },
+            { piletaId, proceso: "eficiencia_reproductiva" },
           );
           if (obsId) updateData.observacion_id = obsId;
         }
@@ -445,10 +445,10 @@ class IncubacionController {
           updateData.dias_en_pileta = calcularDiasEnPileta(fechaIngresoFutura, fechaEgresoFutura);
         }
 
-        const row = await tx.incubacion.update({
+        const row = await tx.eficiencia_reproductiva.update({
           where: { id },
           data: updateData,
-          include: incubacionInclude,
+          include: eficienciaReproductivaInclude,
         });
 
         if (updateData.pileta_id !== undefined || updateData.fecha_egreso !== undefined) {
@@ -461,7 +461,7 @@ class IncubacionController {
 
       res.json({
         mensaje: "Registro actualizado",
-        data: serializeIncubacion(actualizado),
+        data: serializeEficienciaReproductiva(actualizado),
       });
     } catch (err) {
       if (err.code === "BAD_LOTE" || err.code === "BAD_LOTE_GENETICO") {
@@ -471,7 +471,7 @@ class IncubacionController {
         return res.status(409).json({ error: "Ya existe un registro con ese código o lote en la pileta" });
       }
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
-      console.error("PUT /incubacion/:id Error:", err);
+      console.error("PUT /eficiencia-reproductiva/:id Error:", err);
       res.status(500).json({ error: "Error actualizando registro", detalle: err.message });
     }
   }
@@ -482,7 +482,7 @@ class IncubacionController {
       if (!id) return res.status(400).json({ error: "id invalido" });
 
       await prisma.$transaction(async (tx) => {
-        const prev = await tx.incubacion.findUnique({
+        const prev = await tx.eficiencia_reproductiva.findUnique({
           where: { id },
           select: { pileta_id: true },
         });
@@ -491,7 +491,7 @@ class IncubacionController {
           err.code = "P2025";
           throw err;
         }
-        await tx.incubacion.delete({ where: { id } });
+        await tx.eficiencia_reproductiva.delete({ where: { id } });
         const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "incubacion");
         await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
       });
@@ -499,10 +499,10 @@ class IncubacionController {
       res.json({ mensaje: "Registro eliminado" });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
-      console.error("DELETE /incubacion/:id Error:", err);
+      console.error("DELETE /eficiencia-reproductiva/:id Error:", err);
       res.status(500).json({ error: "Error eliminando registro" });
     }
   }
 }
 
-export default IncubacionController;
+export default EficienciaReproductivaController;

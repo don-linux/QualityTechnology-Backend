@@ -1,11 +1,11 @@
 /**
- * Genera código EV-AAAA-NNN para el desove almacenado en `incubacion` (tabla fusionada).
+ * Genera código EV-AAAA-NNN para el desove almacenado en `eficiencia_reproductiva` (tabla fusionada).
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
  */
-export async function generarCodigoDesoveIncubacion(tx) {
+export async function generarCodigoDesoveEficienciaReproductiva(tx) {
   const year = new Date().getFullYear();
   const prefix = `EV-${year}-`;
-  const last = await tx.incubacion.findFirst({
+  const last = await tx.eficiencia_reproductiva.findFirst({
     where: { codigo: { startsWith: prefix } },
     orderBy: { codigo: "desc" },
     select: { codigo: true },

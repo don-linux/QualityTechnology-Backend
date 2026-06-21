@@ -6,7 +6,7 @@ import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
 import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
 import { parseLoteDesdeBody, resolverLoteAlevinaje } from "../utils/alevinajeLote.js";
-import { normalizarLoteOpcional } from "../utils/incubacionLote.js";
+import { normalizarLoteOpcional } from "../utils/eficienciaReproductivaLote.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {

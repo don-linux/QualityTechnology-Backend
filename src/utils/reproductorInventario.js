@@ -469,7 +469,7 @@ async function assertPiletaIncubacion(tx, piletaId) {
  * Recepción de cosecha en incubación: registra siembra reproductores → incubación (solo trazabilidad).
  * @returns {Promise<{ siembraId: number, observacionTrazabilidad: string|null }>}
  */
-export async function registrarMovimientoReproductorAIncubacion(
+export async function registrarMovimientoReproductorAEficienciaReproductiva(
   tx,
   {
     piletaOrigenId,

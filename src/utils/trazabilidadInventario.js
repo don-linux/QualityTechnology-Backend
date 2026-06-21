@@ -4,7 +4,7 @@ import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
 import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
-import { calcularDiasEnPileta } from "./incubacionRegistro.js";
+import { calcularDiasEnPileta } from "./eficienciaReproductivaRegistro.js";
 import { resolverLoteAlevinaje } from "./alevinajeLote.js";
 
 function toInt(value, fallback = null) {
@@ -372,7 +372,7 @@ async function obtenerPiletaPorTipo(tx, piletaId, tipoEsperado, rol) {
  * y crea el inventario inicial en la pileta de alevinaje destino con su peso biométrico.
  * @returns {Promise<number>} id de siembra
  */
-export async function registrarMovimientoIncubacionAAlevinaje(
+export async function registrarMovimientoEficienciaReproductivaAAlevinaje(
   tx,
   { piletaOrigenId, piletaDestinoId, cantidad, usuarioId, observacion, fechaMovimiento, pesoHistorialId = null },
 ) {
@@ -395,7 +395,7 @@ export async function registrarMovimientoIncubacionAAlevinaje(
   const pilOr = await obtenerPiletaPorTipo(tx, origen, "incubacion", "origen");
   await obtenerPiletaPorTipo(tx, dest, "alevinaje", "destino");
 
-  const inc = await tx.incubacion.findFirst({
+  const inc = await tx.eficiencia_reproductiva.findFirst({
     where: { pileta_id: origen, fecha_egreso: null },
     orderBy: { id: "desc" },
     select: { id: true, fecha_ingreso: true, lote: true, codigo: true },
@@ -420,7 +420,7 @@ export async function registrarMovimientoIncubacionAAlevinaje(
   }
 
   const fechaEgreso = fechaMovimiento ?? new Date();
-  await tx.incubacion.update({
+  await tx.eficiencia_reproductiva.update({
     where: { id: inc.id },
     data: {
       fecha_egreso: fechaEgreso,

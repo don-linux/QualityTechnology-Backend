@@ -12,7 +12,7 @@ import {
 import {
   registrarMortalidadTrazabilidad,
   registrarMovimientoTrazabilidad,
-  registrarMovimientoIncubacionAAlevinaje,
+  registrarMovimientoEficienciaReproductivaAAlevinaje,
   registrarVentaDesdeListaEspera,
   parseFechaMovimiento,
   etapaRequeridaParaTipoVenta,
@@ -66,7 +66,7 @@ const siembraTrazabilidadInclude = {
       observacion: { select: { comentario: true } },
     },
   },
-  incubaciones_como_origen: {
+  eficiencias_reproductivas_como_origen: {
     orderBy: { id: "desc" },
     take: 1,
     select: {
@@ -189,7 +189,7 @@ class TrazabilidadController {
               pick(req.body, "fecha_peso", "fd_fecha_peso") ??
               pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),
           });
-          return registrarMovimientoIncubacionAAlevinaje(tx, {
+          return registrarMovimientoEficienciaReproductivaAAlevinaje(tx, {
             piletaOrigenId,
             piletaDestinoId,
             cantidad,

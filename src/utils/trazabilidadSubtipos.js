@@ -1,7 +1,7 @@
 /** Subtipos de movimiento en trazabilidad (UI y validación). */
 export const SUBTIPOS_TRAZABILIDAD = {
   INCUBACION_A_ALEVINAJE: {
-    label: "De incubación a alevinaje",
+    label: "De eficiencia reproductiva a alevinaje",
     modo: "TRASLADO",
     etapaOrigen: "incubacion",
     etapaDestino: "alevinaje",
@@ -37,7 +37,7 @@ export const SUBTIPOS_TRAZABILIDAD = {
     etapaDestino: "reproductores",
   },
   REPRODUCTORES_A_INCUBACION: {
-    label: "De reproductores a incubación",
+    label: "De reproductores a eficiencia reproductiva",
     modo: "TRASLADO",
     etapaOrigen: "reproductores",
     etapaDestino: "incubacion",

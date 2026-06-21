@@ -2,7 +2,7 @@
  * Lote genético en alevinaje (misma convención que incubación / reproductores).
  */
 
-import { normalizarLoteOpcional } from "./incubacionLote.js";
+import { normalizarLoteOpcional } from "./eficienciaReproductivaLote.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -16,10 +16,10 @@ export function parseLoteDesdeBody(body, pick) {
   );
 }
 
-async function loteIncubacionEnPileta(tx, piletaId, { soloActivo = false } = {}) {
+async function loteEficienciaReproductivaEnPileta(tx, piletaId, { soloActivo = false } = {}) {
   const where = { pileta_id: piletaId };
   if (soloActivo) where.fecha_egreso = null;
-  const inc = await tx.incubacion.findFirst({
+  const inc = await tx.eficiencia_reproductiva.findFirst({
     where,
     orderBy: { id: "desc" },
     select: { lote: true },
@@ -51,8 +51,8 @@ async function loteDesdePiletaOrigen(tx, piletaOrigenId) {
   }
   if (pil.tipo === "incubacion") {
     return (
-      (await loteIncubacionEnPileta(tx, origenId, { soloActivo: true })) ??
-      (await loteIncubacionEnPileta(tx, origenId))
+      (await loteEficienciaReproductivaEnPileta(tx, origenId, { soloActivo: true })) ??
+      (await loteEficienciaReproductivaEnPileta(tx, origenId))
     );
   }
   return null;
@@ -73,7 +73,7 @@ async function loteDesdeSiembraOrigen(tx, siembraOrigenId) {
 
   const tipoOrigen = siembra.piletas_siembra_pileta_origenTopiletas?.tipo;
   if (tipoOrigen === "incubacion") {
-    return loteIncubacionEnPileta(tx, siembra.pileta_origen);
+    return loteEficienciaReproductivaEnPileta(tx, siembra.pileta_origen);
   }
   if (tipoOrigen === "alevinaje") {
     return loteAlevinajeVigenteEnPileta(tx, siembra.pileta_origen);

@@ -121,7 +121,7 @@ const piletaInclude = {
       cantidad_total: true,
     },
   },
-  incubacion: {
+  eficiencia_reproductiva: {
     select: {
       id: true,
       pileta_id: true,

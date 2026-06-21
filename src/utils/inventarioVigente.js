@@ -79,7 +79,7 @@ export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
   }
 
   if (etapa === "incubacion") {
-    const row = await tx.incubacion.findFirst({
+    const row = await tx.eficiencia_reproductiva.findFirst({
       where: { pileta_id: id },
       orderBy: { id: "desc" },
       select: { fecha_egreso: true },

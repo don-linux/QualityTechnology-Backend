@@ -1,9 +1,9 @@
 /**
- * Lote de incubación = lote genético del módulo reproductores (trazabilidad única).
+ * Lote de eficiencia reproductiva = lote genético del módulo reproductores (trazabilidad única).
  * El código EV- del desove es solo folio operativo.
  */
 
-export function normalizarLoteIncubacion(value) {
+export function normalizarLoteEficienciaReproductiva(value) {
   const lote = String(value ?? "").trim();
   if (!lote) {
     const err = new Error("El lote es obligatorio");

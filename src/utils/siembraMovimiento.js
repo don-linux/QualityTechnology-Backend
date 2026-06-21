@@ -95,12 +95,12 @@ export function serializarMovimientoSiembra(s) {
   const esVenta = Boolean(s.venta_id ?? s.venta?.id);
 
   const obsEng = s.engordas_como_origen?.[0]?.observacion?.comentario?.trim();
-  const obsInc = s.incubaciones_como_origen?.[0]?.observacion?.comentario?.trim();
+  const obsInc = s.eficiencias_reproductivas_como_origen?.[0]?.observacion?.comentario?.trim();
   const obsParts = [];
   const obsUsuario = obsEng || obsInc;
   if (obsUsuario) obsParts.push(obsUsuario);
 
-  const incMeta = s.incubaciones_como_origen?.[0];
+  const incMeta = s.eficiencias_reproductivas_como_origen?.[0];
   const incCodigo = incMeta?.codigo ?? incMeta?.evento_cosecha?.codigo ?? null;
   if (incCodigo) {
     const tag = `Evento: ${incCodigo}`;
