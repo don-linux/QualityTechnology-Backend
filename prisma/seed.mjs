@@ -2,7 +2,7 @@ import prisma from "../src/prisma.js";
 
 const MODULOS = [
   ["Dashboard", "/", true],
-  ["Operaciones", "/operaciones", true],
+  ["Bitacoras", "/bitacoras", true],
   ["Inventarios", "/inventarios", true],
   ["Finanzas", "/finanzas", true],
   ["RRHH", "/rrhh", true],
