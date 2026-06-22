@@ -41,7 +41,7 @@ model Usuario {
   medicamentos       Medicamento[]
   observacion        observacion[]
   parametros         Parametro[]
-  plagas             Plaga[]
+  faunaNociva        FaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   refreshTokens      RefreshToken[]
@@ -429,6 +429,7 @@ model Cliente {
   unidadNegocio       UnidadNegocio? @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
   ejecutivo           Empleado?      @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
   lista_espera        ListaEspera[]
+  insumos             Insumo[]
 
   @@index([nombre])
   @@index([unidadNegocioId])
@@ -721,28 +722,33 @@ model Parametro {
   @@schema("public")
 }
 
-model Plaga {
-  id               Int          @id @default(autoincrement())
-  ubicacionId      Int          @map("ubicacion_id")
-  unidadProduccion String?      @map("unidad_produccion") @db.VarChar(100)
-  fecha            DateTime     @db.Date
-  numero_trampa    String?      @db.VarChar(100)
-  tipoTrampa       String?      @map("tipo_trampa") @db.VarChar(100)
-  hallazgo         String?      @db.VarChar(500)
-  malla            String?      @db.VarChar(200)
-  veneno           String?      @db.VarChar(100)
-  verificador      String?      @db.VarChar(100)
-  observacionId    Int?         @map("observacion_id")
-  usuarioId        Int?         @map("usuario_id")
-  created_at       DateTime     @default(now()) @db.Timestamp(6)
-  updated_at       DateTime     @updatedAt @db.Timestamp(6)
-  observacion      observacion? @relation(fields: [observacionId], references: [id])
-  ubicacion        ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario          Usuario?     @relation(fields: [usuarioId], references: [id])
+model FaunaNociva {
+  id                 Int               @id @default(autoincrement())
+  codigo             String            @unique @db.VarChar(30)
+  ubicacionId        Int               @map("ubicacion_id")
+  fecha              DateTime          @db.Date
+  areaInstalacionId  Int?              @map("area_instalacion_id")
+  faunaDetectadaId   Int?              @map("fauna_detectada_id")
+  evidenciaFaunaId   Int?              @map("evidencia_fauna_id")
+  estadoTrampaId     Int?              @map("estado_trampa_id")
+  condicionMalla     String?           @map("condicion_malla") @db.VarChar(20)
+  accionCorrectivaId Int?              @map("accion_correctiva_id")
+  responsable        String?           @db.VarChar(100)
+  usuarioId          Int?              @map("usuario_id")
+  created_at         DateTime          @default(now()) @db.Timestamp(6)
+  updated_at         DateTime          @updatedAt @db.Timestamp(6)
+  ubicacion          ubicacion         @relation(fields: [ubicacionId], references: [id])
+  areaInstalacion    AreaInstalacion?  @relation(fields: [areaInstalacionId], references: [id])
+  faunaDetectada     FaunaDetectada?   @relation(fields: [faunaDetectadaId], references: [id])
+  evidenciaFauna     EvidenciaFauna?   @relation(fields: [evidenciaFaunaId], references: [id])
+  estadoTrampa       EstadoTrampa?     @relation(fields: [estadoTrampaId], references: [id])
+  accionCorrectiva   AccionCorrectiva? @relation(fields: [accionCorrectivaId], references: [id])
+  usuario            Usuario?          @relation(fields: [usuarioId], references: [id])
 
   @@index([ubicacionId])
+  @@index([areaInstalacionId])
   @@index([usuarioId])
-  @@map("plagas")
+  @@map("fauna_nociva")
   @@schema("public")
 }
 
@@ -839,6 +845,87 @@ model TipoPileta {
   piletas     Pileta[]
 
   @@map("tipo_pileta")
+  @@schema("catalogos")
+}
+
+model AreaInstalacion {
+  id          Int           @id @default(autoincrement())
+  nombre      String        @unique @db.VarChar(100)
+  esta_activo Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @updatedAt @db.Timestamp(6)
+  faunaNociva FaunaNociva[]
+
+  @@map("areas_instalacion")
+  @@schema("catalogos")
+}
+
+model FaunaDetectada {
+  id          Int           @id @default(autoincrement())
+  nombre      String        @unique @db.VarChar(100)
+  esta_activo Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @updatedAt @db.Timestamp(6)
+  faunaNociva FaunaNociva[]
+
+  @@map("faunas_detectadas")
+  @@schema("catalogos")
+}
+
+model EvidenciaFauna {
+  id          Int           @id @default(autoincrement())
+  nombre      String        @unique @db.VarChar(100)
+  esta_activo Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @updatedAt @db.Timestamp(6)
+  faunaNociva FaunaNociva[]
+
+  @@map("evidencias_fauna")
+  @@schema("catalogos")
+}
+
+model EstadoTrampa {
+  id          Int           @id @default(autoincrement())
+  nombre      String        @unique @db.VarChar(100)
+  esta_activo Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @updatedAt @db.Timestamp(6)
+  faunaNociva FaunaNociva[]
+
+  @@map("estados_trampa")
+  @@schema("catalogos")
+}
+
+model AccionCorrectiva {
+  id          Int           @id @default(autoincrement())
+  nombre      String        @unique @db.VarChar(100)
+  esta_activo Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @updatedAt @db.Timestamp(6)
+  faunaNociva FaunaNociva[]
+
+  @@map("acciones_correctivas")
+  @@schema("catalogos")
+}
+
+model Insumo {
+  id             Int      @id @default(autoincrement())
+  codigo         String   @unique @db.VarChar(20)
+  nombre         String   @db.VarChar(150)
+  marca          String?  @db.VarChar(100)
+  unidadMedida   String   @map("unidad_medida") @db.VarChar(10)
+  clienteId      Int?     @map("cliente_id")
+  presentacion   Decimal  @db.Decimal(12, 3)
+  precioBulto    Decimal  @map("precio_bulto") @db.Decimal(12, 2)
+  precioUnitario Decimal  @map("precio_unitario") @db.Decimal(14, 4)
+  stockMinimo    Decimal  @map("stock_minimo") @db.Decimal(12, 3)
+  esta_activo    Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @updatedAt @db.Timestamp(6)
+  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  @@index([clienteId])
+  @@map("insumos")
   @@schema("catalogos")
 }
 
@@ -955,7 +1042,6 @@ model observacion {
   medicamentos       Medicamento[]
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
   parametros         Parametro[]
-  plagas             Plaga[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   reproductores      Reproductor[]
@@ -1008,7 +1094,7 @@ model ubicacion {
   medicamentos       Medicamento[]
   parametros         Parametro[]
   piletas            Pileta[]
-  plagas             Plaga[]
+  faunaNociva        FaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   visitas            Visita[]

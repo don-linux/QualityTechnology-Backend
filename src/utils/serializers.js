@@ -78,6 +78,51 @@ export function serializeTipoPileta(t) {
   };
 }
 
+export function serializeAreaInstalacion(a) {
+  if (!a) return null;
+  return {
+    area_instalacion_id: a.id,
+    nombre: a.nombre,
+    activo: a.esta_activo,
+  };
+}
+
+export function serializeFaunaDetectada(f) {
+  if (!f) return null;
+  return {
+    fauna_detectada_id: f.id,
+    nombre: f.nombre,
+    activo: f.esta_activo,
+  };
+}
+
+export function serializeEvidenciaFauna(e) {
+  if (!e) return null;
+  return {
+    evidencia_fauna_id: e.id,
+    nombre: e.nombre,
+    activo: e.esta_activo,
+  };
+}
+
+export function serializeEstadoTrampa(e) {
+  if (!e) return null;
+  return {
+    estado_trampa_id: e.id,
+    nombre: e.nombre,
+    activo: e.esta_activo,
+  };
+}
+
+export function serializeAccionCorrectiva(a) {
+  if (!a) return null;
+  return {
+    accion_correctiva_id: a.id,
+    nombre: a.nombre,
+    activo: a.esta_activo,
+  };
+}
+
 export function serializeTipoDocumento(t) {
   if (!t) return null;
   return {
@@ -754,6 +799,37 @@ export function serializeCliente(c) {
   };
 }
 
+export function serializeInsumo(i) {
+  if (!i) return null;
+  const clienteId = i.clienteId ?? i.cliente?.id ?? null;
+  return {
+    fi_insumo_id: i.id,
+    insumo_id: i.id,
+    fc_codigo: i.codigo,
+    codigo: i.codigo,
+    fc_nombre: i.nombre,
+    nombre: i.nombre,
+    fc_marca: i.marca ?? null,
+    marca: i.marca ?? null,
+    fc_unidad_medida: i.unidadMedida,
+    unidad_medida: i.unidadMedida,
+    fi_cliente_id: clienteId,
+    cliente_id: clienteId,
+    fc_razon_social: i.cliente?.nombre ?? null,
+    razon_social: i.cliente?.nombre ?? null,
+    fn_presentacion: i.presentacion != null ? Number(i.presentacion) : null,
+    presentacion: i.presentacion != null ? Number(i.presentacion) : null,
+    fn_precio_bulto: i.precioBulto != null ? Number(i.precioBulto) : null,
+    precio_bulto: i.precioBulto != null ? Number(i.precioBulto) : null,
+    fn_precio_unitario: i.precioUnitario != null ? Number(i.precioUnitario) : null,
+    precio_unitario: i.precioUnitario != null ? Number(i.precioUnitario) : null,
+    fn_stock_minimo: i.stockMinimo != null ? Number(i.stockMinimo) : null,
+    stock_minimo: i.stockMinimo != null ? Number(i.stockMinimo) : null,
+    activo: i.esta_activo,
+    fb_activo: i.esta_activo,
+  };
+}
+
 export function serializeProveedor(p) {
   if (!p) return null;
   return {
@@ -1075,24 +1151,29 @@ export function serializeMedicamento(row) {
   };
 }
 
-export function serializePlaga(row) {
+export function serializeFaunaNociva(row) {
   if (!row) return null;
   return {
     fi_id: row.id,
     id: row.id,
+    codigo: row.codigo ?? null,
+    fc_codigo: row.codigo ?? null,
     fd_fecha: row.fecha,
-    fc_num_trampa: row.numero_trampa,
-    numero_trampa: row.numero_trampa,
-    tipo_trampa: row.tipoTrampa,
-    fc_tipo_trampa: row.tipoTrampa,
-    fc_hallazgo: row.hallazgo,
-    fc_malla: row.malla,
-    fc_veneno: row.veneno,
-    fc_observaciones: row.observacion?.comentario ?? null,
-    observacion_id: row.observacionId ?? null,
-    fc_verifico: row.verificador,
-    verificador: row.verificador,
-    unidad_produccion: row.unidadProduccion,
+    fecha: row.fecha,
+    area_instalacion_id: row.areaInstalacionId ?? null,
+    area_instalacion_nombre: row.areaInstalacion?.nombre ?? null,
+    fauna_detectada_id: row.faunaDetectadaId ?? null,
+    fauna_detectada_nombre: row.faunaDetectada?.nombre ?? null,
+    evidencia_fauna_id: row.evidenciaFaunaId ?? null,
+    evidencia_fauna_nombre: row.evidenciaFauna?.nombre ?? null,
+    estado_trampa_id: row.estadoTrampaId ?? null,
+    estado_trampa_nombre: row.estadoTrampa?.nombre ?? null,
+    condicion_malla: row.condicionMalla ?? null,
+    fc_condicion_malla: row.condicionMalla ?? null,
+    accion_correctiva_id: row.accionCorrectivaId ?? null,
+    accion_correctiva_nombre: row.accionCorrectiva?.nombre ?? null,
+    responsable: row.responsable ?? null,
+    fc_responsable: row.responsable ?? null,
     fi_usuario_id: row.usuarioId,
     ubicacion: row.ubicacion?.nombre ?? null,
     ubicacion_id: row.ubicacionId,

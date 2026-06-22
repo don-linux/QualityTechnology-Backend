@@ -25,7 +25,7 @@ const MODULOS = [
   ["Tesoreria", "/tesoreria", true],
   ["Cuentas", "/cuentas", true],
   ["Biometrias", "/biometrias", true],
-  ["Plagas", "/plagas", true],
+  ["Fauna Nociva", "/fauna-nociva", true],
   ["Alimentacion", "/alimentacion", true],
   ["Recepcion Insumos", "/recepcion_insumos", true],
   ["Visitas", "/visitas", true],
@@ -43,16 +43,21 @@ const MODULOS = [
   ["Unidades de Negocio", "/unidades-negocio", true],
   ["Ubicaciones", "/ubicaciones", true],
   ["Tipos de pileta", "/tipos-pileta", true],
+  ["Areas de instalacion", "/areas-instalacion", true],
+  ["Faunas detectadas", "/faunas-detectadas", true],
+  ["Evidencias fauna", "/evidencias-fauna", true],
+  ["Estados de trampa", "/estados-trampa", true],
+  ["Acciones correctivas", "/acciones-correctivas", true],
 ];
 
 const ADMIN_PASSWORD_HASH =
   "$2b$10$MAj2BLZF7j2s2Ors05KVfeASNl1m7IXUhnfzjzxe8MOJpj/KgYXP.";
 
-function syncSequence(table, column) {
+function syncSequence(table, column, schema = "public") {
   return prisma.$executeRawUnsafe(
     `SELECT setval(
-      pg_get_serial_sequence('"public"."${table}"', '${column}'),
-      GREATEST(COALESCE((SELECT MAX("${column}") FROM "public"."${table}"), 0), 1)
+      pg_get_serial_sequence('"${schema}"."${table}"', '${column}'),
+      GREATEST(COALESCE((SELECT MAX("${column}") FROM "${schema}"."${table}"), 0), 1)
     )`
   );
 }
@@ -183,6 +188,58 @@ async function main() {
     skipDuplicates: true,
   });
 
+  await prisma.areaInstalacion.createMany({
+    data: [
+      { nombre: "Almacen de alimentos" },
+      { nombre: "Almacen de herramientas" },
+      { nombre: "Area de embolsado" },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.faunaDetectada.createMany({
+    data: [
+      { nombre: "Roedor" },
+      { nombre: "Ave" },
+      { nombre: "No aplica" },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.evidenciaFauna.createMany({
+    data: [
+      { nombre: "Animal vivo" },
+      { nombre: "Animal muerto" },
+      { nombre: "Excretas" },
+      { nombre: "Alimento roido" },
+      { nombre: "Daño en malla" },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.estadoTrampa.createMany({
+    data: [
+      { nombre: "Activa" },
+      { nombre: "Inactiva" },
+      { nombre: "Con captura" },
+      { nombre: "Sin cebo" },
+      { nombre: "Fuera de lugar" },
+      { nombre: "Dañada" },
+      { nombre: "Requiere mantenimiento" },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.accionCorrectiva.createMany({
+    data: [
+      { nombre: "Retiro de fauna" },
+      { nombre: "Mantenimiento de trampa" },
+      { nombre: "Limpieza del Area" },
+      { nombre: "Cambio de cebo" },
+    ],
+    skipDuplicates: true,
+  });
+
   await syncSequence("roles", "id");
   await syncSequence("usuarios", "id");
   await syncSequence("modulos", "id");
@@ -191,6 +248,11 @@ async function main() {
   await syncSequence("tipos_documento", "id");
   await syncSequence("unidades_negocio", "id");
   await syncSequence("actas_administrativas", "id");
+  await syncSequence("areas_instalacion", "id", "catalogos");
+  await syncSequence("faunas_detectadas", "id", "catalogos");
+  await syncSequence("evidencias_fauna", "id", "catalogos");
+  await syncSequence("estados_trampa", "id", "catalogos");
+  await syncSequence("acciones_correctivas", "id", "catalogos");
 }
 
 main()

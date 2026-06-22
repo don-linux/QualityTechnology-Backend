@@ -34,7 +34,7 @@ import siembraRoutes from "./src/routes/siembraRoutes.js";
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
 import bitacoraAlimentacionRoutes from './src/routes/bitacoras/bitacoraAlimentacionRoutes.js';
-import bitacoraPlagaRoutes from './src/routes/bitacoras/bitacoraPlagaRoutes.js';
+import bitacoraFaunaNocivaRoutes from './src/routes/bitacoras/faunaNocivaRoutes.js';
 import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
 import bitacoraVisitaRoutes from './src/routes/bitacoras/bitacoraVisitaRoutes.js';
 import bitacoraBanoRoutes from './src/routes/bitacoras/bitacoraBanoRoutes.js';
@@ -54,6 +54,12 @@ import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 // Ubicaciones
 import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
 import tipoPiletaRoutes from "./src/routes/tipoPiletaRoutes.js";
+import areaInstalacionRoutes from "./src/routes/areaInstalacionRoutes.js";
+import faunaDetectadaRoutes from "./src/routes/faunaDetectadaRoutes.js";
+import evidenciaFaunaRoutes from "./src/routes/evidenciaFaunaRoutes.js";
+import estadoTrampaRoutes from "./src/routes/estadoTrampaRoutes.js";
+import accionCorrectivaRoutes from "./src/routes/accionCorrectivaRoutes.js";
+import insumoRoutes from "./src/routes/insumoRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -147,10 +153,16 @@ api.use("/vacaciones", vacacionRoutes);
 api.use("/unidades-negocio", unidadNegocioRoutes);
 api.use("/ubicaciones", ubicacionRoutes);
 api.use("/tipos-pileta", tipoPiletaRoutes);
+api.use("/areas-instalacion", areaInstalacionRoutes);
+api.use("/faunas-detectadas", faunaDetectadaRoutes);
+api.use("/evidencias-fauna", evidenciaFaunaRoutes);
+api.use("/estados-trampa", estadoTrampaRoutes);
+api.use("/acciones-correctivas", accionCorrectivaRoutes);
+api.use("/insumos", insumoRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);
-api.use("/plagas", bitacoraPlagaRoutes);
+api.use("/fauna-nociva", bitacoraFaunaNocivaRoutes);
 api.use("/alimentacion", bitacoraAlimentacionRoutes);
 api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/visitas", bitacoraVisitaRoutes);
