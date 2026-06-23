@@ -14,6 +14,7 @@ model Rol {
   id           Int         @id @default(autoincrement())
   nombre       String      @unique @db.VarChar(50)
   esRoot       Boolean     @default(false) @map("es_root")
+  esta_activo  Boolean     @default(true)
   created_at   DateTime    @default(now()) @db.Timestamp(6)
   updated_at   DateTime    @updatedAt @db.Timestamp(6)
   rolesModulos RolModulo[]

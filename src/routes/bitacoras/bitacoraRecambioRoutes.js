@@ -14,7 +14,5 @@ router.get("/empleados", bitacoraRecambioController.getEmpleados);
 router.get("/", bitacoraRecambioController.getAll);
 router.post("/", bitacoraRecambioController.create);
 router.put("/:id", bitacoraRecambioController.update);
-router.delete("/:id", bitacoraRecambioController.delete);
-router.delete("/", bitacoraRecambioController.deleteAll);
 
 export default router;

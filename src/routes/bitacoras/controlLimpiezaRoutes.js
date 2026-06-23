@@ -14,7 +14,5 @@ router.get("/empleados", controlLimpiezaController.getEmpleados);
 router.get("/", controlLimpiezaController.getAll);
 router.post("/", controlLimpiezaController.create);
 router.put("/:id", controlLimpiezaController.update);
-router.delete("/:id", controlLimpiezaController.delete);
-router.delete("/", controlLimpiezaController.deleteAll);
 
 export default router;

@@ -13,7 +13,5 @@ router.use(authMiddleware);
 router.get("/", vacacionController.getAll);
 router.post("/", vacacionController.create);
 router.put("/:id", vacacionController.update);
-router.delete("/:id", vacacionController.delete);
-router.delete("/", vacacionController.deleteAll);
 
 export default router;

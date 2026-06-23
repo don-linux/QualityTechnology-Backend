@@ -168,25 +168,6 @@ class EmpleadoController {
     }
   }
 
-  static async delete(req, res) {
-    const { id } = req.params;
-    try {
-      await prisma.empleado.delete({ where: { id: Number(id) } });
-      res.json({ mensaje: "Empleado eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Empleado no encontrado" });
-      }
-      if (err.code === "P2003") {
-        return res.status(409).json({
-          error: "No se puede eliminar el empleado porque tiene registros asociados (nomina, vacaciones, documentos, etc.)",
-        });
-      }
-      console.error("Error al eliminar empleado:", err);
-      res.status(500).json({ error: "Error al eliminar empleado" });
-    }
-  }
-
   static async deactivate(req, res) {
     const { id } = req.params;
 

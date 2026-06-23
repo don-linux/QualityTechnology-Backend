@@ -476,33 +476,6 @@ class EficienciaReproductivaController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      const id = toInt(req.params.id);
-      if (!id) return res.status(400).json({ error: "id invalido" });
-
-      await prisma.$transaction(async (tx) => {
-        const prev = await tx.eficiencia_reproductiva.findUnique({
-          where: { id },
-          select: { pileta_id: true },
-        });
-        if (!prev) {
-          const err = new Error("Registro no encontrado");
-          err.code = "P2025";
-          throw err;
-        }
-        await tx.eficiencia_reproductiva.delete({ where: { id } });
-        const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "incubacion");
-        await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
-      });
-
-      res.json({ mensaje: "Registro eliminado" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
-      console.error("DELETE /eficiencia-reproductiva/:id Error:", err);
-      res.status(500).json({ error: "Error eliminando registro" });
-    }
-  }
 }
 
 export default EficienciaReproductivaController;

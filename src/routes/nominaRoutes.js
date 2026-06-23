@@ -13,6 +13,5 @@ router.use(authMiddleware);
 router.get("/", nominaController.getAll);
 router.post("/", nominaController.create);
 router.put("/:id", nominaController.update);
-router.delete("/:id", nominaController.delete);
 
 export default router;

@@ -15,6 +15,7 @@ export function serializeRol(rol) {
     rol_id: rol.id,
     nombre: rol.nombre,
     es_root: rol.esRoot,
+    activo: rol.esta_activo,
   };
 }
 

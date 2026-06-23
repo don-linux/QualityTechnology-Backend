@@ -13,7 +13,5 @@ router.use(authMiddleware);
 router.get("/", bitacoraAlimentacionController.getAll);
 router.post("/", bitacoraAlimentacionController.create);
 router.put("/:id", bitacoraAlimentacionController.update);
-router.delete("/:id", bitacoraAlimentacionController.delete);
-router.delete("/", bitacoraAlimentacionController.deleteAll);
 
 export default router;

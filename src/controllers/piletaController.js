@@ -435,26 +435,6 @@ class PiletaController {
     }
   }
 
-  static async delete(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-
-    try {
-      await prisma.pileta.delete({ where: { id } });
-      res.json({ success: true, message: "Pileta eliminada correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Pileta no encontrada" });
-      }
-      if (err.code === "P2003") {
-        return res.status(409).json({
-          error: "No se puede eliminar: la pileta tiene registros asociados (siembra, alevinaje, biometrias, etc.)",
-        });
-      }
-      return respondPiletaMutationErr(res, "Error al eliminar pileta:", err, "Error al eliminar pileta");
-    }
-  }
-
 }
 
 export default PiletaController;

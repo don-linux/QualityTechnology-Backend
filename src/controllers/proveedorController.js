@@ -96,17 +96,37 @@ class ProveedorController {
     }
   }
 
-  static async delete(req, res) {
+  static async activate(req, res) {
     const id = parseRequiredId(req.params.id);
     if (!id) return res.status(400).json({ error: "ID de proveedor invalido" });
 
     try {
-      await prisma.proveedor.delete({ where: { id } });
-      res.sendStatus(204);
+      const proveedor = await prisma.proveedor.update({
+        where: { id },
+        data: { esta_activo: true, updatedAt: new Date() },
+      });
+      res.json({ mensaje: "Proveedor activado correctamente", proveedor: serializeProveedor(proveedor) });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Proveedor no encontrado" });
-      console.error("Error al eliminar proveedor:", err);
-      res.status(500).json({ error: "Error al eliminar proveedor" });
+      console.error("Error al activar proveedor:", err);
+      res.status(500).json({ error: "Error al activar proveedor" });
+    }
+  }
+
+  static async deactivate(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID de proveedor invalido" });
+
+    try {
+      const proveedor = await prisma.proveedor.update({
+        where: { id },
+        data: { esta_activo: false, updatedAt: new Date() },
+      });
+      res.json({ mensaje: "Proveedor desactivado correctamente", proveedor: serializeProveedor(proveedor) });
+    } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Proveedor no encontrado" });
+      console.error("Error al desactivar proveedor:", err);
+      res.status(500).json({ error: "Error al desactivar proveedor" });
     }
   }
 }

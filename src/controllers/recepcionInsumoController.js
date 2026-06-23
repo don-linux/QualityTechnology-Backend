@@ -208,35 +208,6 @@ class RecepcionInsumoController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      await prisma.recepcionInsumo.delete({ where: { id: Number(req.params.id) } });
-      res.json({ message: "Registro eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      console.error("Error DELETE /recepcion_insumos:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      const { ubicacion } = req.query;
-      if (ubicacion) {
-        const where = await filtroUbicacionRecepcion(ubicacion);
-        await prisma.recepcionInsumo.deleteMany({ where });
-        res.json({ message: `Registros de ${ubicacion} eliminados.` });
-      } else {
-        await prisma.recepcionInsumo.deleteMany();
-        res.json({ message: "Todos los registros eliminados." });
-      }
-    } catch (err) {
-      console.error("Error DELETE /recepcion_insumos:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  }
 }
 
 export default RecepcionInsumoController;

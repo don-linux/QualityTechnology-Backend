@@ -920,8 +920,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    delete:
-      summary: "Eliminar un rol"
+
+  /roles/{id}/activate:
+    patch:
+      summary: "Activar rol"
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -929,20 +933,29 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
-          description: "Rol eliminado (sin contenido)"
+        '200':
+          description: "Rol activado"
         '404':
           description: "Rol no encontrado"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: "Error del servidor"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+
+  /roles/{id}/deactivate:
+    patch:
+      summary: "Desactivar rol"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Rol desactivado"
+        '400':
+          description: "No se puede desactivar un rol root"
+        '404':
+          description: "Rol no encontrado"
 
   /usuarios/login:
     post:
@@ -1327,28 +1340,6 @@ paths:
           description: "Solicitud inválida"
         '401':
           description: "No autorizado"
-        '500':
-          description: "Error del servidor"
-
-  /piletas/{id}:
-    delete:
-      summary: "Eliminar pileta"
-      description: "Requiere token JWT. Elimina una pileta por su ID."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Pileta eliminada"
-        '401':
-          description: "No autorizado"
-        '404':
-          description: "No encontrada"
         '500':
           description: "Error del servidor"
 
@@ -1750,20 +1741,6 @@ paths:
           description: "Reproductor actualizado"
         '500':
           description: "Error del servidor"
-    delete:
-      summary: "Eliminar reproductor"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Reproductor eliminado"
-        '500':
-          description: "Error del servidor"
-
   /engorda/granja/{granja}:
     get:
       summary: "Listar registros de Engorda por granja"
@@ -1800,23 +1777,6 @@ paths:
           description: "Registro creado/actualizado"
         '400':
           description: "Solicitud inválida"
-        '500':
-          description: "Error del servidor"
-
-  /engorda/{id}:
-    delete:
-      summary: "Eliminar registro de engorda"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Registro eliminado"
-        '404':
-          description: "No encontrado"
         '500':
           description: "Error del servidor"
 
@@ -1871,22 +1831,6 @@ paths:
           description: "No encontrado"
         '500':
           description: "Error del servidor"
-    delete:
-      summary: "Eliminar empleado"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Empleado eliminado"
-        '404':
-          description: "No encontrado"
-        '500':
-          description: "Error del servidor"
-
   /empleados/{id}/deactivate:
     patch:
       summary: "Desactivar empleado"
@@ -2307,8 +2251,12 @@ paths:
           description: "Cliente actualizado"
         '500':
           description: "Error del servidor"
-    delete:
-      summary: "Eliminar cliente"
+
+  /clientes/{id}/activate:
+    patch:
+      summary: "Activar cliente"
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -2316,10 +2264,27 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
-          description: "Cliente eliminado"
-        '500':
-          description: "Error del servidor"
+        '200':
+          description: "Cliente activado"
+        '404':
+          description: "Cliente no encontrado"
+
+  /clientes/{id}/deactivate:
+    patch:
+      summary: "Desactivar cliente"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Cliente desactivado"
+        '404':
+          description: "Cliente no encontrado"
 
   /ventas/clientes:
     get:
@@ -2652,18 +2617,6 @@ paths:
       responses:
         '200':
           description: "Equipo actualizado"
-    delete:
-      summary: "Eliminar equipo"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Equipo eliminado"
-
   /equipos/{equipo_id}/mantenimientos:
     get:
       summary: "Obtener mantenimientos por equipo"
@@ -2718,18 +2671,6 @@ paths:
       responses:
         '200':
           description: "Mantenimiento actualizado"
-    delete:
-      summary: "Eliminar mantenimiento"
-      parameters:
-        - name: mantenimiento_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Mantenimiento eliminado"
-
   /expedientes:
     get:
       summary: "Listar expedientes o buscar por nombre"
@@ -2846,18 +2787,6 @@ paths:
       responses:
         '200':
           description: "Nómina actualizada"
-    delete:
-      summary: "Eliminar nómina"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Nómina eliminada"
-
   /vacaciones:
     get:
       summary: "Obtener todos los registros de vacaciones"
@@ -2881,11 +2810,6 @@ paths:
       responses:
         '201':
           description: "Creado"
-    delete:
-      summary: "Eliminar todos los registros de vacaciones"
-      responses:
-        '200':
-          description: "Eliminados"
 
   /vacaciones/{id}:
     put:
@@ -2905,17 +2829,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar registro de vacaciones"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Eliminado"
 
   /caja-ahorro/{granja}:
     get:
@@ -2966,16 +2879,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar todas las categorías de una granja"
-      parameters:
-        - name: granja
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Eliminados"
 
   /proveedores:
     get:
@@ -3019,8 +2922,12 @@ paths:
       responses:
         '200':
           description: "Proveedor actualizado"
-    delete:
-      summary: "Eliminar proveedor"
+
+  /proveedores/{id}/activate:
+    patch:
+      summary: "Activar proveedor"
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -3028,8 +2935,27 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
-          description: "Proveedor eliminado"
+        '200':
+          description: "Proveedor activado"
+        '404':
+          description: "Proveedor no encontrado"
+
+  /proveedores/{id}/deactivate:
+    patch:
+      summary: "Desactivar proveedor"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Proveedor desactivado"
+        '404':
+          description: "Proveedor no encontrado"
 
   /flujo-caja/tesoreria/{granja}:
     get:
@@ -3595,19 +3521,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar registro de control de fauna nociva"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Eliminado"
 
   /control-fauna-nociva/empleados:
     get:
@@ -3658,13 +3571,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar registro(s) de alimentación"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Eliminado(s)"
 
   /recepcion_insumos:
     get:
@@ -3708,13 +3614,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar recepción de insumo(s)"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Eliminado(s)"
 
   /recepcion_insumos/empleados:
     get:
@@ -3789,13 +3688,6 @@ paths:
       responses:
         '200':
           description: "Actualizado"
-    delete:
-      summary: "Eliminar control de visita o limpiar registros"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Eliminado(s)"
 
   /control-limpieza:
     get:

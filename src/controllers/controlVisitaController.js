@@ -163,27 +163,6 @@ class ControlVisitaController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      await prisma.controlVisita.delete({ where: { id: Number(req.params.id) } });
-      res.json({ message: "Registro eliminado" });
-    } catch (error) {
-      if (error.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      console.error("DELETE ERROR:", error);
-      res.status(500).json({ error: "Error eliminando registro" });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      await prisma.controlVisita.deleteMany();
-      res.json({ message: "Todos los registros fueron eliminados." });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  }
 }
 
 export default ControlVisitaController;

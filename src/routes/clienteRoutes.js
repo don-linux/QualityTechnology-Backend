@@ -14,6 +14,7 @@ router.get("/empleados-activos", clienteController.getEmpleadosActivos);
 router.get("/", clienteController.getAll);
 router.post("/", clienteController.create);
 router.put("/:id", clienteController.update);
-router.delete("/:id", clienteController.delete);
+router.patch("/:id/activate", clienteController.activate);
+router.patch("/:id/deactivate", clienteController.deactivate);
 
 export default router;

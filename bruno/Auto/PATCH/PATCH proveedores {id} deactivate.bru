@@ -1,0 +1,19 @@
+meta {
+  name: PATCH proveedores {id} deactivate
+  type: http
+  seq: 18
+}
+
+patch {
+  url: {{baseUrl}}/api/proveedores/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

@@ -27,7 +27,5 @@ router.use(authMiddleware);
 router.get("/", controlVisitaController.getAll);
 router.post("/", upload.single('fc_foto_identificacion'), controlVisitaController.create);
 router.put("/:id", upload.single('fc_foto_identificacion'), controlVisitaController.update);
-router.delete("/:id", controlVisitaController.delete);
-router.delete("/", controlVisitaController.deleteAll);
 
 export default router;

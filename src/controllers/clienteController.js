@@ -243,22 +243,39 @@ class ClienteController {
     }
   }
 
-  static async delete(req, res) {
+  static async activate(req, res) {
     const id = parseRequiredId(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      await prisma.cliente.delete({ where: { id } });
-      res.sendStatus(204);
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: { esta_activo: true },
+        include: clienteInclude,
+      });
+      res.json({ mensaje: "Cliente activado correctamente", cliente: serializeCliente(cliente) });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
-      if (err.code === "P2003") {
-        return res.status(409).json({
-          error: "No se puede eliminar: el cliente tiene registros relacionados",
-        });
-      }
-      console.error("Error al eliminar cliente:", err);
-      res.status(500).json({ error: "Error al eliminar cliente" });
+      console.error("Error al activar cliente:", err);
+      res.status(500).json({ error: "Error al activar cliente" });
+    }
+  }
+
+  static async deactivate(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: { esta_activo: false },
+        include: clienteInclude,
+      });
+      res.json({ mensaje: "Cliente desactivado correctamente", cliente: serializeCliente(cliente) });
+    } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
+      console.error("Error al desactivar cliente:", err);
+      res.status(500).json({ error: "Error al desactivar cliente" });
     }
   }
 }

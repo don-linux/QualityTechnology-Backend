@@ -13,6 +13,7 @@ router.use(authMiddleware);
 router.get("/", proveedorController.getAll);
 router.post("/", proveedorController.create);
 router.put("/:id", proveedorController.update);
-router.delete("/:id", proveedorController.delete);
+router.patch("/:id/activate", proveedorController.activate);
+router.patch("/:id/deactivate", proveedorController.deactivate);
 
 export default router;

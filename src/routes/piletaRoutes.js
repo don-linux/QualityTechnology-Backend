@@ -16,6 +16,4 @@ router.get("/:id/observaciones", piletaController.getObservacionesHistorial);
 router.post("/", piletaController.create);
 router.put("/:id", piletaController.update);
 
-router.delete("/:id", piletaController.delete);
-
 export default router;

@@ -14,7 +14,5 @@ router.get("/empleados", recepcionInsumoController.getEmpleados);
 router.get("/", recepcionInsumoController.getAll);
 router.post("/", recepcionInsumoController.create);
 router.put("/:id", recepcionInsumoController.update);
-router.delete("/:id", recepcionInsumoController.delete);
-router.delete("/", recepcionInsumoController.deleteAll);
 
 export default router;

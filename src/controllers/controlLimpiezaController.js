@@ -191,26 +191,6 @@ class ControlLimpiezaController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      await prisma.controlLimpieza.delete({ where: { id: Number(req.params.id) } });
-      res.json({ message: "Registro eliminado" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      await prisma.controlLimpieza.deleteMany();
-      res.json({ message: "Todos los registros eliminados" });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  }
 }
 
 export default ControlLimpiezaController;

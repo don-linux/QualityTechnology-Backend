@@ -1,0 +1,19 @@
+meta {
+  name: PATCH roles {id} activate
+  type: http
+  seq: 19
+}
+
+patch {
+  url: {{baseUrl}}/api/roles/{{id}}/activate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

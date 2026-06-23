@@ -99,36 +99,6 @@ class CajaAhorroController {
     }
   }
 
-  static async delete(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-    try {
-      await prisma.caja_ahorro.delete({ where: { id } });
-      res.json({ mensaje: "Eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      console.error("Error al eliminar registro:", err);
-      res.status(500).json({ error: "Error al eliminar registro" });
-    }
-  }
-
-  static async deleteByGranja(req, res) {
-    try {
-      const granja = String(req.query.granja ?? "").trim();
-      if (!granja) {
-        return res.status(400).json({ error: "granja es obligatoria" });
-      }
-      const result = await prisma.caja_ahorro.deleteMany({
-        where: { granja: { equals: granja, mode: "insensitive" } },
-      });
-      res.json({ mensaje: "Eliminados todos los registros", eliminados: result.count });
-    } catch (err) {
-      console.error("Error al eliminar todos:", err);
-      res.status(500).json({ error: "Error al eliminar todos" });
-    }
-  }
 }
 
 export default CajaAhorroController;

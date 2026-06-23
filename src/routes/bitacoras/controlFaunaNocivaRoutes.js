@@ -13,7 +13,5 @@ router.get("/empleados", controlFaunaNocivaController.getEmpleados);
 router.get("/", controlFaunaNocivaController.getAll);
 router.post("/", controlFaunaNocivaController.create);
 router.put("/:id", controlFaunaNocivaController.update);
-router.delete("/:id", controlFaunaNocivaController.delete);
-router.delete("/", controlFaunaNocivaController.deleteAll);
 
 export default router;

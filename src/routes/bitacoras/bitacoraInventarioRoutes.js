@@ -13,7 +13,5 @@ router.use(authMiddleware);
 router.get("/", bitacoraInventarioController.getAll);
 router.post("/", bitacoraInventarioController.create);
 router.put("/:id", bitacoraInventarioController.update);
-router.delete("/:id", bitacoraInventarioController.delete);
-router.delete("/", bitacoraInventarioController.deleteAll);
 
 export default router;

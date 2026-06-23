@@ -206,35 +206,6 @@ class ControlFaunaNocivaController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      await prisma.controlFaunaNociva.delete({ where: { id: Number(req.params.id) } });
-      res.json({ message: "Registro eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      console.error("Error DELETE /control-fauna-nociva:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      const { ubicacion } = req.query;
-      if (ubicacion) {
-        const where = await filtroUbicacionControlFaunaNociva(ubicacion);
-        await prisma.controlFaunaNociva.deleteMany({ where });
-        res.json({ message: `Todos los registros de ${ubicacion} eliminados.` });
-      } else {
-        await prisma.controlFaunaNociva.deleteMany();
-        res.json({ message: "Todos los registros eliminados (todas las ubicaciones)." });
-      }
-    } catch (err) {
-      console.error("Error DELETE /control-fauna-nociva:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  }
 }
 
 export default ControlFaunaNocivaController;

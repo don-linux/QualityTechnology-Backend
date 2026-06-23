@@ -13,7 +13,5 @@ router.use(authMiddleware);
 router.get("/:granja", cajaAhorroController.getByGranja);
 router.post("/", cajaAhorroController.create);
 router.put("/:id", cajaAhorroController.update);
-router.delete("/:id", cajaAhorroController.delete);
-router.delete("/", cajaAhorroController.deleteByGranja);
 
 export default router;

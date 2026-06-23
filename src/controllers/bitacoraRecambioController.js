@@ -196,28 +196,6 @@ class BitacoraRecambioController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      await prisma.recambio.delete({ where: { id: Number(req.params.id) } });
-      res.json({ message: "Registro eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro no encontrado" });
-      }
-      console.error("Error DELETE /recambios:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      await prisma.recambio.deleteMany();
-      res.json({ message: "Todos los registros de recambios fueron eliminados correctamente." });
-    } catch (err) {
-      console.error("Error al eliminar registros de recambios:", err);
-      res.status(500).json({ error: "Error eliminando todos los registros de recambios." });
-    }
-  }
 }
 
 export default BitacoraRecambioController;

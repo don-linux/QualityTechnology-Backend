@@ -444,38 +444,6 @@ class ReproductorController {
     }
   }
 
-  static async delete(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-
-    try {
-      await prisma.$transaction(async (tx) => {
-        const prev = await tx.reproductor.findUnique({
-          where: { id },
-          select: { pileta_id: true },
-        });
-        if (!prev) {
-          const err = new Error("Reproductor no encontrado");
-          err.code = "P2025";
-          throw err;
-        }
-        await tx.reproductor.delete({ where: { id } });
-        const vigente = await cantidadVigenteEnPileta(tx, prev.pileta_id, "reproductores");
-        await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigente);
-      });
-
-      res.json({ success: true, mensaje: "Reproductor eliminado" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Reproductor no encontrado" });
-      if (err.code === "P2003") {
-        return res.status(409).json({
-          error: "No se puede eliminar: el reproductor tiene registros relacionados.",
-        });
-      }
-      console.error("Error eliminar reproductor:", err);
-      res.status(500).json({ error: "Error al eliminar reproductor" });
-    }
-  }
 }
 
 export default ReproductorController;

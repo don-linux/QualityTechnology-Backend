@@ -15,6 +15,5 @@ router.get("/granja/:granja", engordaController.getByGranja);
 router.get("/:id", engordaController.getById);
 router.post("/", engordaController.create);
 router.put("/:id", engordaController.update);
-router.delete("/:id", engordaController.delete);
 
 export default router;

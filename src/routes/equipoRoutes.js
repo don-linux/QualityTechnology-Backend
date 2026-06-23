@@ -14,7 +14,6 @@ router.get("/empleados", equipoController.getEmpleados);
 router.get("/:usuario_id", equipoController.getByUsuario);
 router.post("/", equipoController.create);
 router.put("/:id", equipoController.update);
-router.delete("/:id", equipoController.delete);
 
 /* =========================================================
    RUTAS DE MANTENIMIENTOS
@@ -22,6 +21,5 @@ router.delete("/:id", equipoController.delete);
 router.get("/:equipo_id/mantenimientos", equipoController.getMantenimientos);
 router.post("/:equipo_id/mantenimientos", equipoController.createMantenimiento);
 router.put("/mantenimientos/:mantenimiento_id", equipoController.updateMantenimiento);
-router.delete("/mantenimientos/:mantenimiento_id", equipoController.deleteMantenimiento);
 
 export default router;

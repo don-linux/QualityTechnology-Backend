@@ -113,29 +113,6 @@ class VacacionController {
     }
   }
 
-  static async delete(req, res) {
-    const { id } = req.params;
-    try {
-      await prisma.vacacion.delete({ where: { id: Number(id) } });
-      res.json({ mensaje: "Registro eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Registro de vacaciones no encontrado" });
-      }
-      console.error("Error al eliminar registro:", err);
-      res.status(500).json({ error: "Error al eliminar registro" });
-    }
-  }
-
-  static async deleteAll(req, res) {
-    try {
-      await prisma.vacacion.deleteMany({});
-      res.json({ mensaje: "Todos los registros de vacaciones fueron eliminados" });
-    } catch (err) {
-      console.error("Error al eliminar todos los registros:", err);
-      res.status(500).json({ error: "Error al eliminar todos los registros" });
-    }
-  }
 }
 
 export default VacacionController;

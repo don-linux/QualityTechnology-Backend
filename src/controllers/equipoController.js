@@ -148,20 +148,6 @@ class EquipoController {
     }
   }
 
-  static async delete(req, res) {
-    const id = toInt(req.params.id);
-    if (!id) return res.status(400).json({ error: "id invalido" });
-
-    try {
-      await prisma.equipo.delete({ where: { id } });
-      res.json({ mensaje: "Equipo eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Equipo no encontrado" });
-      console.error("Error al eliminar equipo:", err);
-      res.status(500).json({ error: "Error al eliminar equipo" });
-    }
-  }
-
   // ===== Mantenimientos =====
   static async getMantenimientos(req, res) {
     try {
@@ -243,19 +229,6 @@ class EquipoController {
     }
   }
 
-  static async deleteMantenimiento(req, res) {
-    const id = toInt(req.params.mantenimiento_id);
-    if (!id) return res.status(400).json({ error: "mantenimiento_id invalido" });
-
-    try {
-      await prisma.mantenimiento.delete({ where: { id } });
-      res.json({ mensaje: "Mantenimiento eliminado correctamente" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Mantenimiento no encontrado" });
-      console.error("Error al eliminar mantenimiento:", err);
-      res.status(500).json({ error: "Error al eliminar mantenimiento" });
-    }
-  }
 }
 
 export default EquipoController;

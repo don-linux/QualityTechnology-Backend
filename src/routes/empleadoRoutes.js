@@ -16,7 +16,6 @@ router.get("/", rbacMiddleware("/empleados"), EmpleadoController.getAll);
 router.get("/:id", rbacMiddleware("/empleados"), EmpleadoController.getById);
 router.post("/", rbacMiddleware("/empleados"), EmpleadoController.create);
 router.put("/:id", rbacMiddleware("/empleados"), EmpleadoController.update);
-router.delete("/:id", rbacMiddleware("/empleados"), EmpleadoController.delete);
 router.patch("/:id/deactivate", rbacMiddleware("/empleados"), EmpleadoController.deactivate);
 router.patch("/:id/activate", rbacMiddleware("/empleados"), EmpleadoController.activate);
 

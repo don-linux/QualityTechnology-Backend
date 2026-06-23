@@ -15,6 +15,7 @@ router.use(rbacMiddleware("/roles"));
 router.get("/", rolController.getAll);
 router.post("/", rolController.create);
 router.put("/:id", rolController.update);
-router.delete("/:id", rolController.delete);
+router.patch("/:id/activate", rolController.activate);
+router.patch("/:id/deactivate", rolController.deactivate);
 
 export default router;

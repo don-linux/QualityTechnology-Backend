@@ -293,18 +293,6 @@ class AlevinajeController {
     }
   }
 
-  static async delete(req, res) {
-    try {
-      const id = toInt(req.params.id);
-      if (!id) return res.status(400).json({ error: "id invalido" });
-      await prisma.alevinaje.delete({ where: { id } });
-      res.json({ mensaje: "Registro eliminado" });
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
-      console.error("DELETE /alevinaje/:id Error:", err);
-      res.status(500).json({ error: "Error eliminando registro" });
-    }
-  }
 }
 
 export default AlevinajeController;

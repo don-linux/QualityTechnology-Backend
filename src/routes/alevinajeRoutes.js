@@ -10,6 +10,5 @@ router.get("/", alevinajeController.getAll);
 router.get("/:id", alevinajeController.getById);
 router.post("/", alevinajeController.create);
 router.put("/:id", alevinajeController.update);
-router.delete("/:id", alevinajeController.delete);
 
 export default router;

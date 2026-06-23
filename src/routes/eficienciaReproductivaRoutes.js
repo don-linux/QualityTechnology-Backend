@@ -10,6 +10,5 @@ router.get("/", eficienciaReproductivaController.getAll);
 router.get("/:id", eficienciaReproductivaController.getById);
 router.post("/", eficienciaReproductivaController.create);
 router.put("/:id", eficienciaReproductivaController.update);
-router.delete("/:id", eficienciaReproductivaController.delete);
 
 export default router;

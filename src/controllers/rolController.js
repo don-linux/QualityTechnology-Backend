@@ -55,20 +55,44 @@ class RolController {
     }
   }
 
-  static async delete(req, res) {
+  static async activate(req, res) {
     try {
       const { id } = req.params;
-      await prisma.rol.delete({ where: { id: Number(id) } });
-      res.sendStatus(204);
+      const rol = await prisma.rol.update({
+        where: { id: Number(id) },
+        data: { esta_activo: true },
+      });
+      res.json({ mensaje: "Rol activado correctamente", rol: serializeRol(rol) });
     } catch (err) {
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Rol no encontrado" });
       }
-      if (err.code === "P2003") {
-        return res.status(409).json({ error: "No se puede eliminar el rol porque tiene usuarios asociados" });
+      console.error("Error al activar rol:", err);
+      res.status(500).json({ error: "Error al activar rol" });
+    }
+  }
+
+  static async deactivate(req, res) {
+    try {
+      const rolId = Number(req.params.id);
+      const rol = await prisma.rol.findUnique({ where: { id: rolId } });
+      if (!rol) {
+        return res.status(404).json({ error: "Rol no encontrado" });
       }
-      console.error("Error al eliminar rol:", err);
-      res.status(500).json({ error: "Error al eliminar rol" });
+      if (rol.esRoot) {
+        return res.status(400).json({ error: "No se puede desactivar un rol root" });
+      }
+      const actualizado = await prisma.rol.update({
+        where: { id: rolId },
+        data: { esta_activo: false },
+      });
+      res.json({ mensaje: "Rol desactivado correctamente", rol: serializeRol(actualizado) });
+    } catch (err) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Rol no encontrado" });
+      }
+      console.error("Error al desactivar rol:", err);
+      res.status(500).json({ error: "Error al desactivar rol" });
     }
   }
 }

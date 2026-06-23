@@ -14,7 +14,5 @@ router.get("/empleados", bitacoraMedicamentoController.getEmpleados);
 router.get("/", bitacoraMedicamentoController.getAll);
 router.post("/", bitacoraMedicamentoController.create);
 router.put("/:id", bitacoraMedicamentoController.update);
-router.delete("/:id", bitacoraMedicamentoController.delete);
-router.delete("/", bitacoraMedicamentoController.deleteAll);
 
 export default router;
