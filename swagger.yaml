@@ -3553,16 +3553,16 @@ paths:
         '200':
           description: "Actualizado"
 
-  /fauna-nociva:
+  /control-fauna-nociva:
     get:
-      summary: "Listar bitácora de fauna nociva"
+      summary: "Listar control de fauna nociva"
       security:
         - bearerAuth: []
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Crear registro de fauna nociva"
+      summary: "Crear registro de control de fauna nociva"
       security:
         - bearerAuth: []
       requestBody:
@@ -3576,7 +3576,7 @@ paths:
         '201':
           description: "Creado"
     put:
-      summary: "Actualizar registro de fauna nociva"
+      summary: "Actualizar registro de control de fauna nociva"
       security:
         - bearerAuth: []
       parameters:
@@ -3596,7 +3596,7 @@ paths:
         '200':
           description: "Actualizado"
     delete:
-      summary: "Eliminar registro de fauna nociva"
+      summary: "Eliminar registro de control de fauna nociva"
       security:
         - bearerAuth: []
       parameters:
@@ -3609,9 +3609,9 @@ paths:
         '200':
           description: "Eliminado"
 
-  /fauna-nociva/empleados:
+  /control-fauna-nociva/empleados:
     get:
-      summary: "Listar empleados activos para bitácora de fauna nociva"
+      summary: "Listar empleados activos para control de fauna nociva"
       security:
         - bearerAuth: []
       responses:

@@ -41,7 +41,7 @@ model Usuario {
   medicamentos       Medicamento[]
   observacion        observacion[]
   parametros         Parametro[]
-  faunaNociva        FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   refreshTokens      RefreshToken[]
@@ -722,7 +722,7 @@ model Parametro {
   @@schema("public")
 }
 
-model FaunaNociva {
+model ControlFaunaNociva {
   id                 Int               @id @default(autoincrement())
   codigo             String            @unique @db.VarChar(30)
   ubicacionId        Int               @map("ubicacion_id")
@@ -748,7 +748,7 @@ model FaunaNociva {
   @@index([ubicacionId])
   @@index([areaInstalacionId])
   @@index([usuarioId])
-  @@map("fauna_nociva")
+  @@map("control_fauna_nociva")
   @@schema("public")
 }
 
@@ -854,7 +854,7 @@ model AreaInstalacion {
   esta_activo Boolean       @default(true)
   created_at  DateTime      @default(now()) @db.Timestamp(6)
   updated_at  DateTime      @updatedAt @db.Timestamp(6)
-  faunaNociva FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
 
   @@map("areas_instalacion")
   @@schema("catalogos")
@@ -866,7 +866,7 @@ model FaunaDetectada {
   esta_activo Boolean       @default(true)
   created_at  DateTime      @default(now()) @db.Timestamp(6)
   updated_at  DateTime      @updatedAt @db.Timestamp(6)
-  faunaNociva FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
 
   @@map("faunas_detectadas")
   @@schema("catalogos")
@@ -878,7 +878,7 @@ model EvidenciaFauna {
   esta_activo Boolean       @default(true)
   created_at  DateTime      @default(now()) @db.Timestamp(6)
   updated_at  DateTime      @updatedAt @db.Timestamp(6)
-  faunaNociva FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
 
   @@map("evidencias_fauna")
   @@schema("catalogos")
@@ -890,7 +890,7 @@ model EstadoTrampa {
   esta_activo Boolean       @default(true)
   created_at  DateTime      @default(now()) @db.Timestamp(6)
   updated_at  DateTime      @updatedAt @db.Timestamp(6)
-  faunaNociva FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
 
   @@map("estados_trampa")
   @@schema("catalogos")
@@ -902,7 +902,7 @@ model AccionCorrectiva {
   esta_activo Boolean       @default(true)
   created_at  DateTime      @default(now()) @db.Timestamp(6)
   updated_at  DateTime      @updatedAt @db.Timestamp(6)
-  faunaNociva FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
 
   @@map("acciones_correctivas")
   @@schema("catalogos")
@@ -1094,7 +1094,7 @@ model ubicacion {
   medicamentos       Medicamento[]
   parametros         Parametro[]
   piletas            Pileta[]
-  faunaNociva        FaunaNociva[]
+  controlFaunaNociva ControlFaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   controlVisitas     ControlVisita[]

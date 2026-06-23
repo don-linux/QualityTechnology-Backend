@@ -1,8 +1,8 @@
 import prisma from "../prisma.js";
 import { resolverOCrearUbicacion, resolverUbicacion } from "../utils/ubicacion.js";
 import { listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
-import { serializeFaunaNociva } from "../utils/serializers.js";
-import { generarCodigoFaunaNociva } from "../utils/faunaNocivaCodigo.js";
+import { serializeControlFaunaNociva } from "../utils/serializers.js";
+import { generarCodigoControlFaunaNociva } from "../utils/controlFaunaNocivaCodigo.js";
 
 const inc = {
   ubicacion: true,
@@ -13,7 +13,7 @@ const inc = {
   accionCorrectiva: true,
 };
 
-async function filtroUbicacionFaunaNociva(ubicacionQuery) {
+async function filtroUbicacionControlFaunaNociva(ubicacionQuery) {
   if (!ubicacionQuery || !String(ubicacionQuery).trim()) return {};
   const u = await resolverUbicacion(ubicacionQuery);
   if (u) return { ubicacionId: u.ubicacionId };
@@ -41,7 +41,7 @@ function parseResponsable(value) {
   return { value: s };
 }
 
-class FaunaNocivaController {
+class ControlFaunaNocivaController {
   static async getEmpleados(req, res) {
     try {
       const empleados = await listarEmpleadosActivosBitacora();
@@ -54,15 +54,15 @@ class FaunaNocivaController {
   static async getAll(req, res) {
     try {
       const { ubicacion } = req.query;
-      const where = await filtroUbicacionFaunaNociva(ubicacion);
-      const rows = await prisma.faunaNociva.findMany({
+      const where = await filtroUbicacionControlFaunaNociva(ubicacion);
+      const rows = await prisma.controlFaunaNociva.findMany({
         where,
         include: inc,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeFaunaNociva));
+      res.json(rows.map(serializeControlFaunaNociva));
     } catch (err) {
-      console.error("Error GET /fauna-nociva:", err.message);
+      console.error("Error GET /control-fauna-nociva:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -112,12 +112,12 @@ class FaunaNocivaController {
 
       let codigoCreado = null;
       for (let intento = 0; intento < 5; intento++) {
-        const codigo = await generarCodigoFaunaNociva(prisma, {
+        const codigo = await generarCodigoControlFaunaNociva(prisma, {
           ubicacionNombre,
           fecha: fd_fecha ?? fechaRegistro,
         });
         try {
-          await prisma.faunaNociva.create({
+          await prisma.controlFaunaNociva.create({
             data: { codigo, ...dataBase },
           });
           codigoCreado = codigo;
@@ -130,7 +130,7 @@ class FaunaNocivaController {
 
       res.json({ mensaje: "Registro agregado correctamente", codigo: codigoCreado });
     } catch (err) {
-      console.error("Error POST /fauna-nociva:", err.message);
+      console.error("Error POST /control-fauna-nociva:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -138,7 +138,7 @@ class FaunaNocivaController {
   static async update(req, res) {
     try {
       const id = Number(req.params.id);
-      const existing = await prisma.faunaNociva.findUnique({ where: { id } });
+      const existing = await prisma.controlFaunaNociva.findUnique({ where: { id } });
       if (!existing) {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
@@ -165,7 +165,7 @@ class FaunaNocivaController {
         }
       }
 
-      await prisma.faunaNociva.update({
+      await prisma.controlFaunaNociva.update({
         where: { id },
         data: {
           ubicacionId,
@@ -201,20 +201,20 @@ class FaunaNocivaController {
 
       res.json({ message: "Registro actualizado correctamente" });
     } catch (err) {
-      console.error("Error PUT /fauna-nociva:", err.message);
+      console.error("Error PUT /control-fauna-nociva:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
 
   static async delete(req, res) {
     try {
-      await prisma.faunaNociva.delete({ where: { id: Number(req.params.id) } });
+      await prisma.controlFaunaNociva.delete({ where: { id: Number(req.params.id) } });
       res.json({ message: "Registro eliminado correctamente" });
     } catch (err) {
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
-      console.error("Error DELETE /fauna-nociva:", err.message);
+      console.error("Error DELETE /control-fauna-nociva:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -223,18 +223,18 @@ class FaunaNocivaController {
     try {
       const { ubicacion } = req.query;
       if (ubicacion) {
-        const where = await filtroUbicacionFaunaNociva(ubicacion);
-        await prisma.faunaNociva.deleteMany({ where });
+        const where = await filtroUbicacionControlFaunaNociva(ubicacion);
+        await prisma.controlFaunaNociva.deleteMany({ where });
         res.json({ message: `Todos los registros de ${ubicacion} eliminados.` });
       } else {
-        await prisma.faunaNociva.deleteMany();
+        await prisma.controlFaunaNociva.deleteMany();
         res.json({ message: "Todos los registros eliminados (todas las ubicaciones)." });
       }
     } catch (err) {
-      console.error("Error DELETE /fauna-nociva:", err.message);
+      console.error("Error DELETE /control-fauna-nociva:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
 }
 
-export default FaunaNocivaController;
+export default ControlFaunaNocivaController;

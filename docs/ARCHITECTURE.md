@@ -40,7 +40,7 @@
 - Operations and production: `/piletas`, `/instalaciones`, `/lotes`, `/reproductores`, `/engorda`, `/equipos`, `/lista-espera`
 - Sales and finance: `/clientes`, `/ventas`, `/proveedores`, `/tesoreria`, `/cuentas`, `/flujo-caja`
 - HR and catalogs: `/empleados`, `/departamentos`, `/vacaciones`, `/expedientes`, `/nomina`, `/caja-ahorro`, `/estados`
-- Field logs / bitacoras: `/biometrias`, `/plagas`, `/ceiba/alimentacion`, `/ceiba/insumos`, `/recepcion_insumos`, `/control-visitas`, `/medellin/banos`, `/medellin/parametros`, `/medellin/medicamentos`, `/medellin/recambios`, `/medellin/inventario`
+- Field logs / bitacoras: `/biometrias`, `/control-fauna-nociva`, `/alimentacion`, `/recepcion_insumos`, `/control-visitas`, `/banos`, `/parametros`, `/medicamentos`, `/recambios`, `/inventario`
 
 ## File upload paths
 - `src/routes/flujoCajaRoutes.js` only serves previously uploaded invoice files from `uploads/facturas/` (the module is now read-only; movements are created automatically by other modules such as sale payments in `ventaController`).

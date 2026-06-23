@@ -25,7 +25,7 @@ const MODULOS = [
   ["Tesoreria", "/tesoreria", true],
   ["Cuentas", "/cuentas", true],
   ["Biometrias", "/biometrias", true],
-  ["Fauna Nociva", "/fauna-nociva", true],
+  ["Control de Fauna Nociva", "/control-fauna-nociva", true],
   ["Alimentacion", "/alimentacion", true],
   ["Recepcion Insumos", "/recepcion_insumos", true],
   ["Control de Visitas", "/control-visitas", true],

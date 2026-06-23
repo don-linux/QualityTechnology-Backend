@@ -34,7 +34,7 @@ import siembraRoutes from "./src/routes/siembraRoutes.js";
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
 import bitacoraAlimentacionRoutes from './src/routes/bitacoras/bitacoraAlimentacionRoutes.js';
-import bitacoraFaunaNocivaRoutes from './src/routes/bitacoras/faunaNocivaRoutes.js';
+import controlFaunaNocivaRoutes from './src/routes/bitacoras/controlFaunaNocivaRoutes.js';
 import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
 import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
 import bitacoraBanoRoutes from './src/routes/bitacoras/bitacoraBanoRoutes.js';
@@ -162,7 +162,7 @@ api.use("/insumos", insumoRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);
-api.use("/fauna-nociva", bitacoraFaunaNocivaRoutes);
+api.use("/control-fauna-nociva", controlFaunaNocivaRoutes);
 api.use("/alimentacion", bitacoraAlimentacionRoutes);
 api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/control-visitas", controlVisitaRoutes);

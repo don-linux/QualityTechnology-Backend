@@ -1151,7 +1151,7 @@ export function serializeMedicamento(row) {
   };
 }
 
-export function serializeFaunaNociva(row) {
+export function serializeControlFaunaNociva(row) {
   if (!row) return null;
   return {
     fi_id: row.id,

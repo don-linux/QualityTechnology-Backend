@@ -27,7 +27,7 @@
 --
 -- Tablas Bitácoras (registro operativo diario): 11
 --   alimentacion, banos, biometrias, insumos, inventario_alevines,
---   medicamentos, parametros, plagas, recambios, recepcion_insumos, control_visitas
+--   medicamentos, parametros, control_fauna_nociva, recambios, recepcion_insumos, control_visitas
 --
 -- TOTAL TABLAS:        42  (8 apoyo + 11 inventarios + 5 rrhh + 4 ventas
 --                           + 2 finanzas + 1 lotes + 11 bitácoras)
@@ -63,7 +63,7 @@
 -- DROP TABLE IF EXISTS public.control_visitas              CASCADE;
 -- DROP TABLE IF EXISTS public.recepcion_insumos          CASCADE;
 -- DROP TABLE IF EXISTS public.recambios                  CASCADE;
--- DROP TABLE IF EXISTS public.plagas                     CASCADE;
+-- DROP TABLE IF EXISTS public.control_fauna_nociva           CASCADE;
 -- DROP TABLE IF EXISTS public.parametros                 CASCADE;
 -- DROP TABLE IF EXISTS public.medicamentos               CASCADE;
 -- DROP TABLE IF EXISTS public.inventario_alevines        CASCADE;

@@ -1,12 +1,12 @@
 import { normalizarGranjaParam } from "./granjaUbicacion.js";
 
 /**
- * Resuelve la sigla de granja para el folio de fauna nociva.
+ * Resuelve la sigla de granja para el folio de control de fauna nociva.
  * GAC = La Ceiba, GAM = Medellín (misma convención que resolveUnidadNegocioFromRol).
  * @param {string} nombreUbicacion
  * @returns {"GAC"|"GAM"|"GAX"}
  */
-export function siglaGranjaFaunaNociva(nombreUbicacion) {
+export function siglaGranjaControlFaunaNociva(nombreUbicacion) {
   const n = normalizarGranjaParam(nombreUbicacion);
   if (n.includes("ceiba")) return "GAC";
   if (n.includes("medell")) return "GAM";
@@ -18,7 +18,7 @@ export function siglaGranjaFaunaNociva(nombreUbicacion) {
  * @param {string|Date} fecha
  * @returns {string}
  */
-export function formatFechaCodigoFaunaNociva(fecha) {
+export function formatFechaCodigoControlFaunaNociva(fecha) {
   if (typeof fecha === "string") {
     const match = fecha.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) return `${match[1]}${match[2]}${match[3]}`;
@@ -40,17 +40,17 @@ export function formatFechaCodigoFaunaNociva(fecha) {
 }
 
 /**
- * Genera código FN-SIGLA-YYYYMMDD-NNN para un registro de fauna nociva.
+ * Genera código FN-SIGLA-YYYYMMDD-NNN para un registro de control de fauna nociva.
  * El consecutivo reinicia en 001 cada día y por granja (sigla).
  * @param {import("@prisma/client").Prisma.TransactionClient | import("@prisma/client").PrismaClient} client
  * @param {{ ubicacionNombre: string, fecha: string|Date }} opts
  */
-export async function generarCodigoFaunaNociva(client, { ubicacionNombre, fecha }) {
-  const sigla = siglaGranjaFaunaNociva(ubicacionNombre);
-  const ymd = formatFechaCodigoFaunaNociva(fecha);
+export async function generarCodigoControlFaunaNociva(client, { ubicacionNombre, fecha }) {
+  const sigla = siglaGranjaControlFaunaNociva(ubicacionNombre);
+  const ymd = formatFechaCodigoControlFaunaNociva(fecha);
   const prefix = `FN-${sigla}-${ymd}-`;
 
-  const last = await client.faunaNociva.findFirst({
+  const last = await client.controlFaunaNociva.findFirst({
     where: { codigo: { startsWith: prefix } },
     orderBy: { codigo: "desc" },
     select: { codigo: true },
