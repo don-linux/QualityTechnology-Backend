@@ -32,6 +32,15 @@ class BitacoraVisitaController {
           .json({ error: "Las observaciones no pueden superar los 500 caracteres." });
       }
 
+      const fotoEnviada =
+        req.file ||
+        (req.body.fc_foto_identificacion && String(req.body.fc_foto_identificacion).trim());
+      if (!fotoEnviada) {
+        return res
+          .status(400)
+          .json({ error: "La fotografía de identificación es obligatoria." });
+      }
+
       const usuarioId = req.user.usuario_id;
       let ubicacionId = null;
       if (req.body.ubicacion != null && String(req.body.ubicacion).trim()) {
