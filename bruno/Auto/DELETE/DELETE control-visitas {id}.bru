@@ -1,11 +1,11 @@
 meta {
-  name: DELETE visitas
+  name: DELETE control-visitas {id}
   type: http
-  seq: 38
+  seq: 37
 }
 
 delete {
-  url: {{baseUrl}}/api/visitas
+  url: {{baseUrl}}/api/control-visitas/{{id}}
   body: none
 }
 

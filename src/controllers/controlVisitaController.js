@@ -1,21 +1,21 @@
 import prisma from "../prisma.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import { guardarObservacion, parseTimeOrNull } from "../utils/bitacoraHelpers.js";
-import { serializeVisita } from "../utils/serializers.js";
+import { serializeControlVisita } from "../utils/serializers.js";
 
 const inc = { ubicacion: true, observacion: true };
 
-class BitacoraVisitaController {
+class ControlVisitaController {
   static async getAll(req, res) {
     try {
-      const rows = await prisma.visita.findMany({
+      const rows = await prisma.controlVisita.findMany({
         include: inc,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeVisita));
+      res.json(rows.map(serializeControlVisita));
     } catch (error) {
       console.error("GET ERROR:", error);
-      res.status(500).json({ error: "Error obteniendo visitas" });
+      res.status(500).json({ error: "Error obteniendo control de visitas" });
     }
   }
 
@@ -56,7 +56,7 @@ class BitacoraVisitaController {
           usuarioId,
         });
 
-        await tx.visita.create({
+        await tx.controlVisita.create({
           data: {
             ubicacionId,
             fecha: req.body.fd_fecha ? new Date(req.body.fd_fecha) : new Date(),
@@ -93,7 +93,7 @@ class BitacoraVisitaController {
       }
 
       const id = Number(req.params.id);
-      const existing = await prisma.visita.findUnique({
+      const existing = await prisma.controlVisita.findUnique({
         where: { id },
         include: { observacion: true },
       });
@@ -124,7 +124,7 @@ class BitacoraVisitaController {
           usuarioId,
         });
 
-        await tx.visita.update({
+        await tx.controlVisita.update({
           where: { id },
           data: {
             ubicacionId,
@@ -165,7 +165,7 @@ class BitacoraVisitaController {
 
   static async delete(req, res) {
     try {
-      await prisma.visita.delete({ where: { id: Number(req.params.id) } });
+      await prisma.controlVisita.delete({ where: { id: Number(req.params.id) } });
       res.json({ message: "Registro eliminado" });
     } catch (error) {
       if (error.code === "P2025") {
@@ -178,7 +178,7 @@ class BitacoraVisitaController {
 
   static async deleteAll(req, res) {
     try {
-      await prisma.visita.deleteMany();
+      await prisma.controlVisita.deleteMany();
       res.json({ message: "Todos los registros fueron eliminados." });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -186,4 +186,4 @@ class BitacoraVisitaController {
   }
 }
 
-export default BitacoraVisitaController;
+export default ControlVisitaController;

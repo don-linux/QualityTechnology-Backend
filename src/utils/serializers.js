@@ -1211,7 +1211,7 @@ export function serializeRecambio(row) {
   };
 }
 
-export function serializeVisita(row) {
+export function serializeControlVisita(row) {
   if (!row) return null;
   return {
     fi_id: row.id,

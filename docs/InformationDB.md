@@ -27,7 +27,7 @@
 --
 -- Tablas Bitácoras (registro operativo diario): 11
 --   alimentacion, banos, biometrias, insumos, inventario_alevines,
---   medicamentos, parametros, plagas, recambios, recepcion_insumos, visitas
+--   medicamentos, parametros, plagas, recambios, recepcion_insumos, control_visitas
 --
 -- TOTAL TABLAS:        42  (8 apoyo + 11 inventarios + 5 rrhh + 4 ventas
 --                           + 2 finanzas + 1 lotes + 11 bitácoras)
@@ -60,7 +60,7 @@
 -- DROP VIEW  IF EXISTS public.vw_tesoreria_general       CASCADE;
 --
 -- -- Bitácoras operativas
--- DROP TABLE IF EXISTS public.visitas                    CASCADE;
+-- DROP TABLE IF EXISTS public.control_visitas              CASCADE;
 -- DROP TABLE IF EXISTS public.recepcion_insumos          CASCADE;
 -- DROP TABLE IF EXISTS public.recambios                  CASCADE;
 -- DROP TABLE IF EXISTS public.plagas                     CASCADE;

@@ -48,7 +48,7 @@ model Usuario {
   siembra            siembra[]
   rol                Rol                @relation(fields: [rolId], references: [id])
   ventas             Venta[]
-  visitas            Visita[]
+  controlVisitas     ControlVisita[]
 
   @@index([rolId])
   @@map("usuarios")
@@ -811,7 +811,7 @@ model RecepcionInsumo {
   @@schema("public")
 }
 
-model Visita {
+model ControlVisita {
   id                 Int          @id @default(autoincrement())
   ubicacionId        Int          @map("ubicacion_id")
   fecha              DateTime     @db.Date
@@ -832,7 +832,7 @@ model Visita {
   @@index([fecha(sort: Desc)])
   @@index([ubicacionId])
   @@index([usuarioId])
-  @@map("visitas")
+  @@map("control_visitas")
   @@schema("public")
 }
 
@@ -1046,7 +1046,7 @@ model observacion {
   recepcionInsumos   RecepcionInsumo[]
   reproductores      Reproductor[]
   ventas             Venta[]
-  visitas            Visita[]
+  controlVisitas     ControlVisita[]
 
   @@index([created_at(sort: Desc)])
   @@index([usuario_id])
@@ -1097,7 +1097,7 @@ model ubicacion {
   faunaNociva        FaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
-  visitas            Visita[]
+  controlVisitas     ControlVisita[]
   unidadesNegocio    UnidadNegocio[]
 
   @@schema("public")

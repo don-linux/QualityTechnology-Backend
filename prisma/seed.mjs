@@ -28,7 +28,7 @@ const MODULOS = [
   ["Fauna Nociva", "/fauna-nociva", true],
   ["Alimentacion", "/alimentacion", true],
   ["Recepcion Insumos", "/recepcion_insumos", true],
-  ["Visitas", "/visitas", true],
+  ["Control de Visitas", "/control-visitas", true],
   ["Banos", "/banos", true],
   ["Parametros", "/parametros", true],
   ["Medicamentos", "/medicamentos", true],
