@@ -1085,14 +1085,13 @@ export function serializeAlimentacion(a) {
   };
 }
 
-export function serializeBano(row) {
+export function serializeControlLimpieza(row) {
   if (!row) return null;
   return {
     fi_id: row.id,
     id: row.id,
     fd_fecha: row.fecha,
-    fc_tipo_banio: row.tipoBanio,
-    fc_regadera: row.regadera,
+    fc_tipo_instalacion: row.tipoInstalacion,
     fc_realizo: row.realizado_por,
     realizado_por: row.realizado_por,
     fc_observaciones: row.observacion?.comentario ?? null,

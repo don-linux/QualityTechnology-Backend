@@ -26,7 +26,7 @@
 --   lote_movimientos
 --
 -- Tablas Bitácoras (registro operativo diario): 11
---   alimentacion, banos, biometrias, insumos, inventario_alevines,
+--   alimentacion, control_limpieza, biometrias, insumos, inventario_alevines,
 --   medicamentos, parametros, control_fauna_nociva, recambios, recepcion_insumos, control_visitas
 --
 -- TOTAL TABLAS:        42  (8 apoyo + 11 inventarios + 5 rrhh + 4 ventas
@@ -69,7 +69,7 @@
 -- DROP TABLE IF EXISTS public.inventario_alevines        CASCADE;
 -- DROP TABLE IF EXISTS public.insumos                    CASCADE;
 -- DROP TABLE IF EXISTS public.biometrias                 CASCADE;
--- DROP TABLE IF EXISTS public.banos                      CASCADE;
+-- DROP TABLE IF EXISTS public.control_limpieza              CASCADE;
 -- DROP TABLE IF EXISTS public.alimentacion               CASCADE;
 --
 -- -- Ventas / CRM y Finanzas

@@ -1,25 +1,23 @@
 import prisma from "../prisma.js";
 import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import { guardarObservacion, listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
-import { serializeBano } from "../utils/serializers.js";
+import { serializeControlLimpieza } from "../utils/serializers.js";
 
-const LIMITES_BANOS = {
-  fc_tipo_banio: 20,
-  fc_regadera: 100,
+const LIMITES_CONTROL_LIMPIEZA = {
+  fc_tipo_instalacion: 20,
   fc_realizo: 100,
   fc_observaciones: 500,
   ubicacion: 50,
 };
 
-const validarLongitudesBanos = (body) => {
+const validarLongitudesControlLimpieza = (body) => {
   const etiquetas = {
-    fc_tipo_banio: "El tipo de baño",
-    fc_regadera: "La regadera",
+    fc_tipo_instalacion: "El tipo de instalación",
     fc_realizo: "Realizó",
     fc_observaciones: "Las observaciones",
     ubicacion: "La ubicación",
   };
-  for (const [campo, max] of Object.entries(LIMITES_BANOS)) {
+  for (const [campo, max] of Object.entries(LIMITES_CONTROL_LIMPIEZA)) {
     const valor = body[campo];
     const len = valor == null ? 0 : String(valor).length;
     if (len > max) {
@@ -29,18 +27,25 @@ const validarLongitudesBanos = (body) => {
   return null;
 };
 
-const TIPOS_BANIO_VALIDOS = ["Hombre", "Mujer"];
+const TIPOS_INSTALACION_VALIDOS = ["Baño de Hombres", "Baño de Mujeres", "Regadera"];
 
-const normalizarTipoBanio = (value = "") => {
+const normalizarTipoInstalacion = (value = "") => {
   const normalized = String(value).trim().toLowerCase();
-  if (normalized === "hombre" || normalized === "hombres") return "Hombre";
-  if (normalized === "mujer" || normalized === "mujeres") return "Mujer";
+  if (normalized === "baño de hombres" || normalized === "bano de hombres" || normalized === "hombre" || normalized === "hombres") {
+    return "Baño de Hombres";
+  }
+  if (normalized === "baño de mujeres" || normalized === "bano de mujeres" || normalized === "mujer" || normalized === "mujeres") {
+    return "Baño de Mujeres";
+  }
+  if (normalized === "regadera") {
+    return "Regadera";
+  }
   return "";
 };
 
 const inc = { ubicacion: true, observacion: true };
 
-class BitacoraBanoController {
+class ControlLimpiezaController {
   static async getEmpleados(req, res) {
     try {
       const empleados = await listarEmpleadosActivosBitacora();
@@ -52,11 +57,11 @@ class BitacoraBanoController {
 
   static async getAll(req, res) {
     try {
-      const rows = await prisma.bano.findMany({
+      const rows = await prisma.controlLimpieza.findMany({
         include: inc,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeBano));
+      res.json(rows.map(serializeControlLimpieza));
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -69,9 +74,11 @@ class BitacoraBanoController {
         return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
       }
 
-      const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
-      if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
-        return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
+      const fc_tipo_instalacion = normalizarTipoInstalacion(req.body.fc_tipo_instalacion);
+      if (!TIPOS_INSTALACION_VALIDOS.includes(fc_tipo_instalacion)) {
+        return res.status(400).json({
+          error: "fc_tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
+        });
       }
 
       const { ubicacion } = req.body;
@@ -79,7 +86,7 @@ class BitacoraBanoController {
         return res.status(400).json({ error: "ubicacion es requerido" });
       }
 
-      const errorLongitud = validarLongitudesBanos(req.body);
+      const errorLongitud = validarLongitudesControlLimpieza(req.body);
       if (errorLongitud) {
         return res.status(400).json({ error: errorLongitud });
       }
@@ -88,7 +95,7 @@ class BitacoraBanoController {
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
       const fi_usuario_id = req.user.usuario_id;
-      const { fc_regadera, fc_realizo, fc_observaciones } = req.body;
+      const { fc_realizo, fc_observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
@@ -98,12 +105,11 @@ class BitacoraBanoController {
           usuarioId: fi_usuario_id,
         });
 
-        await tx.bano.create({
+        await tx.controlLimpieza.create({
           data: {
             ubicacionId: u.ubicacionId,
             fecha: new Date(fd_fecha),
-            tipoBanio: fc_tipo_banio,
-            regadera: fc_regadera || null,
+            tipoInstalacion: fc_tipo_instalacion,
             realizado_por: fc_realizo || null,
             usuarioId: fi_usuario_id,
             observacionId,
@@ -124,9 +130,11 @@ class BitacoraBanoController {
         return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
       }
 
-      const fc_tipo_banio = normalizarTipoBanio(req.body.fc_tipo_banio);
-      if (!TIPOS_BANIO_VALIDOS.includes(fc_tipo_banio)) {
-        return res.status(400).json({ error: "fc_tipo_banio debe ser Hombre o Mujer" });
+      const fc_tipo_instalacion = normalizarTipoInstalacion(req.body.fc_tipo_instalacion);
+      if (!TIPOS_INSTALACION_VALIDOS.includes(fc_tipo_instalacion)) {
+        return res.status(400).json({
+          error: "fc_tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
+        });
       }
 
       const { ubicacion } = req.body;
@@ -134,7 +142,7 @@ class BitacoraBanoController {
         return res.status(400).json({ error: "ubicacion es requerido" });
       }
 
-      const errorLongitud = validarLongitudesBanos(req.body);
+      const errorLongitud = validarLongitudesControlLimpieza(req.body);
       if (errorLongitud) {
         return res.status(400).json({ error: errorLongitud });
       }
@@ -143,7 +151,7 @@ class BitacoraBanoController {
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
       const id = Number(req.params.id);
-      const existing = await prisma.bano.findUnique({
+      const existing = await prisma.controlLimpieza.findUnique({
         where: { id },
         include: { observacion: true },
       });
@@ -152,7 +160,7 @@ class BitacoraBanoController {
       }
 
       const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
-      const { fc_regadera, fc_realizo, fc_observaciones } = req.body;
+      const { fc_realizo, fc_observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
@@ -165,13 +173,12 @@ class BitacoraBanoController {
           usuarioId: fi_usuario_id,
         });
 
-        await tx.bano.update({
+        await tx.controlLimpieza.update({
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
             fecha: new Date(fd_fecha),
-            tipoBanio: fc_tipo_banio,
-            regadera: fc_regadera || null,
+            tipoInstalacion: fc_tipo_instalacion,
             realizado_por: fc_realizo || null,
             observacionId,
           },
@@ -186,7 +193,7 @@ class BitacoraBanoController {
 
   static async delete(req, res) {
     try {
-      await prisma.bano.delete({ where: { id: Number(req.params.id) } });
+      await prisma.controlLimpieza.delete({ where: { id: Number(req.params.id) } });
       res.json({ message: "Registro eliminado" });
     } catch (err) {
       if (err.code === "P2025") {
@@ -198,7 +205,7 @@ class BitacoraBanoController {
 
   static async deleteAll(req, res) {
     try {
-      await prisma.bano.deleteMany();
+      await prisma.controlLimpieza.deleteMany();
       res.json({ message: "Todos los registros eliminados" });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -206,4 +213,4 @@ class BitacoraBanoController {
   }
 }
 
-export default BitacoraBanoController;
+export default ControlLimpiezaController;

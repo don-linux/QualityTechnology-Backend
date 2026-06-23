@@ -3797,16 +3797,16 @@ paths:
         '200':
           description: "Eliminado(s)"
 
-  /banos:
+  /control-limpieza:
     get:
-      summary: "Listar bitácora de baños"
+      summary: "Listar control de limpieza"
       security:
         - bearerAuth: []
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Crear registro de baños"
+      summary: "Crear registro de control de limpieza"
       security:
         - bearerAuth: []
       requestBody:
@@ -3815,14 +3815,26 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              properties:
+                fd_fecha:
+                  type: string
+                  format: date
+                fc_tipo_instalacion:
+                  type: string
+                  enum: ["Baño de Hombres", "Baño de Mujeres", "Regadera"]
+                fc_realizo:
+                  type: string
+                fc_observaciones:
+                  type: string
+                ubicacion:
+                  type: string
       responses:
         '201':
           description: "Creado"
 
-  /banos/empleados:
+  /control-limpieza/empleados:
     get:
-      summary: "Listar empleados activos para bitácora de baños"
+      summary: "Listar empleados activos para control de limpieza"
       security:
         - bearerAuth: []
       responses:

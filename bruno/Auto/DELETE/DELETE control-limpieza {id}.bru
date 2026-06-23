@@ -1,11 +1,11 @@
 meta {
-  name: DELETE banos
+  name: DELETE control-limpieza {id}
   type: http
-  seq: 40
+  seq: 47
 }
 
 delete {
-  url: {{baseUrl}}/api/banos
+  url: {{baseUrl}}/api/control-limpieza/{{id}}
   body: none
 }
 

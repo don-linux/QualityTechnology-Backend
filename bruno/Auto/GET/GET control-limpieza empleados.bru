@@ -1,0 +1,14 @@
+meta {
+  name: GET control-limpieza empleados
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/api/control-limpieza/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

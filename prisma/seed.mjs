@@ -29,7 +29,7 @@ const MODULOS = [
   ["Alimentacion", "/alimentacion", true],
   ["Recepcion Insumos", "/recepcion_insumos", true],
   ["Control de Visitas", "/control-visitas", true],
-  ["Banos", "/banos", true],
+  ["Control de Limpieza", "/control-limpieza", true],
   ["Parametros", "/parametros", true],
   ["Medicamentos", "/medicamentos", true],
   ["Recambios", "/recambios", true],
