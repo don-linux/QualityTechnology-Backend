@@ -185,7 +185,7 @@ export async function resolverUbicacionFlexible(granjaParam) {
   if (uExact) return { ubicacionId: uExact.id, nombre: uExact.nombre };
 
   /**
-   * Último recurso: nombres de `unidades_negocio.fc_nombre` suelen incluir sólo parte
+   * Último recurso: nombres de `unidades_negocio.nombre` suelen incluir sólo parte
    * del texto del catálogo `ubicacion.nombre`. Coincidimos por igualdad normalizada o
    * por subcadena (evitando palabras muertas muy cortas / genéricas).
    */

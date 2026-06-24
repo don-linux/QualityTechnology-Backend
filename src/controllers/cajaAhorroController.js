@@ -43,8 +43,8 @@ class CajaAhorroController {
 
   static async create(req, res) {
     try {
-      const categoria = req.body.categoria ?? req.body.fc_categoria;
-      const granja = req.body.granja ?? req.body.fc_granja;
+      const categoria = req.body.categoria;
+      const granja = req.body.granja;
       if (!categoria || !String(categoria).trim()) {
         return res.status(400).json({ error: "categoria es obligatoria" });
       }
@@ -74,9 +74,7 @@ class CajaAhorroController {
     try {
       const updateData = {};
       if (req.body.categoria !== undefined) updateData.categoria = String(req.body.categoria);
-      if (req.body.fc_categoria !== undefined) updateData.categoria = String(req.body.fc_categoria);
       if (req.body.granja !== undefined) updateData.granja = String(req.body.granja);
-      if (req.body.fc_granja !== undefined) updateData.granja = String(req.body.fc_granja);
       if (req.body.concepto !== undefined) updateData.concepto = req.body.concepto ?? null;
       if (req.body.monto !== undefined) updateData.monto = toDecimal(req.body.monto, 0);
       if (req.body.fecha !== undefined) updateData.fecha = toDateOrNull(req.body.fecha);

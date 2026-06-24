@@ -5,8 +5,8 @@ info:
   description: |
     Documentación en español de la API REST de QualityTechnology.
     Incluye rutas, parámetros, cuerpos de petición y esquemas inferidos
-    a partir del código del proyecto. Los esquemas usan la notación
-    húngara del proyecto (fc_ = string, fi_ = integer, fd_ = date/datetime, fn_ = number).
+    a partir del código del proyecto. Los esquemas usan nombres semánticos
+    en snake_case, sin prefijos de tipo (la nomenclatura húngara fue retirada).
 
 servers:
   - url: https://api.qualitytechnology.com
@@ -33,21 +33,27 @@ components:
       type: object
       description: "Representa un rol de usuario"
       properties:
-        fi_rol_id:
+        rol_id:
           type: integer
-        fc_nombre:
+        nombre:
           type: string
-      required: [fc_nombre]
+        es_root:
+          type: boolean
+        activo:
+          type: boolean
+      required: [nombre]
 
     Usuario:
       type: object
       properties:
-        fi_usuario_id:
+        usuario_id:
           type: integer
-        fc_nombre:
+        nombre:
           type: string
-        fi_rol_id:
+        rol_id:
           type: integer
+        activo:
+          type: boolean
 
     UsuarioCreate:
       type: object
@@ -58,18 +64,18 @@ components:
           type: string
         rol_id:
           type: integer
-        fc_nombre_empleado:
+        nombre_empleado:
           type: string
           description: "Requerido para roles no-root; crea el perfil de empleado vinculado."
-        fc_apellido_paterno:
+        apellido_paterno:
           type: string
-        fc_apellido_materno:
+        apellido_materno:
           type: string
-        fi_departamento_id:
+        departamento_id:
           type: integer
-        fi_puesto_id:
+        puesto_id:
           type: integer
-        fi_unidad_negocio_id:
+        unidad_negocio_id:
           type: integer
       required: [nombre, contraseña, rol_id]
 
@@ -108,13 +114,13 @@ components:
           items:
             type: object
             properties:
-              fi_modulo_id:
+              modulo_id:
                 type: integer
-              fc_nombre:
+              nombre:
                 type: string
-              fc_ruta:
+              ruta:
                 type: string
-              fb_activo:
+              activo:
                 type: boolean
 
     RefreshTokenRequest:
@@ -138,13 +144,13 @@ components:
           items:
             type: object
             properties:
-              fi_modulo_id:
+              modulo_id:
                 type: integer
-              fc_nombre:
+              nombre:
                 type: string
-              fc_ruta:
+              ruta:
                 type: string
-              fb_activo:
+              activo:
                 type: boolean
 
     LogoutRequest:
@@ -156,37 +162,50 @@ components:
     Pileta:
       type: object
       properties:
-        fi_pileta_id:
+        pileta_id:
           type: integer
+        nombre:
+          type: string
+        largo:
+          type: number
+        ancho:
+          type: number
+        alto:
+          type: number
+        metros_cubicos:
+          type: number
+        material:
+          type: string
+        estado:
+          type: string
+        tipo:
+          type: string
+        estado_conservacion:
+          type: string
+          nullable: true
+        tipo_pileta_id:
+          type: integer
+          nullable: true
+        tipo_pileta_nombre:
+          type: string
+          nullable: true
+        ubicacion_id:
+          type: integer
+        granja:
+          type: string
         cantidad:
           type: number
-        talla_gr:
-          type: number
-        fi_lote_id:
-          type: integer
-        no_lote:
+        ultima_observacion:
           type: string
+          nullable: true
         observacion:
           type: string
-        fecha_siembra:
-          type: string
-          format: date
-        fecha_ultima_biometria:
-          type: string
-          format: date
-        dias_en_pila:
-          type: number
-        dias_transcurridos:
-          type: number
-        nombre_instalacion:
-          type: string
-        fc_granja:
-          type: string
+          nullable: true
 
     Lote:
       type: object
       properties:
-        fi_lote_id:
+        lote_id:
           type: integer
         no_lote:
           type: string
@@ -195,9 +214,9 @@ components:
         fecha:
           type: string
           format: date
-        fi_instalacion_id:
+        instalacion_id:
           type: integer
-        fc_granja:
+        granja:
           type: string
         familia:
           type: string
@@ -211,56 +230,27 @@ components:
     Reproductor:
       type: object
       properties:
-        fi_reproductor_id:
+        reproductor_id:
           type: integer
-        fc_instalacion:
-          type: string
-        fn_cantidad:
-          type: number
-        fn_talla:
-          type: number
-          description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
-        fn_machos:
-          type: integer
-          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
-        fn_hembras:
-          type: integer
-          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
-        fc_ratio:
-          type: string
-        fc_linea:
-          type: string
-        fc_familia:
-          type: string
-        fc_observacion:
-          type: string
-          maxLength: 500
-        fd_fecha_siembra:
-          type: string
-          format: date
-        fd_fecha_biometria:
-          type: string
-          format: date
-        dias_en_pila:
-          type: number
-
-    Engorda:
-      type: object
-      properties:
-        fi_engorda_id:
-          type: integer
-        fi_instalacion_id:
-          type: integer
-        destino_nombre:
-          type: string
-        fi_lote_id:
-          type: integer
-        no_lote:
+        nombre_instalacion:
           type: string
         cantidad:
           type: number
-        talla_gr:
+        talla:
           type: number
+          description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
+        machos:
+          type: integer
+          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
+        hembras:
+          type: integer
+          description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
+        ratio:
+          type: string
+        lote_genetico:
+          type: string
+        familia_machos:
+          type: string
         observacion:
           type: string
           maxLength: 500
@@ -272,203 +262,226 @@ components:
           format: date
         dias_en_pila:
           type: number
-        dias_transcurridos:
-          type: number
-        fi_usuario_id:
+
+    Engorda:
+      type: object
+      properties:
+        engorda_id:
           type: integer
-        fc_granja:
+        pileta_id:
+          type: integer
+        destino_nombre:
+          type: string
+        cantidad_total:
+          type: number
+        cantidad:
+          type: number
+        cantidad_alimento:
+          type: number
+        peso_gramos:
+          type: number
+        observacion:
+          type: string
+          maxLength: 500
+        fecha_peso:
+          type: string
+          format: date
+        biometria_id:
+          type: integer
+          nullable: true
+        usuario_id:
+          type: integer
+        granja:
           type: string
 
     Empleado:
       type: object
       properties:
-        fi_empleado_id:
+        empleado_id:
           type: integer
-        fc_nombre:
+        nombre:
           type: string
-        fc_apellido_paterno:
+        apellido_paterno:
           type: string
-        fc_apellido_materno:
+        apellido_materno:
           type: string
-        fc_genero:
-          type: string
-        fc_calle:
-          type: string
-        fc_cp:
-          type: string
-        fc_referencia:
-          type: string
-        fc_comentarios:
-          type: string
-        fi_usuario_id:
+        usuario_id:
           type: integer
-        fi_puesto_id:
+        puesto_id:
           type: integer
-        fi_departamento_id:
+        departamento_id:
           type: integer
-        fi_unidad_negocio_id:
+        unidad_negocio_id:
           type: integer
+        departamento_nombre:
+          type: string
+        puesto_nombre:
+          type: string
         unidad_negocio_nombre:
           type: string
-        fi_ciudad_id:
-          type: integer
-        fi_estado_id:
-          type: integer
-        fi_edad:
-          type: integer
-        fd_fecha_nacimiento:
+        usuario_nombre:
+          type: string
+        sueldo_base:
+          type: number
+          nullable: true
+        fecha_nacimiento:
           type: string
           format: date
-        fd_fecha_contratacion:
+        fecha_ingreso:
           type: string
           format: date
-        fd_fecha_baja:
+        fecha_contratacion:
           type: string
           format: date
+        activo:
+          type: boolean
 
     DocumentoEmpleado:
       type: object
       properties:
-        fi_documento_id:
+        documento_id:
           type: integer
-        fi_empleado_id:
+        empleado_id:
           type: integer
-        fi_tipo_documento_id:
+        tipo_documento_id:
           type: integer
-        fc_ruta_archivo:
+        ruta_archivo:
           type: string
-        fc_nombre_original:
+        nombre_original:
           type: string
-        fd_fecha_carga:
+        fecha_carga:
           type: string
           format: date
         tipo_nombre:
           type: string
-        fb_obligatorio:
+        obligatorio:
           type: boolean
+          nullable: true
 
     ActaAdministrativa:
       type: object
       properties:
-        fi_acta_id:
+        acta_id:
           type: integer
-        fi_empleado_id:
+        empleado_id:
           type: integer
-        fc_motivo:
+        motivo:
           type: string
-        fd_fecha:
+        descripcion:
+          type: string
+        fecha:
           type: string
           format: date
-        fc_ruta_archivo:
+        ruta_archivo:
           type: string
-        fc_nombre_original:
+        nombre_original:
           type: string
 
     Cliente:
       type: object
       properties:
-        fi_cliente_id:
+        cliente_id:
           type: integer
-        fc_razon_social:
+        nombre:
           type: string
-        fc_rfc:
+        rfc:
           type: string
           maxLength: 20
-        fi_unidad_negocio_id:
+        unidad_negocio_id:
           type: integer
         unidad_negocio_nombre:
           type: string
           readOnly: true
-        fc_nombre_contacto:
+        empresa:
           type: string
-        fc_telefono:
+        telefono:
           type: string
           pattern: '^[0-9]{1,10}$'
-        fc_correo:
+        email:
           type: string
           format: email
-        fc_localidad:
+        localidad:
           type: string
-        fc_estado:
+        estado:
           type: string
-        fi_ejecutivo_empleado_id:
+        ejecutivo_empleado_id:
           type: integer
         ejecutivo_nombre:
           type: string
           readOnly: true
-        fi_usuario_id:
-          type: integer
+        activo:
+          type: boolean
       required:
-        - fc_razon_social
-        - fc_rfc
-        - fi_unidad_negocio_id
-        - fc_nombre_contacto
-        - fc_telefono
-        - fc_correo
-        - fc_localidad
-        - fc_estado
-        - fi_ejecutivo_empleado_id
+        - nombre
+        - rfc
+        - unidad_negocio_id
+        - empresa
+        - telefono
+        - email
+        - localidad
+        - estado
+        - ejecutivo_empleado_id
 
     Venta:
       type: object
       properties:
-        fi_venta_id:
+        venta_id:
           type: integer
-        fc_folio:
+        folio:
           type: string
-        fd_fecha_venta:
+        fecha:
           type: string
           format: date
-        fc_cliente:
+        cliente_nombre:
           type: string
-        fc_tipo_venta:
+        tipo_venta:
           type: string
-        fn_cantidad_vendida:
+        cantidad:
           type: number
-        fn_precio_venta:
+        precio_unitario:
           type: number
-        fn_monto_total:
+        monto_total:
           type: number
-        fn_abonado:
+        monto_abonado:
           type: number
-        fn_adeudo:
+        monto_adeudo:
           type: number
-        fc_estado_pago:
+        estado_pago:
           type: string
-        fc_encargado_venta:
+        vendedor_nombre:
           type: string
-        fc_observaciones:
+        observaciones:
           type: string
-        fc_empresa:
+        empresa:
           type: string
 
     ListaEspera:
       type: object
       properties:
-        fi_lista_id:
+        lista_id:
           type: integer
-        fd_fecha_entrega:
+        fecha_entrega:
           type: string
           format: date
-        fn_cantidad:
+        cantidad_peces:
           type: number
-        fc_cliente:
+        cliente_nombre:
           type: string
-        fc_lugar_entrega:
+        lugar_entrega:
           type: string
-        fc_encargado_venta:
+        encargado_venta:
           type: string
-        fc_unidad_produccion:
+        unidad_produccion:
           type: string
-        fc_hora_embolsado:
+        hora_embolsado:
           type: string
-        fc_hora_entrega:
+        hora_entrega:
           type: string
-        fn_precio_venta:
+        precio_unitario:
           type: number
-        fc_uap_asignada:
+        tipo_venta:
           type: string
-        fc_granja_asignada:
+        granja:
           type: string
         pileta_origen_id:
           type: integer
@@ -478,58 +491,43 @@ components:
     Equipo:
       type: object
       properties:
-        fi_equipo_id:
+        equipo_id:
           type: integer
-        fc_nombre:
+        nombre:
           type: string
-        fc_marca:
+        marca:
           type: string
-        fc_modelo:
+        modelo:
           type: string
-        fc_tipo:
+        tipo:
           type: string
-        fd_fecha_compra:
+        serial:
           type: string
-          format: date
-        fn_costo:
-          type: number
-        fc_estado:
+        estado:
           type: string
-        fc_ubicacion:
+        observaciones:
           type: string
-        fc_responsable:
+        notas:
           type: string
-        fd_proximo_mantenimiento:
-          type: string
-          format: date
-        fc_notas:
-          type: string
-        fi_usuario_id:
+        usuario_id:
           type: integer
 
     Mantenimiento:
       type: object
       properties:
-        fi_mantenimiento_id:
+        mantenimiento_id:
           type: integer
-        fi_equipo_id:
+        equipo_id:
           type: integer
-        fd_fecha:
+        fecha:
           type: string
           format: date
-        fc_tipo:
+        descripcion:
           type: string
-        fc_responsable:
-          type: string
-        fc_descripcion:
-          type: string
-        fn_costo:
+        costo:
           type: number
-        fc_estado_post:
+        responsable:
           type: string
-        fd_proximo_mantenimiento:
-          type: string
-          format: date
 
     Expediente:
       type: object
@@ -539,45 +537,57 @@ components:
     Nomina:
       type: object
       properties:
-        fi_nomina_id:
+        nomina_id:
           type: integer
-        fc_nombre_empleado:
+        nombre_empleado:
           type: string
-        fi_empleado_id:
+        empleado_id:
           type: integer
-        fd_fecha_pago:
+        periodo:
+          type: string
+        sueldo_bruto:
+          type: number
+        descuentos:
+          type: number
+        sueldo_neto:
+          type: number
+        total:
+          type: number
+        descuento:
+          type: number
+        fecha_pago:
           type: string
           format: date
-        fn_total:
-          type: number
-        fn_bono:
-          type: number
-        fn_deuda:
-          type: number
-        fn_descuento:
-          type: number
-        fn_anticipo:
-          type: number
-        fi_usuario_id:
-          type: integer
+        observaciones:
+          type: string
+        fecha_actualizacion:
+          type: string
+          format: date-time
 
     Vacacion:
       type: object
       properties:
-        fi_vacacion_id:
+        vacacion_id:
           type: integer
-        fc_nombre_empleado:
-          type: string
-        fi_empleado_id:
+        empleado_id:
           type: integer
-        fc_departamento:
-          type: string
-        fd_inicio_periodo:
+        fecha_inicio:
           type: string
           format: date
-        fd_fin_periodo:
+        fecha_fin:
           type: string
           format: date
+        dias_tomados:
+          type: integer
+        tipo:
+          type: string
+        estatus:
+          type: string
+        observaciones:
+          type: string
+        fecha_actualizacion:
+          type: string
+          format: date-time
 
     CajaAhorroResumen:
       type: object
@@ -592,94 +602,77 @@ components:
     Proveedor:
       type: object
       required:
-        - fc_razon_social
-        - fc_rfc
-        - fc_producto_servicio
-        - fi_unidad_negocio_id
-        - fc_nombre_contacto
-        - fc_telefono
-        - fc_correo
-        - fc_localidad
-        - fc_estado
+        - nombre
       properties:
-        fi_proveedor_id:
+        proveedor_id:
           type: integer
-        fc_razon_social:
+        nombre:
           type: string
-        fc_rfc:
+        rfc:
+          type: string
+          maxLength: 13
+        telefono:
           type: string
           maxLength: 20
-        fc_producto_servicio:
-          type: string
-        fi_unidad_negocio_id:
-          type: integer
-        unidad_negocio_nombre:
-          type: string
-        fc_nombre_contacto:
-          type: string
-        fc_telefono:
-          type: string
-          maxLength: 10
-        fc_correo:
+        email:
           type: string
           format: email
-        fc_localidad:
+        direccion:
           type: string
-        fc_estado:
-          type: string
+        activo:
+          type: boolean
 
     FlujoCajaMovimiento:
       type: object
       properties:
-        fi_movimiento_id:
+        movimiento_id:
           type: integer
-        fc_granja:
+        granja:
           type: string
-        fd_fecha:
+        ubicacion_id:
+          type: integer
+        fecha:
           type: string
           format: date
-        fn_ingreso:
+        ingreso:
           type: number
-        fn_egreso:
+        egreso:
           type: number
-        fc_observaciones:
+        observaciones:
           type: string
-        fc_cuenta:
+        cuenta_nombre:
           type: string
-        fc_categoria:
+        categoria:
           type: string
-        fc_subcategoria:
+        subcategoria:
           type: string
-        fc_beneficiario:
+        beneficiario:
           type: string
-        fc_noproyecto:
+        estatus:
           type: string
-        fc_factura:
+        mes_periodo:
           type: string
-        fc_estatus:
-          type: string
-        fc_mes:
-          type: string
-        fi_venta_id:
+        usuario_id:
+          type: integer
+          nullable: true
+        venta_id:
           type: integer
           nullable: true
 
     TesoreriaOverview:
       type: object
       properties:
-        anio:
-          type: integer
-        periodo:
-          type: integer
-        mes_nombre:
+        mes:
           type: string
-        fc_granja:
+        mes_nombre:
           type: string
         grupo:
           type: string
         subgrupo:
           type: string
         categoria:
+          type: string
+        subcategoria:
           type: string
         total_ingreso:
           type: number
@@ -691,137 +684,143 @@ components:
     Cuenta:
       type: object
       properties:
-        fi_cuenta_id:
+        cuenta_id:
           type: integer
-        fc_udn:
+        unidad_negocio:
           type: string
           maxLength: 100
-        fc_nombre:
+        nombre:
           type: string
-        fc_numero_cuenta:
+        numero_cuenta:
           type: string
           nullable: true
-        fc_banco:
+        banco:
           type: string
           nullable: true
           maxLength: 150
-        fc_tipo:
+        tipo_cuenta:
           type: string
           enum: [Cheques, Efectivo, Inversion, Ahorro]
-        fn_saldo_actual:
+        saldo_actual:
           type: number
           format: double
-        fb_activo:
+        activo:
           type: boolean
 
     UnidadNegocio:
       type: object
       properties:
-        fi_unidad_negocio_id:
+        unidad_negocio_id:
           type: integer
-        fc_nombre:
+        nombre:
           type: string
           maxLength: 100
-        fb_activo:
+        activo:
           type: boolean
+        ubicacion_id:
+          type: integer
+          nullable: true
+        ubicacion_nombre:
+          type: string
+          nullable: true
 
     MovimientoAlevines:
       type: object
       properties:
-        fi_movimiento_alevines_id:
+        movimiento_alevines_id:
           type: integer
-        fi_usuario_id:
+        usuario_id:
           type: integer
-        fi_alevines_id:
+        alevines_id:
           type: integer
-        fi_pileta_id:
+        pileta_id:
           type: integer
-        fi_tipo:
+        tipo:
           type: integer
-        fi_cantidad_alevines:
+        cantidad_alevines:
           type: integer
-        fn_peso_promedio:
+        peso_promedio:
           type: number
 
     Alevin:
       type: object
       properties:
-        fi_alevines_id:
+        alevines_id:
           type: integer
-        fc_numero_lote:
+        numero_lote:
           type: string
-        fn_peso_promedio:
+        peso_promedio:
           type: number
-        fn_cantidad:
+        cantidad:
           type: integer
-        fc_observacion:
+        observacion:
           type: string
-        fi_usuario_id:
+        usuario_id:
           type: integer
-        fi_colecta_id:
+        colecta_id:
           type: integer
 
     BitacoraAlimentacion:
       type: object
       properties:
-        fi_id:
+        id:
           type: integer
-        fc_mes:
+        mes:
           type: string
-        fn_num_instalacion:
+        pileta_id:
           type: number
-        fn_peso_promedio_entrada:
+        peso_promedio_entrada:
           type: number
-        fd_fecha_siembra:
-          type: string
-          format: date
-        fc_origen_alevines:
-          type: string
-        fd_fecha:
+        fecha_siembra:
           type: string
           format: date
-        fn_total_alimento_gramos:
-          type: number
-        fn_mortalidad:
-          type: number
-        fc_recambio_agua:
+        origen_alevines:
           type: string
-        fn_temp_agua:
-          type: number
-        fn_amonio:
-          type: number
-        fn_ph:
-          type: number
-        fc_observaciones:
+        fecha:
           type: string
-        fi_usuario_id:
+          format: date
+        total_alimento_gramos:
+          type: number
+        mortalidad:
+          type: number
+        recambio_agua:
+          type: string
+        temperatura_agua:
+          type: number
+        amonio:
+          type: number
+        ph:
+          type: number
+        observaciones:
+          type: string
+        usuario_id:
           type: integer
 
     ControlVisita:
       type: object
       properties:
-        fi_id:
+        id:
           type: integer
-        fd_fecha:
+        fecha:
           type: string
           format: date
-        fc_nombre_completo:
+        nombre_completo:
           type: string
-        fc_origen:
+        procedencia:
           type: string
-        fc_motivo:
+        motivo:
           type: string
-        fc_observaciones:
+        observaciones:
           type: string
-        fc_foto_identificacion:
+        foto_identificacion:
           type: string
-        fd_entrada:
-          type: string
-          format: date-time
-        fd_salida:
+        hora_entrada:
           type: string
           format: date-time
-        fi_usuario_id:
+        hora_salida:
+          type: string
+          format: date-time
+        usuario_id:
           type: integer
         ubicacion:
           type: string
@@ -1309,13 +1308,13 @@ paths:
             schema:
               type: object
               properties:
-                fi_pileta_id:
+                pileta_id:
                   type: integer
-                fi_instalacion_id:
+                instalacion_id:
                   type: integer
                 origen_instalacion:
                   type: string
-                fi_lote_id:
+                lote_id:
                   type: integer
                 cantidad:
                   type: number
@@ -1329,9 +1328,9 @@ paths:
                 fecha_ultima_biometria:
                   type: string
                   format: date
-                fi_usuario_id:
+                usuario_id:
                   type: integer
-                fc_granja:
+                granja:
                   type: string
       responses:
         '200':
@@ -1438,9 +1437,9 @@ paths:
                   type: string
                 origen_externo:
                   type: string
-                fi_instalacion_id:
+                instalacion_id:
                   type: integer
-                fi_lote_id:
+                lote_id:
                   type: integer
                 cantidad:
                   type: number
@@ -1448,9 +1447,9 @@ paths:
                   type: string
                 tipo_movimiento:
                   type: string
-                fi_usuario_id:
+                usuario_id:
                   type: integer
-                fc_granja:
+                granja:
                   type: string
       responses:
         '200':
@@ -1685,30 +1684,30 @@ paths:
             schema:
               type: object
               properties:
-                fc_instalacion:
+                nombre_instalacion:
                   type: string
                 origen_texto:
                   type: string
-                fn_cantidad:
+                cantidad:
                   type: number
-                fn_talla:
+                talla:
                   type: number
                   description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
-                fi_usuario_id:
+                usuario_id:
                   type: integer
-                fc_granja:
+                granja:
                   type: string
-                fn_machos:
-                  type: integer
-                  description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
-                fn_hembras:
+                machos:
                   type: integer
                   description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
-                fc_linea:
+                hembras:
+                  type: integer
+                  description: "Entero. Longitud máxima del valor enviado: 15 caracteres."
+                lote_genetico:
                   type: string
-                fc_familia:
+                familia_machos:
                   type: string
-                fc_observacion:
+                observacion:
                   type: string
                   maxLength: 500
       responses:
@@ -1765,7 +1764,7 @@ paths:
   /engorda:
     post:
       summary: "Registrar o actualizar Engorda"
-      description: "Crea nuevo registro de engorda o actualiza uno existente si se incluye fi_engorda_id."
+      description: "Crea nuevo registro de engorda o actualiza uno existente si se incluye engorda_id."
       requestBody:
         required: true
         content:
@@ -1834,7 +1833,7 @@ paths:
   /empleados/{id}/deactivate:
     patch:
       summary: "Desactivar empleado"
-      description: "Requiere token JWT + módulo /empleados. Si no se envía fd_fecha_baja, usa la fecha del día del servidor."
+      description: "Requiere token JWT + módulo /empleados. Si no se envía fecha_baja, usa la fecha del día del servidor."
       security:
         - bearerAuth: []
       parameters:
@@ -1850,7 +1849,7 @@ paths:
             schema:
               type: object
               properties:
-                fd_fecha_baja:
+                fecha_baja:
                   type: string
                   format: date
       responses:
@@ -1864,7 +1863,7 @@ paths:
   /empleados/{id}/activate:
     patch:
       summary: "Activar empleado"
-      description: "Requiere token JWT + módulo /empleados. Limpia fd_fecha_baja."
+      description: "Requiere token JWT + módulo /empleados. Limpia fecha_baja."
       security:
         - bearerAuth: []
       parameters:
@@ -1948,9 +1947,9 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [fi_tipo_documento_id, archivo]
+              required: [tipo_documento_id, archivo]
               properties:
-                fi_tipo_documento_id:
+                tipo_documento_id:
                   type: integer
                 archivo:
                   type: string
@@ -1985,9 +1984,9 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [fi_tipo_documento_id, archivo]
+              required: [tipo_documento_id, archivo]
               properties:
-                fi_tipo_documento_id:
+                tipo_documento_id:
                   type: integer
                 archivo:
                   type: string
@@ -2126,11 +2125,11 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [fc_motivo, fd_fecha, archivo]
+              required: [motivo, fecha, archivo]
               properties:
-                fc_motivo:
+                motivo:
                   type: string
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
                 archivo:
@@ -2224,9 +2223,9 @@ paths:
                 items:
                   type: object
                   properties:
-                    fi_empleado_id:
+                    empleado_id:
                       type: integer
-                    fc_nombre_completo:
+                    nombre_completo:
                       type: string
         '500':
           description: "Error del servidor"
@@ -2350,26 +2349,26 @@ paths:
             schema:
               type: object
               properties:
-                fc_folio:
+                folio:
                   type: string
-                fd_fecha_venta:
+                fecha:
                   type: string
                   format: date
-                fc_cliente:
+                cliente_nombre:
                   type: string
-                fc_tipo_venta:
+                tipo_venta:
                   type: string
-                fn_cantidad_vendida:
+                cantidad:
                   type: number
-                fn_precio_venta:
+                precio_unitario:
                   type: number
-                fn_abonado:
+                monto_abonado:
                   type: number
-                fc_encargado_venta:
+                vendedor_nombre:
                   type: string
-                fc_observaciones:
+                observaciones:
                   type: string
-                fc_empresa:
+                empresa:
                   type: string
       responses:
         '200':
@@ -2451,17 +2450,17 @@ paths:
             schema:
               type: object
               required:
-                - fc_cuenta
-                - fn_monto
+                - cuenta_nombre
+                - monto
               properties:
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_cuenta:
+                cuenta_nombre:
                   type: string
-                fn_monto:
+                monto:
                   type: number
-                fc_observaciones:
+                observaciones:
                   type: string
       responses:
         '201':
@@ -3068,21 +3067,21 @@ paths:
           application/json:
             schema:
               type: object
-              required: [fc_udn, fc_nombre, fc_tipo]
+              required: [unidad_negocio, nombre, tipo_cuenta]
               properties:
-                fc_udn:
+                unidad_negocio:
                   type: string
                   maxLength: 100
-                fc_nombre:
+                nombre:
                   type: string
-                fc_numero_cuenta:
+                numero_cuenta:
                   type: string
                   nullable: true
-                fc_banco:
+                banco:
                   type: string
                   nullable: true
                   maxLength: 150
-                fc_tipo:
+                tipo_cuenta:
                   type: string
                   enum: [Cheques, Efectivo, Inversion, Ahorro]
       responses:
@@ -3123,21 +3122,21 @@ paths:
           application/json:
             schema:
               type: object
-              required: [fc_udn, fc_nombre, fc_tipo]
+              required: [unidad_negocio, nombre, tipo_cuenta]
               properties:
-                fc_udn:
+                unidad_negocio:
                   type: string
                   maxLength: 100
-                fc_nombre:
+                nombre:
                   type: string
-                fc_numero_cuenta:
+                numero_cuenta:
                   type: string
                   nullable: true
-                fc_banco:
+                banco:
                   type: string
                   nullable: true
                   maxLength: 150
-                fc_tipo:
+                tipo_cuenta:
                   type: string
                   enum: [Cheques, Efectivo, Inversion, Ahorro]
       responses:
@@ -3206,9 +3205,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [fc_nombre]
+              required: [nombre]
               properties:
-                fc_nombre:
+                nombre:
                   type: string
                   maxLength: 100
       responses:
@@ -3249,9 +3248,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [fc_nombre]
+              required: [nombre]
               properties:
-                fc_nombre:
+                nombre:
                   type: string
                   maxLength: 100
       responses:
@@ -3363,48 +3362,48 @@ paths:
             schema:
               type: object
               required:
-                - fd_fecha
-                - fc_proveedor
-                - fc_producto
-                - fc_lote
-                - fc_cantidad
-                - fc_unidad_medida
-                - fc_condiciones_entrega
-                - fc_encargado_entrega
-                - fc_verifico
-                - fc_observaciones
+                - fecha
+                - proveedor_nombre
+                - producto
+                - numero_lote
+                - cantidad
+                - unidad_medida
+                - condiciones_entrega
+                - encargado_entrega
+                - verificador
+                - observaciones
                 - ubicacion
               properties:
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_proveedor:
+                proveedor_nombre:
                   type: string
                   maxLength: 100
-                fc_producto:
+                producto:
                   type: string
                   maxLength: 255
-                fc_lote:
+                numero_lote:
                   type: string
                   maxLength: 100
-                fc_cantidad:
+                cantidad:
                   type: number
                   minimum: 0
-                fc_unidad_medida:
+                unidad_medida:
                   type: string
                   maxLength: 255
-                fc_condiciones_entrega:
+                condiciones_entrega:
                   type: string
                   maxLength: 150
-                fc_encargado_entrega:
+                encargado_entrega:
                   type: string
                   maxLength: 100
                   description: "Nombre completo del empleado encargado de entrega."
-                fc_verifico:
+                verificador:
                   type: string
                   maxLength: 100
                   description: "Nombre completo del empleado que verificó."
-                fc_observaciones:
+                observaciones:
                   type: string
                   maxLength: 500
                 ubicacion:
@@ -3429,48 +3428,48 @@ paths:
             schema:
               type: object
               required:
-                - fd_fecha
-                - fc_proveedor
-                - fc_producto
-                - fc_lote
-                - fc_cantidad
-                - fc_unidad_medida
-                - fc_condiciones_entrega
-                - fc_encargado_entrega
-                - fc_verifico
-                - fc_observaciones
+                - fecha
+                - proveedor_nombre
+                - producto
+                - numero_lote
+                - cantidad
+                - unidad_medida
+                - condiciones_entrega
+                - encargado_entrega
+                - verificador
+                - observaciones
                 - ubicacion
               properties:
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_proveedor:
+                proveedor_nombre:
                   type: string
                   maxLength: 100
-                fc_producto:
+                producto:
                   type: string
                   maxLength: 255
-                fc_lote:
+                numero_lote:
                   type: string
                   maxLength: 100
-                fc_cantidad:
+                cantidad:
                   type: number
                   minimum: 0
-                fc_unidad_medida:
+                unidad_medida:
                   type: string
                   maxLength: 255
-                fc_condiciones_entrega:
+                condiciones_entrega:
                   type: string
                   maxLength: 150
-                fc_encargado_entrega:
+                encargado_entrega:
                   type: string
                   maxLength: 100
                   description: "Nombre completo del empleado encargado de entrega."
-                fc_verifico:
+                verificador:
                   type: string
                   maxLength: 100
                   description: "Nombre completo del empleado que verificó."
-                fc_observaciones:
+                observaciones:
                   type: string
                   maxLength: 500
                 ubicacion:
@@ -3643,19 +3642,19 @@ paths:
             schema:
               type: object
               properties:
-                fc_foto_identificacion:
+                foto_identificacion:
                   type: string
                   format: binary
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_nombre_completo:
+                nombre_completo:
                   type: string
-                fc_origen:
+                procedencia:
                   type: string
-                fc_motivo:
+                motivo:
                   type: string
-                fc_observaciones:
+                observaciones:
                   type: string
       responses:
         '201':
@@ -3677,13 +3676,13 @@ paths:
             schema:
               type: object
               properties:
-                fc_foto_identificacion:
+                foto_identificacion:
                   type: string
                   format: binary
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_nombre_completo:
+                nombre_completo:
                   type: string
       responses:
         '200':
@@ -3708,15 +3707,15 @@ paths:
             schema:
               type: object
               properties:
-                fd_fecha:
+                fecha:
                   type: string
                   format: date
-                fc_tipo_instalacion:
+                tipo_instalacion:
                   type: string
                   enum: ["Baño de Hombres", "Baño de Mujeres", "Regadera"]
-                fc_realizo:
+                realizado_por:
                   type: string
-                fc_observaciones:
+                observaciones:
                   type: string
                 ubicacion:
                   type: string

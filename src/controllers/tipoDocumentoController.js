@@ -2,10 +2,10 @@ import prisma from "../prisma.js";
 import { serializeTipoDocumento } from "../utils/serializers.js";
 
 function getNombre(body) {
-  return body.nombre ?? body.fc_nombre;
+  return body.nombre;
 }
 function getActivo(body) {
-  return body.activo ?? body.fb_activo;
+  return body.activo;
 }
 
 class TipoDocumentoController {

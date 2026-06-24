@@ -21,12 +21,12 @@ class ControlVisitaController {
 
   static async create(req, res) {
     try {
-      const { fc_motivo, fc_observaciones } = req.body;
+      const { motivo, observaciones } = req.body;
 
-      if (fc_motivo && fc_motivo.length > 300) {
+      if (motivo && motivo.length > 300) {
         return res.status(400).json({ error: "El motivo no puede superar los 300 caracteres." });
       }
-      if (fc_observaciones && fc_observaciones.length > 500) {
+      if (observaciones && observaciones.length > 500) {
         return res
           .status(400)
           .json({ error: "Las observaciones no pueden superar los 500 caracteres." });
@@ -34,7 +34,7 @@ class ControlVisitaController {
 
       const fotoEnviada =
         req.file ||
-        (req.body.fc_foto_identificacion && String(req.body.fc_foto_identificacion).trim());
+        (req.body.foto_identificacion && String(req.body.foto_identificacion).trim());
       if (!fotoEnviada) {
         return res
           .status(400)
@@ -51,7 +51,7 @@ class ControlVisitaController {
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observaciones,
+          texto: observaciones,
           responsable: null,
           usuarioId,
         });
@@ -59,13 +59,13 @@ class ControlVisitaController {
         await tx.controlVisita.create({
           data: {
             ubicacionId,
-            fecha: req.body.fd_fecha ? new Date(req.body.fd_fecha) : new Date(),
-            hora_entrada: parseTimeOrNull(req.body.fd_entrada),
-            hora_salida: parseTimeOrNull(req.body.fd_salida),
-            nombreCompleto: req.body.fc_nombre_completo || null,
-            procedencia: req.body.fc_origen || null,
-            motivo: req.body.fc_motivo || "",
-            fotoIdentificacion: req.file ? req.file.path : req.body.fc_foto_identificacion || null,
+            fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
+            hora_entrada: parseTimeOrNull(req.body.hora_entrada),
+            hora_salida: parseTimeOrNull(req.body.hora_salida),
+            nombreCompleto: req.body.nombre_completo || null,
+            procedencia: req.body.procedencia || null,
+            motivo: req.body.motivo || "",
+            fotoIdentificacion: req.file ? req.file.path : req.body.foto_identificacion || null,
             usuarioId,
             observacionId,
           },
@@ -81,12 +81,12 @@ class ControlVisitaController {
 
   static async update(req, res) {
     try {
-      const { fc_motivo, fc_observaciones } = req.body;
+      const { motivo, observaciones } = req.body;
 
-      if (fc_motivo && fc_motivo.length > 300) {
+      if (motivo && motivo.length > 300) {
         return res.status(400).json({ error: "El motivo no puede superar los 300 caracteres." });
       }
-      if (fc_observaciones && fc_observaciones.length > 500) {
+      if (observaciones && observaciones.length > 500) {
         return res
           .status(400)
           .json({ error: "Las observaciones no pueden superar los 500 caracteres." });
@@ -117,8 +117,8 @@ class ControlVisitaController {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto:
-            fc_observaciones !== undefined
-              ? fc_observaciones
+            observaciones !== undefined
+              ? observaciones
               : existing.observacion?.comentario ?? null,
           responsable: null,
           usuarioId,
@@ -128,27 +128,27 @@ class ControlVisitaController {
           where: { id },
           data: {
             ubicacionId,
-            fecha: req.body.fd_fecha ? new Date(req.body.fd_fecha) : existing.fecha,
+            fecha: req.body.fecha ? new Date(req.body.fecha) : existing.fecha,
             hora_entrada:
-              req.body.fd_entrada !== undefined
-                ? parseTimeOrNull(req.body.fd_entrada)
+              req.body.hora_entrada !== undefined
+                ? parseTimeOrNull(req.body.hora_entrada)
                 : existing.hora_entrada,
             hora_salida:
-              req.body.fd_salida !== undefined
-                ? parseTimeOrNull(req.body.fd_salida)
+              req.body.hora_salida !== undefined
+                ? parseTimeOrNull(req.body.hora_salida)
                 : existing.hora_salida,
             nombreCompleto:
-              req.body.fc_nombre_completo !== undefined
-                ? req.body.fc_nombre_completo || null
+              req.body.nombre_completo !== undefined
+                ? req.body.nombre_completo || null
                 : existing.nombreCompleto,
             procedencia:
-              req.body.fc_origen !== undefined ? req.body.fc_origen || null : existing.procedencia,
+              req.body.procedencia !== undefined ? req.body.procedencia || null : existing.procedencia,
             motivo:
-              req.body.fc_motivo !== undefined ? req.body.fc_motivo || existing.motivo : existing.motivo,
+              req.body.motivo !== undefined ? req.body.motivo || existing.motivo : existing.motivo,
             fotoIdentificacion: req.file
               ? req.file.path
-              : req.body.fc_foto_identificacion !== undefined
-                ? req.body.fc_foto_identificacion || null
+              : req.body.foto_identificacion !== undefined
+                ? req.body.foto_identificacion || null
                 : existing.fotoIdentificacion,
             usuarioId,
             observacionId,

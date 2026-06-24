@@ -35,29 +35,29 @@ class BitacoraParametroController {
   static async create(req, res) {
     try {
       const {
-        fd_fecha,
-        fn_num_estanque,
-        fn_oxigeno,
-        fn_temperatura,
-        fn_ph,
-        fn_amonio,
-        fn_nitritos,
-        fn_nitratos,
-        fc_responsable,
-        fc_observaciones,
+        fecha,
+        numero_estanque,
+        oxigeno,
+        temperatura,
+        ph,
+        amonio,
+        nitritos,
+        nitratos,
+        responsable,
+        observaciones,
       } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const usuarioId = req.user.usuario_id;
 
-      if (!fd_fecha) {
-        return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
+      if (!fecha) {
+        return res.status(400).json({ error: "La fecha es obligatoria" });
       }
-      if (!fn_num_estanque) {
+      if (!numero_estanque) {
         return res.status(400).json({ error: "El número de estanque es obligatorio" });
       }
 
-      const numEstanque = BitacoraParametroController.parseNum(fn_num_estanque);
+      const numEstanque = BitacoraParametroController.parseNum(numero_estanque);
       if (numEstanque == null || Number.isNaN(numEstanque)) {
-        return res.status(400).json({ error: "fn_num_estanque debe ser numérico" });
+        return res.status(400).json({ error: "numero_estanque debe ser numérico" });
       }
 
       const { ubicacion } = req.body;
@@ -71,42 +71,42 @@ class BitacoraParametroController {
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observaciones ?? null,
+          texto: observaciones ?? null,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.parametro.create({
           data: {
             ubicacionId: u.ubicacionId,
-            fecha: new Date(fd_fecha),
+            fecha: new Date(fecha),
             numero_estanque: Math.trunc(numEstanque),
-            responsable: fc_responsable || null,
+            responsable: responsable || null,
             oxigeno:
-              BitacoraParametroController.parseNum(fn_oxigeno) != null
-                ? String(BitacoraParametroController.parseNum(fn_oxigeno))
+              BitacoraParametroController.parseNum(oxigeno) != null
+                ? String(BitacoraParametroController.parseNum(oxigeno))
                 : null,
             temperatura:
-              BitacoraParametroController.parseNum(fn_temperatura) != null
-                ? String(BitacoraParametroController.parseNum(fn_temperatura))
+              BitacoraParametroController.parseNum(temperatura) != null
+                ? String(BitacoraParametroController.parseNum(temperatura))
                 : null,
             ph:
-              BitacoraParametroController.parseNum(fn_ph) != null
-                ? String(BitacoraParametroController.parseNum(fn_ph))
+              BitacoraParametroController.parseNum(ph) != null
+                ? String(BitacoraParametroController.parseNum(ph))
                 : null,
             amonio:
-              BitacoraParametroController.parseNum(fn_amonio) != null
-                ? String(BitacoraParametroController.parseNum(fn_amonio))
+              BitacoraParametroController.parseNum(amonio) != null
+                ? String(BitacoraParametroController.parseNum(amonio))
                 : null,
             nitritos:
-              BitacoraParametroController.parseNum(fn_nitritos) != null
-                ? String(BitacoraParametroController.parseNum(fn_nitritos))
+              BitacoraParametroController.parseNum(nitritos) != null
+                ? String(BitacoraParametroController.parseNum(nitritos))
                 : null,
             nitratos:
-              BitacoraParametroController.parseNum(fn_nitratos) != null
-                ? String(BitacoraParametroController.parseNum(fn_nitratos))
+              BitacoraParametroController.parseNum(nitratos) != null
+                ? String(BitacoraParametroController.parseNum(nitratos))
                 : null,
-            usuarioId: fi_usuario_id,
+            usuarioId,
             observacionId,
           },
         });
@@ -122,16 +122,16 @@ class BitacoraParametroController {
   static async update(req, res) {
     try {
       const {
-        fd_fecha,
-        fn_num_estanque,
-        fn_oxigeno,
-        fn_temperatura,
-        fn_ph,
-        fn_amonio,
-        fn_nitritos,
-        fn_nitratos,
-        fc_responsable,
-        fc_observaciones,
+        fecha,
+        numero_estanque,
+        oxigeno,
+        temperatura,
+        ph,
+        amonio,
+        nitritos,
+        nitratos,
+        responsable,
+        observaciones,
       } = req.body;
 
       const { ubicacion } = req.body;
@@ -151,11 +151,11 @@ class BitacoraParametroController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
+      const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
 
       const texto =
-        fc_observaciones !== undefined
-          ? fc_observaciones
+        observaciones !== undefined
+          ? observaciones
           : existing.observacion?.comentario ?? null;
 
       await prisma.$transaction(async (tx) => {
@@ -163,7 +163,7 @@ class BitacoraParametroController {
           observacionIdExistente: existing.observacionId,
           texto,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         const decStr = (field) => {
@@ -177,21 +177,21 @@ class BitacoraParametroController {
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
+            fecha: fecha ? new Date(fecha) : existing.fecha,
             numero_estanque:
-              fn_num_estanque !== undefined && fn_num_estanque !== ""
-                ? Math.trunc(BitacoraParametroController.parseNum(fn_num_estanque))
-                : fn_num_estanque === ""
+              numero_estanque !== undefined && numero_estanque !== ""
+                ? Math.trunc(BitacoraParametroController.parseNum(numero_estanque))
+                : numero_estanque === ""
                   ? null
                   : existing.numero_estanque,
-            oxigeno: decStr(fn_oxigeno) !== undefined ? decStr(fn_oxigeno) : existing.oxigeno,
+            oxigeno: decStr(oxigeno) !== undefined ? decStr(oxigeno) : existing.oxigeno,
             temperatura:
-              decStr(fn_temperatura) !== undefined ? decStr(fn_temperatura) : existing.temperatura,
-            ph: decStr(fn_ph) !== undefined ? decStr(fn_ph) : existing.ph,
-            amonio: decStr(fn_amonio) !== undefined ? decStr(fn_amonio) : existing.amonio,
-            nitritos: decStr(fn_nitritos) !== undefined ? decStr(fn_nitritos) : existing.nitritos,
-            nitratos: decStr(fn_nitratos) !== undefined ? decStr(fn_nitratos) : existing.nitratos,
-            responsable: fc_responsable !== undefined ? fc_responsable || null : existing.responsable,
+              decStr(temperatura) !== undefined ? decStr(temperatura) : existing.temperatura,
+            ph: decStr(ph) !== undefined ? decStr(ph) : existing.ph,
+            amonio: decStr(amonio) !== undefined ? decStr(amonio) : existing.amonio,
+            nitritos: decStr(nitritos) !== undefined ? decStr(nitritos) : existing.nitritos,
+            nitratos: decStr(nitratos) !== undefined ? decStr(nitratos) : existing.nitratos,
+            responsable: responsable !== undefined ? responsable || null : existing.responsable,
             observacionId,
           },
         });

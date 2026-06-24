@@ -10,14 +10,14 @@ function toInt(value) {
 }
 
 function validarPayload(body) {
-  const { fc_udn, fc_nombre, fc_tipo, fc_banco } = body;
+  const { unidad_negocio, nombre, tipo_cuenta, banco } = body;
 
-  if (!fc_udn) return "La UdN es obligatoria";
-  if (!fc_nombre) return "El nombre es obligatorio";
-  if (!fc_tipo || !TIPOS_PERMITIDOS.includes(fc_tipo)) {
+  if (!unidad_negocio) return "La UdN es obligatoria";
+  if (!nombre) return "El nombre es obligatorio";
+  if (!tipo_cuenta || !TIPOS_PERMITIDOS.includes(tipo_cuenta)) {
     return "El tipo de cuenta es obligatorio y debe ser Cheques, Efectivo, Inversion o Ahorro";
   }
-  const bancoTrim = typeof fc_banco === "string" ? fc_banco.trim() : "";
+  const bancoTrim = typeof banco === "string" ? banco.trim() : "";
   if (bancoTrim.length > BANCO_MAX_LENGTH) {
     return `El nombre del banco no puede exceder ${BANCO_MAX_LENGTH} caracteres`;
   }
@@ -60,11 +60,11 @@ class CuentaController {
     const error = validarPayload(req.body);
     if (error) return res.status(400).json({ error });
 
-    const { fc_udn, fc_nombre, fc_numero_cuenta, fc_banco, fc_tipo } = req.body;
-    const bancoTrim = typeof fc_banco === "string" ? fc_banco.trim() : "";
+    const { unidad_negocio, nombre, numero_cuenta, banco, tipo_cuenta } = req.body;
+    const bancoTrim = typeof banco === "string" ? banco.trim() : "";
 
     try {
-      const udn = await unidadActivaPorNombre(fc_udn);
+      const udn = await unidadActivaPorNombre(unidad_negocio);
       if (!udn) {
         return res.status(400).json({
           error: "La UdN debe existir en el catalogo de unidades de negocio y estar activa",
@@ -73,11 +73,11 @@ class CuentaController {
 
       const cuenta = await prisma.cuenta.create({
         data: {
-          unidad_negocio: String(fc_udn),
-          nombre: String(fc_nombre),
-          numeroCuenta: fc_numero_cuenta ?? null,
+          unidad_negocio: String(unidad_negocio),
+          nombre: String(nombre),
+          numeroCuenta: numero_cuenta ?? null,
           banco: bancoTrim || null,
-          tipo_cuenta: String(fc_tipo),
+          tipo_cuenta: String(tipo_cuenta),
         },
       });
       res.status(201).json({
@@ -100,11 +100,11 @@ class CuentaController {
     const error = validarPayload(req.body);
     if (error) return res.status(400).json({ error });
 
-    const { fc_udn, fc_nombre, fc_numero_cuenta, fc_banco, fc_tipo } = req.body;
-    const bancoTrim = typeof fc_banco === "string" ? fc_banco.trim() : "";
+    const { unidad_negocio, nombre, numero_cuenta, banco, tipo_cuenta } = req.body;
+    const bancoTrim = typeof banco === "string" ? banco.trim() : "";
 
     try {
-      const udn = await unidadActivaPorNombre(fc_udn);
+      const udn = await unidadActivaPorNombre(unidad_negocio);
       if (!udn) {
         return res.status(400).json({
           error: "La UdN debe existir en el catalogo de unidades de negocio y estar activa",
@@ -114,11 +114,11 @@ class CuentaController {
       const cuenta = await prisma.cuenta.update({
         where: { id },
         data: {
-          unidad_negocio: String(fc_udn),
-          nombre: String(fc_nombre),
-          numeroCuenta: fc_numero_cuenta ?? null,
+          unidad_negocio: String(unidad_negocio),
+          nombre: String(nombre),
+          numeroCuenta: numero_cuenta ?? null,
           banco: bancoTrim || null,
-          tipo_cuenta: String(fc_tipo),
+          tipo_cuenta: String(tipo_cuenta),
         },
       });
       res.json({

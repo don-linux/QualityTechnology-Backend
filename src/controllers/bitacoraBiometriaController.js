@@ -7,11 +7,11 @@ import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 // El schema actual de Biometria se relaciona directamente con Pileta
 // (`pileta_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
 // directa. Tampoco existen los campos `tipo`, `observacionId` ni
-// `instalacionId`. Conservamos las rutas y traducimos el body antiguo al
-// nuevo modelo: `fi_instalacion_id` se ignora; se requiere `pileta_id`.
+// `instalacionId`. Conservamos las rutas y traducimos el body al nuevo
+// modelo: se requiere `pileta_id`.
 
-const MAX_FC_OBSERVACIONES = 500;
-const MAX_FC_ENCARGADO = 100;
+const MAX_OBSERVACIONES = 500;
+const MAX_ENCARGADO = 100;
 
 const bitacoraInclude = {
   piletas: { include: { ubicacion: true } },
@@ -21,7 +21,7 @@ const bitacoraInclude = {
 async function syncObservacionBiometria(tx, biometriaId, piletaId, usuarioId, textoObs) {
   const t =
     textoObs != null && String(textoObs).trim()
-      ? String(textoObs).trim().slice(0, MAX_FC_OBSERVACIONES)
+      ? String(textoObs).trim().slice(0, MAX_OBSERVACIONES)
       : null;
 
   const existing = await tx.observacion.findFirst({
@@ -68,13 +68,13 @@ function toInt(value) {
 }
 
 const validarTextosBiometria = (body) => {
-  const obsLen = body.fc_observaciones == null ? 0 : String(body.fc_observaciones).length;
-  if (obsLen > MAX_FC_OBSERVACIONES) {
-    return `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.`;
+  const obsLen = body.observaciones == null ? 0 : String(body.observaciones).length;
+  if (obsLen > MAX_OBSERVACIONES) {
+    return `Las observaciones no pueden superar los ${MAX_OBSERVACIONES} caracteres.`;
   }
-  const encLen = body.fc_encargado == null ? 0 : String(body.fc_encargado).length;
-  if (encLen > MAX_FC_ENCARGADO) {
-    return `El encargado no puede superar los ${MAX_FC_ENCARGADO} caracteres.`;
+  const encLen = body.encargado == null ? 0 : String(body.encargado).length;
+  if (encLen > MAX_ENCARGADO) {
+    return `El encargado no puede superar los ${MAX_ENCARGADO} caracteres.`;
   }
   return null;
 };
@@ -122,42 +122,42 @@ class BitacoraBiometriaController {
 
   static async create(req, res) {
     try {
-      const { fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fc_encargado } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const { fecha, peso_total_gramos, organismos_muestreados, encargado } = req.body;
+      const usuarioId = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
       if (errorTexto) {
         return res.status(400).json({ error: errorTexto });
       }
 
-      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      const piletaId = toInt(pick(req.body, "pileta_id"));
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id es obligatorio en el schema actual" });
       }
 
       const pesoProm =
-        fn_peso_total_gramos > 0 && fn_organismos_muestreados > 0
-          ? Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados)
+        peso_total_gramos > 0 && organismos_muestreados > 0
+          ? Number(peso_total_gramos) / Number(organismos_muestreados)
           : 0;
 
-      const fecha = fd_fecha ? new Date(fd_fecha) : new Date();
+      const fechaRegistro = fecha ? new Date(fecha) : new Date();
 
       const row = await prisma.$transaction(async (tx) => {
         const bio = await tx.biometria.create({
           data: {
             pileta_id: piletaId,
-            fecha,
+            fecha: fechaRegistro,
             pesoTotalGramos:
-              fn_peso_total_gramos === "" || fn_peso_total_gramos == null
+              peso_total_gramos === "" || peso_total_gramos == null
                 ? null
-                : String(fn_peso_total_gramos),
+                : String(peso_total_gramos),
             organismosMuestreados:
-              fn_organismos_muestreados === "" || fn_organismos_muestreados == null
+              organismos_muestreados === "" || organismos_muestreados == null
                 ? null
-                : Number(fn_organismos_muestreados),
+                : Number(organismos_muestreados),
             pesoPromedio: pesoProm,
-            encargado: fc_encargado || null,
-            usuarioId: fi_usuario_id,
+            encargado: encargado || null,
+            usuarioId,
           },
         });
 
@@ -165,8 +165,8 @@ class BitacoraBiometriaController {
           tx,
           bio.id,
           piletaId,
-          fi_usuario_id,
-          pick(req.body, "fc_observaciones", "observaciones"),
+          usuarioId,
+          pick(req.body, "observaciones"),
         );
 
         return tx.biometria.findUnique({
@@ -194,8 +194,8 @@ class BitacoraBiometriaController {
       const id = toInt(req.params.id);
       if (!id) return res.status(400).json({ error: "id invalido" });
 
-      const { fd_fecha, fn_peso_total_gramos, fn_organismos_muestreados, fc_encargado } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const { fecha, peso_total_gramos, organismos_muestreados, encargado } = req.body;
+      const usuarioId = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
       if (errorTexto) {
@@ -209,38 +209,37 @@ class BitacoraBiometriaController {
       if (!prev) return res.status(404).json({ error: "Biometría no encontrada" });
 
       const updateData = {};
-      const piletaId = toInt(pick(req.body, "pileta_id", "fi_pileta_id"));
+      const piletaId = toInt(pick(req.body, "pileta_id"));
       if (piletaId !== null) updateData.pileta_id = piletaId;
 
       const piletaFinal =
         piletaId !== null && piletaId !== undefined ? piletaId : prev.pileta_id;
 
-      if (fd_fecha !== undefined) updateData.fecha = new Date(fd_fecha);
-      if (fn_peso_total_gramos !== undefined) {
+      if (fecha !== undefined) updateData.fecha = new Date(fecha);
+      if (peso_total_gramos !== undefined) {
         updateData.pesoTotalGramos =
-          fn_peso_total_gramos === "" || fn_peso_total_gramos == null
+          peso_total_gramos === "" || peso_total_gramos == null
             ? null
-            : String(fn_peso_total_gramos);
+            : String(peso_total_gramos);
       }
-      if (fn_organismos_muestreados !== undefined) {
+      if (organismos_muestreados !== undefined) {
         updateData.organismosMuestreados =
-          fn_organismos_muestreados === "" || fn_organismos_muestreados == null
+          organismos_muestreados === "" || organismos_muestreados == null
             ? null
-            : Number(fn_organismos_muestreados);
+            : Number(organismos_muestreados);
       }
       if (
-        fn_peso_total_gramos !== undefined &&
-        fn_organismos_muestreados !== undefined &&
-        fn_peso_total_gramos > 0 &&
-        fn_organismos_muestreados > 0
+        peso_total_gramos !== undefined &&
+        organismos_muestreados !== undefined &&
+        peso_total_gramos > 0 &&
+        organismos_muestreados > 0
       ) {
-        updateData.pesoPromedio = Number(fn_peso_total_gramos) / Number(fn_organismos_muestreados);
+        updateData.pesoPromedio = Number(peso_total_gramos) / Number(organismos_muestreados);
       }
-      if (fc_encargado !== undefined) updateData.encargado = fc_encargado || null;
-      updateData.usuarioId = fi_usuario_id;
+      if (encargado !== undefined) updateData.encargado = encargado || null;
+      updateData.usuarioId = usuarioId;
 
-      const textoObsExplicito =
-        req.body.fc_observaciones !== undefined || req.body.observaciones !== undefined;
+      const textoObsExplicito = req.body.observaciones !== undefined;
 
       await prisma.$transaction(async (tx) => {
         await tx.biometria.update({
@@ -252,8 +251,8 @@ class BitacoraBiometriaController {
             tx,
             id,
             piletaFinal,
-            fi_usuario_id,
-            pick(req.body, "fc_observaciones", "observaciones"),
+            usuarioId,
+            pick(req.body, "observaciones"),
           );
         }
       });

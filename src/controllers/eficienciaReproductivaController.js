@@ -117,27 +117,27 @@ class EficienciaReproductivaController {
   static async create(req, res) {
     try {
       const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
+        pick(req.body, "pileta_id", "pileta_destino_id"),
       );
       const piletaOrigenId = toInt(
-        pick(req.body, "pileta_origen_id", "pileta_origen", "fi_pileta_origen_id", "fi_pileta_id"),
+        pick(req.body, "pileta_origen_id", "pileta_origen"),
       );
       const reproductorId = toInt(
-        pick(req.body, "reproductor_id", "fi_reproductor_id", "lote_reproductor_id"),
+        pick(req.body, "reproductor_id", "lote_reproductor_id"),
       );
       const fechaCosecha = toDateOrNull(
-        pick(req.body, "fecha_cosecha", "fd_fecha_cosecha", "fecha"),
+        pick(req.body, "fecha_cosecha", "fecha"),
       );
       const tiposCosecha = normalizarTiposCosecha(
-        pick(req.body, "tipo_cosecha", "fc_tipo_cosecha", "tipos_cosecha", "fc_tipos_cosecha", "tipo"),
+        pick(req.body, "tipo_cosecha", "tipos_cosecha", "tipo"),
       );
-      const estadio = pick(req.body, "estadio_desarrollo", "fc_estadio_desarrollo", "estadio");
+      const estadio = pick(req.body, "estadio_desarrollo", "estadio");
       const hembrasOvadas = toInt(
-        pick(req.body, "hembras_ovadas", "fn_hembras_ovadas", "ovadas"),
+        pick(req.body, "hembras_ovadas", "ovadas"),
         null,
       );
       const volumenPorTipo = normalizarVolumenPorTipo(
-        pick(req.body, "volumen_por_tipo", "fc_volumen_por_tipo", "volumenes_por_tipo"),
+        pick(req.body, "volumen_por_tipo", "volumenes_por_tipo"),
         tiposCosecha,
       );
       const volumenes = Object.values(volumenPorTipo);
@@ -147,25 +147,22 @@ class EficienciaReproductivaController {
             pick(
               req.body,
               "huevos_ml",
-              "fn_huevos_ml",
               "volumen_ml",
-              "fn_volumen_ml",
               "volumen_o_contrapeso",
             ),
           );
-      const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso", "fd_fecha_ingreso"));
-      const fechaEgreso = toDateOrNull(pick(req.body, "fecha_egreso", "fd_fecha_egreso"));
-      const diasBody = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
+      const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso"));
+      const fechaEgreso = toDateOrNull(pick(req.body, "fecha_egreso"));
+      const diasBody = toInt(pick(req.body, "dias_en_pileta"));
       const marcarAgotado =
         req.body.marcar_agotado === true ||
-        req.body.fb_marcar_agotado === true ||
-        String(pick(req.body, "estado_ciclo", "fc_estado_ciclo") ?? "")
+        String(pick(req.body, "estado_ciclo") ?? "")
           .trim()
           .toLowerCase() === "agotado";
-      const estadoCicloBody = pick(req.body, "estado_ciclo", "fc_estado_ciclo");
+      const estadoCicloBody = pick(req.body, "estado_ciclo");
       const biometriaId = toInt(pick(req.body, "biometria_id"));
       const usuarioId = req.user.usuario_id;
-      const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
+      const obsTexto = pick(req.body, "observacion", "observaciones");
 
       if (!piletaId) {
         return res.status(400).json({ error: "pileta_id (pileta de eficiencia reproductiva) es obligatorio" });
@@ -327,7 +324,7 @@ class EficienciaReproductivaController {
       let tiposActualizados = null;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
+        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
         if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
         const pd = await prisma.pileta.findUnique({
           where: { id: nid },
@@ -343,12 +340,10 @@ class EficienciaReproductivaController {
 
       if (
         req.body.tipo_cosecha !== undefined ||
-        req.body.fc_tipo_cosecha !== undefined ||
-        req.body.tipos_cosecha !== undefined ||
-        req.body.fc_tipos_cosecha !== undefined
+        req.body.tipos_cosecha !== undefined
       ) {
         const tipos = normalizarTiposCosecha(
-          pick(req.body, "tipo_cosecha", "fc_tipo_cosecha", "tipos_cosecha", "fc_tipos_cosecha"),
+          pick(req.body, "tipo_cosecha", "tipos_cosecha"),
         );
         if (!tipos.length) {
           return res
@@ -358,36 +353,33 @@ class EficienciaReproductivaController {
         updateData.tipo_cosecha = tipos;
         tiposActualizados = tipos;
       }
-      if (req.body.estadio_desarrollo !== undefined || req.body.fc_estadio_desarrollo !== undefined) {
-        const e = pick(req.body, "estadio_desarrollo", "fc_estadio_desarrollo");
+      if (req.body.estadio_desarrollo !== undefined) {
+        const e = pick(req.body, "estadio_desarrollo");
         updateData.estadio_desarrollo = e ? String(e).trim().slice(0, 80) : null;
       }
-      if (req.body.hembras_ovadas !== undefined || req.body.fn_hembras_ovadas !== undefined) {
-        const ho = toInt(pick(req.body, "hembras_ovadas", "fn_hembras_ovadas"), null);
+      if (req.body.hembras_ovadas !== undefined) {
+        const ho = toInt(pick(req.body, "hembras_ovadas"), null);
         if (ho == null || ho < 1) {
           return res.status(400).json({ error: "hembras_ovadas debe ser al menos 1" });
         }
         updateData.hembras_ovadas = ho;
       }
-      if (req.body.fecha_cosecha !== undefined || req.body.fd_fecha_cosecha !== undefined) {
-        const f = toDateOrNull(pick(req.body, "fecha_cosecha", "fd_fecha_cosecha"));
+      if (req.body.fecha_cosecha !== undefined) {
+        const f = toDateOrNull(pick(req.body, "fecha_cosecha"));
         if (!f) return res.status(400).json({ error: "fecha_cosecha inválida" });
         updateData.fecha_cosecha = f;
       }
-      if (req.body.lote !== undefined || req.body.fc_lote !== undefined) {
-        updateData.lote = normalizarLoteEficienciaReproductiva(pick(req.body, "lote", "fc_lote", "no_lote"));
+      if (req.body.lote !== undefined) {
+        updateData.lote = normalizarLoteEficienciaReproductiva(pick(req.body, "lote", "no_lote"));
       }
       if (
         req.body.volumen_por_tipo !== undefined ||
-        req.body.fc_volumen_por_tipo !== undefined ||
         req.body.huevos_ml !== undefined ||
-        req.body.fn_huevos_ml !== undefined ||
-        req.body.volumen_ml !== undefined ||
-        req.body.fn_volumen_ml !== undefined
+        req.body.volumen_ml !== undefined
       ) {
         const tiposBase = tiposActualizados ?? prev.tipo_cosecha ?? [];
         const mapa = normalizarVolumenPorTipo(
-          pick(req.body, "volumen_por_tipo", "fc_volumen_por_tipo"),
+          pick(req.body, "volumen_por_tipo"),
           tiposBase.length ? tiposBase : null,
         );
         const valores = Object.values(mapa);
@@ -397,20 +389,20 @@ class EficienciaReproductivaController {
         } else {
           updateData.volumen_por_tipo = {};
           updateData.huevos_ml = toDecimal(
-            pick(req.body, "huevos_ml", "fn_huevos_ml", "volumen_ml", "fn_volumen_ml"),
+            pick(req.body, "huevos_ml", "volumen_ml"),
           );
         }
       }
-      if (req.body.fecha_ingreso !== undefined || req.body.fd_fecha_ingreso !== undefined) {
-        const fi = toDateOrNull(pick(req.body, "fecha_ingreso", "fd_fecha_ingreso", "fecha"));
+      if (req.body.fecha_ingreso !== undefined) {
+        const fi = toDateOrNull(pick(req.body, "fecha_ingreso", "fecha"));
         if (!fi) return res.status(400).json({ error: "fecha_ingreso inválida" });
         updateData.fecha_ingreso = fi;
       }
-      if (req.body.fecha_egreso !== undefined || req.body.fd_fecha_egreso !== undefined) {
-        updateData.fecha_egreso = toDateOrNull(pick(req.body, "fecha_egreso", "fd_fecha_egreso"));
+      if (req.body.fecha_egreso !== undefined) {
+        updateData.fecha_egreso = toDateOrNull(pick(req.body, "fecha_egreso"));
       }
-      if (req.body.dias_en_pileta !== undefined || req.body.fn_dias_en_pileta !== undefined) {
-        updateData.dias_en_pileta = toInt(pick(req.body, "dias_en_pileta", "fn_dias_en_pileta"));
+      if (req.body.dias_en_pileta !== undefined) {
+        updateData.dias_en_pileta = toInt(pick(req.body, "dias_en_pileta"));
       }
       if (req.body.biometria_id !== undefined) {
         updateData.biometria_id = toInt(req.body.biometria_id);
@@ -419,14 +411,13 @@ class EficienciaReproductivaController {
       const usuarioId = req.user.usuario_id;
       const obsTextoExplicito =
         req.body.observacion !== undefined ||
-        req.body.fc_observacion !== undefined ||
         req.body.observaciones !== undefined;
 
       const actualizado = await prisma.$transaction(async (tx) => {
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
-            pick(req.body, "observacion", "fc_observacion", "observaciones"),
+            pick(req.body, "observacion", "observaciones"),
             usuarioId,
             { piletaId, proceso: "eficiencia_reproductiva" },
           );

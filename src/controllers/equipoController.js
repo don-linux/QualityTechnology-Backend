@@ -49,12 +49,12 @@ class EquipoController {
       });
       const result = empleados
         .map((e) => ({
-          fi_empleado_id: e.id,
-          fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
+          empleado_id: e.id,
+          nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
             .filter(Boolean)
             .join(" "),
         }))
-        .sort((a, b) => a.fc_nombre_completo.localeCompare(b.fc_nombre_completo));
+        .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
       res.json(result);
     } catch (err) {
       console.error("Error al obtener empleados:", err);
@@ -79,18 +79,18 @@ class EquipoController {
 
   static async create(req, res) {
     try {
-      const nombre = pick(req.body, "fc_nombre", "nombre");
+      const nombre = pick(req.body, "nombre");
       if (!nombre) return res.status(400).json({ error: "nombre es obligatorio" });
 
       const creado = await prisma.equipo.create({
         data: {
           nombre: String(nombre),
-          marca: pick(req.body, "fc_marca", "marca") ?? null,
-          modelo: pick(req.body, "fc_modelo", "modelo") ?? null,
-          tipo: pick(req.body, "fc_tipo", "tipo") ?? null,
-          serial: pick(req.body, "serial", "fc_serial") ?? null,
-          estado: pick(req.body, "fc_estado", "estado") ?? "Operativo",
-          observaciones: pick(req.body, "observaciones", "fc_observaciones", "fc_notas", "notas") ?? null,
+          marca: pick(req.body, "marca") ?? null,
+          modelo: pick(req.body, "modelo") ?? null,
+          tipo: pick(req.body, "tipo") ?? null,
+          serial: pick(req.body, "serial") ?? null,
+          estado: pick(req.body, "estado") ?? "Operativo",
+          observaciones: pick(req.body, "observaciones", "notas") ?? null,
           usuarioId: req.user.usuario_id,
         },
       });
@@ -108,31 +108,29 @@ class EquipoController {
 
     try {
       const updateData = {};
-      const nombre = pick(req.body, "fc_nombre", "nombre");
+      const nombre = pick(req.body, "nombre");
       if (nombre !== undefined) updateData.nombre = String(nombre);
-      if (req.body.fc_marca !== undefined || req.body.marca !== undefined) {
-        updateData.marca = pick(req.body, "fc_marca", "marca") ?? null;
+      if (req.body.marca !== undefined) {
+        updateData.marca = pick(req.body, "marca") ?? null;
       }
-      if (req.body.fc_modelo !== undefined || req.body.modelo !== undefined) {
-        updateData.modelo = pick(req.body, "fc_modelo", "modelo") ?? null;
+      if (req.body.modelo !== undefined) {
+        updateData.modelo = pick(req.body, "modelo") ?? null;
       }
-      if (req.body.fc_tipo !== undefined || req.body.tipo !== undefined) {
-        updateData.tipo = pick(req.body, "fc_tipo", "tipo") ?? null;
+      if (req.body.tipo !== undefined) {
+        updateData.tipo = pick(req.body, "tipo") ?? null;
       }
-      if (req.body.serial !== undefined || req.body.fc_serial !== undefined) {
-        updateData.serial = pick(req.body, "serial", "fc_serial") ?? null;
+      if (req.body.serial !== undefined) {
+        updateData.serial = pick(req.body, "serial") ?? null;
       }
-      if (req.body.fc_estado !== undefined || req.body.estado !== undefined) {
-        updateData.estado = pick(req.body, "fc_estado", "estado") ?? "Operativo";
+      if (req.body.estado !== undefined) {
+        updateData.estado = pick(req.body, "estado") ?? "Operativo";
       }
       if (
         req.body.observaciones !== undefined ||
-        req.body.fc_observaciones !== undefined ||
-        req.body.fc_notas !== undefined ||
         req.body.notas !== undefined
       ) {
         updateData.observaciones =
-          pick(req.body, "observaciones", "fc_observaciones", "fc_notas", "notas") ?? null;
+          pick(req.body, "observaciones", "notas") ?? null;
       }
 
       const actualizado = await prisma.equipo.update({
@@ -169,11 +167,11 @@ class EquipoController {
       const equipoId = toInt(req.params.equipo_id);
       if (!equipoId) return res.status(400).json({ error: "equipo_id invalido" });
 
-      const fecha = toDateOrNull(pick(req.body, "fd_fecha", "fecha"));
+      const fecha = toDateOrNull(pick(req.body, "fecha"));
       if (!fecha) {
         return res.status(400).json({ error: "fecha es obligatoria" });
       }
-      const descripcion = pick(req.body, "fc_descripcion", "descripcion");
+      const descripcion = pick(req.body, "descripcion");
       if (!descripcion) {
         return res.status(400).json({ error: "descripcion es obligatoria" });
       }
@@ -183,8 +181,8 @@ class EquipoController {
           equipoId,
           fecha,
           descripcion: String(descripcion),
-          costo: toDecimal(pick(req.body, "fn_costo", "costo")),
-          responsable: pick(req.body, "fc_responsable", "responsable") ?? null,
+          costo: toDecimal(pick(req.body, "costo")),
+          responsable: pick(req.body, "responsable") ?? null,
         },
       });
 
@@ -204,17 +202,17 @@ class EquipoController {
 
     try {
       const updateData = {};
-      const fecha = toDateOrNull(pick(req.body, "fd_fecha", "fecha"));
+      const fecha = toDateOrNull(pick(req.body, "fecha"));
       if (fecha) updateData.fecha = fecha;
 
-      if (req.body.fc_descripcion !== undefined || req.body.descripcion !== undefined) {
-        updateData.descripcion = String(pick(req.body, "fc_descripcion", "descripcion") ?? "");
+      if (req.body.descripcion !== undefined) {
+        updateData.descripcion = String(pick(req.body, "descripcion") ?? "");
       }
-      if (req.body.fn_costo !== undefined || req.body.costo !== undefined) {
-        updateData.costo = toDecimal(pick(req.body, "fn_costo", "costo"));
+      if (req.body.costo !== undefined) {
+        updateData.costo = toDecimal(pick(req.body, "costo"));
       }
-      if (req.body.fc_responsable !== undefined || req.body.responsable !== undefined) {
-        updateData.responsable = pick(req.body, "fc_responsable", "responsable") ?? null;
+      if (req.body.responsable !== undefined) {
+        updateData.responsable = pick(req.body, "responsable") ?? null;
       }
 
       const actualizado = await prisma.mantenimiento.update({

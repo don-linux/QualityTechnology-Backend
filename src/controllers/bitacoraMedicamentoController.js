@@ -4,20 +4,20 @@ import { guardarObservacion, listarEmpleadosActivosBitacora } from "../utils/bit
 import { serializeMedicamento } from "../utils/serializers.js";
 
 const LIMITES_MEDICAMENTOS_TEXTO = {
-  fc_diagnosis: 500,
-  fc_tratamiento: 500,
-  fc_dosis: 100,
-  fc_forma_aplicacion: 100,
-  fc_responsable: 100,
+  diagnostico: 500,
+  tratamiento: 500,
+  dosis: 100,
+  forma_aplicacion: 100,
+  responsable: 100,
 };
 
 const validarLongitudesMedicamentos = (body) => {
   const etiquetas = {
-    fc_diagnosis: "El diagnóstico",
-    fc_tratamiento: "El tratamiento",
-    fc_dosis: "La dosis",
-    fc_forma_aplicacion: "La forma de aplicación",
-    fc_responsable: "El responsable",
+    diagnostico: "El diagnóstico",
+    tratamiento: "El tratamiento",
+    dosis: "La dosis",
+    forma_aplicacion: "La forma de aplicación",
+    responsable: "El responsable",
   };
   for (const [campo, max] of Object.entries(LIMITES_MEDICAMENTOS_TEXTO)) {
     const len = body[campo] == null ? 0 : String(body[campo]).length;
@@ -60,28 +60,28 @@ class BitacoraMedicamentoController {
   static async create(req, res) {
     try {
       const {
-        fd_fecha_hora,
-        fn_num_estanque,
-        fc_diagnosis,
-        fc_tratamiento,
-        fc_dosis,
-        fc_forma_aplicacion,
-        fd_fecha_ultima_dosis,
-        fc_responsable,
-        fc_observaciones,
+        fecha_hora,
+        numero_estanque,
+        diagnostico,
+        tratamiento,
+        dosis,
+        forma_aplicacion,
+        fecha_ultima_dosis,
+        responsable,
+        observaciones,
       } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const usuarioId = req.user.usuario_id;
 
-      if (!fd_fecha_hora) {
-        return res.status(400).json({ error: "La fecha es obligatoria (fd_fecha_hora)" });
+      if (!fecha_hora) {
+        return res.status(400).json({ error: "La fecha es obligatoria" });
       }
-      if (!fn_num_estanque) {
+      if (!numero_estanque) {
         return res.status(400).json({ error: "El número de estanque es obligatorio" });
       }
 
-      const numEstanque = BitacoraMedicamentoController.parseNum(fn_num_estanque);
+      const numEstanque = BitacoraMedicamentoController.parseNum(numero_estanque);
       if (numEstanque == null || Number.isNaN(numEstanque)) {
-        return res.status(400).json({ error: "fn_num_estanque debe ser numérico" });
+        return res.status(400).json({ error: "numero_estanque debe ser numérico" });
       }
 
       const { ubicacion } = req.body;
@@ -100,23 +100,23 @@ class BitacoraMedicamentoController {
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observaciones ?? null,
+          texto: observaciones ?? null,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.medicamento.create({
           data: {
             ubicacionId: u.ubicacionId,
-            fechaHora: new Date(fd_fecha_hora),
+            fechaHora: new Date(fecha_hora),
             numero_estanque: Math.trunc(numEstanque),
-            diagnostico: fc_diagnosis || null,
-            tratamiento: fc_tratamiento || null,
-            dosis: fc_dosis || null,
-            formaAplicacion: fc_forma_aplicacion || null,
-            fechaUltimaDosis: fd_fecha_ultima_dosis ? new Date(fd_fecha_ultima_dosis) : null,
-            responsable: fc_responsable || null,
-            usuarioId: fi_usuario_id,
+            diagnostico: diagnostico || null,
+            tratamiento: tratamiento || null,
+            dosis: dosis || null,
+            formaAplicacion: forma_aplicacion || null,
+            fechaUltimaDosis: fecha_ultima_dosis ? new Date(fecha_ultima_dosis) : null,
+            responsable: responsable || null,
+            usuarioId,
             observacionId,
           },
         });
@@ -132,15 +132,15 @@ class BitacoraMedicamentoController {
   static async update(req, res) {
     try {
       const {
-        fd_fecha_hora,
-        fn_num_estanque,
-        fc_diagnosis,
-        fc_tratamiento,
-        fc_dosis,
-        fc_forma_aplicacion,
-        fd_fecha_ultima_dosis,
-        fc_responsable,
-        fc_observaciones,
+        fecha_hora,
+        numero_estanque,
+        diagnostico,
+        tratamiento,
+        dosis,
+        forma_aplicacion,
+        fecha_ultima_dosis,
+        responsable,
+        observaciones,
       } = req.body;
 
       const { ubicacion } = req.body;
@@ -165,11 +165,11 @@ class BitacoraMedicamentoController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
+      const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
 
       const texto =
-        fc_observaciones !== undefined
-          ? fc_observaciones
+        observaciones !== undefined
+          ? observaciones
           : existing.observacion?.comentario ?? null;
 
       await prisma.$transaction(async (tx) => {
@@ -177,30 +177,30 @@ class BitacoraMedicamentoController {
           observacionIdExistente: existing.observacionId,
           texto,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.medicamento.update({
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            fechaHora: fd_fecha_hora ? new Date(fd_fecha_hora) : existing.fechaHora,
+            fechaHora: fecha_hora ? new Date(fecha_hora) : existing.fechaHora,
             numero_estanque:
-              BitacoraMedicamentoController.parseNum(fn_num_estanque) != null
-                ? Math.trunc(BitacoraMedicamentoController.parseNum(fn_num_estanque))
+              BitacoraMedicamentoController.parseNum(numero_estanque) != null
+                ? Math.trunc(BitacoraMedicamentoController.parseNum(numero_estanque))
                 : existing.numero_estanque,
-            diagnostico: fc_diagnosis !== undefined ? fc_diagnosis || null : existing.diagnostico,
+            diagnostico: diagnostico !== undefined ? diagnostico || null : existing.diagnostico,
             tratamiento:
-              fc_tratamiento !== undefined ? fc_tratamiento || null : existing.tratamiento,
-            dosis: fc_dosis !== undefined ? fc_dosis || null : existing.dosis,
+              tratamiento !== undefined ? tratamiento || null : existing.tratamiento,
+            dosis: dosis !== undefined ? dosis || null : existing.dosis,
             formaAplicacion:
-              fc_forma_aplicacion !== undefined
-                ? fc_forma_aplicacion || null
+              forma_aplicacion !== undefined
+                ? forma_aplicacion || null
                 : existing.formaAplicacion,
-            fechaUltimaDosis: fd_fecha_ultima_dosis
-              ? new Date(fd_fecha_ultima_dosis)
+            fechaUltimaDosis: fecha_ultima_dosis
+              ? new Date(fecha_ultima_dosis)
               : existing.fechaUltimaDosis,
-            responsable: fc_responsable !== undefined ? fc_responsable || null : existing.responsable,
+            responsable: responsable !== undefined ? responsable || null : existing.responsable,
             observacionId,
           },
         });

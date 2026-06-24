@@ -266,7 +266,7 @@ class PiletaController {
     try {
       const nombre = pick(req.body, "nombre");
       let ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
-      const granjaInput = pick(req.body, "granja", "fc_granja", "ubicacion");
+      const granjaInput = pick(req.body, "granja", "ubicacion");
       if (!ubicacionId && granjaInput) {
         const ubic = await resolverOCrearUbicacion(granjaInput);
         if (ubic) ubicacionId = ubic.ubicacionId;
@@ -280,7 +280,6 @@ class PiletaController {
       const estadoConservacionRaw = pick(
         req.body,
         "estado_conservacion",
-        "fc_estado_conservacion",
         "estadoConservacion"
       );
       const tipoPiletaId = toInt(
@@ -350,7 +349,7 @@ class PiletaController {
       if (nombre !== undefined) updateData.nombre = String(nombre);
 
       let ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
-      const granjaInputUpd = pick(req.body, "granja", "fc_granja", "ubicacion");
+      const granjaInputUpd = pick(req.body, "granja", "ubicacion");
       if (!ubicacionId && granjaInputUpd) {
         const ubic = await resolverOCrearUbicacion(granjaInputUpd);
         if (ubic) ubicacionId = ubic.ubicacionId;
@@ -374,11 +373,10 @@ class PiletaController {
 
       if (
         req.body.estado_conservacion !== undefined ||
-        req.body.fc_estado_conservacion !== undefined ||
         req.body.estadoConservacion !== undefined
       ) {
         const estadoConservacionCheck = validateEstadoConservacion(
-          pick(req.body, "estado_conservacion", "fc_estado_conservacion", "estadoConservacion"),
+          pick(req.body, "estado_conservacion", "estadoConservacion"),
           { required: true }
         );
         if (!estadoConservacionCheck.ok) {

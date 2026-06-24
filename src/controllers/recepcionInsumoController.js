@@ -40,28 +40,28 @@ class RecepcionInsumoController {
 
   static async create(req, res) {
     try {
-      const { fc_cantidad, fc_observaciones } = req.body;
+      const { cantidad: cantidadRaw, observaciones } = req.body;
 
-      const cantidad = parseFloat(fc_cantidad);
-      if (fc_cantidad === undefined || fc_cantidad === "" || Number.isNaN(cantidad) || cantidad < 0) {
+      const cantidad = parseFloat(cantidadRaw);
+      if (cantidadRaw === undefined || cantidadRaw === "" || Number.isNaN(cantidad) || cantidad < 0) {
         return res.status(400).json({ error: "La cantidad debe ser un número positivo." });
       }
-      if (fc_observaciones && fc_observaciones.length > 500) {
+      if (observaciones && observaciones.length > 500) {
         return res
           .status(400)
           .json({ error: "Las observaciones no pueden superar los 500 caracteres." });
       }
-      const { fc_encargado_entrega, fc_verifico } = req.body;
-      if (fc_encargado_entrega != null && String(fc_encargado_entrega).length > 100) {
+      const { encargado_entrega, verificador } = req.body;
+      if (encargado_entrega != null && String(encargado_entrega).length > 100) {
         return res
           .status(400)
           .json({ error: "El campo encargado de entrega no puede superar los 100 caracteres." });
       }
-      if (fc_verifico != null && String(fc_verifico).length > 100) {
+      if (verificador != null && String(verificador).length > 100) {
         return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
       }
 
-      const fi_usuario_id = req.user.usuario_id;
+      const usuarioId = req.user.usuario_id;
 
       let ubicacionId = null;
       if (req.body.ubicacion != null && String(req.body.ubicacion).trim()) {
@@ -70,35 +70,35 @@ class RecepcionInsumoController {
       }
 
       const {
-        fd_fecha,
-        fc_proveedor,
-        fc_producto,
-        fc_lote,
-        fc_unidad_medida,
-        fc_condiciones_entrega,
+        fecha,
+        proveedor_nombre,
+        producto,
+        numero_lote,
+        unidad_medida,
+        condiciones_entrega,
       } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observaciones,
+          texto: observaciones,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.recepcionInsumo.create({
           data: {
             ubicacionId,
-            fecha: fd_fecha ? new Date(fd_fecha) : new Date(),
-            proveedor_nombre: fc_proveedor || null,
-            producto: fc_producto || null,
-            unidadMedida: fc_unidad_medida || null,
+            fecha: fecha ? new Date(fecha) : new Date(),
+            proveedor_nombre: proveedor_nombre || null,
+            producto: producto || null,
+            unidadMedida: unidad_medida || null,
             cantidad: String(cantidad),
-            numero_lote: fc_lote || null,
-            condicionesEntrega: fc_condiciones_entrega || null,
-            encargadoEntrega: fc_encargado_entrega || null,
-            verificador: fc_verifico || null,
-            usuarioId: fi_usuario_id,
+            numero_lote: numero_lote || null,
+            condicionesEntrega: condiciones_entrega || null,
+            encargadoEntrega: encargado_entrega || null,
+            verificador: verificador || null,
+            usuarioId,
             observacionId,
           },
         });
@@ -113,24 +113,24 @@ class RecepcionInsumoController {
 
   static async update(req, res) {
     try {
-      const { fc_cantidad, fc_observaciones } = req.body;
+      const { cantidad: cantidadRaw, observaciones } = req.body;
 
-      const cantidad = parseFloat(fc_cantidad);
-      if (fc_cantidad === undefined || fc_cantidad === "" || Number.isNaN(cantidad) || cantidad < 0) {
+      const cantidad = parseFloat(cantidadRaw);
+      if (cantidadRaw === undefined || cantidadRaw === "" || Number.isNaN(cantidad) || cantidad < 0) {
         return res.status(400).json({ error: "La cantidad debe ser un número positivo." });
       }
-      if (fc_observaciones && fc_observaciones.length > 500) {
+      if (observaciones && observaciones.length > 500) {
         return res
           .status(400)
           .json({ error: "Las observaciones no pueden superar los 500 caracteres." });
       }
-      const { fc_encargado_entrega, fc_verifico } = req.body;
-      if (fc_encargado_entrega != null && String(fc_encargado_entrega).length > 100) {
+      const { encargado_entrega, verificador } = req.body;
+      if (encargado_entrega != null && String(encargado_entrega).length > 100) {
         return res
           .status(400)
           .json({ error: "El campo encargado de entrega no puede superar los 100 caracteres." });
       }
-      if (fc_verifico != null && String(fc_verifico).length > 100) {
+      if (verificador != null && String(verificador).length > 100) {
         return res.status(400).json({ error: "El campo verificó no puede superar los 100 caracteres." });
       }
 
@@ -143,7 +143,7 @@ class RecepcionInsumoController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
+      const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
 
       let ubicacionId = existing.ubicacionId;
       if (req.body.ubicacion !== undefined) {
@@ -156,46 +156,46 @@ class RecepcionInsumoController {
       }
 
       const {
-        fd_fecha,
-        fc_proveedor,
-        fc_producto,
-        fc_lote,
-        fc_unidad_medida,
-        fc_condiciones_entrega,
+        fecha,
+        proveedor_nombre,
+        producto,
+        numero_lote,
+        unidad_medida,
+        condiciones_entrega,
       } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto:
-            fc_observaciones !== undefined
-              ? fc_observaciones
+            observaciones !== undefined
+              ? observaciones
               : existing.observacion?.comentario ?? null,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.recepcionInsumo.update({
           where: { id },
           data: {
             ubicacionId,
-            fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
+            fecha: fecha ? new Date(fecha) : existing.fecha,
             proveedor_nombre:
-              fc_proveedor !== undefined ? fc_proveedor || null : existing.proveedor_nombre,
-            producto: fc_producto !== undefined ? fc_producto || null : existing.producto,
+              proveedor_nombre !== undefined ? proveedor_nombre || null : existing.proveedor_nombre,
+            producto: producto !== undefined ? producto || null : existing.producto,
             unidadMedida:
-              fc_unidad_medida !== undefined ? fc_unidad_medida || null : existing.unidadMedida,
+              unidad_medida !== undefined ? unidad_medida || null : existing.unidadMedida,
             cantidad: String(cantidad),
-            numero_lote: fc_lote !== undefined ? fc_lote || null : existing.numero_lote,
+            numero_lote: numero_lote !== undefined ? numero_lote || null : existing.numero_lote,
             condicionesEntrega:
-              fc_condiciones_entrega !== undefined
-                ? fc_condiciones_entrega || null
+              condiciones_entrega !== undefined
+                ? condiciones_entrega || null
                 : existing.condicionesEntrega,
             encargadoEntrega:
-              fc_encargado_entrega !== undefined
-                ? fc_encargado_entrega || null
+              encargado_entrega !== undefined
+                ? encargado_entrega || null
                 : existing.encargadoEntrega,
-            verificador: fc_verifico !== undefined ? fc_verifico || null : existing.verificador,
+            verificador: verificador !== undefined ? verificador || null : existing.verificador,
             observacionId,
           },
         });

@@ -74,12 +74,12 @@ class ControlFaunaNocivaController {
         return res.status(401).json({ error: "Token inválido o sin usuario asociado" });
       }
 
-      const responsableParsed = parseResponsable(req.body.responsable ?? req.body.fc_responsable);
+      const responsableParsed = parseResponsable(req.body.responsable);
       if (responsableParsed?.error) {
         return res.status(400).json({ error: responsableParsed.error });
       }
 
-      const { ubicacion, fd_fecha, ...payload } = req.body;
+      const { ubicacion, fecha, ...payload } = req.body;
 
       let ubicacionId = null;
       let ubicacionNombre = null;
@@ -92,20 +92,16 @@ class ControlFaunaNocivaController {
         return res.status(400).json({ error: "La ubicación es obligatoria." });
       }
 
-      const fechaRegistro = fd_fecha ? new Date(fd_fecha) : new Date();
+      const fechaRegistro = fecha ? new Date(fecha) : new Date();
       const dataBase = {
         ubicacionId,
         fecha: fechaRegistro,
-        areaInstalacionId: parseOptionalId(
-          payload.area_instalacion_id ?? payload.fi_area_instalacion_id,
-        ),
-        faunaDetectadaId: parseOptionalId(payload.fauna_detectada_id ?? payload.fi_fauna_detectada_id),
-        evidenciaFaunaId: parseOptionalId(payload.evidencia_fauna_id ?? payload.fi_evidencia_fauna_id),
-        estadoTrampaId: parseOptionalId(payload.estado_trampa_id ?? payload.fi_estado_trampa_id),
-        condicionMalla: parseCondicionMalla(payload.condicion_malla ?? payload.fc_condicion_malla),
-        accionCorrectivaId: parseOptionalId(
-          payload.accion_correctiva_id ?? payload.fi_accion_correctiva_id,
-        ),
+        areaInstalacionId: parseOptionalId(payload.area_instalacion_id),
+        faunaDetectadaId: parseOptionalId(payload.fauna_detectada_id),
+        evidenciaFaunaId: parseOptionalId(payload.evidencia_fauna_id),
+        estadoTrampaId: parseOptionalId(payload.estado_trampa_id),
+        condicionMalla: parseCondicionMalla(payload.condicion_malla),
+        accionCorrectivaId: parseOptionalId(payload.accion_correctiva_id),
         responsable: responsableParsed?.value ?? null,
         usuarioId,
       };
@@ -114,7 +110,7 @@ class ControlFaunaNocivaController {
       for (let intento = 0; intento < 5; intento++) {
         const codigo = await generarCodigoControlFaunaNociva(prisma, {
           ubicacionNombre,
-          fecha: fd_fecha ?? fechaRegistro,
+          fecha: fecha ?? fechaRegistro,
         });
         try {
           await prisma.controlFaunaNociva.create({
@@ -144,11 +140,11 @@ class ControlFaunaNocivaController {
       }
 
       const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
-      const { ubicacion, fd_fecha, ...payload } = req.body;
+      const { ubicacion, fecha, ...payload } = req.body;
 
       let responsable = existing.responsable;
-      if (req.body.responsable !== undefined || req.body.fc_responsable !== undefined) {
-        const parsed = parseResponsable(req.body.responsable ?? req.body.fc_responsable);
+      if (req.body.responsable !== undefined) {
+        const parsed = parseResponsable(req.body.responsable);
         if (parsed?.error) {
           return res.status(400).json({ error: parsed.error });
         }
@@ -169,30 +165,30 @@ class ControlFaunaNocivaController {
         where: { id },
         data: {
           ubicacionId,
-          fecha: fd_fecha ? new Date(fd_fecha) : existing.fecha,
+          fecha: fecha ? new Date(fecha) : existing.fecha,
           areaInstalacionId:
-            payload.area_instalacion_id !== undefined || payload.fi_area_instalacion_id !== undefined
-              ? parseOptionalId(payload.area_instalacion_id ?? payload.fi_area_instalacion_id)
+            payload.area_instalacion_id !== undefined
+              ? parseOptionalId(payload.area_instalacion_id)
               : existing.areaInstalacionId,
           faunaDetectadaId:
-            payload.fauna_detectada_id !== undefined || payload.fi_fauna_detectada_id !== undefined
-              ? parseOptionalId(payload.fauna_detectada_id ?? payload.fi_fauna_detectada_id)
+            payload.fauna_detectada_id !== undefined
+              ? parseOptionalId(payload.fauna_detectada_id)
               : existing.faunaDetectadaId,
           evidenciaFaunaId:
-            payload.evidencia_fauna_id !== undefined || payload.fi_evidencia_fauna_id !== undefined
-              ? parseOptionalId(payload.evidencia_fauna_id ?? payload.fi_evidencia_fauna_id)
+            payload.evidencia_fauna_id !== undefined
+              ? parseOptionalId(payload.evidencia_fauna_id)
               : existing.evidenciaFaunaId,
           estadoTrampaId:
-            payload.estado_trampa_id !== undefined || payload.fi_estado_trampa_id !== undefined
-              ? parseOptionalId(payload.estado_trampa_id ?? payload.fi_estado_trampa_id)
+            payload.estado_trampa_id !== undefined
+              ? parseOptionalId(payload.estado_trampa_id)
               : existing.estadoTrampaId,
           condicionMalla:
-            payload.condicion_malla !== undefined || payload.fc_condicion_malla !== undefined
-              ? parseCondicionMalla(payload.condicion_malla ?? payload.fc_condicion_malla)
+            payload.condicion_malla !== undefined
+              ? parseCondicionMalla(payload.condicion_malla)
               : existing.condicionMalla,
           accionCorrectivaId:
-            payload.accion_correctiva_id !== undefined || payload.fi_accion_correctiva_id !== undefined
-              ? parseOptionalId(payload.accion_correctiva_id ?? payload.fi_accion_correctiva_id)
+            payload.accion_correctiva_id !== undefined
+              ? parseOptionalId(payload.accion_correctiva_id)
               : existing.accionCorrectivaId,
           responsable,
           usuarioId,

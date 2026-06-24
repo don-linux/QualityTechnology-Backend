@@ -112,15 +112,15 @@ class EngordaController {
   static async create(req, res) {
     try {
       const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
+        pick(req.body, "pileta_id", "pileta_destino_id"),
       );
       const cantidadTotal = Math.max(
         0,
-        toInt(pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad"), 0) ?? 0,
+        toInt(pick(req.body, "cantidad_total", "cantidad"), 0) ?? 0,
       );
       const cantidadAlimento = Math.max(
         0,
-        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
+        toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0,
       );
 
       if (!piletaId) {
@@ -142,10 +142,10 @@ class EngordaController {
       }
 
       const usuarioId = req.user.usuario_id;
-      const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
+      const obsTexto = pick(req.body, "observacion", "observaciones");
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
       const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+        pick(req.body, "origen_pileta_id", "origenPiletaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -221,7 +221,7 @@ class EngordaController {
       let piletaId = prev.pileta_id;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
+        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
         if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
         const pd = await prisma.pileta.findUnique({
           where: { id: nid },
@@ -235,17 +235,17 @@ class EngordaController {
         piletaId = nid;
       }
 
-      if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
-        const ct = toInt(pick(req.body, "cantidad_total", "fn_cantidad_total", "cantidad"), 0) ?? 0;
+      if (req.body.cantidad_total !== undefined) {
+        const ct = toInt(pick(req.body, "cantidad_total", "cantidad"), 0) ?? 0;
         if (ct <= 0) {
           return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
         }
         updateData.cantidad_total = ct;
       }
 
-      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
+      if (req.body.cantidad_alimento !== undefined) {
         updateData.cantidad_alimento =
-          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
+          Math.max(0, toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0);
       }
 
       if (req.body.siembra_origen_id !== undefined) {
@@ -258,7 +258,6 @@ class EngordaController {
       const usuarioId = req.user.usuario_id;
       const obsTextoExplicito =
         req.body.observacion !== undefined ||
-        req.body.fc_observacion !== undefined ||
         req.body.observaciones !== undefined;
 
       const siembraOrigenFuturo =
@@ -281,7 +280,7 @@ class EngordaController {
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
-            pick(req.body, "observacion", "fc_observacion", "observaciones"),
+            pick(req.body, "observacion", "observaciones"),
             usuarioId,
             { piletaId, proceso: "engorda" },
           );

@@ -145,7 +145,7 @@ export function serializarMovimientoSiembra(s) {
   const usuarioRol = usuario?.rol?.nombre ?? null;
 
   return {
-    fi_movimiento_id: s.id,
+    movimiento_id: s.id,
     origen: pilOr?.nombre ?? "Externo",
     destino: destinoLabel,
     cantidad_trasladada: esMortalidadPura ? mortalidad : netas,
@@ -153,16 +153,14 @@ export function serializarMovimientoSiembra(s) {
     observacion: obsParts.length ? obsParts.join(" · ") : null,
     origen_pileta_id: pilOr?.id ?? null,
     etapa,
-    fc_etapa: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
-    fc_subtipo_movimiento: subtipoLabel,
+    etapa_label: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
+    subtipo_movimiento: subtipoLabel,
     ubicacion_id: ubicacionId,
-    fc_granja: granjaNombre,
+    granja: granjaNombre,
     es_venta: esVenta,
     venta_id: s.venta_id ?? s.venta?.id ?? null,
     usuario_id: s.usuario_id ?? usuario?.id ?? null,
     usuario_nombre: usuarioNombre,
-    fc_usuario: usuarioNombre,
     rol_nombre: usuarioRol,
-    fc_rol: usuarioRol,
   };
 }

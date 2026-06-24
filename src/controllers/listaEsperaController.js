@@ -48,57 +48,57 @@ function parseFechaEntrega(raw) {
 }
 
 function buildPayloadFromBody(body) {
-  const clienteNombre = pick(body, "cliente_nombre", "fc_cliente", "cliente");
+  const clienteNombre = pick(body, "cliente_nombre", "cliente");
   if (!clienteNombre) {
     throw new Error("cliente_nombre es obligatorio");
   }
 
-  const fechaEntrega = parseFechaEntrega(pick(body, "fecha_entrega", "fd_fecha_entrega"));
+  const fechaEntrega = parseFechaEntrega(pick(body, "fecha_entrega"));
   if (!fechaEntrega) {
     throw new Error("fecha_entrega es obligatoria");
   }
 
-  const tipoRaw = pick(body, "tipo_venta", "fc_uap_asignada", "fc_tipo_venta");
+  const tipoRaw = pick(body, "tipo_venta");
   const tipoVenta = normalizarTipoVenta(tipoRaw);
   const piletaOrigenId = toInt(
-    pick(body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
+    pick(body, "pileta_origen_id", "origen_pileta_id"),
   );
 
   if (ventaRequiereTrazabilidad(tipoVenta) && !piletaOrigenId) {
     throw new Error("pileta_origen_id es obligatorio para ventas de alevines o mojarra");
   }
 
-  const lugar = pick(body, "lugar_entrega", "fc_lugar_entrega");
+  const lugar = pick(body, "lugar_entrega");
   if (!lugar) {
     throw new Error("lugar_entrega es obligatorio");
   }
 
-  const unidadProduccion = pick(body, "unidad_produccion", "fc_unidad_produccion");
+  const unidadProduccion = pick(body, "unidad_produccion");
   if (!unidadProduccion) {
     throw new Error("unidad_produccion es obligatoria");
   }
 
-  const horaEmbolsado = pick(body, "hora_embolsado", "fc_hora_embolsado");
+  const horaEmbolsado = pick(body, "hora_embolsado");
   if (!horaEmbolsado) {
     throw new Error("hora_embolsado es obligatoria");
   }
 
-  const horaEntrega = pick(body, "hora_entrega", "fc_hora_entrega");
+  const horaEntrega = pick(body, "hora_entrega");
   if (!horaEntrega) {
     throw new Error("hora_entrega es obligatoria");
   }
 
-  const cantidad = toInt(pick(body, "cantidad_peces", "fn_cantidad", "cantidad"));
+  const cantidad = toInt(pick(body, "cantidad_peces", "cantidad"));
   if (!cantidad || cantidad <= 0) {
     throw new Error("cantidad es obligatoria y debe ser mayor a cero");
   }
 
-  const precio = toDecimal(pick(body, "precio_unitario", "fn_precio_venta", "precio_venta"));
+  const precio = toDecimal(pick(body, "precio_unitario", "precio_venta"));
   if (precio == null || precio < 0) {
     throw new Error("precio_unitario es obligatorio");
   }
 
-  const granja = pick(body, "granja", "fc_granja_asignada", "fc_granja");
+  const granja = pick(body, "granja");
   if (!granja) {
     throw new Error("granja es obligatoria");
   }
@@ -108,7 +108,7 @@ function buildPayloadFromBody(body) {
   }
 
   return {
-    cliente_id: toInt(pick(body, "cliente_id", "fi_cliente_id")),
+    cliente_id: toInt(pick(body, "cliente_id")),
     cliente_nombre: String(clienteNombre),
     cantidad_peces: cantidad,
     precio_unitario: precio,
@@ -119,10 +119,10 @@ function buildPayloadFromBody(body) {
     unidad_produccion: String(unidadProduccion),
     hora_embolsado: String(horaEmbolsado),
     hora_entrega: String(horaEntrega),
-    encargado_venta: pick(body, "encargado_venta", "fc_encargado_venta") ?? null,
+    encargado_venta: pick(body, "encargado_venta") ?? null,
     pileta_origen_id: piletaOrigenId,
-    notas: pick(body, "notas", "fc_notas", "fc_observaciones") ?? null,
-    estatus: pick(body, "estatus", "fc_estatus") ?? "PENDIENTE",
+    notas: pick(body, "notas") ?? null,
+    estatus: pick(body, "estatus") ?? "PENDIENTE",
   };
 }
 

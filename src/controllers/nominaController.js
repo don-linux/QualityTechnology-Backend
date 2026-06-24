@@ -21,13 +21,13 @@ function toDecimal(value, fallback = 0) {
 
 function parseNominaBody(body) {
   return {
-    empleadoId: pick(body, "empleado_id", "fi_empleado_id"),
-    periodo: pick(body, "periodo", "fc_periodo"),
-    sueldoBruto: pick(body, "sueldo_bruto", "fn_sueldo_bruto"),
-    descuentos: pick(body, "descuentos", "descuento", "fn_descuento"),
-    sueldoNeto: pick(body, "sueldo_neto", "total", "fn_total"),
-    fechaPago: pick(body, "fecha_pago", "fd_fecha_pago"),
-    observaciones: pick(body, "observaciones", "fc_observaciones"),
+    empleadoId: pick(body, "empleado_id"),
+    periodo: pick(body, "periodo"),
+    sueldoBruto: pick(body, "sueldo_bruto"),
+    descuentos: pick(body, "descuentos", "descuento"),
+    sueldoNeto: pick(body, "sueldo_neto", "total"),
+    fechaPago: pick(body, "fecha_pago"),
+    observaciones: pick(body, "observaciones"),
   };
 }
 

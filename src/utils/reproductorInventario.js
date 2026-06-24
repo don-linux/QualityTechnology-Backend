@@ -290,20 +290,20 @@ function errValidacion(message) {
  */
 export function analizarProcedenciaSeleccionInterna(body, campos) {
   const tipoMachos = String(
-    pickRepro(body, "fc_tipo_procedencia_machos", "tipo_procedencia_machos") ?? "",
+    pickRepro(body, "tipo_procedencia_machos") ?? "",
   )
     .trim()
     .toLowerCase();
   const tipoHembras = String(
-    pickRepro(body, "fc_tipo_procedencia_hembras", "tipo_procedencia_hembras") ?? "",
+    pickRepro(body, "tipo_procedencia_hembras") ?? "",
   )
     .trim()
     .toLowerCase();
   const piletaMachos = toIntRepro(
-    pickRepro(body, "fc_procedencia_machos_pileta_id", "procedencia_machos_pileta_id"),
+    pickRepro(body, "procedencia_machos_pileta_id"),
   );
   const piletaHembras = toIntRepro(
-    pickRepro(body, "fc_procedencia_hembras_pileta_id", "procedencia_hembras_pileta_id"),
+    pickRepro(body, "procedencia_hembras_pileta_id"),
   );
 
   const tieneTipos = Boolean(tipoMachos || tipoHembras);

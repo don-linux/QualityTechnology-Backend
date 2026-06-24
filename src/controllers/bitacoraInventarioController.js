@@ -24,15 +24,15 @@ class BitacoraInventarioController {
   static async create(req, res) {
     try {
       const {
-        fn_num_instalacion,
-        fn_cantidad,
-        fn_talla,
-        fc_lote,
-        fc_observacion,
-        fd_fecha_siembra,
-        fd_fecha_salida_hormonado,
+        pileta_id,
+        cantidad,
+        talla,
+        lote_nombre,
+        observacion,
+        fecha_siembra,
+        fecha_salida_hormonado,
       } = req.body;
-      const fi_usuario_id = req.user.usuario_id;
+      const usuarioId = req.user.usuario_id;
 
       const { ubicacion } = req.body;
       if (!ubicacion || !ubicacion.trim()) {
@@ -45,32 +45,32 @@ class BitacoraInventarioController {
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observacion,
+          texto: observacion,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.inventarioAlevin.create({
           data: {
             ubicacionId: u.ubicacionId,
             pileta_id:
-              BitacoraInventarioController.parseNum(fn_num_instalacion) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(fn_num_instalacion))
+              BitacoraInventarioController.parseNum(pileta_id) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(pileta_id))
                 : null,
             cantidad:
-              BitacoraInventarioController.parseNum(fn_cantidad) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(fn_cantidad))
+              BitacoraInventarioController.parseNum(cantidad) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(cantidad))
                 : null,
             talla:
-              BitacoraInventarioController.parseNum(fn_talla) != null
-                ? String(BitacoraInventarioController.parseNum(fn_talla))
+              BitacoraInventarioController.parseNum(talla) != null
+                ? String(BitacoraInventarioController.parseNum(talla))
                 : null,
-            lote_nombre: fc_lote || null,
-            fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
-            fechaSalidaHormonado: fd_fecha_salida_hormonado
-              ? new Date(fd_fecha_salida_hormonado)
+            lote_nombre: lote_nombre || null,
+            fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
+            fechaSalidaHormonado: fecha_salida_hormonado
+              ? new Date(fecha_salida_hormonado)
               : null,
-            usuarioId: fi_usuario_id,
+            usuarioId,
             observacionId,
           },
         });
@@ -86,13 +86,13 @@ class BitacoraInventarioController {
   static async update(req, res) {
     try {
       const {
-        fn_num_instalacion,
-        fn_cantidad,
-        fn_talla,
-        fc_lote,
-        fc_observacion,
-        fd_fecha_siembra,
-        fd_fecha_salida_hormonado,
+        pileta_id,
+        cantidad,
+        talla,
+        lote_nombre,
+        observacion,
+        fecha_siembra,
+        fecha_salida_hormonado,
       } = req.body;
 
       const { ubicacion } = req.body;
@@ -112,17 +112,17 @@ class BitacoraInventarioController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
+      const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto:
-            fc_observacion !== undefined
-              ? fc_observacion
+            observacion !== undefined
+              ? observacion
               : existing.observacion?.comentario ?? null,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.inventarioAlevin.update({
@@ -130,21 +130,21 @@ class BitacoraInventarioController {
           data: {
             ubicacionId: u.ubicacionId,
             pileta_id:
-              BitacoraInventarioController.parseNum(fn_num_instalacion) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(fn_num_instalacion))
+              BitacoraInventarioController.parseNum(pileta_id) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(pileta_id))
                 : null,
             cantidad:
-              BitacoraInventarioController.parseNum(fn_cantidad) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(fn_cantidad))
+              BitacoraInventarioController.parseNum(cantidad) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(cantidad))
                 : null,
             talla:
-              BitacoraInventarioController.parseNum(fn_talla) != null
-                ? String(BitacoraInventarioController.parseNum(fn_talla))
+              BitacoraInventarioController.parseNum(talla) != null
+                ? String(BitacoraInventarioController.parseNum(talla))
                 : null,
-            lote_nombre: fc_lote || null,
-            fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
-            fechaSalidaHormonado: fd_fecha_salida_hormonado
-              ? new Date(fd_fecha_salida_hormonado)
+            lote_nombre: lote_nombre || null,
+            fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
+            fechaSalidaHormonado: fecha_salida_hormonado
+              ? new Date(fecha_salida_hormonado)
               : null,
             observacionId,
           },

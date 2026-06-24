@@ -90,10 +90,10 @@ class VentaController {
     const ventaId = toInt(req.params.id);
     if (!ventaId) return res.status(400).json({ error: "id invalido" });
 
-    const monto = toDecimal(req.body.fn_monto ?? req.body.monto);
-    const cuentaNombre = req.body.fc_cuenta ?? req.body.cuenta_nombre ?? null;
-    const fechaParsed = toDateOrNull(req.body.fd_fecha ?? req.body.fecha) ?? new Date();
-    const observaciones = req.body.fc_observaciones ?? req.body.observaciones ?? null;
+    const monto = toDecimal(req.body.monto);
+    const cuentaNombre = req.body.cuenta_nombre ?? null;
+    const fechaParsed = toDateOrNull(req.body.fecha) ?? new Date();
+    const observaciones = req.body.observaciones ?? null;
 
     if (!monto || monto <= 0) {
       return res.status(400).json({ error: "El monto debe ser mayor a cero" });

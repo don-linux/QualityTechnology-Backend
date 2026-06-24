@@ -31,7 +31,7 @@ Carpeta `Auto/` con un request por cada endpoint montado en `index.mjs` (incluye
 - Organización por método: `Auto/GET` (88), `Auto/POST` (45), `Auto/PUT` (35), `Auto/PATCH` (14), `Auto/DELETE` (47)
 - Los endpoints protegidos ya incluyen `Authorization: Bearer {{token}}`. Las rutas públicas (`POST /api/usuarios/login` y `POST /api/usuarios/refresh`) no envían el header.
 - Los uploads multipart se generan con `body:multipart-form` y un campo `@file()` placeholder:
-   - `POST /api/control-visitas` y `PUT /api/control-visitas/:id` (`fc_foto_identificacion`)
+   - `POST /api/control-visitas` y `PUT /api/control-visitas/:id` (`foto_identificacion`)
    - `POST /api/documentos-empleado/mis-documentos/upload` y `POST /api/documentos-empleado/:empleadoId/upload` (`archivo`)
    - `POST /api/actas-administrativas/:empleadoId/upload` (`archivo`)
 - Los parámetros de ruta usan placeholders del environment, p. ej. `{{granja}}`, `{{id}}`, `{{empleadoId}}`.

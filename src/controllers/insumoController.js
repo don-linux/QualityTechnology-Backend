@@ -42,14 +42,14 @@ function calcularPrecioUnitario(precioBulto, presentacion) {
 }
 
 function buildInsumoPayload(body) {
-  const nombre = normalizeText(pick(body, "nombre", "fc_nombre"));
-  const marcaRaw = pick(body, "marca", "fc_marca");
+  const nombre = normalizeText(pick(body, "nombre"));
+  const marcaRaw = pick(body, "marca");
   const marca = marcaRaw !== undefined ? normalizeText(marcaRaw) || null : null;
-  const unidadMedida = normalizeText(pick(body, "unidad_medida", "unidadMedida", "fc_unidad_medida")).toLowerCase();
-  const clienteId = parseRequiredId(pick(body, "cliente_id", "clienteId", "fi_cliente_id"));
-  const presentacion = parseDecimal(pick(body, "presentacion", "fn_presentacion"));
-  const precioBulto = parseDecimal(pick(body, "precio_bulto", "precioBulto", "fn_precio_bulto"));
-  const stockMinimo = parseDecimal(pick(body, "stock_minimo", "stockMinimo", "fn_stock_minimo"));
+  const unidadMedida = normalizeText(pick(body, "unidad_medida", "unidadMedida")).toLowerCase();
+  const clienteId = parseRequiredId(pick(body, "cliente_id", "clienteId"));
+  const presentacion = parseDecimal(pick(body, "presentacion"));
+  const precioBulto = parseDecimal(pick(body, "precio_bulto", "precioBulto"));
+  const stockMinimo = parseDecimal(pick(body, "stock_minimo", "stockMinimo"));
 
   if (!nombre) {
     return { error: "Campo obligatorio: nombre" };

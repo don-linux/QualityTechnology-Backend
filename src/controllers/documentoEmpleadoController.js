@@ -80,7 +80,7 @@ class DocumentoEmpleadoController {
 
   static async upload(req, res) {
     const { empleadoId } = req.params;
-    const tipoDocumentoId = req.body.tipo_documento_id ?? req.body.fi_tipo_documento_id;
+    const tipoDocumentoId = req.body.tipo_documento_id;
 
     if (!req.file) {
       return res.status(400).json({ error: "No se proporciono archivo" });
@@ -179,7 +179,7 @@ class DocumentoEmpleadoController {
   }
 
   static async uploadMiDocumento(req, res) {
-    const tipoDocumentoId = req.body.tipo_documento_id ?? req.body.fi_tipo_documento_id;
+    const tipoDocumentoId = req.body.tipo_documento_id;
 
     if (!req.file) {
       return res.status(400).json({ error: "No se proporciono archivo" });

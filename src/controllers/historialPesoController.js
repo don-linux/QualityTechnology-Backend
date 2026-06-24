@@ -25,19 +25,18 @@ export function serializeHistorialPeso(row) {
     peso: row.peso != null ? Number(row.peso) : null,
     peso_gramos: row.peso != null ? Number(row.peso) : null,
     fecha: row.fecha,
-    fd_fecha: row.fecha,
   };
 }
 
 /** Crea fila en `historial_peso` si el body trae valor en gramos (y fecha opcional). */
 export async function resolverHistorialPesoId(tx, body) {
-  const pesoGramosBody = toDecimal(body?.peso_gramos ?? body?.peso_valor ?? body?.fn_peso);
+  const pesoGramosBody = toDecimal(body?.peso_gramos ?? body?.peso_valor);
   if (pesoGramosBody != null) {
     const creado = await tx.historialPeso.create({
       data: {
         peso: pesoGramosBody,
         fecha:
-          toDateOrNull(body?.fecha_peso ?? body?.fd_fecha_peso ?? body?.fecha) ?? new Date(),
+          toDateOrNull(body?.fecha_peso ?? body?.fecha) ?? new Date(),
       },
     });
     return creado.id;

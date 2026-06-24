@@ -34,13 +34,47 @@
 - Verified legacy exceptions:
   - `src/models/RolesModulosModel.js`
   - `src/routes/catalogos/estado.js`
-- Database naming commonly uses Hungarian-style prefixes such as `fi_`, `fc_`, `fd_`, `fn_`, and `fb_`.
+- The HTTP API uses semantic snake_case field names. Hungarian-style prefixes
+  (`fi_`, `fc_`, `fd_`, `fn_`, `fb_`) are no longer used and must not be
+  reintroduced in serializers, controllers, request bodies, or `swagger.yaml`.
+
+## HTTP API field contract
+The request and response payloads follow a single semantic snake_case naming
+convention (no type prefixes). Prisma models stay in their own camelCase /
+snake_case form; serializers in `src/utils/serializers.js` map them to this
+contract.
+
+- Primary key: `id`, plus an entity-scoped alias where it already exists
+  (`rol_id`, `empleado_id`, `reproductor_id`, ...).
+- Foreign keys: `{entidad}_id` (`rol_id`, `ubicacion_id`, `pileta_id`).
+- Semantic fields keep their plain name: `nombre`, `fecha`, `cantidad`,
+  `proveedor_nombre`, `observaciones`.
+- Booleans use the meaning, not a prefix: `activo`, `es_root`, `obligatorio`.
+- Dates and numbers use the plain field name: `fecha_nacimiento`,
+  `precio_unitario`, `saldo_actual` (never `fd_*` / `fn_*`).
+- Reference pattern (already-clean serializer):
+
+```js
+export function serializeRol(rol) {
+  if (!rol) return null;
+  return {
+    rol_id: rol.id,
+    nombre: rol.nombre,
+    es_root: rol.esRoot,
+    activo: rol.esta_activo,
+  };
+}
+```
 
 ## API and response conventions
 - The public API and most user-facing response text are Spanish.
+- BREAKING: the API contract dropped all Hungarian-prefixed aliases. Clients
+  must read and send the semantic snake_case names documented above. Backend and
+  frontend deploy together.
 - `mensaje` is the preferred success key in current repository guidance, but some legacy endpoints still use `message`.
 - Preserve existing response shapes unless the change is intentional and documented in `swagger.yaml`.
 - Validate required body, params, and query values in controllers before calling models.
+- Shared request-body helpers (`pick`, `toInt`, `toDecimal`) live in `src/utils/apiFields.js`.
 
 ## Error handling
 - Wrap async controller and model logic in `try/catch`.

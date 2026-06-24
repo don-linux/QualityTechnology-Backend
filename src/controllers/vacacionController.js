@@ -26,13 +26,13 @@ function toDateOrNull(value) {
 
 function parseBody(body) {
   return {
-    empleadoId: pick(body, "empleado_id", "fi_empleado_id"),
-    fechaInicio: pick(body, "fecha_inicio", "inicio_periodo", "fd_inicio_periodo"),
-    fechaFin: pick(body, "fecha_fin", "fin_periodo", "fd_fin_periodo"),
-    diasTomados: pick(body, "dias_tomados", "fn_dias_tomados", "vacaciones_disfrutadas", "fn_vacaciones_disfrutadas"),
-    tipo: pick(body, "tipo", "fc_tipo"),
-    estatus: pick(body, "estatus", "fc_estatus"),
-    observaciones: pick(body, "observaciones", "fc_observaciones"),
+    empleadoId: pick(body, "empleado_id"),
+    fechaInicio: pick(body, "fecha_inicio", "inicio_periodo"),
+    fechaFin: pick(body, "fecha_fin", "fin_periodo"),
+    diasTomados: pick(body, "dias_tomados", "vacaciones_disfrutadas"),
+    tipo: pick(body, "tipo"),
+    estatus: pick(body, "estatus"),
+    observaciones: pick(body, "observaciones"),
   };
 }
 
