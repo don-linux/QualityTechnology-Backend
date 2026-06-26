@@ -1,0 +1,13 @@
+meta {
+  name: GET limpieza-instalaciones
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/limpieza-instalaciones
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

@@ -1,0 +1,28 @@
+meta {
+  name: POST limpieza-instalaciones
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/limpieza-instalaciones
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-26",
+    "infraestructura_fisica_id": 1,
+    "tipo_limpieza": "recambio",
+    "porcentaje_recambio_agua": 30,
+    "desinfectante_utilizado": "Cloro",
+    "encargado": "Responsable QA",
+    "observaciones": "Limpieza QA"
+  }
+}

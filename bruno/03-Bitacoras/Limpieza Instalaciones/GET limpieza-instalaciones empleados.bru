@@ -1,0 +1,13 @@
+meta {
+  name: GET limpieza-instalaciones empleados
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/limpieza-instalaciones/empleados
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

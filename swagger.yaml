@@ -917,52 +917,40 @@ components:
           type: string
           format: date
 
-    BitacoraRecambioInput:
+    LimpiezaInstalacionInput:
       type: object
       required:
         - ubicacion
+        - fecha
+        - infraestructura_fisica_id
+        - tipo_limpieza
+        - desinfectante_utilizado
+        - encargado
       properties:
         ubicacion:
           type: string
           description: Granja o unidad de negocio.
-        fc_mes:
+        fecha:
           type: string
-        fn_num_instalacion:
+          format: date
+        infraestructura_fisica_id:
+          type: integer
+        tipo_limpieza:
+          type: string
+          enum: [desinfeccion, recambio]
+        porcentaje_recambio_agua:
           type: number
-        fd_fecha1:
+          minimum: 0
+          maximum: 100
+        desinfectante_utilizado:
           type: string
-          format: date
-        fc_tipo1:
+          maxLength: 500
+        encargado:
           type: string
-        fd_fecha2:
+          maxLength: 120
+        observaciones:
           type: string
-          format: date
-        fc_tipo2:
-          type: string
-        fd_fecha3:
-          type: string
-          format: date
-        fc_tipo3:
-          type: string
-        fd_fecha4:
-          type: string
-          format: date
-        fc_tipo4:
-          type: string
-        fd_fecha5:
-          type: string
-          format: date
-        fc_tipo5:
-          type: string
-        fd_fecha6:
-          type: string
-          format: date
-        fc_tipo6:
-          type: string
-        fc_responsable:
-          type: string
-        fc_observaciones:
-          type: string
+          maxLength: 500
 
     BitacoraInventarioInput:
       type: object
@@ -3871,16 +3859,16 @@ paths:
         '404':
           description: "Registro no encontrado"
 
-  /recambios:
+  /limpieza-instalaciones:
     get:
-      summary: "Listar recambios"
+      summary: "Listar limpieza y desinfeccion de instalaciones"
       security:
         - bearerAuth: []
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Crear recambio"
+      summary: "Crear registro de limpieza de instalaciones"
       security:
         - bearerAuth: []
       requestBody:
@@ -3888,14 +3876,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraRecambioInput'
+              $ref: '#/components/schemas/LimpiezaInstalacionInput'
       responses:
         '201':
           description: "Creado"
         '400':
           description: "Solicitud inválida"
     put:
-      summary: "Actualizar recambio"
+      summary: "Actualizar registro de limpieza de instalaciones"
       security:
         - bearerAuth: []
       parameters:
@@ -3909,7 +3897,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraRecambioInput'
+              $ref: '#/components/schemas/LimpiezaInstalacionInput'
       responses:
         '200':
           description: "Actualizado"
@@ -3917,6 +3905,15 @@ paths:
           description: "Solicitud inválida"
         '404':
           description: "Registro no encontrado"
+
+  /limpieza-instalaciones/empleados:
+    get:
+      summary: "Listar empleados activos para limpieza de instalaciones"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
 
   /inventario:
     get:

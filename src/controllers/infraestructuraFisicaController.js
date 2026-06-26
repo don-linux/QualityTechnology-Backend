@@ -221,7 +221,7 @@ class InfraestructuraFisicaController {
         OR: [
           { infraestructura_fisica_id: id },
           { alimentacion: { some: { infraestructura_fisica_id: id } } },
-          { recambios: { some: { infraestructura_fisica_id: id } } },
+          { limpiezaInstalaciones: { some: { infraestructuraFisicaId: id } } },
           { inventarioAlevines: { some: { infraestructura_fisica_id: id } } },
           { biometria: { is: { infraestructura_fisica_id: id } } },
           { parametrosFisicoQuimicos: { some: { infraestructuraFisicaId: id } } },

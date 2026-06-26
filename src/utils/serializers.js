@@ -995,27 +995,19 @@ export function serializeControlFaunaNociva(row) {
   };
 }
 
-export function serializeRecambio(row) {
+export function serializeLimpiezaInstalacion(row) {
   if (!row) return null;
   return {
     id: row.id,
-    mes_periodo: row.mes_periodo,
-    infraestructura_fisica_id: row.infraestructura_fisica_id,
-    fecha_1: row.fecha_1,
-    tipo_1: row.tipo_1,
-    fecha_2: row.fecha_2,
-    tipo_2: row.tipo_2,
-    fecha_3: row.fecha_3,
-    tipo_3: row.tipo_3,
-    fecha_4: row.fecha_4,
-    tipo_4: row.tipo_4,
-    fecha_5: row.fecha_5,
-    tipo_5: row.tipo_5,
-    fecha_6: row.fecha_6,
-    tipo_6: row.tipo_6,
-    responsable: row.responsable ?? null,
+    fecha: row.fecha,
+    tipo_limpieza: row.tipoLimpieza,
+    porcentaje_recambio_agua: row.porcentajeRecambioAgua,
+    desinfectante_utilizado: row.desinfectanteUtilizado,
+    encargado: row.encargado ?? null,
     observaciones: row.observacion?.comentario ?? null,
     observacion_id: row.observacionId ?? null,
+    infraestructura_fisica_id: row.infraestructuraFisicaId,
+    nombre_infraestructura_fisica: row.infraestructuraFisica?.nombre ?? null,
     usuario_id: row.usuarioId,
     ubicacion: row.ubicacion?.nombre ?? null,
     ubicacion_id: row.ubicacionId,

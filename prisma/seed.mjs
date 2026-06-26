@@ -32,7 +32,7 @@ const MODULOS = [
   ["Control de Limpieza", "/control-limpieza", true],
   ["Parametros Fisico Quimicos", "/parametros-fisico-quimicos", true],
   ["Medicamentos", "/medicamentos", true],
-  ["Recambios", "/recambios", true],
+  ["Limpieza y desinfeccion de instalaciones", "/limpieza-instalaciones", true],
   ["Inventario", "/inventario", true],
   ["Expedientes", "/expedientes", false],
   ["Puestos", "/puestos", true],
