@@ -41,6 +41,7 @@
 - `mensaje` is the preferred success key in current repository guidance, but some legacy endpoints still use `message`.
 - Preserve existing response shapes unless the change is intentional and documented in `swagger.yaml`.
 - Validate required body, params, and query values in controllers before calling models.
+- Request field helpers such as `pick`, `toInt`, and `toDecimal` are currently local to controllers or module-specific utilities; no shared `src/utils/apiFields.js` helper has been adopted yet.
 
 ## Error handling
 - Wrap async controller and model logic in `try/catch`.

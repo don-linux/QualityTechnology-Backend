@@ -145,7 +145,7 @@ class TrazabilidadController {
   static async createMovimiento(req, res) {
     try {
       const usuarioId = req.user.usuario_id;
-      const rawTipo = pick(req.body, "tipo_movimiento", "tipo", "fc_tipo_movimiento");
+      const rawTipo = pick(req.body, "tipo_movimiento", "tipo");
       const resuelto = resolverSubtipoMovimiento(rawTipo);
       const tipoMov = modoDesdeSubtipo(resuelto);
       if (!tipoMov) {
@@ -155,22 +155,22 @@ class TrazabilidadController {
         });
       }
       const piletaOrigenId = toInt(
-        pick(req.body, "pileta_origen_id", "origen_pileta_id", "fi_pileta_origen_id"),
+        pick(req.body, "pileta_origen_id", "origen_pileta_id"),
       );
       const piletaDestinoId = toInt(
-        pick(req.body, "pileta_destino_id", "pileta_id", "fi_pileta_destino_id"),
+        pick(req.body, "pileta_destino_id", "pileta_id"),
       );
       const cantidad = Math.max(
         0,
-        toInt(pick(req.body, "cantidad", "cantidad_trasladada", "fn_cantidad"), 0) ?? 0,
+        toInt(pick(req.body, "cantidad", "cantidad_trasladada"), 0) ?? 0,
       );
       const mortalidad = Math.max(
         0,
-        toInt(pick(req.body, "mortalidad", "fn_mortalidad"), 0) ?? 0,
+        toInt(pick(req.body, "mortalidad"), 0) ?? 0,
       );
-      const observacion = pick(req.body, "observacion", "fc_observacion", "observaciones");
+      const observacion = pick(req.body, "observacion", "observaciones");
       const fechaMovimiento = parseFechaMovimiento(
-        pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),
+        pick(req.body, "fecha_movimiento", "fecha"),
       );
 
       const movimientoId = await prisma.$transaction(async (tx) => {
@@ -184,10 +184,10 @@ class TrazabilidadController {
 
         if (resuelto?.subtipo === "INCUBACION_A_ALEVINAJE") {
           const pesoHistorialId = await resolverHistorialPesoId(tx, {
-            peso_gramos: pick(req.body, "peso_gramos", "peso_valor", "fn_peso"),
+            peso_gramos: pick(req.body, "peso_gramos", "peso_valor"),
             fecha_peso:
-              pick(req.body, "fecha_peso", "fd_fecha_peso") ??
-              pick(req.body, "fecha_movimiento", "fd_fecha_movimiento", "fecha"),
+              pick(req.body, "fecha_peso") ??
+              pick(req.body, "fecha_movimiento", "fecha"),
           });
           return registrarMovimientoEficienciaReproductivaAAlevinaje(tx, {
             piletaOrigenId,
@@ -202,7 +202,7 @@ class TrazabilidadController {
 
         if (tipoMov === "VENTA") {
           const listaEsperaId = toInt(
-            pick(req.body, "lista_espera_id", "fi_lista_id", "fi_lista_espera_id"),
+            pick(req.body, "lista_espera_id"),
           );
           if (!listaEsperaId) {
             const err = new Error("lista_espera_id es obligatorio para venta");

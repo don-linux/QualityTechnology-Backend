@@ -102,11 +102,11 @@ class AlevinajeController {
   static async create(req, res) {
     try {
       const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
+        pick(req.body, "pileta_id", "pileta_destino_id"),
       );
       const cantidadTotal = Math.max(
         0,
-        toInt(pick(req.body, "cantidad_total", "fn_cantidad_total", "alevines_iniciales"), 0) ?? 0,
+        toInt(pick(req.body, "cantidad_total", "alevines_iniciales"), 0) ?? 0,
       );
 
       if (!piletaId) {
@@ -130,7 +130,7 @@ class AlevinajeController {
       const usuarioId = req.user.usuario_id;
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
       const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+        pick(req.body, "origen_pileta_id", "origenPiletaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -208,7 +208,7 @@ class AlevinajeController {
       let piletaId = prev.pileta_id;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
+        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
         if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
         const pd = await prisma.pileta.findUnique({
           where: { id: nid },
@@ -222,8 +222,8 @@ class AlevinajeController {
         piletaId = nid;
       }
 
-      if (req.body.cantidad_total !== undefined || req.body.fn_cantidad_total !== undefined) {
-        const ct = toInt(pick(req.body, "cantidad_total", "fn_cantidad_total"), 0) ?? 0;
+      if (req.body.cantidad_total !== undefined) {
+        const ct = toInt(pick(req.body, "cantidad_total"), 0) ?? 0;
         if (ct <= 0) {
           return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
         }
@@ -239,12 +239,10 @@ class AlevinajeController {
 
       if (
         req.body.lote !== undefined ||
-        req.body.fc_lote !== undefined ||
-        req.body.lote_genetico !== undefined ||
-        req.body.fc_lote_genetico !== undefined
+        req.body.lote_genetico !== undefined
       ) {
         updateData.lote = normalizarLoteOpcional(
-          pick(req.body, "lote", "fc_lote", "lote_genetico", "fc_lote_genetico"),
+          pick(req.body, "lote", "lote_genetico"),
         );
       }
 

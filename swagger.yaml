@@ -276,6 +276,8 @@ components:
           type: number
         fi_usuario_id:
           type: integer
+          readOnly: true
+          description: Assigned from the authenticated JWT. Ignored if sent in the request body.
         fc_granja:
           type: string
 
@@ -506,6 +508,8 @@ components:
           type: string
         fi_usuario_id:
           type: integer
+          readOnly: true
+          description: Assigned from the authenticated JWT. Ignored if sent in the request body.
 
     Mantenimiento:
       type: object
@@ -730,8 +734,11 @@ components:
       properties:
         fi_movimiento_alevines_id:
           type: integer
+          readOnly: true
         fi_usuario_id:
           type: integer
+          readOnly: true
+          description: Assigned from the authenticated JWT. Ignored if sent in the request body.
         fi_alevines_id:
           type: integer
         fi_pileta_id:
@@ -748,6 +755,7 @@ components:
       properties:
         fi_alevines_id:
           type: integer
+          readOnly: true
         fc_numero_lote:
           type: string
         fn_peso_promedio:
@@ -758,14 +766,24 @@ components:
           type: string
         fi_usuario_id:
           type: integer
+          readOnly: true
+          description: Assigned from the authenticated JWT. Ignored if sent in the request body.
         fi_colecta_id:
           type: integer
 
-    BitacoraAlimentacion:
+    BitacoraRequestBody:
       type: object
+      additionalProperties: true
+      description: fi_usuario_id is assigned from the authenticated JWT and ignored if sent in the request body.
+
+    BitacoraAlimentacionInput:
+      type: object
+      required:
+        - ubicacion
       properties:
-        fi_id:
-          type: integer
+        ubicacion:
+          type: string
+          description: Granja o unidad de negocio.
         fc_mes:
           type: string
         fn_num_instalacion:
@@ -794,14 +812,186 @@ components:
           type: number
         fc_observaciones:
           type: string
-        fi_usuario_id:
-          type: integer
+
+    BitacoraAlimentacion:
+      allOf:
+        - $ref: '#/components/schemas/BitacoraAlimentacionInput'
+        - type: object
+          properties:
+            fi_id:
+              type: integer
+              readOnly: true
+            fi_usuario_id:
+              type: integer
+              readOnly: true
+              description: Assigned from the authenticated JWT. Ignored if sent in the request body.
+
+    BitacoraParametroInput:
+      type: object
+      required:
+        - ubicacion
+      properties:
+        ubicacion:
+          type: string
+          description: Granja o unidad de negocio.
+        fd_fecha:
+          type: string
+          format: date
+        fn_num_estanque:
+          type: number
+        fn_oxigeno:
+          type: number
+        fn_temperatura:
+          type: number
+        fn_ph:
+          type: number
+        fn_amonio:
+          type: number
+        fn_nitritos:
+          type: number
+        fn_nitratos:
+          type: number
+        fc_responsable:
+          type: string
+        fc_observaciones:
+          type: string
+
+    BitacoraMedicamentoInput:
+      type: object
+      required:
+        - ubicacion
+      properties:
+        ubicacion:
+          type: string
+          description: Granja o unidad de negocio.
+        fd_fecha_hora:
+          type: string
+          format: date-time
+        fn_num_estanque:
+          type: number
+        fc_diagnosis:
+          type: string
+          maxLength: 500
+        fc_tratamiento:
+          type: string
+          maxLength: 500
+        fc_dosis:
+          type: string
+          maxLength: 100
+        fc_forma_aplicacion:
+          type: string
+          maxLength: 100
+        fd_fecha_ultima_dosis:
+          type: string
+          format: date
+        fc_responsable:
+          type: string
+          maxLength: 100
+        fc_observaciones:
+          type: string
+
+    BitacoraRecambioInput:
+      type: object
+      required:
+        - ubicacion
+      properties:
+        ubicacion:
+          type: string
+          description: Granja o unidad de negocio.
+        fc_mes:
+          type: string
+        fn_num_instalacion:
+          type: number
+        fd_fecha1:
+          type: string
+          format: date
+        fc_tipo1:
+          type: string
+        fd_fecha2:
+          type: string
+          format: date
+        fc_tipo2:
+          type: string
+        fd_fecha3:
+          type: string
+          format: date
+        fc_tipo3:
+          type: string
+        fd_fecha4:
+          type: string
+          format: date
+        fc_tipo4:
+          type: string
+        fd_fecha5:
+          type: string
+          format: date
+        fc_tipo5:
+          type: string
+        fd_fecha6:
+          type: string
+          format: date
+        fc_tipo6:
+          type: string
+        fc_responsable:
+          type: string
+        fc_observaciones:
+          type: string
+
+    BitacoraInventarioInput:
+      type: object
+      required:
+        - ubicacion
+      properties:
+        ubicacion:
+          type: string
+          description: Granja o unidad de negocio.
+        fn_num_instalacion:
+          type: number
+        fn_cantidad:
+          type: number
+        fn_talla:
+          type: number
+        fc_lote:
+          type: string
+        fc_observacion:
+          type: string
+        fd_fecha_siembra:
+          type: string
+          format: date
+        fd_fecha_salida_hormonado:
+          type: string
+          format: date
+
+    ControlLimpiezaInput:
+      type: object
+      required:
+        - fd_fecha
+        - fc_tipo_instalacion
+        - ubicacion
+      properties:
+        fd_fecha:
+          type: string
+          format: date
+        fc_tipo_instalacion:
+          type: string
+          enum: ["Baño de Hombres", "Baño de Mujeres", "Regadera"]
+        fc_realizo:
+          type: string
+          maxLength: 100
+        fc_observaciones:
+          type: string
+          maxLength: 500
+        ubicacion:
+          type: string
+          maxLength: 50
+          description: Granja o unidad de negocio.
 
     ControlVisita:
       type: object
       properties:
         fi_id:
           type: integer
+          readOnly: true
         fd_fecha:
           type: string
           format: date
@@ -823,6 +1013,8 @@ components:
           format: date-time
         fi_usuario_id:
           type: integer
+          readOnly: true
+          description: Assigned from the authenticated JWT. Ignored if sent in the request body.
         ubicacion:
           type: string
 
@@ -1331,6 +1523,8 @@ paths:
                   format: date
                 fi_usuario_id:
                   type: integer
+                  readOnly: true
+                  description: Assigned from the authenticated JWT. Ignored if sent in the request body.
                 fc_granja:
                   type: string
       responses:
@@ -1450,6 +1644,8 @@ paths:
                   type: string
                 fi_usuario_id:
                   type: integer
+                  readOnly: true
+                  description: Assigned from the authenticated JWT. Ignored if sent in the request body.
                 fc_granja:
                   type: string
       responses:
@@ -1696,6 +1892,8 @@ paths:
                   description: "Numérico con decimales. Longitud máxima del valor enviado: 15 caracteres."
                 fi_usuario_id:
                   type: integer
+                  readOnly: true
+                  description: Assigned from the authenticated JWT. Ignored if sent in the request body.
                 fc_granja:
                   type: string
                 fn_machos:
@@ -3496,8 +3694,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraRequestBody'
       responses:
         '201':
           description: "Creado"
@@ -3516,8 +3713,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraRequestBody'
       responses:
         '200':
           description: "Actualizado"
@@ -3539,6 +3735,12 @@ paths:
       responses:
         '200':
           description: "Listado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BitacoraAlimentacion'
     post:
       summary: "Crear registro de alimentación"
       security:
@@ -3548,7 +3750,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraAlimentacion'
+              $ref: '#/components/schemas/BitacoraAlimentacionInput'
       responses:
         '201':
           description: "Creado"
@@ -3567,7 +3769,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraAlimentacion'
+              $ref: '#/components/schemas/BitacoraAlimentacionInput'
       responses:
         '200':
           description: "Actualizado"
@@ -3589,8 +3791,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraRequestBody'
       responses:
         '201':
           description: "Creado"
@@ -3609,8 +3810,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraRequestBody'
       responses:
         '200':
           description: "Actualizado"
@@ -3706,23 +3906,35 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                fd_fecha:
-                  type: string
-                  format: date
-                fc_tipo_instalacion:
-                  type: string
-                  enum: ["Baño de Hombres", "Baño de Mujeres", "Regadera"]
-                fc_realizo:
-                  type: string
-                fc_observaciones:
-                  type: string
-                ubicacion:
-                  type: string
+              $ref: '#/components/schemas/ControlLimpiezaInput'
       responses:
         '201':
           description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+    put:
+      summary: "Actualizar registro de control de limpieza"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlLimpiezaInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
 
   /control-limpieza/empleados:
     get:
@@ -3750,11 +3962,40 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              allOf:
+                - $ref: '#/components/schemas/BitacoraParametroInput'
+                - type: object
+                  required:
+                    - fd_fecha
+                    - fn_num_estanque
       responses:
         '201':
           description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+    put:
+      summary: "Actualizar parámetro"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraParametroInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
 
   /medicamentos:
     get:
@@ -3773,11 +4014,40 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              allOf:
+                - $ref: '#/components/schemas/BitacoraMedicamentoInput'
+                - type: object
+                  required:
+                    - fd_fecha_hora
+                    - fn_num_estanque
       responses:
         '201':
           description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+    put:
+      summary: "Actualizar registro de medicamento"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraMedicamentoInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
 
   /recambios:
     get:
@@ -3796,11 +4066,35 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraRecambioInput'
       responses:
         '201':
           description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+    put:
+      summary: "Actualizar recambio"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraRecambioInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
 
   /inventario:
     get:
@@ -3819,11 +4113,35 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/BitacoraInventarioInput'
       responses:
         '201':
           description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+    put:
+      summary: "Actualizar registro de inventario"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraInventarioInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
 
   /alevines:
     get:

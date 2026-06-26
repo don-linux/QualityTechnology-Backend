@@ -33,16 +33,16 @@ function pick(body, ...keys) {
 
 function parseEmpleadoData(body) {
   return {
-    departamentoId: pick(body, "departamento_id", "fi_departamento_id"),
-    puestoId: pick(body, "puesto_id", "fi_puesto_id"),
-    unidadNegocioId: pick(body, "unidad_negocio_id", "fi_unidad_negocio_id"),
-    usuarioId: pick(body, "usuario_id", "fi_usuario_id"),
-    nombre: pick(body, "nombre", "fc_nombre"),
-    apellidoPaterno: pick(body, "apellido_paterno", "fc_apellido_paterno"),
-    apellidoMaterno: pick(body, "apellido_materno", "fc_apellido_materno"),
-    fechaNacimiento: pick(body, "fecha_nacimiento", "fd_fecha_nacimiento"),
-    sueldoBase: pick(body, "sueldo_base", "fn_sueldo_base"),
-    fechaIngreso: pick(body, "fecha_ingreso", "fd_fecha_ingreso", "fecha_contratacion", "fd_fecha_contratacion"),
+    departamentoId: pick(body, "departamento_id"),
+    puestoId: pick(body, "puesto_id"),
+    unidadNegocioId: pick(body, "unidad_negocio_id"),
+    usuarioId: pick(body, "usuario_id"),
+    nombre: pick(body, "nombre"),
+    apellidoPaterno: pick(body, "apellido_paterno"),
+    apellidoMaterno: pick(body, "apellido_materno"),
+    fechaNacimiento: pick(body, "fecha_nacimiento"),
+    sueldoBase: pick(body, "sueldo_base"),
+    fechaIngreso: pick(body, "fecha_ingreso", "fecha_contratacion"),
   };
 }
 

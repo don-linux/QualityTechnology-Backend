@@ -114,13 +114,13 @@ class ReproductorController {
   static async create(req, res) {
     try {
       const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id", "fc_pileta_id"),
+        pick(req.body, "pileta_id", "pileta_destino_id"),
       );
       const campos = parseReproductorCampos(req.body);
       const cantidadTotal = campos.cantidad_total;
       const cantidadAlimento = Math.max(
         0,
-        toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0,
+        toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0,
       );
 
       if (!piletaId) {
@@ -150,10 +150,10 @@ class ReproductorController {
       }
 
       const usuarioId = req.user.usuario_id;
-      const obsTexto = pick(req.body, "observacion", "fc_observacion", "observaciones");
+      const obsTexto = pick(req.body, "observacion", "observaciones");
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
       const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId", "fi_origen_pileta_id"),
+        pick(req.body, "origen_pileta_id", "origenPiletaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -269,7 +269,7 @@ class ReproductorController {
       let piletaCambiada = false;
 
       if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id", "fi_pileta_destino_id"));
+        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
         if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
         const pd = await prisma.pileta.findUnique({
           where: { id: nid },
@@ -288,29 +288,18 @@ class ReproductorController {
 
       const tocaInventarioRepro =
         req.body.fecha_siembra !== undefined ||
-        req.body.fd_fecha_siembra !== undefined ||
+        req.body.fecha_siembra_reproductores !== undefined ||
         req.body.lote_genetico !== undefined ||
-        req.body.fc_lote_genetico !== undefined ||
         req.body.machos !== undefined ||
-        req.body.fn_machos !== undefined ||
         req.body.hembras !== undefined ||
-        req.body.fn_hembras !== undefined ||
         req.body.genetica_machos !== undefined ||
-        req.body.fc_genetica_machos !== undefined ||
         req.body.familia_machos !== undefined ||
-        req.body.fc_familia_machos !== undefined ||
         req.body.procedencia_machos !== undefined ||
-        req.body.fc_procedencia_machos !== undefined ||
         req.body.genetica_hembras !== undefined ||
-        req.body.fc_genetica_hembras !== undefined ||
         req.body.familia_hembras !== undefined ||
-        req.body.fc_familia_hembras !== undefined ||
         req.body.procedencia_hembras !== undefined ||
-        req.body.fc_procedencia_hembras !== undefined ||
         req.body.talla !== undefined ||
-        req.body.fn_talla !== undefined ||
-        req.body.estado_ciclo !== undefined ||
-        req.body.fc_estado_ciclo !== undefined;
+        req.body.estado_ciclo !== undefined;
 
       if (tocaInventarioRepro) {
         const prevFull = await prisma.reproductor.findUnique({
@@ -334,36 +323,36 @@ class ReproductorController {
         });
         const merged = {
           fecha_siembra:
-            pick(req.body, "fecha_siembra", "fd_fecha_siembra", "fecha_siembra_reproductores") ??
+            pick(req.body, "fecha_siembra", "fecha_siembra_reproductores") ??
             prevFull?.fecha_siembra,
           lote_genetico:
-            pick(req.body, "lote_genetico", "fc_lote_genetico") ?? prevFull?.lote_genetico,
-          activo: pick(req.body, "activo", "fb_activo") ?? prevFull?.activo,
+            pick(req.body, "lote_genetico") ?? prevFull?.lote_genetico,
+          activo: pick(req.body, "activo") ?? prevFull?.activo,
           machos:
-            req.body.machos !== undefined || req.body.fn_machos !== undefined
-              ? pick(req.body, "machos", "fn_machos")
+            req.body.machos !== undefined
+              ? pick(req.body, "machos")
               : prevFull?.machos,
           hembras:
-            req.body.hembras !== undefined || req.body.fn_hembras !== undefined
-              ? pick(req.body, "hembras", "fn_hembras")
+            req.body.hembras !== undefined
+              ? pick(req.body, "hembras")
               : prevFull?.hembras,
           genetica_machos:
-            pick(req.body, "genetica_machos", "fc_genetica_machos") ?? prevFull?.genetica_machos,
+            pick(req.body, "genetica_machos") ?? prevFull?.genetica_machos,
           familia_machos:
-            pick(req.body, "familia_machos", "fc_familia_machos") ?? prevFull?.familia_machos,
+            pick(req.body, "familia_machos") ?? prevFull?.familia_machos,
           procedencia_machos:
-            pick(req.body, "procedencia_machos", "fc_procedencia_machos") ??
+            pick(req.body, "procedencia_machos") ??
             prevFull?.procedencia_machos,
           genetica_hembras:
-            pick(req.body, "genetica_hembras", "fc_genetica_hembras") ?? prevFull?.genetica_hembras,
+            pick(req.body, "genetica_hembras") ?? prevFull?.genetica_hembras,
           familia_hembras:
-            pick(req.body, "familia_hembras", "fc_familia_hembras") ?? prevFull?.familia_hembras,
+            pick(req.body, "familia_hembras") ?? prevFull?.familia_hembras,
           procedencia_hembras:
-            pick(req.body, "procedencia_hembras", "fc_procedencia_hembras") ??
+            pick(req.body, "procedencia_hembras") ??
             prevFull?.procedencia_hembras,
-          talla: pick(req.body, "talla", "fn_talla") ?? prevFull?.talla,
+          talla: pick(req.body, "talla") ?? prevFull?.talla,
           estado_ciclo:
-            pick(req.body, "estado_ciclo", "fc_estado_ciclo") ?? prevFull?.estado_ciclo,
+            pick(req.body, "estado_ciclo") ?? prevFull?.estado_ciclo,
         };
         const campos = parseReproductorCampos(merged);
         if (campos.cantidad_total <= 0) {
@@ -374,9 +363,9 @@ class ReproductorController {
         Object.assign(updateData, campos);
       }
 
-      if (req.body.cantidad_alimento !== undefined || req.body.fn_cantidad_alimento !== undefined) {
+      if (req.body.cantidad_alimento !== undefined) {
         updateData.cantidad_alimento =
-          Math.max(0, toInt(pick(req.body, "cantidad_alimento", "fn_cantidad_alimento"), 0) ?? 0);
+          Math.max(0, toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0);
       }
 
       if (req.body.siembra_origen_id !== undefined) {
@@ -389,7 +378,6 @@ class ReproductorController {
       const usuarioId = req.user.usuario_id;
       const obsTextoExplicito =
         req.body.observacion !== undefined ||
-        req.body.fc_observacion !== undefined ||
         req.body.observaciones !== undefined;
 
       const siembraOrigenFuturo =
@@ -403,7 +391,7 @@ class ReproductorController {
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
-            pick(req.body, "observacion", "fc_observacion", "observaciones"),
+            pick(req.body, "observacion", "observaciones"),
             usuarioId,
             { piletaId, proceso: "reproductor" },
           );

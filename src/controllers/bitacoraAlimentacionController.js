@@ -127,8 +127,7 @@ class BitacoraAlimentacionController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id =
-        req.body.fi_usuario_id !== undefined ? req.body.fi_usuario_id : existing.usuarioId;
+      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
 
       const {
         fc_mes,

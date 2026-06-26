@@ -116,8 +116,8 @@ class UnidadNegocioController {
   }
 
   static async create(req, res) {
-    const nombre = pick(req.body, "fc_nombre", "nombre");
-    const ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId", "fi_ubicacion_id"));
+    const nombre = pick(req.body, "nombre");
+    const ubicacionId = toInt(pick(req.body, "ubicacion_id", "ubicacionId"));
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
     try {
@@ -147,10 +147,10 @@ class UnidadNegocioController {
   static async update(req, res) {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ error: "id invalido" });
-    const nombre = pick(req.body, "fc_nombre", "nombre");
+    const nombre = pick(req.body, "nombre");
     if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
-    const ubicacionIdIn = req.body?.ubicacion_id ?? req.body?.ubicacionId ?? req.body?.fi_ubicacion_id;
+    const ubicacionIdIn = req.body?.ubicacion_id ?? req.body?.ubicacionId;
     const data = { nombre: String(nombre) };
     if (ubicacionIdIn !== undefined) {
       data.ubicacionId =

@@ -52,6 +52,23 @@
 - No automated test runner or CI workflow was verified in the repository.
 - `swagger.yaml` remains in Spanish even though the main repository documentation is now in English.
 
+## HTTP API naming (breaking change)
+- The HTTP API contract no longer uses Hungarian-prefixed field names (`fi_`,
+  `fc_`, `fd_`, `fn_`, `fb_`). Serializers in `src/utils/serializers.js` and all
+  controllers now emit and accept only semantic snake_case names (see the field
+  contract in `docs/CONVENTIONS.md`). This is breaking for clients; backend and
+  frontend must deploy together.
+- Prisma models (`prisma/schema.prisma`) and the active `public` / `catalogos`
+  tables were already free of Hungarian prefixes; no schema or data migration was
+  needed for this change.
+- The baseline migration (`prisma/migrations/20260512120000_baseline/migration.sql`)
+  still contains legacy duplicate tables with Hungarian columns under the
+  `rrhh`, `seguridad`, and `catalogos.estados` schemas (e.g. `rrhh.empleados`
+  with `fi_empleado_id`, `seguridad.modulos` with `fc_nombre`). These are orphan
+  tables: the active Prisma models map to the `public.*` equivalents instead, so
+  they are not part of the API contract. Dropping them is a separate, optional
+  database cleanup and is not required by the naming migration.
+
 ## Live exploration hints
 - Start with `index.mjs` to see mounted routers.
 - Then inspect matching files under `src/routes/**`, `src/controllers/**`, and `src/models/**`.

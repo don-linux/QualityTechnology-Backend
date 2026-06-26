@@ -2,7 +2,7 @@ import prisma from "../prisma.js";
 import { serializePuesto } from "../utils/serializers.js";
 
 function getNombre(body) {
-  return body.nombre ?? body.fc_nombre;
+  return body.nombre;
 }
 
 class PuestoController {

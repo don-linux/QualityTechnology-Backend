@@ -4,17 +4,17 @@ import { guardarObservacion, listarEmpleadosActivosBitacora } from "../utils/bit
 import { serializeControlLimpieza } from "../utils/serializers.js";
 
 const LIMITES_CONTROL_LIMPIEZA = {
-  fc_tipo_instalacion: 20,
-  fc_realizo: 100,
-  fc_observaciones: 500,
+  tipo_instalacion: 20,
+  realizado_por: 100,
+  observaciones: 500,
   ubicacion: 50,
 };
 
 const validarLongitudesControlLimpieza = (body) => {
   const etiquetas = {
-    fc_tipo_instalacion: "El tipo de instalación",
-    fc_realizo: "Realizó",
-    fc_observaciones: "Las observaciones",
+    tipo_instalacion: "El tipo de instalación",
+    realizado_por: "Realizó",
+    observaciones: "Las observaciones",
     ubicacion: "La ubicación",
   };
   for (const [campo, max] of Object.entries(LIMITES_CONTROL_LIMPIEZA)) {
@@ -69,15 +69,15 @@ class ControlLimpiezaController {
 
   static async create(req, res) {
     try {
-      const { fd_fecha } = req.body;
-      if (!fd_fecha) {
-        return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
+      const { fecha } = req.body;
+      if (!fecha) {
+        return res.status(400).json({ error: "La fecha es obligatoria" });
       }
 
-      const fc_tipo_instalacion = normalizarTipoInstalacion(req.body.fc_tipo_instalacion);
-      if (!TIPOS_INSTALACION_VALIDOS.includes(fc_tipo_instalacion)) {
+      const tipoInstalacion = normalizarTipoInstalacion(req.body.tipo_instalacion);
+      if (!TIPOS_INSTALACION_VALIDOS.includes(tipoInstalacion)) {
         return res.status(400).json({
-          error: "fc_tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
+          error: "tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
         });
       }
 
@@ -94,24 +94,24 @@ class ControlLimpiezaController {
       const u = await resolverOCrearUbicacion(ubicacion);
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
-      const fi_usuario_id = req.user.usuario_id;
-      const { fc_realizo, fc_observaciones } = req.body;
+      const usuarioId = req.user.usuario_id;
+      const { realizado_por, observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: fc_observaciones,
+          texto: observaciones,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.controlLimpieza.create({
           data: {
             ubicacionId: u.ubicacionId,
-            fecha: new Date(fd_fecha),
-            tipoInstalacion: fc_tipo_instalacion,
-            realizado_por: fc_realizo || null,
-            usuarioId: fi_usuario_id,
+            fecha: new Date(fecha),
+            tipoInstalacion,
+            realizado_por: realizado_por || null,
+            usuarioId,
             observacionId,
           },
         });
@@ -125,15 +125,15 @@ class ControlLimpiezaController {
 
   static async update(req, res) {
     try {
-      const { fd_fecha } = req.body;
-      if (!fd_fecha) {
-        return res.status(400).json({ error: "La fecha (fd_fecha) es obligatoria" });
+      const { fecha } = req.body;
+      if (!fecha) {
+        return res.status(400).json({ error: "La fecha es obligatoria" });
       }
 
-      const fc_tipo_instalacion = normalizarTipoInstalacion(req.body.fc_tipo_instalacion);
-      if (!TIPOS_INSTALACION_VALIDOS.includes(fc_tipo_instalacion)) {
+      const tipoInstalacion = normalizarTipoInstalacion(req.body.tipo_instalacion);
+      if (!TIPOS_INSTALACION_VALIDOS.includes(tipoInstalacion)) {
         return res.status(400).json({
-          error: "fc_tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
+          error: "tipo_instalacion debe ser Baño de Hombres, Baño de Mujeres o Regadera",
         });
       }
 
@@ -159,27 +159,27 @@ class ControlLimpiezaController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
-      const { fc_realizo, fc_observaciones } = req.body;
+      const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
+      const { realizado_por, observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto:
-            fc_observaciones !== undefined
-              ? fc_observaciones
+            observaciones !== undefined
+              ? observaciones
               : existing.observacion?.comentario ?? null,
           responsable: null,
-          usuarioId: fi_usuario_id,
+          usuarioId,
         });
 
         await tx.controlLimpieza.update({
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            fecha: new Date(fd_fecha),
-            tipoInstalacion: fc_tipo_instalacion,
-            realizado_por: fc_realizo || null,
+            fecha: new Date(fecha),
+            tipoInstalacion,
+            realizado_por: realizado_por || null,
             observacionId,
           },
         });

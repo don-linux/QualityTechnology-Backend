@@ -38,18 +38,18 @@ function pick(body, ...keys) {
 }
 
 function buildClientePayload(body) {
-  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"));
-  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "");
-  const empresa = normalizeText(pick(body, "empresa", "fc_nombre_contacto") ?? "");
-  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
-  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
-  const localidad = normalizeText(pick(body, "localidad", "fc_localidad") ?? "");
-  const estado = normalizeText(pick(body, "estado", "fc_estado") ?? "");
+  const nombre = normalizeText(pick(body, "nombre"));
+  const rfc = normalizeText(pick(body, "rfc") ?? "");
+  const empresa = normalizeText(pick(body, "empresa") ?? "");
+  const telefono = normalizeText(pick(body, "telefono") ?? "");
+  const email = normalizeText(pick(body, "email", "correo") ?? "");
+  const localidad = normalizeText(pick(body, "localidad") ?? "");
+  const estado = normalizeText(pick(body, "estado") ?? "");
   const unidadNegocioId = parseRequiredId(
-    pick(body, "unidad_negocio_id", "fi_unidad_negocio_id"),
+    pick(body, "unidad_negocio_id"),
   );
   const ejecutivoEmpleadoId = parseRequiredId(
-    pick(body, "ejecutivo_empleado_id", "fi_ejecutivo_empleado_id", "ejecutivo_id"),
+    pick(body, "ejecutivo_empleado_id", "ejecutivo_id"),
   );
 
   if (!nombre) {
@@ -162,15 +162,15 @@ class ClienteController {
       });
       const result = empleados
         .map((e) => ({
-          fi_empleado_id: e.id,
-          fc_nombre: e.nombre,
-          fc_apellido_paterno: e.apellidoPaterno,
-          fc_apellido_materno: e.apellidoMaterno ?? null,
-          fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
+          empleado_id: e.id,
+          nombre: e.nombre,
+          apellido_paterno: e.apellidoPaterno,
+          apellido_materno: e.apellidoMaterno ?? null,
+          nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
             .filter(Boolean)
             .join(" "),
         }))
-        .sort((a, b) => a.fc_nombre_completo.localeCompare(b.fc_nombre_completo));
+        .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
       res.json(result);
     } catch (err) {
       console.error("Error al obtener empleados activos:", err);

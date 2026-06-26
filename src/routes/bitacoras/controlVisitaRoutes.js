@@ -25,7 +25,7 @@ router.use(authMiddleware);
     RUTAS DE CONTROL DE VISITAS
 ========================================================= */
 router.get("/", controlVisitaController.getAll);
-router.post("/", upload.single('fc_foto_identificacion'), controlVisitaController.create);
-router.put("/:id", upload.single('fc_foto_identificacion'), controlVisitaController.update);
+router.post("/", upload.single('foto_identificacion'), controlVisitaController.create);
+router.put("/:id", upload.single('foto_identificacion'), controlVisitaController.update);
 
 export default router;

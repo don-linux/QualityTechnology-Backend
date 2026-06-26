@@ -1,20 +1,19 @@
 import prisma from "../prisma.js";
 
 function mapTesoreriaRow(r) {
-  const fc_mes = r.fc_mes ?? r.mes ?? null;
-  const fc_categoria = r.fc_categoria ?? r.categoria ?? null;
-  const fc_subcategoria = r.fc_subcategoria ?? r.subcategoria ?? null;
+  const mes = r.mes ?? null;
+  const categoria = r.categoria ?? null;
+  const subcategoria = r.subcategoria ?? null;
   return {
-    fc_mes,
-    fc_categoria,
-    fc_subcategoria,
+    mes,
+    categoria,
+    subcategoria,
     total_ingreso: Number(r.total_ingreso ?? 0),
     total_egreso: Number(r.total_egreso ?? 0),
     saldo_neto: Number(r.saldo_neto ?? 0),
-    mes_nombre: fc_mes,
-    grupo: fc_categoria || "SIN GRUPO",
-    subgrupo: fc_subcategoria || "SIN SUBGRUPO",
-    categoria: fc_categoria || "—",
+    mes_nombre: mes,
+    grupo: categoria || "SIN GRUPO",
+    subgrupo: subcategoria || "SIN SUBGRUPO",
   };
 }
 
@@ -39,9 +38,9 @@ class TesoreriaController {
 
       const sql = `
         SELECT
-          mes             AS fc_mes,
-          categoria       AS fc_categoria,
-          subcategoria    AS fc_subcategoria,
+          mes,
+          categoria,
+          subcategoria,
           total_ingreso,
           total_egreso,
           saldo_neto

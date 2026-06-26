@@ -46,7 +46,7 @@ class ActaAdministrativaController {
 
   static async upload(req, res) {
     const { empleadoId } = req.params;
-    const descripcion = req.body.descripcion ?? req.body.motivo ?? req.body.fc_motivo;
+    const descripcion = req.body.descripcion ?? req.body.motivo;
 
     if (!descripcion || !String(descripcion).trim()) {
       return res.status(400).json({ error: "La descripcion (motivo) es obligatoria" });

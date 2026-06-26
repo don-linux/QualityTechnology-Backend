@@ -12,7 +12,7 @@ function toInt(value, fallback = null) {
 
 export function parseLoteDesdeBody(body, pick) {
   return normalizarLoteOpcional(
-    pick(body, "lote", "fc_lote", "lote_genetico", "fc_lote_genetico"),
+    pick(body, "lote", "lote_genetico"),
   );
 }
 

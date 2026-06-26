@@ -7,8 +7,7 @@ import prisma from "../prisma.js";
 // la relacion Pileta/Engorda/Reproductor -> Instalacion ya no existe.
 
 /**
- * Lista empleados activos con el mismo contrato que el frontend esperaba
- * (fi_empleado_id, fc_nombre_completo).
+ * Lista empleados activos con el contrato de la API (empleado_id, nombre_completo).
  */
 export async function listarEmpleadosActivosBitacora() {
   const rows = await prisma.empleado.findMany({
@@ -22,8 +21,8 @@ export async function listarEmpleadosActivosBitacora() {
     orderBy: [{ nombre: "asc" }, { apellidoPaterno: "asc" }],
   });
   return rows.map((e) => ({
-    fi_empleado_id: e.id,
-    fc_nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno].filter(Boolean).join(" "),
+    empleado_id: e.id,
+    nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno].filter(Boolean).join(" "),
   }));
 }
 

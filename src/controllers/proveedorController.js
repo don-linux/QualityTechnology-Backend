@@ -4,8 +4,7 @@ import { serializeProveedor } from "../utils/serializers.js";
 // Proveedor en el schema actual conserva: nombre, rfc, telefono, email,
 // direccion, esta_activo. Los campos antiguos (razon_social,
 // producto_servicio, unidad_negocio_id, contactos, localidad, estado) ya no
-// existen y se ignoran. Aceptamos los aliases fc_razon_social -> nombre y
-// fc_correo -> email.
+// existen y se ignoran.
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -27,11 +26,11 @@ function pick(body, ...keys) {
 }
 
 function buildPayload(body) {
-  const nombre = normalizeText(pick(body, "nombre", "fc_razon_social"));
-  const rfc = normalizeText(pick(body, "rfc", "fc_rfc") ?? "");
-  const telefono = normalizeText(pick(body, "telefono", "fc_telefono") ?? "");
-  const email = normalizeText(pick(body, "email", "correo", "fc_correo") ?? "");
-  const direccion = normalizeText(pick(body, "direccion", "fc_direccion", "fc_localidad") ?? "");
+  const nombre = normalizeText(pick(body, "nombre"));
+  const rfc = normalizeText(pick(body, "rfc") ?? "");
+  const telefono = normalizeText(pick(body, "telefono") ?? "");
+  const email = normalizeText(pick(body, "email", "correo") ?? "");
+  const direccion = normalizeText(pick(body, "direccion") ?? "");
 
   if (!nombre) return { error: "Campo obligatorio: nombre" };
   if (rfc && rfc.length > 13) return { error: "rfc debe tener maximo 13 caracteres" };
