@@ -39,7 +39,7 @@ import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.
 import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
 import controlLimpiezaRoutes from './src/routes/bitacoras/controlLimpiezaRoutes.js';
 import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFisicoQuimicosRoutes.js';
-import bitacoraMedicamentoRoutes from './src/routes/bitacoras/bitacoraMedicamentoRoutes.js';
+import medicamentoRoutes from './src/routes/bitacoras/medicamentoRoutes.js';
 import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoutes.js';
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
 
@@ -168,7 +168,7 @@ api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/control-visitas", controlVisitaRoutes);
 api.use("/control-limpieza", controlLimpiezaRoutes);
 api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
-api.use("/medicamentos", bitacoraMedicamentoRoutes);
+api.use("/medicamentos", medicamentoRoutes);
 api.use("/recambios", bitacoraRecambioRoutes);
 api.use("/inventario", bitacoraInventarioRoutes);
 

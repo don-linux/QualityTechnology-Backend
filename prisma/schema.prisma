@@ -243,6 +243,7 @@ model InfraestructuraFisica {
   recambios                                                               Recambio[]
   reproductores                                                           Reproductor[]
   parametrosFisicoQuimicos                                                ParametrosFisicoQuimico[]
+  medicamentos                                                            Medicamento[]
   siembra_siembra_infraestructura_fisica_destinoToInfraestructuraFisica   siembra[]          @relation("siembra_infraestructura_fisica_destinoToInfraestructuraFisica")
   siembra_siembra_infraestructura_fisica_origenToInfraestructuraFisica    siembra[]          @relation("siembra_infraestructura_fisica_origenToInfraestructuraFisica")
   lista_espera                                                            ListaEspera[]
@@ -673,25 +674,23 @@ model InventarioAlevin {
 }
 
 model Medicamento {
-  id               Int          @id @default(autoincrement())
-  ubicacionId      Int          @map("ubicacion_id")
-  fechaHora        DateTime     @map("fecha_hora") @db.Timestamp(6)
-  numero_estanque  Int?
-  diagnostico      String?      @db.VarChar(500)
-  tratamiento      String?      @db.VarChar(500)
-  dosis            String?      @db.VarChar(100)
-  formaAplicacion  String?      @map("forma_aplicacion") @db.VarChar(100)
-  fechaUltimaDosis DateTime?    @map("fecha_ultima_dosis") @db.Date
-  responsable      String?      @db.VarChar(100)
-  observacionId    Int?         @map("observacion_id")
-  usuarioId        Int?         @map("usuario_id")
-  created_at       DateTime     @default(now()) @db.Timestamp(6)
-  updated_at       DateTime     @updatedAt @db.Timestamp(6)
-  observacion      observacion? @relation(fields: [observacionId], references: [id])
-  ubicacion        ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario          Usuario?     @relation(fields: [usuarioId], references: [id])
+  id                      Int                   @id @default(autoincrement())
+  ubicacionId             Int                   @map("ubicacion_id")
+  infraestructuraFisicaId Int                   @map("infraestructura_fisica_id")
+  diagnostico             String                @db.VarChar(500)
+  farmaco                 String                @db.VarChar(500)
+  fechaInicio             DateTime              @map("fecha_inicio") @db.Date
+  fechaFinal              DateTime              @map("fecha_final") @db.Date
+  periodo                 Int
+  usuarioId               Int?                  @map("usuario_id")
+  created_at              DateTime              @default(now()) @db.Timestamp(6)
+  updated_at              DateTime              @updatedAt @db.Timestamp(6)
+  infraestructuraFisica   InfraestructuraFisica @relation(fields: [infraestructuraFisicaId], references: [id])
+  ubicacion               ubicacion             @relation(fields: [ubicacionId], references: [id])
+  usuario                 Usuario?              @relation(fields: [usuarioId], references: [id])
 
   @@index([ubicacionId])
+  @@index([infraestructuraFisicaId])
   @@index([usuarioId])
   @@map("medicamentos")
   @@schema("public")
@@ -1049,7 +1048,6 @@ model observacion {
   controlLimpieza    ControlLimpieza[]
   engorda            Engorda[]
   inventarioAlevines InventarioAlevin[]
-  medicamentos       Medicamento[]
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   recambios          Recambio[]

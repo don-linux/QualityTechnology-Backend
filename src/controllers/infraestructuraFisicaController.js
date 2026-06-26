@@ -225,7 +225,7 @@ class InfraestructuraFisicaController {
           { inventarioAlevines: { some: { infraestructura_fisica_id: id } } },
           { biometria: { is: { infraestructura_fisica_id: id } } },
           { parametrosFisicoQuimicos: { some: { infraestructuraFisicaId: id } } },
-          { medicamentos: { some: { numero_estanque: id } } },
+          { medicamentos: { some: { infraestructuraFisicaId: id } } },
         ],
       };
 

@@ -958,19 +958,16 @@ export function serializeMedicamento(row) {
   if (!row) return null;
   return {
     id: row.id,
-    fecha_hora: row.fechaHora,
-    numero_estanque: row.numero_estanque,
-    diagnostico: row.diagnostico,
-    tratamiento: row.tratamiento,
-    dosis: row.dosis,
-    forma_aplicacion: row.formaAplicacion,
-    fecha_ultima_dosis: row.fechaUltimaDosis,
-    responsable: row.responsable ?? null,
-    observaciones: row.observacion?.comentario ?? null,
-    observacion_id: row.observacionId ?? null,
-    usuario_id: row.usuarioId,
     ubicacion: row.ubicacion?.nombre ?? null,
     ubicacion_id: row.ubicacionId,
+    infraestructura_fisica_id: row.infraestructuraFisicaId,
+    nombre_instalacion: row.infraestructuraFisica?.nombre ?? null,
+    diagnostico: row.diagnostico,
+    farmaco: row.farmaco,
+    fecha_inicio: row.fechaInicio,
+    fecha_final: row.fechaFinal,
+    periodo: row.periodo,
+    usuario_id: row.usuarioId,
   };
 }
 

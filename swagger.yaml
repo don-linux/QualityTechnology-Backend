@@ -888,39 +888,34 @@ components:
         observaciones:
           type: string
 
-    BitacoraMedicamentoInput:
+    MedicamentoInput:
       type: object
       required:
         - ubicacion
+        - infraestructura_fisica_id
+        - diagnostico
+        - farmaco
+        - fecha_inicio
+        - fecha_final
       properties:
         ubicacion:
           type: string
           description: Granja o unidad de negocio.
-        fd_fecha_hora:
-          type: string
-          format: date-time
-        fn_num_estanque:
-          type: number
-        fc_diagnosis:
+        infraestructura_fisica_id:
+          type: integer
+          description: ID del catálogo de infraestructura física.
+        diagnostico:
           type: string
           maxLength: 500
-        fc_tratamiento:
+        farmaco:
           type: string
           maxLength: 500
-        fc_dosis:
-          type: string
-          maxLength: 100
-        fc_forma_aplicacion:
-          type: string
-          maxLength: 100
-        fd_fecha_ultima_dosis:
+        fecha_inicio:
           type: string
           format: date
-        fc_responsable:
+        fecha_final:
           type: string
-          maxLength: 100
-        fc_observaciones:
-          type: string
+          format: date
 
     BitacoraRecambioInput:
       type: object
@@ -3846,12 +3841,7 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/BitacoraMedicamentoInput'
-                - type: object
-                  required:
-                    - fd_fecha_hora
-                    - fn_num_estanque
+              $ref: '#/components/schemas/MedicamentoInput'
       responses:
         '201':
           description: "Creado"
@@ -3872,7 +3862,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraMedicamentoInput'
+              $ref: '#/components/schemas/MedicamentoInput'
       responses:
         '200':
           description: "Actualizado"
