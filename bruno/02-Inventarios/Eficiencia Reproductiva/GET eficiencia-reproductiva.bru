@@ -1,0 +1,14 @@
+meta {
+  name: GET eficiencia-reproductiva
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/eficiencia-reproductiva
+    body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
