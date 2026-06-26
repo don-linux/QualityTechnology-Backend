@@ -41,7 +41,7 @@ model Usuario {
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   observacion        observacion[]
-  parametros         Parametro[]
+  parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   controlFaunaNociva ControlFaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
@@ -242,6 +242,7 @@ model Pileta {
   ubicacion                               ubicacion          @relation(fields: [ubicacionId], references: [id])
   recambios                               Recambio[]
   reproductores                           Reproductor[]
+  parametrosFisicoQuimicos                ParametrosFisicoQuimico[]
   siembra_siembra_pileta_destinoTopiletas siembra[]          @relation("siembra_pileta_destinoTopiletas")
   siembra_siembra_pileta_origenTopiletas  siembra[]          @relation("siembra_pileta_origenTopiletas")
   lista_espera                            ListaEspera[]
@@ -696,29 +697,38 @@ model Medicamento {
   @@schema("public")
 }
 
-model Parametro {
-  id              Int          @id @default(autoincrement())
-  ubicacionId     Int          @map("ubicacion_id")
-  fecha           DateTime     @db.Date
-  numero_estanque Int?
-  oxigeno         Decimal?     @db.Decimal(8, 3)
-  temperatura     Decimal?     @db.Decimal(6, 2)
-  ph              Decimal?     @db.Decimal(5, 2)
-  amonio          Decimal?     @db.Decimal(10, 4)
-  nitritos        Decimal?     @db.Decimal(10, 4)
-  nitratos        Decimal?     @db.Decimal(10, 4)
-  responsable     String?      @db.VarChar(100)
-  observacionId   Int?         @map("observacion_id")
-  usuarioId       Int?         @map("usuario_id")
-  created_at      DateTime     @default(now()) @db.Timestamp(6)
-  updated_at      DateTime     @updatedAt @db.Timestamp(6)
-  observacion     observacion? @relation(fields: [observacionId], references: [id])
-  ubicacion       ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario         Usuario?     @relation(fields: [usuarioId], references: [id])
+model ParametrosFisicoQuimico {
+  id                  Int          @id @default(autoincrement())
+  codigo              String       @unique @db.VarChar(24)
+  ubicacionId         Int          @map("ubicacion_id")
+  fecha               DateTime     @db.Date
+  hora                DateTime     @db.Time(6)
+  turnoMuestreo       String       @map("turno_muestreo") @db.VarChar(20)
+  piletaId            Int?         @map("pileta_id")
+  oxigeno             Decimal?     @db.Decimal(8, 3)
+  temperaturaAgua     Decimal?     @map("temperatura_agua") @db.Decimal(6, 2)
+  temperaturaAmbiente Decimal?     @map("temperatura_ambiente") @db.Decimal(6, 2)
+  ph                  Decimal?     @db.Decimal(5, 2)
+  amonio              Decimal?     @db.Decimal(10, 4)
+  nitrito             Decimal?     @db.Decimal(10, 4)
+  nitrato             Decimal?     @db.Decimal(10, 4)
+  transparenciaSechhi Decimal?     @map("transparencia_sechhi") @db.Decimal(10, 2)
+  coloracionAgua      String       @map("coloracion_agua") @db.VarChar(30)
+  responsable         String?      @db.VarChar(100)
+  observacionId       Int?         @map("observacion_id")
+  usuarioId           Int?         @map("usuario_id")
+  created_at          DateTime     @default(now()) @db.Timestamp(6)
+  updated_at          DateTime     @updatedAt @db.Timestamp(6)
+  observacion         observacion? @relation(fields: [observacionId], references: [id])
+  ubicacion           ubicacion    @relation(fields: [ubicacionId], references: [id])
+  usuario             Usuario?     @relation(fields: [usuarioId], references: [id])
+  pileta              Pileta?      @relation(fields: [piletaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([ubicacionId])
   @@index([usuarioId])
-  @@map("parametros")
+  @@index([piletaId])
+  @@index([fecha(sort: Desc)])
+  @@map("parametros_fisico_quimicos")
   @@schema("public")
 }
 
@@ -1041,7 +1051,7 @@ model observacion {
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
-  parametros         Parametro[]
+  parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
   reproductores      Reproductor[]
@@ -1092,7 +1102,7 @@ model ubicacion {
   flujoCaja          FlujoCaja[]
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
-  parametros         Parametro[]
+  parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   piletas            Pileta[]
   controlFaunaNociva ControlFaunaNociva[]
   recambios          Recambio[]

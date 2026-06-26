@@ -826,34 +826,66 @@ components:
               readOnly: true
               description: Assigned from the authenticated JWT. Ignored if sent in the request body.
 
-    BitacoraParametroInput:
+    ParametrosFisicoQuimicoInput:
       type: object
       required:
         - ubicacion
+        - fecha
+        - hora
+        - pileta_id
+        - oxigeno
+        - temperatura_agua
+        - temperatura_ambiente
+        - coloracion_agua
+        - responsable
       properties:
         ubicacion:
           type: string
           description: Granja o unidad de negocio.
-        fd_fecha:
+        fecha:
           type: string
           format: date
-        fn_num_estanque:
-          type: number
-        fn_oxigeno:
-          type: number
-        fn_temperatura:
-          type: number
-        fn_ph:
-          type: number
-        fn_amonio:
-          type: number
-        fn_nitritos:
-          type: number
-        fn_nitratos:
-          type: number
-        fc_responsable:
+        hora:
           type: string
-        fc_observaciones:
+          description: Hora de muestreo (HH:MM).
+        turno_muestreo:
+          type: string
+          enum: [Madrugada, Amanecer, Mañana, "Medio dia", Tarde, Noche]
+        pileta_id:
+          type: integer
+        oxigeno:
+          type: number
+        temperatura_agua:
+          type: number
+        temperatura_ambiente:
+          type: number
+        ph:
+          type: number
+        ph_no_aplica:
+          type: boolean
+        amonio:
+          type: number
+        amonio_no_aplica:
+          type: boolean
+        nitrito:
+          type: number
+        nitrito_no_aplica:
+          type: boolean
+        nitrato:
+          type: number
+        nitrato_no_aplica:
+          type: boolean
+        transparencia_sechhi:
+          type: number
+        transparencia_sechhi_no_aplica:
+          type: boolean
+        coloracion_agua:
+          type: string
+          enum: ["Agua transparente", "Agua roja", "Agua verde"]
+        responsable:
+          type: string
+          maxLength: 100
+        observaciones:
           type: string
 
     BitacoraMedicamentoInput:
@@ -3945,16 +3977,21 @@ paths:
         '200':
           description: "Listado"
 
-  /parametros:
+  /parametros-fisico-quimicos:
     get:
-      summary: "Listar parámetros"
+      summary: "Listar parámetros físico-químicos"
       security:
         - bearerAuth: []
+      parameters:
+        - name: ubicacion
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Crear parámetro"
+      summary: "Crear parámetro físico-químico"
       security:
         - bearerAuth: []
       requestBody:
@@ -3962,19 +3999,23 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/BitacoraParametroInput'
-                - type: object
-                  required:
-                    - fd_fecha
-                    - fn_num_estanque
+              $ref: '#/components/schemas/ParametrosFisicoQuimicoInput'
       responses:
-        '201':
+        '200':
           description: "Creado"
         '400':
           description: "Solicitud inválida"
+  /parametros-fisico-quimicos/empleados:
+    get:
+      summary: "Listar empleados activos para parámetros físico-químicos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+  /parametros-fisico-quimicos/{id}:
     put:
-      summary: "Actualizar parámetro"
+      summary: "Actualizar parámetro físico-químico"
       security:
         - bearerAuth: []
       parameters:
@@ -3988,7 +4029,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraParametroInput'
+              $ref: '#/components/schemas/ParametrosFisicoQuimicoInput'
       responses:
         '200':
           description: "Actualizado"

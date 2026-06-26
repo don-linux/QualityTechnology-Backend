@@ -224,7 +224,7 @@ class PiletaController {
           { recambios: { some: { pileta_id: id } } },
           { inventarioAlevines: { some: { pileta_id: id } } },
           { biometria: { is: { pileta_id: id } } },
-          { parametros: { some: { numero_estanque: id } } },
+          { parametrosFisicoQuimicos: { some: { piletaId: id } } },
           { medicamentos: { some: { numero_estanque: id } } },
         ],
       };

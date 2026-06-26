@@ -30,7 +30,7 @@ const MODULOS = [
   ["Recepcion Insumos", "/recepcion_insumos", true],
   ["Control de Visitas", "/control-visitas", true],
   ["Control de Limpieza", "/control-limpieza", true],
-  ["Parametros", "/parametros", true],
+  ["Parametros Fisico Quimicos", "/parametros-fisico-quimicos", true],
   ["Medicamentos", "/medicamentos", true],
   ["Recambios", "/recambios", true],
   ["Inventario", "/inventario", true],

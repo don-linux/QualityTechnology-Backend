@@ -916,18 +916,35 @@ export function serializeControlLimpieza(row) {
   };
 }
 
-export function serializeParametro(row) {
+export function serializeParametrosFisicoQuimico(row) {
   if (!row) return null;
+
+  const formatTime = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString().slice(11, 16);
+    const s = String(value);
+    const match = s.match(/(\d{2}:\d{2})/);
+    return match ? match[1] : s;
+  };
+
   return {
     id: row.id,
+    codigo: row.codigo ?? null,
     fecha: row.fecha,
-    numero_estanque: row.numero_estanque,
+    hora: formatTime(row.hora),
+    turno_muestreo: row.turnoMuestreo ?? null,
+    pileta_id: row.piletaId ?? null,
+    pileta_nombre: row.pileta?.nombre ?? null,
+    pileta_tipo: row.pileta?.tipo ?? null,
     oxigeno: toNumberSafe(row.oxigeno),
-    temperatura: toNumberSafe(row.temperatura),
+    temperatura_agua: toNumberSafe(row.temperaturaAgua),
+    temperatura_ambiente: toNumberSafe(row.temperaturaAmbiente),
     ph: toNumberSafe(row.ph),
     amonio: toNumberSafe(row.amonio),
-    nitritos: toNumberSafe(row.nitritos),
-    nitratos: toNumberSafe(row.nitratos),
+    nitrito: toNumberSafe(row.nitrito),
+    nitrato: toNumberSafe(row.nitrato),
+    transparencia_sechhi: toNumberSafe(row.transparenciaSechhi),
+    coloracion_agua: row.coloracionAgua ?? null,
     responsable: row.responsable ?? null,
     observaciones: row.observacion?.comentario ?? null,
     observacion_id: row.observacionId ?? null,

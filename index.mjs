@@ -38,7 +38,7 @@ import controlFaunaNocivaRoutes from './src/routes/bitacoras/controlFaunaNocivaR
 import recepcionInsumoRoutes from './src/routes/bitacoras/recepcionInsumoRoutes.js';
 import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
 import controlLimpiezaRoutes from './src/routes/bitacoras/controlLimpiezaRoutes.js';
-import bitacoraParametroRoutes from './src/routes/bitacoras/bitacoraParametroRoutes.js';
+import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFisicoQuimicosRoutes.js';
 import bitacoraMedicamentoRoutes from './src/routes/bitacoras/bitacoraMedicamentoRoutes.js';
 import bitacoraRecambioRoutes from './src/routes/bitacoras/bitacoraRecambioRoutes.js';
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
@@ -167,7 +167,7 @@ api.use("/alimentacion", bitacoraAlimentacionRoutes);
 api.use("/recepcion_insumos", recepcionInsumoRoutes);
 api.use("/control-visitas", controlVisitaRoutes);
 api.use("/control-limpieza", controlLimpiezaRoutes);
-api.use("/parametros", bitacoraParametroRoutes);
+api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
 api.use("/medicamentos", bitacoraMedicamentoRoutes);
 api.use("/recambios", bitacoraRecambioRoutes);
 api.use("/inventario", bitacoraInventarioRoutes);
