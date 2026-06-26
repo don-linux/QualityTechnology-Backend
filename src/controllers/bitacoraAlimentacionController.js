@@ -3,7 +3,7 @@ import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import { guardarObservacion } from "../utils/bitacoraHelpers.js";
 import { serializeAlimentacion } from "../utils/serializers.js";
 
-const MAX_OBSERVACIONES = 500;
+const MAX_FC_OBSERVACIONES = 500;
 
 const inc = { ubicacion: true, observacion: true };
 
@@ -35,60 +35,60 @@ class BitacoraAlimentacionController {
 
   static async create(req, res) {
     try {
-      const { ubicacion, observaciones } = req.body;
+      const { ubicacion, fc_observaciones } = req.body;
       if (!ubicacion || !ubicacion.trim()) {
         return res.status(400).json({ error: "ubicacion es requerido" });
       }
-      const obsLen = observaciones == null ? 0 : String(observaciones).length;
-      if (obsLen > MAX_OBSERVACIONES) {
+      const obsLen = fc_observaciones == null ? 0 : String(fc_observaciones).length;
+      if (obsLen > MAX_FC_OBSERVACIONES) {
         return res
           .status(400)
-          .json({ error: `Las observaciones no pueden superar los ${MAX_OBSERVACIONES} caracteres.` });
+          .json({ error: `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.` });
       }
 
       const u = await resolverOCrearUbicacion(ubicacion);
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
-      const usuarioId = req.user.usuario_id;
+      const fi_usuario_id = req.user.usuario_id;
       const {
-        mes,
-        pileta_id,
-        peso_promedio_entrada,
-        fecha_siembra,
-        origen_alevines,
-        fecha,
-        total_alimento_gramos,
-        mortalidad,
-        recambio_agua,
-        temperatura_agua,
-        amonio,
-        ph,
+        fc_mes,
+        fn_num_instalacion,
+        fn_peso_promedio_entrada,
+        fd_fecha_siembra,
+        fc_origen_alevines,
+        fd_fecha,
+        fn_total_alimento_gramos,
+        fn_mortalidad,
+        fc_recambio_agua,
+        fn_temp_agua,
+        fn_amonio,
+        fn_ph,
       } = req.body;
 
       const id = await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: null,
-          texto: observaciones,
+          texto: fc_observaciones,
           responsable: null,
-          usuarioId,
+          usuarioId: fi_usuario_id,
         });
 
         const row = await tx.alimentacion.create({
           data: {
             ubicacionId: u.ubicacionId,
-            mes: mes || null,
-            pileta_id: parseOptInt(pileta_id),
-            fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
-            origenAlevines: origen_alevines || null,
-            fecha: fecha ? new Date(fecha) : null,
-            pesoPromedioEntrada: parseOptDecimal(peso_promedio_entrada),
-            totalAlimentoGramos: parseOptDecimal(total_alimento_gramos),
-            mortalidad: parseOptInt(mortalidad),
-            recambioAgua: recambio_agua || null,
-            temperatura_agua: parseOptDecimal(temperatura_agua),
-            amonio: parseOptDecimal(amonio),
-            ph: parseOptDecimal(ph),
-            usuarioId,
+            mes: fc_mes || null,
+            pileta_id: parseOptInt(fn_num_instalacion),
+            fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
+            origenAlevines: fc_origen_alevines || null,
+            fecha: fd_fecha ? new Date(fd_fecha) : null,
+            pesoPromedioEntrada: parseOptDecimal(fn_peso_promedio_entrada),
+            totalAlimentoGramos: parseOptDecimal(fn_total_alimento_gramos),
+            mortalidad: parseOptInt(fn_mortalidad),
+            recambioAgua: fc_recambio_agua || null,
+            temperatura_agua: parseOptDecimal(fn_temp_agua),
+            amonio: parseOptDecimal(fn_amonio),
+            ph: parseOptDecimal(fn_ph),
+            usuarioId: fi_usuario_id,
             observacionId,
           },
         });
@@ -104,15 +104,15 @@ class BitacoraAlimentacionController {
 
   static async update(req, res) {
     try {
-      const { ubicacion, observaciones } = req.body;
+      const { ubicacion, fc_observaciones } = req.body;
       if (!ubicacion || !ubicacion.trim()) {
         return res.status(400).json({ error: "ubicacion es requerido" });
       }
-      const obsLen = observaciones == null ? 0 : String(observaciones).length;
-      if (obsLen > MAX_OBSERVACIONES) {
+      const obsLen = fc_observaciones == null ? 0 : String(fc_observaciones).length;
+      if (obsLen > MAX_FC_OBSERVACIONES) {
         return res
           .status(400)
-          .json({ error: `Las observaciones no pueden superar los ${MAX_OBSERVACIONES} caracteres.` });
+          .json({ error: `Las observaciones no pueden superar los ${MAX_FC_OBSERVACIONES} caracteres.` });
       }
 
       const u = await resolverOCrearUbicacion(ubicacion);
@@ -127,52 +127,51 @@ class BitacoraAlimentacionController {
         return res.status(404).json({ error: "Registro no encontrado" });
       }
 
-      const usuarioId =
-        req.body.usuario_id !== undefined ? req.body.usuario_id : existing.usuarioId;
+      const fi_usuario_id = req.user?.usuario_id ?? existing.usuarioId;
 
       const {
-        mes,
-        pileta_id,
-        peso_promedio_entrada,
-        fecha_siembra,
-        origen_alevines,
-        fecha,
-        total_alimento_gramos,
-        mortalidad,
-        recambio_agua,
-        temperatura_agua,
-        amonio,
-        ph,
+        fc_mes,
+        fn_num_instalacion,
+        fn_peso_promedio_entrada,
+        fd_fecha_siembra,
+        fc_origen_alevines,
+        fd_fecha,
+        fn_total_alimento_gramos,
+        fn_mortalidad,
+        fc_recambio_agua,
+        fn_temp_agua,
+        fn_amonio,
+        fn_ph,
       } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
           observacionIdExistente: existing.observacionId,
           texto:
-            observaciones !== undefined
-              ? observaciones
+            fc_observaciones !== undefined
+              ? fc_observaciones
               : existing.observacion?.comentario ?? null,
           responsable: null,
-          usuarioId,
+          usuarioId: fi_usuario_id,
         });
 
         await tx.alimentacion.update({
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            mes: mes || null,
-            pileta_id: parseOptInt(pileta_id),
-            fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
-            origenAlevines: origen_alevines || null,
-            fecha: fecha ? new Date(fecha) : null,
-            pesoPromedioEntrada: parseOptDecimal(peso_promedio_entrada),
-            totalAlimentoGramos: parseOptDecimal(total_alimento_gramos),
-            mortalidad: parseOptInt(mortalidad),
-            recambioAgua: recambio_agua || null,
-            temperatura_agua: parseOptDecimal(temperatura_agua),
-            amonio: parseOptDecimal(amonio),
-            ph: parseOptDecimal(ph),
-            usuarioId,
+            mes: fc_mes || null,
+            pileta_id: parseOptInt(fn_num_instalacion),
+            fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
+            origenAlevines: fc_origen_alevines || null,
+            fecha: fd_fecha ? new Date(fd_fecha) : null,
+            pesoPromedioEntrada: parseOptDecimal(fn_peso_promedio_entrada),
+            totalAlimentoGramos: parseOptDecimal(fn_total_alimento_gramos),
+            mortalidad: parseOptInt(fn_mortalidad),
+            recambioAgua: fc_recambio_agua || null,
+            temperatura_agua: parseOptDecimal(fn_temp_agua),
+            amonio: parseOptDecimal(fn_amonio),
+            ph: parseOptDecimal(fn_ph),
+            usuarioId: fi_usuario_id,
             observacionId,
           },
         });
