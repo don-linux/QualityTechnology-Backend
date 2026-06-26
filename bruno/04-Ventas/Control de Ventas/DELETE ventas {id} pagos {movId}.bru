@@ -1,0 +1,14 @@
+meta {
+  name: DELETE ventas {id} pagos {movId}
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/api/ventas/{{id}}/pagos/{{movId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

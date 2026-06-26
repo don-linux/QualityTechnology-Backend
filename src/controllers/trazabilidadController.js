@@ -1,11 +1,11 @@
 import prisma from "../prisma.js";
 import {
-  piletaWhereUbicacionFromRequest,
+  infraestructuraFisicaWhereUbicacionFromRequest,
   primerUbicacionIdValido,
   resolverUbicacionFlexible,
 } from "../utils/granjaUbicacion.js";
 import {
-  ETAPAS_PILETA_MOVIMIENTOS,
+  ETAPAS_INFRAESTRUCTURA_FISICA_MOVIMIENTOS,
   ETAPAS_TRAZABILIDAD,
   serializarMovimientoSiembra,
 } from "../utils/siembraMovimiento.js";
@@ -19,7 +19,7 @@ import {
 } from "../utils/trazabilidadInventario.js";
 import {
   resolverSubtipoMovimiento,
-  validarPiletasSegunSubtipo,
+  validarInfraestructurasFisicasSegunSubtipo,
 } from "../utils/trazabilidadSubtipos.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 
@@ -43,7 +43,7 @@ function modoDesdeSubtipo(resuelto) {
 }
 
 const siembraTrazabilidadInclude = {
-  piletas_siembra_pileta_origenTopiletas: {
+  infraestructuraFisicaOrigen: {
     select: {
       id: true,
       nombre: true,
@@ -51,7 +51,7 @@ const siembraTrazabilidadInclude = {
       ubicacion: { select: { id: true, nombre: true } },
     },
   },
-  piletas_siembra_pileta_destinoTopiletas: {
+  infraestructuraFisicaDestino: {
     select: {
       id: true,
       nombre: true,
@@ -94,10 +94,10 @@ const siembraTrazabilidadInclude = {
 };
 
 class TrazabilidadController {
-  /** Movimientos `siembra` donde origen o destino es pileta de inventario trazable. */
+  /** Movimientos `siembra` donde origen o destino es infraestructura física de inventario trazable. */
   static async getMovimientos(req, res) {
     try {
-      let ubicClause = piletaWhereUbicacionFromRequest(req);
+      let ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
       const ubicIdQ = primerUbicacionIdValido(req.query?.ubicacion_id, req.query?.ubicacionId);
       const granjaQ =
         typeof req.query?.granja === "string"
@@ -115,17 +115,17 @@ class TrazabilidadController {
 
       if (!ubicClause) return res.json([]);
 
-      const piletaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_TRAZABILIDAD } };
-      const piletaOrigenEnUbic = { ...ubicClause, tipo: { in: ETAPAS_PILETA_MOVIMIENTOS } };
+      const infraestructuraFisicaEnUbic = { ...ubicClause, tipo: { in: ETAPAS_TRAZABILIDAD } };
+      const infraestructuraFisicaOrigenEnUbic = { ...ubicClause, tipo: { in: ETAPAS_INFRAESTRUCTURA_FISICA_MOVIMIENTOS } };
 
       const rows = await prisma.siembra.findMany({
         where: {
           OR: [
-            { piletas_siembra_pileta_destinoTopiletas: piletaOrigenEnUbic },
-            { piletas_siembra_pileta_origenTopiletas: piletaOrigenEnUbic },
+            { infraestructuraFisicaDestino: infraestructuraFisicaOrigenEnUbic },
+            { infraestructuraFisicaOrigen: infraestructuraFisicaOrigenEnUbic },
             {
               venta_id: { not: null },
-              piletas_siembra_pileta_origenTopiletas: piletaEnUbic,
+              infraestructuraFisicaOrigen: infraestructuraFisicaEnUbic,
             },
           ],
         },
@@ -141,7 +141,7 @@ class TrazabilidadController {
     }
   }
 
-  /** Registra traslado, ingreso externo o mortalidad y ajusta inventarios de piletas. */
+  /** Registra traslado, ingreso externo o mortalidad y ajusta inventarios de infraestructuraFisica. */
   static async createMovimiento(req, res) {
     try {
       const usuarioId = req.user.usuario_id;
@@ -154,11 +154,11 @@ class TrazabilidadController {
             "tipo_movimiento inválido. Use: INCUBACION_A_ALEVINAJE, ALEVINAJE_A_ALEVINAJE, ALEVINAJE_A_ENGORDA, ALEVINAJE_A_VENTA, ENGORDA_A_ENGORDA, ENGORDA_A_VENTA, MORTALIDAD_ALEVINAJE o MORTALIDAD_ENGORDA",
         });
       }
-      const piletaOrigenId = toInt(
-        pick(req.body, "pileta_origen_id", "origen_pileta_id"),
+      const infraestructuraFisicaOrigenId = toInt(
+        pick(req.body, "infraestructura_fisica_origen_id", "origen_infraestructura_fisica_id"),
       );
-      const piletaDestinoId = toInt(
-        pick(req.body, "pileta_destino_id", "pileta_id"),
+      const infraestructuraFisicaDestinoId = toInt(
+        pick(req.body, "infraestructura_fisica_destino_id", "infraestructura_fisica_id"),
       );
       const cantidad = Math.max(
         0,
@@ -175,10 +175,10 @@ class TrazabilidadController {
 
       const movimientoId = await prisma.$transaction(async (tx) => {
         if (resuelto?.config) {
-          await validarPiletasSegunSubtipo(tx, {
+          await validarInfraestructurasFisicasSegunSubtipo(tx, {
             subtipoConfig: resuelto.config,
-            piletaOrigenId,
-            piletaDestinoId,
+            infraestructuraFisicaOrigenId,
+            infraestructuraFisicaDestinoId,
           });
         }
 
@@ -190,8 +190,8 @@ class TrazabilidadController {
               pick(req.body, "fecha_movimiento", "fecha"),
           });
           return registrarMovimientoEficienciaReproductivaAAlevinaje(tx, {
-            piletaOrigenId,
-            piletaDestinoId,
+            infraestructuraFisicaOrigenId,
+            infraestructuraFisicaDestinoId,
             cantidad,
             usuarioId,
             observacion,
@@ -225,7 +225,7 @@ class TrazabilidadController {
           }
           const { siembraId } = await registrarVentaDesdeListaEspera(tx, {
             listaEsperaId,
-            piletaOrigenId,
+            infraestructuraFisicaOrigenId,
             usuarioId,
             observacion,
             fechaMovimiento,
@@ -234,9 +234,9 @@ class TrazabilidadController {
         }
 
         if (tipoMov === "MORTALIDAD") {
-          const piletaId = piletaOrigenId ?? piletaDestinoId;
+          const infraestructuraFisicaId = infraestructuraFisicaOrigenId ?? infraestructuraFisicaDestinoId;
           return registrarMortalidadTrazabilidad(tx, {
-            piletaId,
+            infraestructuraFisicaId,
             cantidad,
             usuarioId,
             observacion,
@@ -245,14 +245,14 @@ class TrazabilidadController {
         }
 
         if (tipoMov === "INGRESO") {
-          if (!piletaDestinoId) {
-            const err = new Error("pileta_destino_id es obligatorio para ingreso externo");
+          if (!infraestructuraFisicaDestinoId) {
+            const err = new Error("infraestructura_fisica_destino_id es obligatorio para ingreso externo");
             err.code = "VALIDACION";
             throw err;
           }
           return registrarMovimientoTrazabilidad(tx, {
-            piletaOrigenId: null,
-            piletaDestinoId,
+            infraestructuraFisicaOrigenId: null,
+            infraestructuraFisicaDestinoId,
             cantidad,
             mortalidad: 0,
             usuarioId,
@@ -261,15 +261,15 @@ class TrazabilidadController {
           });
         }
 
-        if (!piletaOrigenId || !piletaDestinoId) {
-          const err = new Error("pileta_origen_id y pileta_destino_id son obligatorios para traslado");
+        if (!infraestructuraFisicaOrigenId || !infraestructuraFisicaDestinoId) {
+          const err = new Error("infraestructura_fisica_origen_id y infraestructura_fisica_destino_id son obligatorios para traslado");
           err.code = "VALIDACION";
           throw err;
         }
 
         return registrarMovimientoTrazabilidad(tx, {
-          piletaOrigenId,
-          piletaDestinoId,
+          infraestructuraFisicaOrigenId,
+          infraestructuraFisicaDestinoId,
           cantidad,
           mortalidad,
           usuarioId,

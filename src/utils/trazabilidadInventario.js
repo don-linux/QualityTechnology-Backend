@@ -1,10 +1,10 @@
 import { crearObservacionSiHay, crearObservacionCancelacionVenta } from "./observacion.js";
-import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
+import { aplicarEstadoInfraestructuraFisicaPorCantidad } from "./reproductorInventario.js";
 import { crearSiembraMovimiento, crearSiembraVenta, ETAPAS_TRAZABILIDAD } from "./siembraMovimiento.js";
 import { descontarAlevinajePorEgresoHaciaEngorda } from "./alevinajeInventario.js";
 import { descontarEngordaPorEgresoHaciaEngorda } from "./engordaInventario.js";
-import { cantidadVigenteEnPileta } from "./inventarioVigente.js";
-import { calcularDiasEnPileta } from "./eficienciaReproductivaRegistro.js";
+import { cantidadVigenteEnInfraestructuraFisica } from "./inventarioVigente.js";
+import { calcularDiasEnInfraestructuraFisica } from "./eficienciaReproductivaRegistro.js";
 import { resolverLoteAlevinaje } from "./alevinajeLote.js";
 
 function toInt(value, fallback = null) {
@@ -37,35 +37,35 @@ export function parseFechaMovimiento(raw) {
   return d;
 }
 
-async function consultarStockPiletaEtapa(tx, piletaId) {
-  const pil = await obtenerPiletaEtapa(tx, piletaId);
-  const stock = await cantidadVigenteEnPileta(tx, pil.id, pil.tipo);
+async function consultarStockInfraestructuraFisicaEtapa(tx, infraestructuraFisicaId) {
+  const pil = await obtenerInfraestructuraFisicaEtapa(tx, infraestructuraFisicaId);
+  const stock = await cantidadVigenteEnInfraestructuraFisica(tx, pil.id, pil.tipo);
   return { pil, stock };
 }
 
-function assertStockSuficiente(disponible, requerido, nombrePileta) {
+function assertStockSuficiente(disponible, requerido, nombreInfraestructuraFisica) {
   if (requerido > disponible) {
     throw errValidacion(
-      `Stock insuficiente en '${nombrePileta}': disponible ${disponible}, solicitado ${requerido}`,
+      `Stock insuficiente en '${nombreInfraestructuraFisica}': disponible ${disponible}, solicitado ${requerido}`,
     );
   }
 }
 
-async function obtenerPiletaEtapa(tx, piletaId) {
-  const id = toInt(piletaId);
-  if (!id) throw errValidacion("pileta_id inválido");
+async function obtenerInfraestructuraFisicaEtapa(tx, infraestructuraFisicaId) {
+  const id = toInt(infraestructuraFisicaId);
+  if (!id) throw errValidacion("infraestructura_fisica_id inválido");
 
-  const pil = await tx.pileta.findUnique({
+  const pil = await tx.infraestructuraFisica.findUnique({
     where: { id },
     select: { id: true, nombre: true, tipo: true },
   });
   if (!pil) {
-    const err = new Error("Pileta no existe");
+    const err = new Error("Infraestructura física no existe");
     err.code = "PILETA_NOT_FOUND";
     throw err;
   }
   if (!ETAPAS_TRAZABILIDAD.includes(pil.tipo)) {
-    const err = new Error(`La pileta '${pil.nombre}' debe ser tipo alevinaje o engorda`);
+    const err = new Error(`La infraestructura física '${pil.nombre}' debe ser tipo alevinaje o engorda`);
     err.code = "PILETA_TIPO_INVALIDO";
     throw err;
   }
@@ -74,14 +74,14 @@ async function obtenerPiletaEtapa(tx, piletaId) {
 
 async function descontarInventarioOrigen(
   tx,
-  piletaOrigenId,
-  piletaDestinoId,
+  infraestructuraFisicaOrigenId,
+  infraestructuraFisicaDestinoId,
   cantidad,
   tipoOrigen,
   meta = {},
 ) {
   const opciones = {
-    piletaDestinoId,
+    infraestructuraFisicaDestinoId,
     cantidad_total: cantidad,
     siembraOrigenId: meta.siembraOrigenId ?? null,
     observacion: meta.observacion ?? null,
@@ -90,16 +90,16 @@ async function descontarInventarioOrigen(
     folioVenta: meta.folioVenta ?? null,
   };
   if (tipoOrigen === "alevinaje") {
-    await descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId, opciones);
+    await descontarAlevinajePorEgresoHaciaEngorda(tx, infraestructuraFisicaOrigenId, opciones);
     return;
   }
-  await descontarEngordaPorEgresoHaciaEngorda(tx, piletaOrigenId, opciones);
+  await descontarEngordaPorEgresoHaciaEngorda(tx, infraestructuraFisicaOrigenId, opciones);
 }
 
 async function sumarInventarioDestino(
   tx,
   {
-    piletaDestinoId,
+    infraestructuraFisicaDestinoId,
     tipoDestino,
     cantidad,
     siembraOrigenId,
@@ -107,45 +107,45 @@ async function sumarInventarioDestino(
     observacion,
     pesoHistorialId = null,
     lote = null,
-    piletaOrigenId = null,
+    infraestructuraFisicaOrigenId = null,
   },
 ) {
   const proceso = tipoDestino === "alevinaje" ? "alevinaje" : "engorda";
   const obsId = await crearObservacionSiHay(tx, observacion, usuarioId, {
-    piletaId: piletaDestinoId,
+    infraestructuraFisicaId: infraestructuraFisicaDestinoId,
     proceso,
   });
 
   if (tipoDestino === "alevinaje") {
     const loteResuelto = await resolverLoteAlevinaje(tx, {
       loteBody: lote,
-      piletaId: piletaDestinoId,
+      infraestructuraFisicaId: infraestructuraFisicaDestinoId,
       siembraOrigenId,
-      piletaOrigenId,
+      infraestructuraFisicaOrigenId,
     });
     await tx.alevinaje.create({
       data: {
-        pileta_id: piletaDestinoId,
+        infraestructura_fisica_id: infraestructuraFisicaDestinoId,
         lote: loteResuelto,
         cantidad_total: cantidad,
         siembra_origen_id: siembraOrigenId,
         peso: pesoHistorialId,
       },
     });
-    await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
+    await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaDestinoId, cantidad);
     return;
   }
 
   await tx.engorda.create({
     data: {
-      pileta_id: piletaDestinoId,
+      infraestructura_fisica_id: infraestructuraFisicaDestinoId,
       cantidad_total: cantidad,
       cantidad_alimento: 0,
       observacion_id: obsId,
       siembra_origen_id: siembraOrigenId,
     },
   });
-  await aplicarEstadoPiletaPorCantidad(tx, piletaDestinoId, cantidad);
+  await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaDestinoId, cantidad);
 }
 
 const vigenteSelectRestauracionAlevinaje = {
@@ -168,24 +168,24 @@ const vigenteSelectRestauracionEngorda = {
  */
 async function restaurarInventarioPorDevolucionVenta(
   tx,
-  { piletaId, tipoPileta, cantidadDevuelta, siembraOrigenId, usuarioId, folioVenta },
+  { infraestructuraFisicaId, tipoInfraestructuraFisica, cantidadDevuelta, siembraOrigenId, usuarioId, folioVenta },
 ) {
-  const pid = toInt(piletaId);
+  const pid = toInt(infraestructuraFisicaId);
   const qty = Math.floor(Number(cantidadDevuelta) || 0);
   if (!pid || qty <= 0) return;
 
-  const stockActual = await cantidadVigenteEnPileta(tx, pid, tipoPileta);
+  const stockActual = await cantidadVigenteEnInfraestructuraFisica(tx, pid, tipoInfraestructuraFisica);
   const nuevaCantidad = stockActual + qty;
 
   const vigente =
-    tipoPileta === "alevinaje"
+    tipoInfraestructuraFisica === "alevinaje"
       ? await tx.alevinaje.findFirst({
-          where: { pileta_id: pid },
+          where: { infraestructura_fisica_id: pid },
           orderBy: { id: "desc" },
           select: vigenteSelectRestauracionAlevinaje,
         })
       : await tx.engorda.findFirst({
-          where: { pileta_id: pid },
+          where: { infraestructura_fisica_id: pid },
           orderBy: { id: "desc" },
           select: vigenteSelectRestauracionEngorda,
         });
@@ -195,16 +195,16 @@ async function restaurarInventarioPorDevolucionVenta(
         tx,
         { folioVenta },
         usuarioId,
-        { piletaId: pid, proceso: "trazabilidad" },
+        { infraestructuraFisicaId: pid, proceso: "trazabilidad" },
       )
     : null;
 
   const siembraId = toInt(siembraOrigenId ?? null);
 
-  if (tipoPileta === "alevinaje") {
+  if (tipoInfraestructuraFisica === "alevinaje") {
     await tx.alevinaje.create({
       data: {
-        pileta_id: pid,
+        infraestructura_fisica_id: pid,
         cantidad_total: nuevaCantidad,
         peso: vigente?.peso ?? null,
         biometria_id: vigente?.biometria_id ?? null,
@@ -215,7 +215,7 @@ async function restaurarInventarioPorDevolucionVenta(
   } else {
     await tx.engorda.create({
       data: {
-        pileta_id: pid,
+        infraestructura_fisica_id: pid,
         cantidad_total: nuevaCantidad,
         cantidad_alimento: vigente?.cantidad_alimento ?? 0,
         peso: vigente?.peso ?? null,
@@ -226,23 +226,23 @@ async function restaurarInventarioPorDevolucionVenta(
     });
   }
 
-  await aplicarEstadoPiletaPorCantidad(tx, pid, nuevaCantidad);
+  await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, pid, nuevaCantidad);
 }
 
-/** Crea siembra de devolución (externo → pileta) y restaura inventario acumulado. */
-async function registrarDevolucionVentaEnPileta(
+/** Crea siembra de devolución (externo → infraestructuraFisica) y restaura inventario acumulado. */
+async function registrarDevolucionVentaEnInfraestructuraFisica(
   tx,
-  { piletaOrigenId, cantidad, usuarioId, folioVenta, fechaMovimiento },
+  { infraestructuraFisicaOrigenId, cantidad, usuarioId, folioVenta, fechaMovimiento },
 ) {
-  const origen = toInt(piletaOrigenId);
+  const origen = toInt(infraestructuraFisicaOrigenId);
   const cant = Math.floor(Number(cantidad) || 0);
   if (!origen || cant <= 0) return null;
 
-  const pil = await obtenerPiletaEtapa(tx, origen);
+  const pil = await obtenerInfraestructuraFisicaEtapa(tx, origen);
 
   const siembraId = await crearSiembraMovimiento(tx, {
-    piletaOrigenId: null,
-    piletaDestinoId: origen,
+    infraestructuraFisicaOrigenId: null,
+    infraestructuraFisicaDestinoId: origen,
     cantidadEntera: cant,
     usuarioId,
     fechaMovimiento,
@@ -250,8 +250,8 @@ async function registrarDevolucionVentaEnPileta(
   if (!siembraId) return null;
 
   await restaurarInventarioPorDevolucionVenta(tx, {
-    piletaId: origen,
-    tipoPileta: pil.tipo,
+    infraestructuraFisicaId: origen,
+    tipoInfraestructuraFisica: pil.tipo,
     cantidadDevuelta: cant,
     siembraOrigenId: siembraId,
     usuarioId,
@@ -267,14 +267,14 @@ async function registrarDevolucionVentaEnPileta(
  */
 export async function registrarMovimientoTrazabilidad(
   tx,
-  { piletaOrigenId, piletaDestinoId, cantidad, mortalidad = 0, usuarioId, observacion, fechaMovimiento },
+  { infraestructuraFisicaOrigenId, infraestructuraFisicaDestinoId, cantidad, mortalidad = 0, usuarioId, observacion, fechaMovimiento },
 ) {
-  const dest = toInt(piletaDestinoId);
+  const dest = toInt(infraestructuraFisicaDestinoId);
   const cant = Math.floor(Number(cantidad) || 0);
   const mort = Math.max(0, Math.floor(Number(mortalidad) || 0));
 
   if (!dest || cant <= 0) {
-    throw errValidacion("pileta_destino_id y cantidad (>0) son obligatorios");
+    throw errValidacion("infraestructura_fisica_destino_id y cantidad (>0) son obligatorios");
   }
   if (mort >= cant) {
     throw errValidacion("La mortalidad debe ser menor a la cantidad movida");
@@ -282,25 +282,25 @@ export async function registrarMovimientoTrazabilidad(
 
   const netas = cant - mort;
   const origen =
-    piletaOrigenId !== undefined && piletaOrigenId !== null && piletaOrigenId !== ""
-      ? toInt(piletaOrigenId)
+    infraestructuraFisicaOrigenId !== undefined && infraestructuraFisicaOrigenId !== null && infraestructuraFisicaOrigenId !== ""
+      ? toInt(infraestructuraFisicaOrigenId)
       : null;
 
   if (origen !== null && origen === dest) {
-    throw errValidacion("Origen y destino no pueden ser la misma pileta");
+    throw errValidacion("Origen y destino no pueden ser la misma infraestructura física");
   }
 
-  const pilDest = await obtenerPiletaEtapa(tx, dest);
-  const pilOr = origen !== null ? await obtenerPiletaEtapa(tx, origen) : null;
+  const pilDest = await obtenerInfraestructuraFisicaEtapa(tx, dest);
+  const pilOr = origen !== null ? await obtenerInfraestructuraFisicaEtapa(tx, origen) : null;
 
   if (origen !== null && pilOr) {
-    const { stock } = await consultarStockPiletaEtapa(tx, origen);
+    const { stock } = await consultarStockInfraestructuraFisicaEtapa(tx, origen);
     assertStockSuficiente(stock, cant, pilOr.nombre);
   }
 
   const siembraId = await crearSiembraMovimiento(tx, {
-    piletaOrigenId: origen,
-    piletaDestinoId: dest,
+    infraestructuraFisicaOrigenId: origen,
+    infraestructuraFisicaDestinoId: dest,
     cantidadEntera: cant,
     usuarioId,
     fechaMovimiento,
@@ -329,35 +329,35 @@ export async function registrarMovimientoTrazabilidad(
 
   if (netas > 0) {
     await sumarInventarioDestino(tx, {
-      piletaDestinoId: dest,
+      infraestructuraFisicaDestinoId: dest,
       tipoDestino: pilDest.tipo,
       cantidad: netas,
       siembraOrigenId: siembraId,
       usuarioId,
       observacion,
-      piletaOrigenId: origen,
+      infraestructuraFisicaOrigenId: origen,
     });
   }
 
   return siembraId;
 }
 
-async function obtenerPiletaPorTipo(tx, piletaId, tipoEsperado, rol) {
-  const id = toInt(piletaId);
-  if (!id) throw errValidacion(`pileta_${rol}_id es obligatorio`);
+async function obtenerInfraestructuraFisicaPorTipo(tx, infraestructuraFisicaId, tipoEsperado, rol) {
+  const id = toInt(infraestructuraFisicaId);
+  if (!id) throw errValidacion(`infraestructura_fisica_${rol}_id es obligatorio`);
 
-  const pil = await tx.pileta.findUnique({
+  const pil = await tx.infraestructuraFisica.findUnique({
     where: { id },
     select: { id: true, nombre: true, tipo: true },
   });
   if (!pil) {
-    const err = new Error(`Pileta de ${rol} no encontrada`);
+    const err = new Error(`infraestructura física de ${rol} no encontrada`);
     err.code = "PILETA_NOT_FOUND";
     throw err;
   }
   if (pil.tipo !== tipoEsperado) {
     const err = new Error(
-      `La pileta de ${rol} '${pil.nombre}' debe ser de etapa ${tipoEsperado}, no '${pil.tipo}'`,
+      `La infraestructura física de ${rol} '${pil.nombre}' debe ser de etapa ${tipoEsperado}, no '${pil.tipo}'`,
     );
     err.code = "PILETA_TIPO_INVALIDO";
     throw err;
@@ -368,47 +368,47 @@ async function obtenerPiletaPorTipo(tx, piletaId, tipoEsperado, rol) {
 /**
  * Traslado incubación → alevinaje: gradúa el lote de incubación a inventario contable.
  * La incubación no maneja cantidad numérica (solo ocupada/egresada), por lo que la cantidad
- * de alevines la declara el usuario. Libera la pileta de incubación (marca `fecha_egreso`)
- * y crea el inventario inicial en la pileta de alevinaje destino con su peso biométrico.
+ * de alevines la declara el usuario. Libera la infraestructura física de incubación (marca `fecha_egreso`)
+ * y crea el inventario inicial en la infraestructura física de alevinaje destino con su peso biométrico.
  * @returns {Promise<number>} id de siembra
  */
 export async function registrarMovimientoEficienciaReproductivaAAlevinaje(
   tx,
-  { piletaOrigenId, piletaDestinoId, cantidad, usuarioId, observacion, fechaMovimiento, pesoHistorialId = null },
+  { infraestructuraFisicaOrigenId, infraestructuraFisicaDestinoId, cantidad, usuarioId, observacion, fechaMovimiento, pesoHistorialId = null },
 ) {
-  const origen = toInt(piletaOrigenId);
-  const dest = toInt(piletaDestinoId);
+  const origen = toInt(infraestructuraFisicaOrigenId);
+  const dest = toInt(infraestructuraFisicaDestinoId);
   const cant = Math.floor(Number(cantidad) || 0);
 
   if (!origen || !dest) {
     throw errValidacion(
-      "pileta_origen_id (incubación) y pileta_destino_id (alevinaje) son obligatorios",
+      "infraestructura_fisica_origen_id (incubación) y infraestructura_fisica_destino_id (alevinaje) son obligatorios",
     );
   }
   if (origen === dest) {
-    throw errValidacion("Origen y destino no pueden ser la misma pileta");
+    throw errValidacion("Origen y destino no pueden ser la misma infraestructura física");
   }
   if (cant <= 0) {
     throw errValidacion("La cantidad de alevines debe ser mayor a cero");
   }
 
-  const pilOr = await obtenerPiletaPorTipo(tx, origen, "incubacion", "origen");
-  await obtenerPiletaPorTipo(tx, dest, "alevinaje", "destino");
+  const pilOr = await obtenerInfraestructuraFisicaPorTipo(tx, origen, "incubacion", "origen");
+  await obtenerInfraestructuraFisicaPorTipo(tx, dest, "alevinaje", "destino");
 
   const inc = await tx.eficiencia_reproductiva.findFirst({
-    where: { pileta_id: origen, fecha_egreso: null },
+    where: { infraestructura_fisica_id: origen, fecha_egreso: null },
     orderBy: { id: "desc" },
     select: { id: true, fecha_ingreso: true, lote: true, codigo: true },
   });
   if (!inc) {
     throw errValidacion(
-      `La pileta de incubación '${pilOr.nombre}' no tiene un lote activo para trasladar`,
+      `La infraestructura física de incubación '${pilOr.nombre}' no tiene un lote activo para trasladar`,
     );
   }
 
   const siembraId = await crearSiembraMovimiento(tx, {
-    piletaOrigenId: origen,
-    piletaDestinoId: dest,
+    infraestructuraFisicaOrigenId: origen,
+    infraestructuraFisicaDestinoId: dest,
     cantidadEntera: cant,
     usuarioId,
     fechaMovimiento,
@@ -424,10 +424,10 @@ export async function registrarMovimientoEficienciaReproductivaAAlevinaje(
     where: { id: inc.id },
     data: {
       fecha_egreso: fechaEgreso,
-      dias_en_pileta: calcularDiasEnPileta(inc.fecha_ingreso, fechaEgreso),
+      dias_en_infraestructura_fisica: calcularDiasEnInfraestructuraFisica(inc.fecha_ingreso, fechaEgreso),
     },
   });
-  await aplicarEstadoPiletaPorCantidad(tx, origen, 0);
+  await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, origen, 0);
 
   const partes = [];
   if (inc.codigo) partes.push(`Evento: ${inc.codigo}`);
@@ -436,7 +436,7 @@ export async function registrarMovimientoEficienciaReproductivaAAlevinaje(
   const obsCompleta = [obsBase, ...partes].filter(Boolean).join(" · ") || null;
 
   await sumarInventarioDestino(tx, {
-    piletaDestinoId: dest,
+    infraestructuraFisicaDestinoId: dest,
     tipoDestino: "alevinaje",
     cantidad: cant,
     siembraOrigenId: siembraId,
@@ -444,32 +444,32 @@ export async function registrarMovimientoEficienciaReproductivaAAlevinaje(
     observacion: obsCompleta,
     pesoHistorialId,
     lote: inc.lote ?? null,
-    piletaOrigenId: origen,
+    infraestructuraFisicaOrigenId: origen,
   });
 
   return siembraId;
 }
 
 /**
- * Baja por mortalidad en una pileta (sin traslado a destino).
+ * Baja por mortalidad en una infraestructuraFisica (sin traslado a destino).
  * @returns {Promise<number>} id de siembra
  */
 export async function registrarMortalidadTrazabilidad(
   tx,
-  { piletaId, cantidad, usuarioId, observacion, fechaMovimiento },
+  { infraestructuraFisicaId, cantidad, usuarioId, observacion, fechaMovimiento },
 ) {
-  const id = toInt(piletaId);
+  const id = toInt(infraestructuraFisicaId);
   const cant = Math.floor(Number(cantidad) || 0);
   if (!id || cant <= 0) {
-    throw errValidacion("pileta_id y cantidad (>0) son obligatorios para mortalidad");
+    throw errValidacion("infraestructura_fisica_id y cantidad (>0) son obligatorios para mortalidad");
   }
 
-  const { pil, stock } = await consultarStockPiletaEtapa(tx, id);
+  const { pil, stock } = await consultarStockInfraestructuraFisicaEtapa(tx, id);
   assertStockSuficiente(stock, cant, pil.nombre);
 
   const data = {
-    pileta_origen: id,
-    pileta_destino: id,
+    infraestructura_fisica_origen: id,
+    infraestructura_fisica_destino: id,
     cantidad: BigInt(cant),
     mortalidad: cant,
     usuario_id: usuarioId,
@@ -487,7 +487,7 @@ export async function registrarMortalidadTrazabilidad(
   return siembra.id;
 }
 
-/** Tipos de venta que egresan inventario de piletas. */
+/** Tipos de venta que egresan inventario de infraestructuraFisica. */
 export const TIPOS_VENTA_TRAZABLES = {
   ALEVINES: "alevinaje",
   ALEVIN: "alevinaje",
@@ -507,33 +507,33 @@ export function ventaRequiereTrazabilidad(tipoVenta) {
 }
 
 /**
- * Egreso por venta: crea siembra (origen pileta → venta) y descuenta inventario.
+ * Egreso por venta: crea siembra (origen infraestructura física → venta) y descuenta inventario.
  * @returns {Promise<number>} id de siembra
  */
 export async function registrarVentaTrazabilidad(
   tx,
-  { piletaOrigenId, cantidad, ventaId, usuarioId, observacion, fechaMovimiento, tipoVenta },
+  { infraestructuraFisicaOrigenId, cantidad, ventaId, usuarioId, observacion, fechaMovimiento, tipoVenta },
 ) {
-  const origen = toInt(piletaOrigenId);
+  const origen = toInt(infraestructuraFisicaOrigenId);
   const cant = Math.floor(Number(cantidad) || 0);
   const venta = toInt(ventaId);
   if (!origen || cant <= 0 || !venta) {
-    throw errValidacion("pileta_origen_id, cantidad (>0) y venta_id son obligatorios para venta");
+    throw errValidacion("infraestructura_fisica_origen_id, cantidad (>0) y venta_id son obligatorios para venta");
   }
 
   const etapaEsperada = etapaRequeridaParaTipoVenta(tipoVenta);
-  const pilOr = await obtenerPiletaEtapa(tx, origen);
+  const pilOr = await obtenerInfraestructuraFisicaEtapa(tx, origen);
   if (etapaEsperada && pilOr.tipo !== etapaEsperada) {
     throw errValidacion(
-      `Para venta tipo '${tipoVenta}' la pileta debe ser de etapa ${etapaEsperada}, no '${pilOr.tipo}'`,
+      `Para venta tipo '${tipoVenta}' la infraestructura física debe ser de etapa ${etapaEsperada}, no '${pilOr.tipo}'`,
     );
   }
 
-  const { stock } = await consultarStockPiletaEtapa(tx, origen);
+  const { stock } = await consultarStockInfraestructuraFisicaEtapa(tx, origen);
   assertStockSuficiente(stock, cant, pilOr.nombre);
 
   const siembraId = await crearSiembraVenta(tx, {
-    piletaOrigenId: origen,
+    infraestructuraFisicaOrigenId: origen,
     cantidadEntera: cant,
     ventaId: venta,
     usuarioId,
@@ -568,14 +568,14 @@ export async function registrarVentaTrazabilidad(
  */
 export async function registrarVentaDesdeListaEspera(
   tx,
-  { listaEsperaId, piletaOrigenId, usuarioId, observacion, fechaMovimiento },
+  { listaEsperaId, infraestructuraFisicaOrigenId, usuarioId, observacion, fechaMovimiento },
 ) {
   const listaId = toInt(listaEsperaId);
   if (!listaId) throw errValidacion("lista_espera_id es obligatorio para venta");
 
   const lista = await tx.listaEspera.findUnique({
     where: { id: listaId },
-    include: { pileta_origen: { select: { id: true, nombre: true, tipo: true } } },
+    include: { infraestructura_fisica_origen: { select: { id: true, nombre: true, tipo: true } } },
   });
   if (!lista) throw errValidacion("Pedido de lista de espera no encontrado");
   if (lista.venta_id) throw errValidacion("Este pedido ya tiene una venta registrada");
@@ -583,9 +583,9 @@ export async function registrarVentaDesdeListaEspera(
     throw errValidacion("Este tipo de venta no requiere trazabilidad");
   }
 
-  const origen = toInt(piletaOrigenId) ?? lista.pileta_origen_id;
+  const origen = toInt(infraestructuraFisicaOrigenId) ?? lista.infraestructura_fisica_origen_id;
   if (!origen) {
-    throw errValidacion("pileta_origen_id es obligatorio para ventas de alevines o mojarra");
+    throw errValidacion("infraestructura_fisica_origen_id es obligatorio para ventas de alevines o mojarra");
   }
 
   const cantidad = Math.trunc(Number(lista.cantidad_peces) || 0);
@@ -612,7 +612,7 @@ export async function registrarVentaDesdeListaEspera(
   });
 
   const siembraId = await registrarVentaTrazabilidad(tx, {
-    piletaOrigenId: origen,
+    infraestructuraFisicaOrigenId: origen,
     cantidad,
     ventaId: venta.id,
     usuarioId,
@@ -652,7 +652,7 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
 
   const siembras = await tx.siembra.findMany({
     where: { venta_id: venta },
-    select: { id: true, pileta_origen: true, cantidad: true },
+    select: { id: true, infraestructura_fisica_origen: true, cantidad: true },
     orderBy: { id: "asc" },
   });
 
@@ -660,13 +660,13 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
 
   if (siembras.length > 0) {
     for (const s of siembras) {
-      const origen = s.pileta_origen;
+      const origen = s.infraestructura_fisica_origen;
       const cant =
         typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
       if (!origen || cant <= 0) continue;
 
-      nuevoMovimientoId = await registrarDevolucionVentaEnPileta(tx, {
-        piletaOrigenId: origen,
+      nuevoMovimientoId = await registrarDevolucionVentaEnInfraestructuraFisica(tx, {
+        infraestructuraFisicaOrigenId: origen,
         cantidad: cant,
         usuarioId: uid,
         folioVenta,
@@ -676,7 +676,7 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
     return nuevoMovimientoId;
   }
 
-  const origenFallback = toInt(fallback.piletaOrigenId);
+  const origenFallback = toInt(fallback.infraestructuraFisicaOrigenId);
   const cantFallback = Math.floor(
     Number(fallback.cantidad ?? ventaRow.cantidad ?? 0) || 0,
   );
@@ -688,8 +688,8 @@ export async function cancelarVentaTrazabilidad(tx, ventaId, usuarioId, fallback
     return null;
   }
 
-  return registrarDevolucionVentaEnPileta(tx, {
-    piletaOrigenId: origenFallback,
+  return registrarDevolucionVentaEnInfraestructuraFisica(tx, {
+    infraestructuraFisicaOrigenId: origenFallback,
     cantidad: cantFallback,
     usuarioId: uid,
     folioVenta,

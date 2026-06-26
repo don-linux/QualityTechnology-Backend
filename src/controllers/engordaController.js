@@ -1,11 +1,11 @@
 import prisma from "../prisma.js";
 import { serializeEngorda } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
+import { aplicarEstadoInfraestructuraFisicaPorCantidad } from "../utils/reproductorInventario.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
-import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { cantidadVigenteEnInfraestructuraFisica, ultimoRegistroPorInfraestructuraFisica } from "../utils/inventarioVigente.js";
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -20,20 +20,20 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaEngordaId) {
+async function assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaEngordaId) {
   if (!siembraOrigenId) return;
   const s = await tx.siembra.findUnique({
     where: { id: siembraOrigenId },
-    select: { id: true, pileta_destino: true },
+    select: { id: true, infraestructura_fisica_destino: true },
   });
   if (!s) {
     const err = new Error("siembra_origen_id inválido");
     err.code = "BAD_SIEMBRA";
     throw err;
   }
-  if (Number(s.pileta_destino) !== Number(piletaEngordaId)) {
+  if (Number(s.infraestructura_fisica_destino) !== Number(infraestructuraFisicaEngordaId)) {
     const err = new Error(
-      "La siembra seleccionada debe tener como destino la misma pileta de engorda",
+      "La siembra seleccionada debe tener como destino la misma infraestructura física de engorda",
     );
     err.code = "SIEMBRA_DESTINO";
     throw err;
@@ -41,7 +41,7 @@ async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaEn
 }
 
 const engordaInclude = {
-  piletas: {
+  infraestructuraFisica: {
     include: {
       ubicacion: true,
       observaciones: {
@@ -55,7 +55,7 @@ const engordaInclude = {
   biometrias: { include: { observacionBiometria: true } },
   siembra_origen: {
     include: {
-      piletas_siembra_pileta_origenTopiletas: {
+      infraestructuraFisicaOrigen: {
         include: { reproductores: true },
       },
     },
@@ -66,11 +66,11 @@ const engordaInclude = {
 class EngordaController {
   static async getAll(req, res) {
     try {
-      const piletaIdQ = toInt(req.query.pileta_id);
+      const infraestructuraFisicaIdQ = toInt(req.query.infraestructura_fisica_id);
       const where = {};
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (ubicClause) where.piletas = ubicClause;
-      if (piletaIdQ) where.pileta_id = piletaIdQ;
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.infraestructuraFisica = ubicClause;
+      if (infraestructuraFisicaIdQ) where.infraestructura_fisica_id = infraestructuraFisicaIdQ;
 
       const rows = await prisma.engorda.findMany({
         where,
@@ -81,7 +81,7 @@ class EngordaController {
       const historial =
         req.query.historial === "1" ||
         String(req.query.historial || "").toLowerCase() === "true";
-      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      const vista = historial ? rows : ultimoRegistroPorInfraestructuraFisica(rows);
       res.json(vista.map(serializeEngorda));
     } catch (err) {
       console.error("GET /engorda Error:", err);
@@ -111,8 +111,8 @@ class EngordaController {
 
   static async create(req, res) {
     try {
-      const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id"),
+      const infraestructuraFisicaId = toInt(
+        pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"),
       );
       const cantidadTotal = Math.max(
         0,
@@ -123,29 +123,29 @@ class EngordaController {
         toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0,
       );
 
-      if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de engorda) es obligatorio" });
+      if (!infraestructuraFisicaId) {
+        return res.status(400).json({ error: "infraestructura_fisica_id (infraestructura física de engorda) es obligatorio" });
       }
       if (cantidadTotal <= 0) {
         return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
       }
 
-      const pil = await prisma.pileta.findUnique({
-        where: { id: piletaId },
+      const pil = await prisma.infraestructuraFisica.findUnique({
+        where: { id: infraestructuraFisicaId },
         select: { id: true, tipo: true, nombre: true },
       });
-      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (!pil) return res.status(400).json({ error: "Infraestructura física no existe" });
       if (pil.tipo !== "engorda") {
         return res.status(400).json({
-          error: `La pileta '${pil.nombre}' debe ser tipo engorda`,
+          error: `La infraestructura física '${pil.nombre}' debe ser tipo engorda`,
         });
       }
 
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "observaciones");
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
-      const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId"),
+      const origenInfraestructuraFisicaId = toInt(
+        pick(req.body, "origen_infraestructura_fisica_id", "origenInfraestructuraFisicaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -153,18 +153,18 @@ class EngordaController {
         let siembraOrigenId = siembraOrigenIdBody ?? null;
         if (!siembraOrigenId && cantidadTotal > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: origenPiletaId,
-            piletaDestinoId: piletaId,
+            infraestructuraFisicaOrigenId: origenInfraestructuraFisicaId,
+            infraestructuraFisicaDestinoId: infraestructuraFisicaId,
             cantidadEntera: cantidadTotal,
             usuarioId,
           });
           if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
         } else if (siembraOrigenId) {
-          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+          await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaId);
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId,
+          infraestructuraFisicaId,
           proceso: "engorda",
         });
 
@@ -172,7 +172,7 @@ class EngordaController {
 
         const creadoNuevo = await tx.engorda.create({
           data: {
-            pileta_id: piletaId,
+            infraestructura_fisica_id: infraestructuraFisicaId,
             cantidad_total: cantidadTotal,
             cantidad_alimento: cantidadAlimento,
             observacion_id: obsId,
@@ -183,7 +183,7 @@ class EngordaController {
           include: engordaInclude,
         });
 
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+        await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, cantidadTotal);
         return creadoNuevo;
       });
 
@@ -199,7 +199,7 @@ class EngordaController {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta o referencias inválidas" });
+        return res.status(400).json({ error: "InfraestructuraFisica o referencias inválidas" });
       }
       console.error("POST /engorda Error:", err);
       res.status(500).json({ error: "Error creando registro de engorda", detalle: err.message });
@@ -213,26 +213,26 @@ class EngordaController {
 
       const prev = await prisma.engorda.findUnique({
         where: { id },
-        select: { pileta_id: true, siembra_origen_id: true },
+        select: { infraestructura_fisica_id: true, siembra_origen_id: true },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
-      let piletaId = prev.pileta_id;
+      let infraestructuraFisicaId = prev.infraestructura_fisica_id;
 
-      if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
-        if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
-        const pd = await prisma.pileta.findUnique({
+      if (req.body.infraestructura_fisica_id !== undefined || req.body.infraestructura_fisica_destino_id !== undefined) {
+        const nid = toInt(pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"));
+        if (!nid) return res.status(400).json({ error: "infraestructura_fisica_id inválido" });
+        const pd = await prisma.infraestructuraFisica.findUnique({
           where: { id: nid },
           select: { tipo: true, nombre: true },
         });
-        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (!pd) return res.status(400).json({ error: "Infraestructura física no existe" });
         if (pd.tipo !== "engorda") {
-          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo engorda` });
+          return res.status(400).json({ error: `La infraestructura física '${pd.nombre}' debe ser tipo engorda` });
         }
-        updateData.pileta_id = nid;
-        piletaId = nid;
+        updateData.infraestructura_fisica_id = nid;
+        infraestructuraFisicaId = nid;
       }
 
       if (req.body.cantidad_total !== undefined) {
@@ -266,7 +266,7 @@ class EngordaController {
           : prev.siembra_origen_id;
 
       const actualizado = await prisma.$transaction(async (tx) => {
-        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
+        await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenFuturo ?? null, infraestructuraFisicaId);
 
         if (
           req.body.peso_gramos !== undefined ||
@@ -282,7 +282,7 @@ class EngordaController {
             tx,
             pick(req.body, "observacion", "observaciones"),
             usuarioId,
-            { piletaId, proceso: "engorda" },
+            { infraestructuraFisicaId, proceso: "engorda" },
           );
           if (obsId) updateData.observacion_id = obsId;
         }
@@ -293,14 +293,14 @@ class EngordaController {
           include: engordaInclude,
         });
 
-        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
-          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "engorda");
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+        if (updateData.cantidad_total !== undefined || updateData.infraestructura_fisica_id !== undefined) {
+          const vigente = await cantidadVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId, "engorda");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, vigente);
         }
 
-        if (updateData.pileta_id !== undefined && prev.pileta_id !== piletaId) {
-          const vigentePrev = await cantidadVigenteEnPileta(tx, prev.pileta_id, "engorda");
-          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigentePrev);
+        if (updateData.infraestructura_fisica_id !== undefined && prev.infraestructura_fisica_id !== infraestructuraFisicaId) {
+          const vigentePrev = await cantidadVigenteEnInfraestructuraFisica(tx, prev.infraestructura_fisica_id, "engorda");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, prev.infraestructura_fisica_id, vigentePrev);
         }
 
         return row;

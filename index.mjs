@@ -10,7 +10,7 @@ import { parse } from "yaml";
 
 import rolRoutes from "./src/routes/rolRoutes.js";
 import usuarioRoutes from "./src/routes/usuarioRoutes.js";
-import piletaRoutes from "./src/routes/piletaRoutes.js";
+import infraestructuraFisicaRoutes from "./src/routes/infraestructuraFisicaRoutes.js";
 import reproductorRoutes from "./src/routes/reproductorRoutes.js";
 import engordaRoutes from "./src/routes/engordaRoutes.js";
 import clienteRoutes from "./src/routes/clienteRoutes.js";
@@ -53,7 +53,7 @@ import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
 
 // Ubicaciones
 import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
-import tipoPiletaRoutes from "./src/routes/tipoPiletaRoutes.js";
+import tipoInfraestructuraFisicaRoutes from "./src/routes/tipoInfraestructuraFisicaRoutes.js";
 import areaInstalacionRoutes from "./src/routes/areaInstalacionRoutes.js";
 import faunaDetectadaRoutes from "./src/routes/faunaDetectadaRoutes.js";
 import evidenciaFaunaRoutes from "./src/routes/evidenciaFaunaRoutes.js";
@@ -116,7 +116,7 @@ api.use("/modulos", modulosRoutes);
 api.use("/roles-modulos", rolesModulosRoutes);
 
 // Operaciones
-api.use("/piletas", piletaRoutes);
+api.use("/infraestructura-fisica", infraestructuraFisicaRoutes);
 api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alevinaje", alevinajeRoutes);
@@ -152,7 +152,7 @@ api.use("/vacaciones", vacacionRoutes);
 // Catalogos
 api.use("/unidades-negocio", unidadNegocioRoutes);
 api.use("/ubicaciones", ubicacionRoutes);
-api.use("/tipos-pileta", tipoPiletaRoutes);
+api.use("/tipos-infraestructura-fisica", tipoInfraestructuraFisicaRoutes);
 api.use("/areas-instalacion", areaInstalacionRoutes);
 api.use("/faunas-detectadas", faunaDetectadaRoutes);
 api.use("/evidencias-fauna", evidenciaFaunaRoutes);

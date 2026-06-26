@@ -12,7 +12,7 @@ const CAMPOS_NA = ["ph", "amonio", "nitrito", "nitrato", "transparencia_sechhi"]
 
 const inc = {
   ubicacion: true,
-  pileta: { include: { tipoPileta: true } },
+  infraestructuraFisica: { include: { tipoInfraestructuraFisica: true } },
   observacion: true,
 };
 
@@ -110,9 +110,9 @@ class ParametrosFisicoQuimicosController {
         return res.status(400).json({ error: "La hora es obligatoria." });
       }
 
-      const piletaId = parseNum(body.pileta_id);
-      if (piletaId == null) {
-        return res.status(400).json({ error: "La instalación (pileta) es obligatoria." });
+      const infraestructuraFisicaId = parseNum(body.infraestructura_fisica_id);
+      if (infraestructuraFisicaId == null) {
+        return res.status(400).json({ error: "La instalación (infraestructura física) es obligatoria." });
       }
 
       const responsableParsed = parseResponsable(body.responsable);
@@ -163,11 +163,11 @@ class ParametrosFisicoQuimicosController {
         return res.status(400).json({ error: "Ubicación inválida." });
       }
 
-      const pileta = await prisma.pileta.findFirst({
-        where: { id: Math.trunc(piletaId), ubicacionId: u.ubicacionId },
+      const infraestructuraFisica = await prisma.infraestructuraFisica.findFirst({
+        where: { id: Math.trunc(infraestructuraFisicaId), ubicacionId: u.ubicacionId },
       });
-      if (!pileta) {
-        return res.status(400).json({ error: "La pileta no existe en la ubicación seleccionada." });
+      if (!infraestructuraFisica) {
+        return res.status(400).json({ error: "La infraestructura física no existe en la ubicación seleccionada." });
       }
 
       let turnoMuestreo = body.turno_muestreo?.trim() || inferirTurnoMuestreo(horaHHMM);
@@ -197,7 +197,7 @@ class ParametrosFisicoQuimicosController {
                 fecha: fechaRegistro,
                 hora: horaParsed,
                 turnoMuestreo,
-                piletaId: Math.trunc(piletaId),
+                infraestructuraFisicaId: Math.trunc(infraestructuraFisicaId),
                 oxigeno: oxigenoParsed.value,
                 temperaturaAgua: tempAguaParsed.value,
                 temperaturaAmbiente: tempAmbParsed.value,
@@ -254,19 +254,19 @@ class ParametrosFisicoQuimicosController {
         ubicacionId = u.ubicacionId;
       }
 
-      let piletaId = existing.piletaId;
-      if (body.pileta_id !== undefined) {
-        const parsed = parseNum(body.pileta_id);
+      let infraestructuraFisicaId = existing.infraestructuraFisicaId;
+      if (body.infraestructura_fisica_id !== undefined) {
+        const parsed = parseNum(body.infraestructura_fisica_id);
         if (parsed == null) {
-          return res.status(400).json({ error: "La instalación (pileta) es obligatoria." });
+          return res.status(400).json({ error: "La instalación (infraestructura física) es obligatoria." });
         }
-        const pileta = await prisma.pileta.findFirst({
+        const infraestructuraFisica = await prisma.infraestructuraFisica.findFirst({
           where: { id: Math.trunc(parsed), ubicacionId },
         });
-        if (!pileta) {
-          return res.status(400).json({ error: "La pileta no existe en la ubicación seleccionada." });
+        if (!infraestructuraFisica) {
+          return res.status(400).json({ error: "La infraestructura física no existe en la ubicación seleccionada." });
         }
-        piletaId = Math.trunc(parsed);
+        infraestructuraFisicaId = Math.trunc(parsed);
       }
 
       let horaParsed = existing.hora;
@@ -347,7 +347,7 @@ class ParametrosFisicoQuimicosController {
             fecha: body.fecha ? new Date(body.fecha) : existing.fecha,
             hora: horaParsed,
             turnoMuestreo,
-            piletaId,
+            infraestructuraFisicaId,
             oxigeno: oxigeno !== undefined ? oxigeno.value : existing.oxigeno,
             temperaturaAgua:
               temperaturaAgua !== undefined ? temperaturaAgua.value : existing.temperaturaAgua,

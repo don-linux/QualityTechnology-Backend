@@ -37,7 +37,7 @@
 
 ## Domain areas mounted in `index.mjs`
 - Security and access: `/usuarios`, `/roles`, `/modulos`, `/roles-modulos`
-- Operations and production: `/piletas`, `/instalaciones`, `/lotes`, `/reproductores`, `/engorda`, `/equipos`, `/lista-espera`
+- Operations and production: `/infraestructura-fisica`, `/tipos-infraestructura-fisica`, `/reproductores`, `/engorda`, `/equipos`, `/lista-espera`, `/eficiencia-reproductiva`, `/alevinaje`, `/trazabilidad`
 - Sales and finance: `/clientes`, `/ventas`, `/proveedores`, `/tesoreria`, `/cuentas`, `/flujo-caja`
 - HR and catalogs: `/empleados`, `/departamentos`, `/vacaciones`, `/expedientes`, `/nomina`, `/caja-ahorro`, `/estados`
 - Field logs / bitacoras: `/biometrias`, `/control-fauna-nociva`, `/alimentacion`, `/recepcion_insumos`, `/control-visitas`, `/control-limpieza`, `/parametros`, `/medicamentos`, `/recambios`, `/inventario`

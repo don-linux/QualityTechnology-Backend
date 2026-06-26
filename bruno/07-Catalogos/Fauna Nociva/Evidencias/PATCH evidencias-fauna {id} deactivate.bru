@@ -1,0 +1,19 @@
+meta {
+  name: PATCH evidencias-fauna {id} deactivate
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/api/evidencias-fauna/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

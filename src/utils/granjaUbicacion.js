@@ -128,9 +128,9 @@ export function primerUbicacionIdValido(...candidatos) {
 }
 
 /**
- * Filtro aplicable sobre el modelo `Pileta`, o igual en `where: { piletas: ... }`.
+ * Filtro aplicable sobre el modelo `InfraestructuraFisica`, o igual en `where: { infraestructuraFisica: ... }`.
  *
- * Preferencia: `ubicacion_id` (FK en `piletas.ubicacion_id`) frente al nombre texto
+ * Preferencia: `ubicacion_id` (FK en `infraestructuraFisica.ubicacion_id`) frente al nombre texto
  * heredado (`granja` en query/path). Así la “sede” se resuelve por catálogo
  * `ubicacion`, no solo por igualar strings.
  *
@@ -139,7 +139,7 @@ export function primerUbicacionIdValido(...candidatos) {
  * @param {express.Request|null|undefined} req
  * @returns {{ ubicacionId: number } | { ubicacion: object } | null}
  */
-export function piletaWhereUbicacionFromRequest(req) {
+export function infraestructuraFisicaWhereUbicacionFromRequest(req) {
   const q = req?.query ?? {};
   const p = req?.params ?? {};
 

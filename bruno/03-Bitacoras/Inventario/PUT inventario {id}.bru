@@ -1,0 +1,27 @@
+meta {
+  name: PUT inventario {id}
+  type: http
+  seq: 36
+}
+
+put {
+  url: {{baseUrl}}/api/inventario/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "infraestructura_fisica_id": 1,
+    "cantidad": 950,
+    "talla": 3.0,
+    "lote_nombre": "L-001",
+    "observacion": "Inventario QA UPD",
+    "fecha_siembra": "2026-01-15"
+  }
+}

@@ -91,60 +91,60 @@ export function resolverSubtipoMovimiento(raw) {
   return null;
 }
 
-export function assertPiletaEtapa(pil, etapaEsperada, rol) {
+export function assertInfraestructuraFisicaEtapa(pil, etapaEsperada, rol) {
   if (!pil) {
-    const err = new Error(`Pileta de ${rol} no encontrada`);
+    const err = new Error(`infraestructura física de ${rol} no encontrada`);
     err.code = "PILETA_NOT_FOUND";
     throw err;
   }
   const tipo = String(pil.tipo ?? "").toLowerCase();
   if (tipo !== etapaEsperada) {
     const err = new Error(
-      `La pileta de ${rol} '${pil.nombre}' debe ser de etapa ${etapaEsperada}, no '${tipo}'`,
+      `La infraestructura física de ${rol} '${pil.nombre}' debe ser de etapa ${etapaEsperada}, no '${tipo}'`,
     );
     err.code = "PILETA_TIPO_INVALIDO";
     throw err;
   }
 }
 
-export async function validarPiletasSegunSubtipo(tx, { subtipoConfig, piletaOrigenId, piletaDestinoId }) {
+export async function validarInfraestructurasFisicasSegunSubtipo(tx, { subtipoConfig, infraestructuraFisicaOrigenId, infraestructuraFisicaDestinoId }) {
   const { etapaOrigen, etapaDestino, modo } = subtipoConfig;
 
   if (modo === "VENTA" || modo === "MORTALIDAD") {
-    if (!piletaOrigenId) {
-      throw Object.assign(new Error("pileta_origen_id es obligatorio"), { code: "VALIDACION" });
+    if (!infraestructuraFisicaOrigenId) {
+      throw Object.assign(new Error("infraestructura_fisica_origen_id es obligatorio"), { code: "VALIDACION" });
     }
-    const pilOr = await tx.pileta.findUnique({
-      where: { id: piletaOrigenId },
+    const pilOr = await tx.infraestructuraFisica.findUnique({
+      where: { id: infraestructuraFisicaOrigenId },
       select: { id: true, nombre: true, tipo: true },
     });
-    assertPiletaEtapa(pilOr, etapaOrigen, "origen");
+    assertInfraestructuraFisicaEtapa(pilOr, etapaOrigen, "origen");
     return { pilOr, pilDest: null };
   }
 
-  if (!piletaOrigenId || !piletaDestinoId) {
+  if (!infraestructuraFisicaOrigenId || !infraestructuraFisicaDestinoId) {
     throw Object.assign(
-      new Error("pileta_origen_id y pileta_destino_id son obligatorios"),
+      new Error("infraestructura_fisica_origen_id y infraestructura_fisica_destino_id son obligatorios"),
       { code: "VALIDACION" },
     );
   }
 
   const [pilOr, pilDest] = await Promise.all([
-    tx.pileta.findUnique({
-      where: { id: piletaOrigenId },
+    tx.infraestructuraFisica.findUnique({
+      where: { id: infraestructuraFisicaOrigenId },
       select: { id: true, nombre: true, tipo: true },
     }),
-    tx.pileta.findUnique({
-      where: { id: piletaDestinoId },
+    tx.infraestructuraFisica.findUnique({
+      where: { id: infraestructuraFisicaDestinoId },
       select: { id: true, nombre: true, tipo: true },
     }),
   ]);
 
-  assertPiletaEtapa(pilOr, etapaOrigen, "origen");
-  assertPiletaEtapa(pilDest, etapaDestino, "destino");
+  assertInfraestructuraFisicaEtapa(pilOr, etapaOrigen, "origen");
+  assertInfraestructuraFisicaEtapa(pilDest, etapaDestino, "destino");
 
-  if (piletaOrigenId === piletaDestinoId) {
-    throw Object.assign(new Error("Origen y destino no pueden ser la misma pileta"), {
+  if (infraestructuraFisicaOrigenId === infraestructuraFisicaDestinoId) {
+    throw Object.assign(new Error("Origen y destino no pueden ser la misma infraestructura física"), {
       code: "VALIDACION",
     });
   }

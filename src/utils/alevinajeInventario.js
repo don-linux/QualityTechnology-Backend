@@ -1,10 +1,10 @@
 /**
  * Descuentos en filas `alevinaje` cuando egresa inventario (venta, traslado, mortalidad).
- * Crea un registro periódico nuevo con el stock restante; solo el último registro por pileta
+ * Crea un registro periódico nuevo con el stock restante; solo el último registro por infraestructura física
  * representa el inventario vigente (mismo criterio que los ingresos por traslado).
  */
 
-import { aplicarEstadoPiletaPorCantidad } from "./reproductorInventario.js";
+import { aplicarEstadoInfraestructuraFisicaPorCantidad } from "./reproductorInventario.js";
 import { crearObservacionEgresoInventario } from "./observacion.js";
 
 function toInt(value, fallback = null) {
@@ -15,9 +15,9 @@ function toInt(value, fallback = null) {
 
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
- * @param {number|null} piletaOrigenId
+ * @param {number|null} infraestructuraFisicaOrigenId
  * @param {{
- *   piletaDestinoId?: number|null,
+ *   infraestructuraFisicaDestinoId?: number|null,
  *   cantidadTotalSinSexo?: number,
  *   cantidad?: number,
  *   cantidad_total?: number,
@@ -28,9 +28,9 @@ function toInt(value, fallback = null) {
  *   folioVenta?: string|number|null,
  * }} opciones
  */
-export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId, opciones = {}) {
-  const ori = toInt(piletaOrigenId);
-  const dest = toInt(opciones.piletaDestinoId ?? null);
+export async function descontarAlevinajePorEgresoHaciaEngorda(tx, infraestructuraFisicaOrigenId, opciones = {}) {
+  const ori = toInt(infraestructuraFisicaOrigenId);
+  const dest = toInt(opciones.infraestructuraFisicaDestinoId ?? null);
   if (!ori || (dest && ori === dest)) return;
 
   const qty = Math.max(
@@ -47,7 +47,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
   if (qty <= 0) return;
 
   const vigente = await tx.alevinaje.findFirst({
-    where: { pileta_id: ori },
+    where: { infraestructura_fisica_id: ori },
     orderBy: { id: "desc" },
     select: {
       id: true,
@@ -60,7 +60,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
 
   const disponible = vigente?.cantidad_total ?? 0;
   if (!vigente || qty > disponible) {
-    const err = new Error("Cantidad mayor al inventario de alevinaje en la pileta de origen");
+    const err = new Error("Cantidad mayor al inventario de alevinaje en la infraestructura física de origen");
     err.code = "ALEV_CANTIDAD_INSUFICIENTE";
     throw err;
   }
@@ -78,7 +78,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
       },
       usuarioId,
       {
-        piletaId: ori,
+        infraestructuraFisicaId: ori,
         proceso: opciones.procesoObservacion ?? "trazabilidad",
       },
     );
@@ -86,7 +86,7 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
 
   await tx.alevinaje.create({
     data: {
-      pileta_id: ori,
+      infraestructura_fisica_id: ori,
       lote: vigente.lote ?? null,
       cantidad_total: restante,
       peso: vigente.peso ?? null,
@@ -95,5 +95,5 @@ export async function descontarAlevinajePorEgresoHaciaEngorda(tx, piletaOrigenId
     },
   });
 
-  await aplicarEstadoPiletaPorCantidad(tx, ori, restante);
+  await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, ori, restante);
 }

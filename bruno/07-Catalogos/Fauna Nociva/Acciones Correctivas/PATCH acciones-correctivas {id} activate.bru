@@ -1,0 +1,19 @@
+meta {
+  name: PATCH acciones-correctivas {id} activate
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/api/acciones-correctivas/{{id}}/activate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

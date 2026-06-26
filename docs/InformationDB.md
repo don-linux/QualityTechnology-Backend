@@ -8,7 +8,7 @@
 --   rrhh.puestos, rrhh.departamentos, rrhh.tipos_documento
 --
 -- Tablas Inventarios: 10
---   instalaciones, reproductores, lotes, piletas, engorda,
+--   reproductores, infraestructura_fisica, engorda,
 --   equipos, mantenimientos,
 --   trazabilidad_alevinaje, trazabilidad_engorda, trazabilidad_reproductores
 --
@@ -95,7 +95,7 @@
 -- DROP TABLE IF EXISTS public.mantenimientos             CASCADE;
 -- DROP TABLE IF EXISTS public.equipos                    CASCADE;
 -- DROP TABLE IF EXISTS public.engorda                    CASCADE;
--- DROP TABLE IF EXISTS public.piletas                    CASCADE;
+-- DROP TABLE IF EXISTS public.infraestructura_fisica     CASCADE;
 -- DROP TABLE IF EXISTS public.lotes                      CASCADE;
 -- DROP TABLE IF EXISTS public.reproductores              CASCADE;
 -- DROP TABLE IF EXISTS public.instalaciones              CASCADE;

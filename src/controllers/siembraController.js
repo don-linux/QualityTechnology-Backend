@@ -1,6 +1,6 @@
 import prisma from "../prisma.js";
 import { serializeSiembra } from "../utils/serializers.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
 function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -9,7 +9,7 @@ function toInt(value, fallback = null) {
 }
 
 const siembraListInclude = {
-  piletas_siembra_pileta_origenTopiletas: {
+  infraestructuraFisicaOrigen: {
     select: {
       id: true,
       nombre: true,
@@ -17,7 +17,7 @@ const siembraListInclude = {
       reproductores: { select: { id: true, cantidad_total: true } },
     },
   },
-  piletas_siembra_pileta_destinoTopiletas: {
+  infraestructuraFisicaDestino: {
     select: {
       id: true,
       nombre: true,
@@ -28,10 +28,10 @@ const siembraListInclude = {
 };
 
 class SiembraController {
-  /** Listado para trazabilidad y selectores (p. ej. vincular alevinaje a siembra hacia esta pileta). */
+  /** Listado para trazabilidad y selectores (p. ej. vincular alevinaje a siembra hacia esta infraestructuraFisica). */
   static async getAll(req, res) {
     try {
-      const piletaDestino = toInt(req.query.pileta_destino ?? req.query.pileta_destino_id);
+      const infraestructuraFisicaDestino = toInt(req.query.infraestructura_fisica_destino ?? req.query.infraestructura_fisica_destino_id);
       const destinoTipo =
         typeof req.query.destino_tipo === "string" ? req.query.destino_tipo.trim() : "";
       const origenTipo =
@@ -39,20 +39,20 @@ class SiembraController {
 
       const where = {};
 
-      if (piletaDestino) where.pileta_destino = piletaDestino;
+      if (infraestructuraFisicaDestino) where.infraestructura_fisica_destino = infraestructuraFisicaDestino;
 
-      const destPiletaFilter = {};
+      const destInfraestructuraFisicaFilter = {};
 
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (ubicClause) Object.assign(destPiletaFilter, ubicClause);
-      if (destinoTipo) destPiletaFilter.tipo = destinoTipo;
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
+      if (ubicClause) Object.assign(destInfraestructuraFisicaFilter, ubicClause);
+      if (destinoTipo) destInfraestructuraFisicaFilter.tipo = destinoTipo;
 
-      if (Object.keys(destPiletaFilter).length) {
-        where.piletas_siembra_pileta_destinoTopiletas = destPiletaFilter;
+      if (Object.keys(destInfraestructuraFisicaFilter).length) {
+        where.infraestructuraFisicaDestino = destInfraestructuraFisicaFilter;
       }
 
       if (origenTipo) {
-        where.piletas_siembra_pileta_origenTopiletas = { tipo: origenTipo };
+        where.infraestructuraFisicaOrigen = { tipo: origenTipo };
       }
 
       const rows = await prisma.siembra.findMany({

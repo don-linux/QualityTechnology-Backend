@@ -6,24 +6,24 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-/** Ingreso/traslado entre piletas (tabla `siembra`). Origen opcional (= externo si null). */
+/** Ingreso/traslado entre infraestructuraFisica (tabla `siembra`). Origen opcional (= externo si null). */
 export async function crearSiembraMovimiento(
   tx,
-  { piletaOrigenId, piletaDestinoId, cantidadEntera, usuarioId, fechaMovimiento },
+  { infraestructuraFisicaOrigenId, infraestructuraFisicaDestinoId, cantidadEntera, usuarioId, fechaMovimiento },
 ) {
-  const dest = toInt(piletaDestinoId);
+  const dest = toInt(infraestructuraFisicaDestinoId);
   const cant = Math.floor(Number(cantidadEntera) || 0);
   if (!dest || cant <= 0) return null;
 
   let origen =
-    piletaOrigenId !== undefined && piletaOrigenId !== null && piletaOrigenId !== ""
-      ? toInt(piletaOrigenId)
+    infraestructuraFisicaOrigenId !== undefined && infraestructuraFisicaOrigenId !== null && infraestructuraFisicaOrigenId !== ""
+      ? toInt(infraestructuraFisicaOrigenId)
       : null;
   if (origen !== null && origen === dest) origen = null;
 
   const data = {
-    pileta_origen: origen,
-    pileta_destino: dest,
+    infraestructura_fisica_origen: origen,
+    infraestructura_fisica_destino: dest,
     cantidad: BigInt(cant),
     mortalidad: 0,
     usuario_id: usuarioId,
@@ -36,16 +36,16 @@ export async function crearSiembraMovimiento(
 
 export function crearSiembraVenta(
   tx,
-  { piletaOrigenId, cantidadEntera, ventaId, usuarioId, fechaMovimiento },
+  { infraestructuraFisicaOrigenId, cantidadEntera, ventaId, usuarioId, fechaMovimiento },
 ) {
-  const origen = toInt(piletaOrigenId);
+  const origen = toInt(infraestructuraFisicaOrigenId);
   const cant = Math.floor(Number(cantidadEntera) || 0);
   const venta = toInt(ventaId);
   if (!origen || cant <= 0 || !venta) return null;
 
   const data = {
-    pileta_origen: origen,
-    pileta_destino: null,
+    infraestructura_fisica_origen: origen,
+    infraestructura_fisica_destino: null,
     cantidad: BigInt(cant),
     mortalidad: 0,
     venta_id: venta,
@@ -60,7 +60,7 @@ export function crearSiembraVenta(
 export const ETAPAS_TRAZABILIDAD = ["alevinaje", "engorda"];
 
 /** Etapas visibles en el listado de movimientos (incluye flujo reproductivo). */
-export const ETAPAS_PILETA_MOVIMIENTOS = [
+export const ETAPAS_INFRAESTRUCTURA_FISICA_MOVIMIENTOS = [
   ...ETAPAS_TRAZABILIDAD,
   "reproductores",
   "incubacion",
@@ -79,15 +79,15 @@ export function labelEtapa(tipo) {
 }
 
 export function resolverEtapaMovimiento(pilOr, pilDest) {
-  const tipos = new Set(ETAPAS_PILETA_MOVIMIENTOS);
+  const tipos = new Set(ETAPAS_INFRAESTRUCTURA_FISICA_MOVIMIENTOS);
   if (pilDest?.tipo && tipos.has(pilDest.tipo)) return pilDest.tipo;
   if (pilOr?.tipo && tipos.has(pilOr.tipo)) return pilOr.tipo;
   return pilDest?.tipo ?? pilOr?.tipo ?? null;
 }
 
 export function serializarMovimientoSiembra(s) {
-  const pilOr = s.piletas_siembra_pileta_origenTopiletas;
-  const pilDest = s.piletas_siembra_pileta_destinoTopiletas;
+  const pilOr = s.infraestructuraFisicaOrigen;
+  const pilDest = s.infraestructuraFisicaDestino;
   const brutas =
     typeof s.cantidad === "bigint" ? Number(s.cantidad) : Number(s.cantidad ?? 0);
   const mortalidad = s.mortalidad ?? 0;
@@ -151,7 +151,7 @@ export function serializarMovimientoSiembra(s) {
     cantidad_trasladada: esMortalidadPura ? mortalidad : netas,
     fecha_movimiento: s.fecha,
     observacion: obsParts.length ? obsParts.join(" · ") : null,
-    origen_pileta_id: pilOr?.id ?? null,
+    origen_infraestructura_fisica_id: pilOr?.id ?? null,
     etapa,
     etapa_label: subtipoLabel ?? (esVenta ? "Venta" : labelEtapa(etapa)),
     subtipo_movimiento: subtipoLabel,

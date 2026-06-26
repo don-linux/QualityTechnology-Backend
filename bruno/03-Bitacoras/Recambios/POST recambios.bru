@@ -1,0 +1,29 @@
+meta {
+  name: POST recambios
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{baseUrl}}/api/recambios
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "mes_periodo": "2026-06",
+    "infraestructura_fisica_id": 1,
+    "fecha_1": "2026-06-05",
+    "tipo_1": "Parcial",
+    "fecha_2": "2026-06-15",
+    "tipo_2": "Total",
+    "responsable": "Responsable QA",
+    "observaciones": "Recambios QA"
+  }
+}

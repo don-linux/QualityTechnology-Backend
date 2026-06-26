@@ -1,0 +1,14 @@
+meta {
+  name: GET trazabilidad movimientos {granja}
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/trazabilidad/movimientos/{{granja}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

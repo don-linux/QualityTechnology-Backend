@@ -65,12 +65,12 @@ export async function resolverHistorialPesoId(tx, body) {
 class HistorialPesoController {
   static async getAll(req, res) {
     try {
-      const piletaId = toInt(req.query.pileta_id);
-      const where = piletaId
+      const infraestructuraFisicaId = toInt(req.query.infraestructura_fisica_id);
+      const where = infraestructuraFisicaId
         ? {
             OR: [
-              { alevinaje: { some: { pileta_id: piletaId } } },
-              { engorda: { some: { pileta_id: piletaId } } },
+              { alevinaje: { some: { infraestructura_fisica_id: infraestructuraFisicaId } } },
+              { engorda: { some: { infraestructura_fisica_id: infraestructuraFisicaId } } },
             ],
           }
         : undefined;

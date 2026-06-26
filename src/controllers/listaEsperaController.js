@@ -60,12 +60,12 @@ function buildPayloadFromBody(body) {
 
   const tipoRaw = pick(body, "tipo_venta");
   const tipoVenta = normalizarTipoVenta(tipoRaw);
-  const piletaOrigenId = toInt(
-    pick(body, "pileta_origen_id", "origen_pileta_id"),
+  const infraestructuraFisicaOrigenId = toInt(
+    pick(body, "infraestructura_fisica_origen_id", "origen_infraestructura_fisica_id"),
   );
 
-  if (ventaRequiereTrazabilidad(tipoVenta) && !piletaOrigenId) {
-    throw new Error("pileta_origen_id es obligatorio para ventas de alevines o mojarra");
+  if (ventaRequiereTrazabilidad(tipoVenta) && !infraestructuraFisicaOrigenId) {
+    throw new Error("infraestructura_fisica_origen_id es obligatorio para ventas de alevines o mojarra");
   }
 
   const lugar = pick(body, "lugar_entrega");
@@ -120,7 +120,7 @@ function buildPayloadFromBody(body) {
     hora_embolsado: String(horaEmbolsado),
     hora_entrega: String(horaEntrega),
     encargado_venta: pick(body, "encargado_venta") ?? null,
-    pileta_origen_id: piletaOrigenId,
+    infraestructura_fisica_origen_id: infraestructuraFisicaOrigenId,
     notas: pick(body, "notas") ?? null,
     estatus: pick(body, "estatus") ?? "PENDIENTE",
   };
@@ -171,7 +171,7 @@ class ListaEsperaController {
     try {
       const alcance = await alcanceUnidadNegocio(req.user);
       const lista = await prisma.listaEspera.findMany({
-        include: { clientes: true, pileta_origen: true },
+        include: { clientes: true, infraestructura_fisica_origen: true },
         orderBy: { id: "desc" },
       });
       const visibles = alcance.esRoot
@@ -190,7 +190,7 @@ class ListaEsperaController {
 
       const creado = await prisma.listaEspera.create({
         data,
-        include: { clientes: true, pileta_origen: true },
+        include: { clientes: true, infraestructura_fisica_origen: true },
       });
 
       res.status(201).json(serializeListaEspera(creado));
@@ -246,7 +246,7 @@ class ListaEsperaController {
             lista.venta_id,
             req.user.usuario_id,
             {
-              piletaOrigenId: lista.pileta_origen_id,
+              infraestructuraFisicaOrigenId: lista.infraestructura_fisica_origen_id,
               cantidad: lista.cantidad_peces,
               tipoVenta: lista.tipo_venta,
             },
@@ -259,7 +259,7 @@ class ListaEsperaController {
 
       res.json({
         mensaje: inventarioRestaurado
-          ? "Pedido cancelado. Se registró la devolución en trazabilidad y los organismos fueron restaurados en su pileta de origen."
+          ? "Pedido cancelado. Se registró la devolución en trazabilidad y los organismos fueron restaurados en su infraestructura física de origen."
           : "Pedido cancelado.",
         inventario_restaurado: inventarioRestaurado,
       });

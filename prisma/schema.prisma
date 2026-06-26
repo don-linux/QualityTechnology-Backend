@@ -144,10 +144,10 @@ model UnidadNegocio {
   @@schema("public")
 }
 
-/// Lote de reproductores activo en pileta tipo `reproductores`. Varios registros por pileta; el último por `id` es el vigente.
+/// Lote de reproductores activo en infraestructura física tipo `reproductores`. Varios registros por unidad; el último por `id` es el vigente.
 model Reproductor {
   id                    Int             @id @default(autoincrement())
-  pileta_id             Int
+  infraestructura_fisica_id             Int             @map("infraestructura_fisica_id")
   fecha_siembra         DateTime?       @db.Date @map("fecha_siembra")
   lote_genetico         String?         @db.VarChar(120) @map("lote_genetico")
   activo                Boolean         @default(true)
@@ -174,14 +174,14 @@ model Reproductor {
   biometrias            Biometria?      @relation(fields: [biometria_id], references: [id])
   historial_peso        HistorialPeso?  @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion           observacion?    @relation(fields: [observacion_id], references: [id])
-  piletas               Pileta          @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica               InfraestructuraFisica          @relation(fields: [infraestructura_fisica_id], references: [id])
   siembra_origen        siembra?        @relation("ReproductorSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
   eventos_cosecha            EventoCosecha[]
   eficiencias_reproductivas  eficiencia_reproductiva[]
 
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@index([activo])
-  @@index([pileta_id, activo])
+  @@index([infraestructura_fisica_id, activo])
   @@index([estado_ciclo])
   @@map("reproductores")
   @@schema("public")
@@ -192,7 +192,7 @@ model EventoCosecha {
   id                 Int          @id @default(autoincrement())
   codigo             String       @unique @db.VarChar(24)
   reproductor_id     Int          @map("reproductor_id")
-  pileta_id          Int          @map("pileta_id")
+  infraestructura_fisica_id          Int          @map("infraestructura_fisica_id")
   fecha_cosecha      DateTime     @db.Date @map("fecha_cosecha")
   tipo_cosecha       TipoCosecha  @map("tipo_cosecha")
   estadio_desarrollo String?      @db.VarChar(80) @map("estadio_desarrollo")
@@ -201,11 +201,11 @@ model EventoCosecha {
   observacion_id     Int?
   created_at         DateTime     @default(now()) @db.Timestamp(6)
   reproductor        Reproductor  @relation(fields: [reproductor_id], references: [id], onDelete: Restrict)
-  piletas            Pileta       @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica            InfraestructuraFisica       @relation(fields: [infraestructura_fisica_id], references: [id])
   observacion             observacion?            @relation(fields: [observacion_id], references: [id])
   eficiencia_reproductiva eficiencia_reproductiva?
 
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@index([reproductor_id])
   @@index([fecha_cosecha(sort: Desc)])
   @@map("evento_cosecha")
@@ -214,52 +214,52 @@ model EventoCosecha {
 
 /// Unidad física del ciclo reproductivo: reproductores → alevinaje → engorda; traslados mediante `siembra`.
 /// `metros_cubicos` debe alinearse con largo×ancho×alto (API o columna GENERATED en migración SQL).
-model Pileta {
-  id                                      Int                @id @default(autoincrement())
-  nombre                                  String             @db.VarChar(100)
-  largo                                   Decimal            @db.Decimal(10, 2)
-  ancho                                   Decimal            @db.Decimal(10, 2)
-  alto                                    Decimal            @db.Decimal(10, 2)
-  metros_cubicos                          Decimal            @db.Decimal(14, 3)
-  material                                String             @db.VarChar(80)
-  estado                                  PiletaEstado       @default(vacia)
-  tipo                                    PiletaTipo
-  estadoConservacion                      String?            @map("estado_conservacion") @db.VarChar(100)
-  tipoPiletaId                            Int?               @map("tipo_pileta_id")
-  ubicacionId                             Int                @map("ubicacion_id")
-  created_at                              DateTime           @default(now()) @db.Timestamp(6)
-  updated_at                              DateTime           @updatedAt @db.Timestamp(6)
-  alevinaje                               alevinaje[]
-  eficiencia_reproductiva                 eficiencia_reproductiva[] @relation("EficienciaReproductivaPiletaDestino")
-  eficiencia_reproductiva_origen          eficiencia_reproductiva[] @relation("EficienciaReproductivaPiletaOrigen")
-  eventos_cosecha                         EventoCosecha[]
-  alimentacion                            Alimentacion[]
-  biometrias                              Biometria[]
-  engorda                                 Engorda[]
-  inventario_alevines                     InventarioAlevin[]
-  observaciones                           observacion[]
-  tipoPileta                              TipoPileta?        @relation(fields: [tipoPiletaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  ubicacion                               ubicacion          @relation(fields: [ubicacionId], references: [id])
-  recambios                               Recambio[]
-  reproductores                           Reproductor[]
-  parametrosFisicoQuimicos                ParametrosFisicoQuimico[]
-  siembra_siembra_pileta_destinoTopiletas siembra[]          @relation("siembra_pileta_destinoTopiletas")
-  siembra_siembra_pileta_origenTopiletas  siembra[]          @relation("siembra_pileta_origenTopiletas")
-  lista_espera                            ListaEspera[]
+model InfraestructuraFisica {
+  id                                                                      Int                @id @default(autoincrement())
+  nombre                                                                  String             @db.VarChar(100)
+  largo                                                                   Decimal            @db.Decimal(10, 2)
+  ancho                                                                   Decimal            @db.Decimal(10, 2)
+  alto                                                                    Decimal            @db.Decimal(10, 2)
+  metros_cubicos                                                          Decimal            @db.Decimal(14, 3)
+  material                                                                String             @db.VarChar(80)
+  estado                                                                  InfraestructuraFisicaEstado       @default(vacia)
+  tipo                                                                    InfraestructuraFisicaTipo
+  estadoConservacion                                                      String?            @map("estado_conservacion") @db.VarChar(100)
+  tipoInfraestructuraFisicaId                                             Int?               @map("tipo_infraestructura_fisica_id")
+  ubicacionId                                                             Int                @map("ubicacion_id")
+  created_at                                                              DateTime           @default(now()) @db.Timestamp(6)
+  updated_at                                                              DateTime           @updatedAt @db.Timestamp(6)
+  alevinaje                                                               alevinaje[]
+  eficiencia_reproductiva                                                 eficiencia_reproductiva[] @relation("EficienciaReproductivaInfraestructuraFisicaDestino")
+  eficiencia_reproductiva_origen                                          eficiencia_reproductiva[] @relation("EficienciaReproductivaInfraestructuraFisicaOrigen")
+  eventos_cosecha                                                         EventoCosecha[]
+  alimentacion                                                            Alimentacion[]
+  biometrias                                                              Biometria[]
+  engorda                                                                 Engorda[]
+  inventario_alevines                                                     InventarioAlevin[]
+  observaciones                                                           observacion[]
+  tipoInfraestructuraFisica                                               TipoInfraestructuraFisica?        @relation(fields: [tipoInfraestructuraFisicaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  ubicacion                                                               ubicacion          @relation(fields: [ubicacionId], references: [id])
+  recambios                                                               Recambio[]
+  reproductores                                                           Reproductor[]
+  parametrosFisicoQuimicos                                                ParametrosFisicoQuimico[]
+  siembra_siembra_infraestructura_fisica_destinoToInfraestructuraFisica   siembra[]          @relation("siembra_infraestructura_fisica_destinoToInfraestructuraFisica")
+  siembra_siembra_infraestructura_fisica_origenToInfraestructuraFisica    siembra[]          @relation("siembra_infraestructura_fisica_origenToInfraestructuraFisica")
+  lista_espera                                                            ListaEspera[]
 
   @@unique([nombre, ubicacionId])
   @@index([estado])
   @@index([tipo])
-  @@index([tipoPiletaId])
+  @@index([tipoInfraestructuraFisicaId])
   @@index([ubicacionId])
-  @@map("piletas")
+  @@map("infraestructura_fisica")
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `engorda` (cantidad, alimento, peso).
+/// Inventario operativo en infraestructura física tipo `engorda` (cantidad, alimento, peso).
 model Engorda {
   id                Int            @id @default(autoincrement())
-  pileta_id         Int
+  infraestructura_fisica_id         Int            @map("infraestructura_fisica_id")
   cantidad_total    Int            @default(0)
   cantidad_alimento Int            @default(0)
   observacion_id    Int?
@@ -269,10 +269,10 @@ model Engorda {
   biometrias        Biometria?     @relation(fields: [biometria_id], references: [id])
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
   observacion       observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas           Pileta         @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica           InfraestructuraFisica         @relation(fields: [infraestructura_fisica_id], references: [id])
   siembra_origen    siembra?       @relation("EngordaSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@map("engorda")
   @@schema("public")
 }
@@ -502,19 +502,19 @@ model ListaEspera {
   hora_embolsado     String?   @map("hora_embolsado") @db.VarChar(10)
   hora_entrega      String?   @map("hora_entrega") @db.VarChar(10)
   encargado_venta   String?   @map("encargado_venta") @db.VarChar(150)
-  pileta_origen_id  Int?      @map("pileta_origen_id")
+  infraestructura_fisica_origen_id  Int?      @map("infraestructura_fisica_origen_id")
   venta_id          Int?      @map("venta_id")
   notas             String?   @db.VarChar(500)
   estatus           String    @default("PENDIENTE") @db.VarChar(30)
   created_at        DateTime  @default(now()) @db.Timestamp(6)
   updated_at        DateTime  @updatedAt @db.Timestamp(6)
   clientes          Cliente?  @relation(fields: [cliente_id], references: [id])
-  pileta_origen     Pileta?   @relation(fields: [pileta_origen_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  infraestructuraFisicaOrigen     InfraestructuraFisica?   @relation(fields: [infraestructura_fisica_origen_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   venta             Venta?    @relation(fields: [venta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([cliente_id])
   @@index([estatus])
-  @@index([pileta_origen_id])
+  @@index([infraestructura_fisica_origen_id])
   @@index([venta_id])
   @@index([fecha_entrega])
   @@map("lista_espera")
@@ -577,7 +577,7 @@ model Alimentacion {
   ubicacionId         Int          @map("ubicacion_id")
   fecha               DateTime?    @db.Date
   mes                 String?      @db.VarChar(20)
-  pileta_id           Int?
+  infraestructura_fisica_id           Int?         @map("infraestructura_fisica_id")
   fechaSiembra        DateTime?    @map("fecha_siembra") @db.Date
   origenAlevines      String?      @map("origen_alevines") @db.VarChar(200)
   pesoPromedioEntrada Decimal?     @map("peso_promedio_entrada") @db.Decimal(12, 3)
@@ -592,7 +592,7 @@ model Alimentacion {
   created_at          DateTime     @default(now()) @db.Timestamp(6)
   updated_at          DateTime     @updatedAt @db.Timestamp(6)
   observacion         observacion? @relation(fields: [observacionId], references: [id])
-  piletas             Pileta?      @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica             InfraestructuraFisica?      @relation(fields: [infraestructura_fisica_id], references: [id])
   ubicacion           ubicacion    @relation(fields: [ubicacionId], references: [id])
   usuario             Usuario      @relation(fields: [usuarioId], references: [id])
 
@@ -625,7 +625,7 @@ model ControlLimpieza {
 
 model Biometria {
   id                    Int           @id @default(autoincrement())
-  pileta_id             Int
+  infraestructura_fisica_id             Int           @map("infraestructura_fisica_id")
   fecha                 DateTime      @default(now()) @db.Date
   pesoTotalGramos       Decimal?      @map("peso_total_gramos") @db.Decimal(12, 3)
   organismosMuestreados Int?          @map("organismos_muestreados")
@@ -636,13 +636,13 @@ model Biometria {
   observacionBiometria    observacion?            @relation("ObservacionBiometria")
   alevinaje               alevinaje[]
   eficiencia_reproductiva eficiencia_reproductiva[]
-  piletas               Pileta        @relation(fields: [pileta_id], references: [id], onDelete: Cascade)
+  infraestructuraFisica               InfraestructuraFisica        @relation(fields: [infraestructura_fisica_id], references: [id], onDelete: Cascade)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
   engorda               Engorda[]
   reproductores         Reproductor[]
 
   @@index([fecha(sort: Desc)])
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@map("biometrias")
   @@schema("public")
 }
@@ -650,7 +650,7 @@ model Biometria {
 model InventarioAlevin {
   id                   Int          @id @default(autoincrement())
   ubicacionId          Int          @map("ubicacion_id")
-  pileta_id            Int?
+  infraestructura_fisica_id            Int?         @map("infraestructura_fisica_id")
   lote_nombre          String?      @db.VarChar(100)
   cantidad             Int?
   talla                Decimal?     @db.Decimal(10, 2)
@@ -661,11 +661,11 @@ model InventarioAlevin {
   created_at           DateTime     @default(now()) @db.Timestamp(6)
   updated_at           DateTime     @updatedAt @db.Timestamp(6)
   observacion          observacion? @relation(fields: [observacionId], references: [id])
-  piletas              Pileta?      @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica              InfraestructuraFisica?      @relation(fields: [infraestructura_fisica_id], references: [id])
   ubicacion            ubicacion    @relation(fields: [ubicacionId], references: [id])
   usuario              Usuario      @relation(fields: [usuarioId], references: [id])
 
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@index([ubicacionId])
   @@index([usuarioId])
   @@map("inventario_alevines")
@@ -704,7 +704,7 @@ model ParametrosFisicoQuimico {
   fecha               DateTime     @db.Date
   hora                DateTime     @db.Time(6)
   turnoMuestreo       String       @map("turno_muestreo") @db.VarChar(20)
-  piletaId            Int?         @map("pileta_id")
+  infraestructuraFisicaId            Int?         @map("infraestructura_fisica_id")
   oxigeno             Decimal?     @db.Decimal(8, 3)
   temperaturaAgua     Decimal?     @map("temperatura_agua") @db.Decimal(6, 2)
   temperaturaAmbiente Decimal?     @map("temperatura_ambiente") @db.Decimal(6, 2)
@@ -722,11 +722,11 @@ model ParametrosFisicoQuimico {
   observacion         observacion? @relation(fields: [observacionId], references: [id])
   ubicacion           ubicacion    @relation(fields: [ubicacionId], references: [id])
   usuario             Usuario?     @relation(fields: [usuarioId], references: [id])
-  pileta              Pileta?      @relation(fields: [piletaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  infraestructuraFisica              InfraestructuraFisica?      @relation(fields: [infraestructuraFisicaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([ubicacionId])
   @@index([usuarioId])
-  @@index([piletaId])
+  @@index([infraestructuraFisicaId])
   @@index([fecha(sort: Desc)])
   @@map("parametros_fisico_quimicos")
   @@schema("public")
@@ -766,7 +766,7 @@ model Recambio {
   id            Int          @id @default(autoincrement())
   ubicacionId   Int          @map("ubicacion_id")
   mes_periodo   String?      @db.VarChar(20)
-  pileta_id     Int?
+  infraestructura_fisica_id     Int?         @map("infraestructura_fisica_id")
   fecha_1       DateTime?    @db.Date
   tipo_1        String?      @db.VarChar(30)
   fecha_2       DateTime?    @db.Date
@@ -785,7 +785,7 @@ model Recambio {
   created_at    DateTime     @default(now()) @db.Timestamp(6)
   updated_at    DateTime     @updatedAt @db.Timestamp(6)
   observacion   observacion? @relation(fields: [observacionId], references: [id])
-  piletas       Pileta?      @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica       InfraestructuraFisica?      @relation(fields: [infraestructura_fisica_id], references: [id])
   ubicacion     ubicacion    @relation(fields: [ubicacionId], references: [id])
   usuario       Usuario      @relation(fields: [usuarioId], references: [id])
 
@@ -846,15 +846,15 @@ model ControlVisita {
   @@schema("public")
 }
 
-model TipoPileta {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @unique @db.VarChar(100)
-  esta_activo Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @updatedAt @db.Timestamp(6)
-  piletas     Pileta[]
+model TipoInfraestructuraFisica {
+  id          Int                    @id @default(autoincrement())
+  nombre      String                 @unique @db.VarChar(100)
+  esta_activo Boolean                @default(true)
+  created_at  DateTime               @default(now()) @db.Timestamp(6)
+  updated_at  DateTime               @updatedAt @db.Timestamp(6)
+  infraestructurasFisicas InfraestructuraFisica[]
 
-  @@map("tipo_pileta")
+  @@map("tipo_infraestructura_fisica")
   @@schema("catalogos")
 }
 
@@ -939,10 +939,10 @@ model Insumo {
   @@schema("catalogos")
 }
 
-/// Inventario operativo en pileta tipo `alevinaje` (cantidad, lote, talla).
+/// Inventario operativo en infraestructura física tipo `alevinaje` (cantidad, lote, talla).
 model alevinaje {
   id                Int           @id @default(autoincrement())
-  pileta_id         Int
+  infraestructura_fisica_id         Int           @map("infraestructura_fisica_id")
   /// Lote genético heredado de eficiencia reproductiva o capturado manualmente.
   lote              String?       @db.VarChar(60)
   cantidad_total    Int           @default(0)
@@ -951,22 +951,22 @@ model alevinaje {
   peso              Int?
   biometrias        Biometria?    @relation(fields: [biometria_id], references: [id])
   historial_peso    HistorialPeso? @relation(fields: [peso], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  piletas           Pileta        @relation(fields: [pileta_id], references: [id])
+  infraestructuraFisica           InfraestructuraFisica        @relation(fields: [infraestructura_fisica_id], references: [id])
   siembra_origen    siembra?      @relation("AlevinajeSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
-  @@index([pileta_id])
+  @@index([infraestructura_fisica_id])
   @@index([lote])
   @@schema("public")
 }
 
-/// Inventario operativo en pileta tipo `incubacion`. Tabla única del módulo de Eficiencia
+/// Inventario operativo en infraestructura física tipo `incubacion`. Tabla única del módulo de Eficiencia
 /// reproductiva: incluye los datos del desove/cosecha (tipo, hembras ovadas, estadio, fecha y
 /// estanque de reproductores de origen) fusionados con los de la estancia en eficiencia reproductiva.
 model eficiencia_reproductiva {
   id                 Int            @id @default(autoincrement())
   codigo             String?        @unique @db.VarChar(24)
-  pileta_id          Int
-  pileta_origen_id   Int?
+  infraestructura_fisica_id          Int            @map("infraestructura_fisica_id")
+  infraestructura_fisica_origen_id   Int?           @map("infraestructura_fisica_origen_id")
   reproductor_id     Int?
   lote               String         @db.VarChar(60)
   /// Tipos de cosecha del desove. Permite seleccionar más de una opción (huevo, larva con saco, alevín nadando).
@@ -979,7 +979,7 @@ model eficiencia_reproductiva {
   /// `huevos_ml` conserva la suma total para trazabilidad y compatibilidad.
   volumen_por_tipo   Json?          @map("volumen_por_tipo")
   fecha_ingreso      DateTime?      @db.Date
-  dias_en_pileta     Int?
+  dias_en_infraestructura_fisica     Int?           @map("dias_en_infraestructura_fisica")
   fecha_egreso       DateTime?      @db.Date
   evento_cosecha_id  Int?           @unique @map("evento_cosecha_id")
   observacion_id     Int?
@@ -987,15 +987,15 @@ model eficiencia_reproductiva {
   siembra_origen_id  Int?           @map("siembra_origen_id")
   biometrias         Biometria?     @relation(fields: [biometria_id], references: [id])
   observacion        observacion?   @relation(fields: [observacion_id], references: [id])
-  piletas            Pileta         @relation("EficienciaReproductivaPiletaDestino", fields: [pileta_id], references: [id])
-  pileta_origen      Pileta?        @relation("EficienciaReproductivaPiletaOrigen", fields: [pileta_origen_id], references: [id], onDelete: SetNull)
+  infraestructuraFisica            InfraestructuraFisica         @relation("EficienciaReproductivaInfraestructuraFisicaDestino", fields: [infraestructura_fisica_id], references: [id])
+  infraestructuraFisicaOrigen      InfraestructuraFisica?        @relation("EficienciaReproductivaInfraestructuraFisicaOrigen", fields: [infraestructura_fisica_origen_id], references: [id], onDelete: SetNull)
   reproductor        Reproductor?   @relation(fields: [reproductor_id], references: [id], onDelete: SetNull)
   evento_cosecha     EventoCosecha? @relation(fields: [evento_cosecha_id], references: [id], onDelete: SetNull)
   siembra_origen     siembra?       @relation("EficienciaReproductivaSiembraOrigen", fields: [siembra_origen_id], references: [id], onDelete: SetNull)
 
-  @@unique([pileta_id, lote])
-  @@index([pileta_id])
-  @@index([pileta_origen_id])
+  @@unique([infraestructura_fisica_id, lote])
+  @@index([infraestructura_fisica_id])
+  @@index([infraestructura_fisica_origen_id])
   @@index([reproductor_id])
   @@index([lote])
   @@index([evento_cosecha_id])
@@ -1030,18 +1030,18 @@ model caja_ahorro {
   @@schema("public")
 }
 
-/// Comentario de auditoría. Si `pileta_id` está presente, permite listar la última observación por pileta (`ORDER BY created_at DESC`), p. ej. biometría en pileta X.
+/// Comentario de auditoría. Si `infraestructura_fisica_id` está presente, permite listar la última observación por unidad (`ORDER BY created_at DESC`), p. ej. biometría en infraestructura física X.
 model observacion {
   id                 Int                @id @default(autoincrement())
   comentario         String
   usuario_id         Int
-  pileta_id          Int?               @map("pileta_id")
+  infraestructura_fisica_id          Int?               @map("infraestructura_fisica_id")
   /// Contexto opcional del alta: biometria, siembra, reproductor, alevinaje, engorda, venta, etc.
   proceso            String?            @db.VarChar(80)
-  /// Comentario de una biometría concreta (1:1 opcional); también se llena `pileta_id` para consultas por pileta.
+  /// Comentario de una biometría concreta (1:1 opcional); también se llena `infraestructura_fisica_id` para consultas por infraestructura física.
   biometria_id       Int?               @unique @map("biometria_id")
   created_at         DateTime           @default(now()) @db.Timestamp(6)
-  pileta             Pileta?            @relation(fields: [pileta_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  infraestructuraFisica             InfraestructuraFisica?            @relation(fields: [infraestructura_fisica_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
   eficiencia_reproductiva eficiencia_reproductiva[]
   eventosCosecha          EventoCosecha[]
@@ -1060,15 +1060,15 @@ model observacion {
 
   @@index([created_at(sort: Desc)])
   @@index([usuario_id])
-  @@index([pileta_id, created_at(sort: Desc)])
+  @@index([infraestructura_fisica_id, created_at(sort: Desc)])
   @@schema("public")
 }
 
-/// Movimiento de organismos entre piletas (origen → destino) o egreso por venta (destino null + venta_id).
+/// Movimiento de organismos entre unidades de infraestructura física (origen → destino) o egreso por venta (destino null + venta_id).
 model siembra {
   id                                      Int           @id @default(autoincrement())
-  pileta_origen                           Int?
-  pileta_destino                          Int?
+  infraestructura_fisica_origen                           Int?          @map("infraestructura_fisica_origen")
+  infraestructura_fisica_destino                          Int?          @map("infraestructura_fisica_destino")
   cantidad                                BigInt
   mortalidad                              Int           @default(0)
   venta_id                                Int?          @map("venta_id")
@@ -1080,13 +1080,13 @@ model siembra {
   engordas_como_origen                    Engorda[]         @relation("EngordaSiembraOrigen")
   reproductores_como_origen               Reproductor[]     @relation("ReproductorSiembraOrigen")
   venta                                   Venta?        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
-  piletas_siembra_pileta_destinoTopiletas Pileta?       @relation("siembra_pileta_destinoTopiletas", fields: [pileta_destino], references: [id])
-  piletas_siembra_pileta_origenTopiletas  Pileta?       @relation("siembra_pileta_origenTopiletas", fields: [pileta_origen], references: [id])
+  infraestructuraFisicaDestino            InfraestructuraFisica?       @relation("siembra_infraestructura_fisica_destinoToInfraestructuraFisica", fields: [infraestructura_fisica_destino], references: [id])
+  infraestructuraFisicaOrigen             InfraestructuraFisica?       @relation("siembra_infraestructura_fisica_origenToInfraestructuraFisica", fields: [infraestructura_fisica_origen], references: [id])
   usuarios                                Usuario       @relation(fields: [usuario_id], references: [id])
 
   @@index([fecha(sort: Desc)])
-  @@index([pileta_destino])
-  @@index([pileta_origen])
+  @@index([infraestructura_fisica_destino])
+  @@index([infraestructura_fisica_origen])
   @@index([venta_id])
   @@schema("public")
 }
@@ -1103,7 +1103,7 @@ model ubicacion {
   inventarioAlevines InventarioAlevin[]
   medicamentos       Medicamento[]
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
-  piletas            Pileta[]
+  infraestructuraFisica InfraestructuraFisica[]
   controlFaunaNociva ControlFaunaNociva[]
   recambios          Recambio[]
   recepcionInsumos   RecepcionInsumo[]
@@ -1113,14 +1113,14 @@ model ubicacion {
   @@schema("public")
 }
 
-enum PiletaEstado {
+enum InfraestructuraFisicaEstado {
   vacia
   ocupada
 
   @@schema("public")
 }
 
-enum PiletaTipo {
+enum InfraestructuraFisicaTipo {
   alevinaje
   reproductores
   engorda
