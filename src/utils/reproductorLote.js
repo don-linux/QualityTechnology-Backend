@@ -1,14 +1,14 @@
 /**
  * Resuelve el lote de reproductores vigente (activo) que originará un desove/cosecha,
- * ya sea por id de reproductor o por la pileta de reproductores de origen.
+ * ya sea por id de reproductor o por la infraestructura física de reproductores de origen.
  *
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
- * @param {{ reproductorId?: number|null, piletaId?: number|null }} opts
+ * @param {{ reproductorId?: number|null, infraestructuraFisicaId?: number|null }} opts
  */
-export async function resolverLoteReproductorActivo(tx, { reproductorId, piletaId }) {
+export async function resolverLoteReproductorActivo(tx, { reproductorId, infraestructuraFisicaId }) {
   const select = {
     id: true,
-    pileta_id: true,
+    infraestructura_fisica_id: true,
     activo: true,
     estado_ciclo: true,
     hembras: true,
@@ -39,32 +39,32 @@ export async function resolverLoteReproductorActivo(tx, { reproductorId, piletaI
     return row;
   }
 
-  if (!piletaId) {
-    const err = new Error("reproductor_id o pileta_origen_id (estanque de reproductores) es obligatorio");
+  if (!infraestructuraFisicaId) {
+    const err = new Error("reproductor_id o infraestructura_fisica_origen_id (estanque de reproductores) es obligatorio");
     err.code = "VALIDACION";
     throw err;
   }
 
   const row = await tx.reproductor.findFirst({
-    where: { pileta_id: piletaId, activo: true, estado_ciclo: "activo" },
+    where: { infraestructura_fisica_id: infraestructuraFisicaId, activo: true, estado_ciclo: "activo" },
     orderBy: { id: "desc" },
     select,
   });
   if (!row) {
     const agotado = await tx.reproductor.findFirst({
-      where: { pileta_id: piletaId, activo: true, estado_ciclo: "agotado" },
+      where: { infraestructura_fisica_id: infraestructuraFisicaId, activo: true, estado_ciclo: "agotado" },
       orderBy: { id: "desc" },
       select: { id: true },
     });
     if (agotado) {
       const err = new Error(
-        "El lote de reproductores en la pileta está agotado. Registre un nuevo grupo en el módulo 1.",
+        "El lote de reproductores en la infraestructura física está agotado. Registre un nuevo grupo en el módulo 1.",
       );
       err.code = "LOTE_AGOTADO";
       throw err;
     }
     const err = new Error(
-      "No hay un lote de reproductores activo en la pileta indicada. Regístrelo en el módulo 1.",
+      "No hay un lote de reproductores activo en la infraestructura física indicada. Regístrelo en el módulo 1.",
     );
     err.code = "SIN_LOTE_ACTIVO";
     throw err;

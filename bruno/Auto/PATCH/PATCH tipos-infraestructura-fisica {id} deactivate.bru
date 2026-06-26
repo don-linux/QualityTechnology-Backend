@@ -1,0 +1,19 @@
+meta {
+  name: PATCH tipos-infraestructura-fisica {id} deactivate
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/api/tipos-infraestructura-fisica/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

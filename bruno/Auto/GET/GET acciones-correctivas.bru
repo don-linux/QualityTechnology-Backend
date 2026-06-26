@@ -1,0 +1,14 @@
+meta {
+  name: GET acciones-correctivas
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/acciones-correctivas
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

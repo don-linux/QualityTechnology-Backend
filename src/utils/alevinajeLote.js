@@ -16,8 +16,8 @@ export function parseLoteDesdeBody(body, pick) {
   );
 }
 
-async function loteEficienciaReproductivaEnPileta(tx, piletaId, { soloActivo = false } = {}) {
-  const where = { pileta_id: piletaId };
+async function loteEficienciaReproductivaEnInfraestructuraFisica(tx, infraestructuraFisicaId, { soloActivo = false } = {}) {
+  const where = { infraestructura_fisica_id: infraestructuraFisicaId };
   if (soloActivo) where.fecha_egreso = null;
   const inc = await tx.eficiencia_reproductiva.findFirst({
     where,
@@ -27,32 +27,32 @@ async function loteEficienciaReproductivaEnPileta(tx, piletaId, { soloActivo = f
   return inc?.lote ?? null;
 }
 
-async function loteAlevinajeVigenteEnPileta(tx, piletaId) {
+async function loteAlevinajeVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId) {
   const row = await tx.alevinaje.findFirst({
-    where: { pileta_id: piletaId },
+    where: { infraestructura_fisica_id: infraestructuraFisicaId },
     orderBy: { id: "desc" },
     select: { lote: true },
   });
   return row?.lote ?? null;
 }
 
-async function loteDesdePiletaOrigen(tx, piletaOrigenId) {
-  const origenId = toInt(piletaOrigenId);
+async function loteDesdeInfraestructuraFisicaOrigen(tx, infraestructuraFisicaOrigenId) {
+  const origenId = toInt(infraestructuraFisicaOrigenId);
   if (!origenId) return null;
 
-  const pil = await tx.pileta.findUnique({
+  const pil = await tx.infraestructuraFisica.findUnique({
     where: { id: origenId },
     select: { tipo: true },
   });
   if (!pil) return null;
 
   if (pil.tipo === "alevinaje") {
-    return loteAlevinajeVigenteEnPileta(tx, origenId);
+    return loteAlevinajeVigenteEnInfraestructuraFisica(tx, origenId);
   }
   if (pil.tipo === "incubacion") {
     return (
-      (await loteEficienciaReproductivaEnPileta(tx, origenId, { soloActivo: true })) ??
-      (await loteEficienciaReproductivaEnPileta(tx, origenId))
+      (await loteEficienciaReproductivaEnInfraestructuraFisica(tx, origenId, { soloActivo: true })) ??
+      (await loteEficienciaReproductivaEnInfraestructuraFisica(tx, origenId))
     );
   }
   return null;
@@ -65,40 +65,40 @@ async function loteDesdeSiembraOrigen(tx, siembraOrigenId) {
   const siembra = await tx.siembra.findUnique({
     where: { id: siembraId },
     select: {
-      pileta_origen: true,
-      piletas_siembra_pileta_origenTopiletas: { select: { tipo: true } },
+      infraestructura_fisica_origen: true,
+      infraestructuraFisicaOrigen: { select: { tipo: true } },
     },
   });
-  if (!siembra?.pileta_origen) return null;
+  if (!siembra?.infraestructura_fisica_origen) return null;
 
-  const tipoOrigen = siembra.piletas_siembra_pileta_origenTopiletas?.tipo;
+  const tipoOrigen = siembra.infraestructuraFisicaOrigen?.tipo;
   if (tipoOrigen === "incubacion") {
-    return loteEficienciaReproductivaEnPileta(tx, siembra.pileta_origen);
+    return loteEficienciaReproductivaEnInfraestructuraFisica(tx, siembra.infraestructura_fisica_origen);
   }
   if (tipoOrigen === "alevinaje") {
-    return loteAlevinajeVigenteEnPileta(tx, siembra.pileta_origen);
+    return loteAlevinajeVigenteEnInfraestructuraFisica(tx, siembra.infraestructura_fisica_origen);
   }
   return null;
 }
 
 /**
- * Resuelve el lote para un registro de alevinaje: body explícito, vigente en pileta,
- * pileta de origen (trazabilidad) o cadena de siembra desde incubación.
+ * Resuelve el lote para un registro de alevinaje: body explícito, vigente en infraestructura física,
+ * infraestructura física de origen (trazabilidad) o cadena de siembra desde incubación.
  */
 export async function resolverLoteAlevinaje(
   tx,
-  { loteBody = null, piletaId = null, siembraOrigenId = null, piletaOrigenId = null },
+  { loteBody = null, infraestructuraFisicaId = null, siembraOrigenId = null, infraestructuraFisicaOrigenId = null },
 ) {
   const explicito = normalizarLoteOpcional(loteBody);
   if (explicito) return explicito;
 
-  const pid = toInt(piletaId);
+  const pid = toInt(infraestructuraFisicaId);
   if (pid) {
-    const prev = await loteAlevinajeVigenteEnPileta(tx, pid);
+    const prev = await loteAlevinajeVigenteEnInfraestructuraFisica(tx, pid);
     if (prev) return prev;
   }
 
-  const desdeOrigen = await loteDesdePiletaOrigen(tx, piletaOrigenId);
+  const desdeOrigen = await loteDesdeInfraestructuraFisicaOrigen(tx, infraestructuraFisicaOrigenId);
   if (desdeOrigen) return desdeOrigen;
 
   return loteDesdeSiembraOrigen(tx, siembraOrigenId);

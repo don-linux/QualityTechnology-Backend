@@ -53,7 +53,7 @@ class BitacoraRecambioController {
       const usuarioId = req.user.usuario_id;
       const {
         mes_periodo,
-        pileta_id,
+        infraestructura_fisica_id,
         fecha_1,
         tipo_1,
         fecha_2,
@@ -82,7 +82,7 @@ class BitacoraRecambioController {
           data: {
             ubicacionId: u.ubicacionId,
             mes_periodo: mes_periodo || null,
-            pileta_id: parseOptInt(pileta_id),
+            infraestructura_fisica_id: parseOptInt(infraestructura_fisica_id),
             fecha_1: parseOptDate(fecha_1),
             tipo_1: tipo_1 || null,
             fecha_2: parseOptDate(fecha_2),
@@ -132,7 +132,7 @@ class BitacoraRecambioController {
 
       const {
         mes_periodo,
-        pileta_id,
+        infraestructura_fisica_id,
         fecha_1,
         tipo_1,
         fecha_2,
@@ -167,10 +167,10 @@ class BitacoraRecambioController {
           data: {
             ubicacionId: u.ubicacionId,
             mes_periodo: mes_periodo !== undefined ? mes_periodo || null : existing.mes_periodo,
-            pileta_id:
-              pileta_id !== undefined
-                ? parseOptInt(pileta_id)
-                : existing.pileta_id,
+            infraestructura_fisica_id:
+              infraestructura_fisica_id !== undefined
+                ? parseOptInt(infraestructura_fisica_id)
+                : existing.infraestructura_fisica_id,
             fecha_1: fecha_1 !== undefined ? parseOptDate(fecha_1) : existing.fecha_1,
             tipo_1: tipo_1 !== undefined ? tipo_1 || null : existing.tipo_1,
             fecha_2: fecha_2 !== undefined ? parseOptDate(fecha_2) : existing.fecha_2,

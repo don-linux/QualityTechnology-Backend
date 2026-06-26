@@ -77,7 +77,7 @@ class BitacoraAlimentacionController {
           data: {
             ubicacionId: u.ubicacionId,
             mes: fc_mes || null,
-            pileta_id: parseOptInt(fn_num_instalacion),
+            infraestructura_fisica_id: parseOptInt(fn_num_instalacion),
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             origenAlevines: fc_origen_alevines || null,
             fecha: fd_fecha ? new Date(fd_fecha) : null,
@@ -160,7 +160,7 @@ class BitacoraAlimentacionController {
           data: {
             ubicacionId: u.ubicacionId,
             mes: fc_mes || null,
-            pileta_id: parseOptInt(fn_num_instalacion),
+            infraestructura_fisica_id: parseOptInt(fn_num_instalacion),
             fechaSiembra: fd_fecha_siembra ? new Date(fd_fecha_siembra) : null,
             origenAlevines: fc_origen_alevines || null,
             fecha: fd_fecha ? new Date(fd_fecha) : null,

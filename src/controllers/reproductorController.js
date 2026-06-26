@@ -1,10 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeReproductor } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { aplicarEstadoPiletaPorCantidad, analizarProcedenciaSeleccionInterna, registrarSeleccionInternaDesdeEngorda } from "../utils/reproductorInventario.js";
+import { aplicarEstadoInfraestructuraFisicaPorCantidad, analizarProcedenciaSeleccionInterna, registrarSeleccionInternaDesdeEngorda } from "../utils/reproductorInventario.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
-import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { cantidadVigenteEnInfraestructuraFisica, ultimoRegistroPorInfraestructuraFisica } from "../utils/inventarioVigente.js";
 import {
   parseReproductorCampos,
   pickRepro,
@@ -19,20 +19,20 @@ function toInt(value, fallback = null) {
   return toIntRepro(value, fallback);
 }
 
-async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaReproductorId) {
+async function assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaReproductorId) {
   if (!siembraOrigenId) return;
   const s = await tx.siembra.findUnique({
     where: { id: siembraOrigenId },
-    select: { id: true, pileta_destino: true },
+    select: { id: true, infraestructura_fisica_destino: true },
   });
   if (!s) {
     const err = new Error("siembra_origen_id inválido");
     err.code = "BAD_SIEMBRA";
     throw err;
   }
-  if (Number(s.pileta_destino) !== Number(piletaReproductorId)) {
+  if (Number(s.infraestructura_fisica_destino) !== Number(infraestructuraFisicaReproductorId)) {
     const err = new Error(
-      "La siembra seleccionada debe tener como destino la misma pileta de reproductores",
+      "La siembra seleccionada debe tener como destino la misma infraestructura física de reproductores",
     );
     err.code = "SIEMBRA_DESTINO";
     throw err;
@@ -40,7 +40,7 @@ async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaRe
 }
 
 const reproductorInclude = {
-  piletas: {
+  infraestructuraFisica: {
     include: {
       ubicacion: true,
       observaciones: {
@@ -59,7 +59,7 @@ const reproductorInclude = {
   biometrias: { include: { observacionBiometria: true } },
   siembra_origen: {
     include: {
-      piletas_siembra_pileta_origenTopiletas: true,
+      infraestructuraFisicaOrigen: true,
     },
   },
   historial_peso: true,
@@ -68,11 +68,11 @@ const reproductorInclude = {
 class ReproductorController {
   static async getAll(req, res) {
     try {
-      const piletaIdQ = toInt(req.query.pileta_id);
+      const infraestructuraFisicaIdQ = toInt(req.query.infraestructura_fisica_id);
       const where = {};
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (ubicClause) where.piletas = ubicClause;
-      if (piletaIdQ) where.pileta_id = piletaIdQ;
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.infraestructuraFisica = ubicClause;
+      if (infraestructuraFisicaIdQ) where.infraestructura_fisica_id = infraestructuraFisicaIdQ;
 
       const rows = await prisma.reproductor.findMany({
         where,
@@ -83,7 +83,7 @@ class ReproductorController {
       const historial =
         req.query.historial === "1" ||
         String(req.query.historial || "").toLowerCase() === "true";
-      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      const vista = historial ? rows : ultimoRegistroPorInfraestructuraFisica(rows);
       res.json(vista.map(serializeReproductor));
     } catch (err) {
       console.error("GET /reproductores Error:", err);
@@ -113,8 +113,8 @@ class ReproductorController {
 
   static async create(req, res) {
     try {
-      const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id"),
+      const infraestructuraFisicaId = toInt(
+        pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"),
       );
       const campos = parseReproductorCampos(req.body);
       const cantidadTotal = campos.cantidad_total;
@@ -123,8 +123,8 @@ class ReproductorController {
         toInt(pick(req.body, "cantidad_alimento"), 0) ?? 0,
       );
 
-      if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de reproductores) es obligatorio" });
+      if (!infraestructuraFisicaId) {
+        return res.status(400).json({ error: "infraestructura_fisica_id (infraestructura física de reproductores) es obligatorio" });
       }
       if (cantidadTotal <= 0) {
         return res.status(400).json({
@@ -138,22 +138,22 @@ class ReproductorController {
         return res.status(400).json({ error: "lote_genetico (origen genético de padres) es obligatorio" });
       }
 
-      const pil = await prisma.pileta.findUnique({
-        where: { id: piletaId },
+      const pil = await prisma.infraestructuraFisica.findUnique({
+        where: { id: infraestructuraFisicaId },
         select: { id: true, tipo: true, nombre: true },
       });
-      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (!pil) return res.status(400).json({ error: "Infraestructura física no existe" });
       if (pil.tipo !== "reproductores") {
         return res.status(400).json({
-          error: `La pileta '${pil.nombre}' debe ser tipo reproductores`,
+          error: `La infraestructura física '${pil.nombre}' debe ser tipo reproductores`,
         });
       }
 
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "observaciones");
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
-      const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId"),
+      const origenInfraestructuraFisicaId = toInt(
+        pick(req.body, "origen_infraestructura_fisica_id", "origenInfraestructuraFisicaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -164,7 +164,7 @@ class ReproductorController {
 
         if (!siembraOrigenId && movimientosInternos.length > 0) {
           const siembraIds = await registrarSeleccionInternaDesdeEngorda(tx, {
-            piletaDestinoId: piletaId,
+            infraestructuraFisicaDestinoId: infraestructuraFisicaId,
             movimientos: movimientosInternos,
             usuarioId,
             observacion: obsTexto,
@@ -174,31 +174,31 @@ class ReproductorController {
 
         if (!siembraOrigenId && cantidadExterna > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: null,
-            piletaDestinoId: piletaId,
+            infraestructuraFisicaOrigenId: null,
+            infraestructuraFisicaDestinoId: infraestructuraFisicaId,
             cantidadEntera: cantidadExterna,
             usuarioId,
           });
           if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
         } else if (!siembraOrigenId && !tieneTipos && cantidadTotal > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: origenPiletaId,
-            piletaDestinoId: piletaId,
+            infraestructuraFisicaOrigenId: origenInfraestructuraFisicaId,
+            infraestructuraFisicaDestinoId: infraestructuraFisicaId,
             cantidadEntera: cantidadTotal,
             usuarioId,
           });
           if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
         } else if (siembraOrigenId) {
-          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+          await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaId);
         }
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId,
+          infraestructuraFisicaId,
           proceso: "reproductor",
         });
 
         await tx.reproductor.updateMany({
-          where: { pileta_id: piletaId, activo: true },
+          where: { infraestructura_fisica_id: infraestructuraFisicaId, activo: true },
           data: { activo: false },
         });
 
@@ -215,7 +215,7 @@ class ReproductorController {
 
         const creadoNuevo = await tx.reproductor.create({
           data: {
-            pileta_id: piletaId,
+            infraestructura_fisica_id: infraestructuraFisicaId,
             ...campos,
             fecha_siembra: fechaSiembra ?? campos.fecha_siembra,
             activo: true,
@@ -229,7 +229,7 @@ class ReproductorController {
           include: reproductorInclude,
         });
 
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+        await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, cantidadTotal);
         return creadoNuevo;
       });
 
@@ -246,7 +246,7 @@ class ReproductorController {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta o referencias inválidas" });
+        return res.status(400).json({ error: "InfraestructuraFisica o referencias inválidas" });
       }
       console.error("POST /reproductores Error:", err);
       res.status(500).json({ error: "Error al registrar reproductor", detalle: err.message });
@@ -260,30 +260,30 @@ class ReproductorController {
 
       const prev = await prisma.reproductor.findUnique({
         where: { id },
-        select: { pileta_id: true, siembra_origen_id: true },
+        select: { infraestructura_fisica_id: true, siembra_origen_id: true },
       });
       if (!prev) return res.status(404).json({ error: "Reproductor no encontrado" });
 
       const updateData = {};
-      let piletaId = prev.pileta_id;
-      let piletaCambiada = false;
+      let infraestructuraFisicaId = prev.infraestructura_fisica_id;
+      let infraestructuraFisicaCambiada = false;
 
-      if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
-        if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
-        const pd = await prisma.pileta.findUnique({
+      if (req.body.infraestructura_fisica_id !== undefined || req.body.infraestructura_fisica_destino_id !== undefined) {
+        const nid = toInt(pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"));
+        if (!nid) return res.status(400).json({ error: "infraestructura_fisica_id inválido" });
+        const pd = await prisma.infraestructuraFisica.findUnique({
           where: { id: nid },
           select: { tipo: true, nombre: true },
         });
-        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (!pd) return res.status(400).json({ error: "Infraestructura física no existe" });
         if (pd.tipo !== "reproductores") {
           return res.status(400).json({
-            error: `La pileta '${pd.nombre}' debe ser tipo reproductores`,
+            error: `La infraestructura física '${pd.nombre}' debe ser tipo reproductores`,
           });
         }
-        updateData.pileta_id = nid;
-        piletaId = nid;
-        piletaCambiada = true;
+        updateData.infraestructura_fisica_id = nid;
+        infraestructuraFisicaId = nid;
+        infraestructuraFisicaCambiada = true;
       }
 
       const tocaInventarioRepro =
@@ -386,14 +386,14 @@ class ReproductorController {
           : prev.siembra_origen_id;
 
       const actualizado = await prisma.$transaction(async (tx) => {
-        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
+        await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenFuturo ?? null, infraestructuraFisicaId);
 
         if (obsTextoExplicito) {
           const obsId = await crearObservacionSiHay(
             tx,
             pick(req.body, "observacion", "observaciones"),
             usuarioId,
-            { piletaId, proceso: "reproductor" },
+            { infraestructuraFisicaId, proceso: "reproductor" },
           );
           if (obsId) updateData.observacion_id = obsId;
         }
@@ -404,14 +404,14 @@ class ReproductorController {
           include: reproductorInclude,
         });
 
-        if (updateData.cantidad_total !== undefined || piletaCambiada) {
-          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "reproductores");
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+        if (updateData.cantidad_total !== undefined || infraestructuraFisicaCambiada) {
+          const vigente = await cantidadVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId, "reproductores");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, vigente);
         }
 
-        if (piletaCambiada && prev.pileta_id !== piletaId) {
-          const vigentePrev = await cantidadVigenteEnPileta(tx, prev.pileta_id, "reproductores");
-          await aplicarEstadoPiletaPorCantidad(tx, prev.pileta_id, vigentePrev);
+        if (infraestructuraFisicaCambiada && prev.infraestructura_fisica_id !== infraestructuraFisicaId) {
+          const vigentePrev = await cantidadVigenteEnInfraestructuraFisica(tx, prev.infraestructura_fisica_id, "reproductores");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, prev.infraestructura_fisica_id, vigentePrev);
         }
 
         return row;

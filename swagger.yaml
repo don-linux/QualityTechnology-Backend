@@ -153,10 +153,10 @@ components:
         refreshToken:
           type: string
 
-    Pileta:
+    InfraestructuraFisica:
       type: object
       properties:
-        fi_pileta_id:
+        infraestructura_fisica_id:
           type: integer
         cantidad:
           type: number
@@ -472,9 +472,9 @@ components:
           type: string
         fc_granja_asignada:
           type: string
-        pileta_origen_id:
+        infraestructura_fisica_origen_id:
           type: integer
-        nombre_pileta_origen:
+        nombre_infraestructura_fisica_origen:
           type: string
 
     Equipo:
@@ -741,7 +741,7 @@ components:
           description: Assigned from the authenticated JWT. Ignored if sent in the request body.
         fi_alevines_id:
           type: integer
-        fi_pileta_id:
+        fi_infraestructura_fisica_id:
           type: integer
         fi_tipo:
           type: integer
@@ -832,7 +832,7 @@ components:
         - ubicacion
         - fecha
         - hora
-        - pileta_id
+        - infraestructura_fisica_id
         - oxigeno
         - temperatura_agua
         - temperatura_ambiente
@@ -851,7 +851,7 @@ components:
         turno_muestreo:
           type: string
           enum: [Madrugada, Amanecer, Mañana, "Medio dia", Tarde, Noche]
-        pileta_id:
+        infraestructura_fisica_id:
           type: integer
         oxigeno:
           type: number
@@ -1412,118 +1412,22 @@ paths:
         '500':
           description: "Error del servidor"
 
-  /piletas/lotes/{granja}:
+  /infraestructura-fisica:
     get:
-      summary: "Obtener lotes por granja"
-      description: "Requiere token JWT. Devuelve lotes asociados a una granja."
+      summary: "Listar infraestructura física"
+      description: "Requiere token JWT + módulo /infraestructura-fisica."
       security:
         - bearerAuth: []
-      parameters:
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
-          description: "Lotes encontrados"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Lote'
+          description: "Listado de infraestructura física"
         '401':
           description: "No autorizado"
         '500':
           description: "Error del servidor"
-
-  /piletas/lote-por-inst/{inst}/{granja}:
-    get:
-      summary: "Obtener lote por instalación y granja"
-      description: "Requiere token JWT. Devuelve el lote asociado a una instalación específica."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: inst
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lote encontrado"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Lote'
-        '401':
-          description: "No autorizado"
-        '500':
-          description: "Error del servidor"
-
-  /piletas/inventario/{granja}:
-    get:
-      summary: "Obtener inventario por granja"
-      description: "Requiere token JWT. Devuelve inventario y trazabilidad de piletas."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Inventario"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pileta'
-        '401':
-          description: "No autorizado"
-        '500':
-          description: "Error del servidor"
-
-  /piletas/origen/{granja}:
-    get:
-      summary: "Obtener orígenes (instalaciones) por granja"
-      description: "Requiere token JWT. Devuelve orígenes disponibles para siembra."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Orígenes"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
-        '401':
-          description: "No autorizado"
-        '500':
-          description: "Error del servidor"
-
-  /piletas/siembra:
     post:
-      summary: "Registrar o actualizar siembra"
-      description: "Requiere token JWT. Crea o actualiza una siembra en una pileta."
+      summary: "Crear infraestructura física"
+      description: "Requiere token JWT + módulo /infraestructura-fisica."
       security:
         - bearerAuth: []
       requestBody:
@@ -1532,36 +1436,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties:
-                fi_pileta_id:
-                  type: integer
-                fi_instalacion_id:
-                  type: integer
-                origen_instalacion:
-                  type: string
-                fi_lote_id:
-                  type: integer
-                cantidad:
-                  type: number
-                talla_gr:
-                  type: number
-                observacion:
-                  type: string
-                fecha_siembra:
-                  type: string
-                  format: date
-                fecha_ultima_biometria:
-                  type: string
-                  format: date
-                fi_usuario_id:
-                  type: integer
-                  readOnly: true
-                  description: Assigned from the authenticated JWT. Ignored if sent in the request body.
-                fc_granja:
-                  type: string
+              additionalProperties: true
       responses:
-        '200':
-          description: "Siembra registrada/actualizada"
+        '201':
+          description: "Infraestructura física creada"
         '400':
           description: "Solicitud inválida"
         '401':
@@ -1569,151 +1447,64 @@ paths:
         '500':
           description: "Error del servidor"
 
-  /piletas/movimientos/{usuario}/{granja}:
-    get:
-      summary: "Obtener movimientos por usuario y granja"
-      description: "Requiere token JWT. Lista movimientos de alevinaje filtrados por usuario y granja."
+  /infraestructura-fisica/{id}:
+    put:
+      summary: "Actualizar infraestructura física"
+      description: "Requiere token JWT + módulo /infraestructura-fisica."
       security:
         - bearerAuth: []
       parameters:
-        - name: usuario
+        - name: id
           in: path
           required: true
           schema:
-            type: string
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
         '200':
-          description: "Movimientos"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
+          description: "Infraestructura física actualizada"
+        '400':
+          description: "Solicitud inválida"
         '401':
           description: "No autorizado"
         '500':
           description: "Error del servidor"
 
-  /piletas/movimientos/filtro/{usuario}/{granja}:
+  /infraestructura-fisica/{id}/observaciones:
     get:
-      summary: "Obtener movimientos con filtro"
-      description: "Requiere token JWT. Filtros por texto y rango de fechas."
+      summary: "Historial de observaciones por infraestructura física"
+      description: "Requiere token JWT + módulo /infraestructura-fisica."
       security:
         - bearerAuth: []
       parameters:
-        - name: usuario
+        - name: id
           in: path
           required: true
           schema:
-            type: string
-        - name: granja
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: buscar
-          in: query
-          schema:
-            type: string
-        - name: fecha_inicio
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: fecha_fin
-          in: query
-          schema:
-            type: string
-            format: date
+            type: integer
       responses:
         '200':
-          description: "Movimientos filtrados"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
+          description: "Observaciones"
         '401':
           description: "No autorizado"
         '500':
           description: "Error del servidor"
 
-  /piletas/movimientos/registrar:
-    post:
-      summary: "Registrar movimiento de alevinaje"
-      description: "Requiere token JWT. Registra un movimiento y actualiza existencias."
+  /tipos-infraestructura-fisica:
+    get:
+      summary: "Listar tipos de infraestructura física"
+      description: "Requiere token JWT + módulo /tipos-infraestructura-fisica."
       security:
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                origen_instalacion:
-                  type: string
-                origen_externo:
-                  type: string
-                fi_instalacion_id:
-                  type: integer
-                fi_lote_id:
-                  type: integer
-                cantidad:
-                  type: number
-                observacion:
-                  type: string
-                tipo_movimiento:
-                  type: string
-                fi_usuario_id:
-                  type: integer
-                  readOnly: true
-                  description: Assigned from the authenticated JWT. Ignored if sent in the request body.
-                fc_granja:
-                  type: string
       responses:
         '200':
-          description: "Movimiento registrado"
-        '400':
-          description: "Solicitud inválida"
-        '401':
-          description: "No autorizado"
-        '500':
-          description: "Error del servidor"
-
-  /piletas/movimientos/eliminar:
-    delete:
-      summary: "Eliminar movimientos"
-      description: "Requiere token JWT. Elimina movimientos según body (movimiento_id o eliminar_todos+granja)."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                movimiento_id:
-                  type: integer
-                eliminar_todos:
-                  type: boolean
-                granja:
-                  type: string
-      responses:
-        '200':
-          description: "Operación completada"
-        '400':
-          description: "Solicitud inválida"
+          description: "Catálogo de tipos"
         '401':
           description: "No autorizado"
         '500':

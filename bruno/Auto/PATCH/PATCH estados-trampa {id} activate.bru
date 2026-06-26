@@ -1,0 +1,19 @@
+meta {
+  name: PATCH estados-trampa {id} activate
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/api/estados-trampa/{{id}}/activate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

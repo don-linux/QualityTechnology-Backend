@@ -1,20 +1,20 @@
 /**
- * Registros periódicos (alevinaje, engorda): varias filas por pileta en BD.
- * La vista operativa y el inventario vigente usan solo el último registro por pileta.
+ * Registros periódicos (alevinaje, engorda): varias filas por infraestructura física en BD.
+ * La vista operativa y el inventario vigente usan solo el último registro por infraestructura física.
  */
 
 /**
  * @param {Array<Record<string, unknown>>} rows
- * @param {{ piletaKey?: string, idKey?: string }} [opts]
+ * @param {{ infraestructuraFisicaKey?: string, idKey?: string }} [opts]
  */
-export function ultimoRegistroPorPileta(rows, opts = {}) {
-  const piletaKey = opts.piletaKey ?? "pileta_id";
+export function ultimoRegistroPorInfraestructuraFisica(rows, opts = {}) {
+  const infraestructuraFisicaKey = opts.infraestructuraFisicaKey ?? "infraestructura_fisica_id";
   const idKey = opts.idKey ?? "id";
   const map = new Map();
 
   for (const row of rows) {
     if (!row) continue;
-    const pid = row[piletaKey];
+    const pid = row[infraestructuraFisicaKey];
     if (pid == null) continue;
     const prev = map.get(pid);
     const id = Number(row[idKey] ?? 0);
@@ -26,19 +26,19 @@ export function ultimoRegistroPorPileta(rows, opts = {}) {
 }
 
 /**
- * Cantidad vigente a partir de filas periódicas incluidas en una pileta (Prisma include).
+ * Cantidad vigente a partir de filas periódicas incluidas en una infraestructuraFisica (Prisma include).
  * @param {Array<{ cantidad_total?: number, id?: number }>} rows
  */
 export function cantidadVigenteDesdeRegistrosPeriodicos(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return 0;
 
-  const hasPiletaKey = rows.some((r) => r?.pileta_id != null);
+  const hasInfraestructuraFisicaKey = rows.some((r) => r?.infraestructura_fisica_id != null);
   let row;
-  if (hasPiletaKey) {
-    const ultimo = ultimoRegistroPorPileta(rows, { piletaKey: "pileta_id", idKey: "id" });
+  if (hasInfraestructuraFisicaKey) {
+    const ultimo = ultimoRegistroPorInfraestructuraFisica(rows, { infraestructuraFisicaKey: "infraestructura_fisica_id", idKey: "id" });
     row = ultimo[0];
   } else {
-    // Include desde Pileta sin pileta_id en el select: el más reciente por id
+    // Include desde InfraestructuraFisica sin infraestructura_fisica_id en el select: el más reciente por id
     row = rows.reduce((best, r) => {
       if (!r) return best;
       const id = Number(r.id ?? 0);
@@ -53,16 +53,16 @@ export function cantidadVigenteDesdeRegistrosPeriodicos(rows) {
 
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx
- * @param {number} piletaId
+ * @param {number} infraestructuraFisicaId
  * @param {"alevinaje"|"engorda"|"incubacion"|"reproductores"} etapa
  */
-export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
-  const id = Number(piletaId);
+export async function cantidadVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId, etapa) {
+  const id = Number(infraestructuraFisicaId);
   if (!Number.isFinite(id)) return 0;
 
   if (etapa === "reproductores") {
     const row = await tx.reproductor.findFirst({
-      where: { pileta_id: id, activo: true },
+      where: { infraestructura_fisica_id: id, activo: true },
       orderBy: { id: "desc" },
       select: { cantidad_total: true },
     });
@@ -71,7 +71,7 @@ export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
 
   if (etapa === "alevinaje") {
     const row = await tx.alevinaje.findFirst({
-      where: { pileta_id: id },
+      where: { infraestructura_fisica_id: id },
       orderBy: { id: "desc" },
       select: { cantidad_total: true },
     });
@@ -80,7 +80,7 @@ export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
 
   if (etapa === "incubacion") {
     const row = await tx.eficiencia_reproductiva.findFirst({
-      where: { pileta_id: id },
+      where: { infraestructura_fisica_id: id },
       orderBy: { id: "desc" },
       select: { fecha_egreso: true },
     });
@@ -88,7 +88,7 @@ export async function cantidadVigenteEnPileta(tx, piletaId, etapa) {
   }
 
   const row = await tx.engorda.findFirst({
-    where: { pileta_id: id },
+    where: { infraestructura_fisica_id: id },
     orderBy: { id: "desc" },
     select: { cantidad_total: true },
   });

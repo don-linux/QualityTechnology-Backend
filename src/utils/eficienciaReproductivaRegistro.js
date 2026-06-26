@@ -1,4 +1,4 @@
-export function calcularDiasEnPileta(fechaIngreso, fechaEgreso) {
+export function calcularDiasEnInfraestructuraFisica(fechaIngreso, fechaEgreso) {
   if (!fechaIngreso) return null;
   const inicio = new Date(fechaIngreso);
   const fin = fechaEgreso ? new Date(fechaEgreso) : new Date();

@@ -1,10 +1,10 @@
 import prisma from "../prisma.js";
 import { serializeAlevinaje } from "../utils/serializers.js";
-import { aplicarEstadoPiletaPorCantidad } from "../utils/reproductorInventario.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { aplicarEstadoInfraestructuraFisicaPorCantidad } from "../utils/reproductorInventario.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 import { resolverHistorialPesoId } from "./historialPesoController.js";
 import { crearSiembraMovimiento } from "../utils/siembraMovimiento.js";
-import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { cantidadVigenteEnInfraestructuraFisica, ultimoRegistroPorInfraestructuraFisica } from "../utils/inventarioVigente.js";
 import { parseLoteDesdeBody, resolverLoteAlevinaje } from "../utils/alevinajeLote.js";
 import { normalizarLoteOpcional } from "../utils/eficienciaReproductivaLote.js";
 
@@ -21,20 +21,20 @@ function toInt(value, fallback = null) {
   return Number.isInteger(n) ? n : fallback;
 }
 
-async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaAlevinajeId) {
+async function assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaAlevinajeId) {
   if (!siembraOrigenId) return;
   const s = await tx.siembra.findUnique({
     where: { id: siembraOrigenId },
-    select: { id: true, pileta_destino: true },
+    select: { id: true, infraestructura_fisica_destino: true },
   });
   if (!s) {
     const err = new Error("siembra_origen_id inválido");
     err.code = "BAD_SIEMBRA";
     throw err;
   }
-  if (Number(s.pileta_destino) !== Number(piletaAlevinajeId)) {
+  if (Number(s.infraestructura_fisica_destino) !== Number(infraestructuraFisicaAlevinajeId)) {
     const err = new Error(
-      "La siembra seleccionada debe tener como destino la misma pileta de alevinaje",
+      "La siembra seleccionada debe tener como destino la misma infraestructura física de alevinaje",
     );
     err.code = "SIEMBRA_DESTINO";
     throw err;
@@ -42,14 +42,14 @@ async function assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaAl
 }
 
 const alevinajeInclude = {
-  piletas: {
+  infraestructuraFisica: {
     include: {
       ubicacion: true,
     },
   },
   siembra_origen: {
     include: {
-      piletas_siembra_pileta_origenTopiletas: {
+      infraestructuraFisicaOrigen: {
         include: { reproductores: true },
       },
     },
@@ -60,11 +60,11 @@ const alevinajeInclude = {
 class AlevinajeController {
   static async getAll(req, res) {
     try {
-      const piletaIdQ = toInt(req.query.pileta_id);
+      const infraestructuraFisicaIdQ = toInt(req.query.infraestructura_fisica_id);
       const where = {};
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (ubicClause) where.piletas = ubicClause;
-      if (piletaIdQ) where.pileta_id = piletaIdQ;
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.infraestructuraFisica = ubicClause;
+      if (infraestructuraFisicaIdQ) where.infraestructura_fisica_id = infraestructuraFisicaIdQ;
 
       const rows = await prisma.alevinaje.findMany({
         where,
@@ -75,7 +75,7 @@ class AlevinajeController {
       const historial =
         req.query.historial === "1" ||
         String(req.query.historial || "").toLowerCase() === "true";
-      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      const vista = historial ? rows : ultimoRegistroPorInfraestructuraFisica(rows);
       res.json(vista.map(serializeAlevinaje));
     } catch (err) {
       console.error("GET /alevinaje Error:", err);
@@ -101,36 +101,36 @@ class AlevinajeController {
 
   static async create(req, res) {
     try {
-      const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id"),
+      const infraestructuraFisicaId = toInt(
+        pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"),
       );
       const cantidadTotal = Math.max(
         0,
         toInt(pick(req.body, "cantidad_total", "alevines_iniciales"), 0) ?? 0,
       );
 
-      if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de alevinaje) es obligatorio" });
+      if (!infraestructuraFisicaId) {
+        return res.status(400).json({ error: "infraestructura_fisica_id (infraestructura física de alevinaje) es obligatorio" });
       }
       if (cantidadTotal <= 0) {
         return res.status(400).json({ error: "cantidad_total debe ser mayor a 0" });
       }
 
-      const pil = await prisma.pileta.findUnique({
-        where: { id: piletaId },
+      const pil = await prisma.infraestructuraFisica.findUnique({
+        where: { id: infraestructuraFisicaId },
         select: { id: true, tipo: true, nombre: true },
       });
-      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (!pil) return res.status(400).json({ error: "Infraestructura física no existe" });
       if (pil.tipo !== "alevinaje") {
         return res.status(400).json({
-          error: `La pileta '${pil.nombre}' debe ser tipo alevinaje`,
+          error: `La infraestructura física '${pil.nombre}' debe ser tipo alevinaje`,
         });
       }
 
       const usuarioId = req.user.usuario_id;
       const siembraOrigenIdBody = toInt(pick(req.body, "siembra_origen_id"));
-      const origenPiletaId = toInt(
-        pick(req.body, "origen_pileta_id", "origenPiletaId"),
+      const origenInfraestructuraFisicaId = toInt(
+        pick(req.body, "origen_infraestructura_fisica_id", "origenInfraestructuraFisicaId"),
       );
       const biometriaId = toInt(pick(req.body, "biometria_id"));
 
@@ -138,14 +138,14 @@ class AlevinajeController {
         let siembraOrigenId = siembraOrigenIdBody ?? null;
         if (!siembraOrigenId && cantidadTotal > 0) {
           const nuevaSiembraId = await crearSiembraMovimiento(tx, {
-            piletaOrigenId: origenPiletaId,
-            piletaDestinoId: piletaId,
+            infraestructuraFisicaOrigenId: origenInfraestructuraFisicaId,
+            infraestructuraFisicaDestinoId: infraestructuraFisicaId,
             cantidadEntera: cantidadTotal,
             usuarioId,
           });
           if (nuevaSiembraId != null) siembraOrigenId = nuevaSiembraId;
         } else if (siembraOrigenId) {
-          await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenId, piletaId);
+          await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenId, infraestructuraFisicaId);
         }
 
         const pesoHistorialId = await resolverHistorialPesoId(tx, req.body);
@@ -153,14 +153,14 @@ class AlevinajeController {
         const loteBody = parseLoteDesdeBody(req.body, pick);
         const lote = await resolverLoteAlevinaje(tx, {
           loteBody,
-          piletaId,
+          infraestructuraFisicaId,
           siembraOrigenId,
-          piletaOrigenId: origenPiletaId,
+          infraestructuraFisicaOrigenId: origenInfraestructuraFisicaId,
         });
 
         const creadoNuevo = await tx.alevinaje.create({
           data: {
-            pileta_id: piletaId,
+            infraestructura_fisica_id: infraestructuraFisicaId,
             lote,
             cantidad_total: cantidadTotal,
             biometria_id: biometriaId ?? null,
@@ -170,7 +170,7 @@ class AlevinajeController {
           include: alevinajeInclude,
         });
 
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, cantidadTotal);
+        await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, cantidadTotal);
         return creadoNuevo;
       });
 
@@ -186,7 +186,7 @@ class AlevinajeController {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta o referencias inválidas" });
+        return res.status(400).json({ error: "InfraestructuraFisica o referencias inválidas" });
       }
       console.error("POST /alevinaje Error:", err);
       res.status(500).json({ error: "Error creando registro de alevinaje", detalle: err.message });
@@ -200,26 +200,26 @@ class AlevinajeController {
 
       const prev = await prisma.alevinaje.findUnique({
         where: { id },
-        select: { pileta_id: true, siembra_origen_id: true },
+        select: { infraestructura_fisica_id: true, siembra_origen_id: true },
       });
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
-      let piletaId = prev.pileta_id;
+      let infraestructuraFisicaId = prev.infraestructura_fisica_id;
 
-      if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
-        if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
-        const pd = await prisma.pileta.findUnique({
+      if (req.body.infraestructura_fisica_id !== undefined || req.body.infraestructura_fisica_destino_id !== undefined) {
+        const nid = toInt(pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"));
+        if (!nid) return res.status(400).json({ error: "infraestructura_fisica_id inválido" });
+        const pd = await prisma.infraestructuraFisica.findUnique({
           where: { id: nid },
           select: { tipo: true, nombre: true },
         });
-        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (!pd) return res.status(400).json({ error: "Infraestructura física no existe" });
         if (pd.tipo !== "alevinaje") {
-          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo alevinaje` });
+          return res.status(400).json({ error: `La infraestructura física '${pd.nombre}' debe ser tipo alevinaje` });
         }
-        updateData.pileta_id = nid;
-        piletaId = nid;
+        updateData.infraestructura_fisica_id = nid;
+        infraestructuraFisicaId = nid;
       }
 
       if (req.body.cantidad_total !== undefined) {
@@ -252,7 +252,7 @@ class AlevinajeController {
           : prev.siembra_origen_id;
 
       const actualizado = await prisma.$transaction(async (tx) => {
-        await assertSiembraOrigenValidaParaPileta(tx, siembraOrigenFuturo ?? null, piletaId);
+        await assertSiembraOrigenValidaParaInfraestructuraFisica(tx, siembraOrigenFuturo ?? null, infraestructuraFisicaId);
 
         if (
           req.body.peso_gramos !== undefined ||
@@ -269,9 +269,9 @@ class AlevinajeController {
           include: alevinajeInclude,
         });
 
-        if (updateData.cantidad_total !== undefined || updateData.pileta_id !== undefined) {
-          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "alevinaje");
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+        if (updateData.cantidad_total !== undefined || updateData.infraestructura_fisica_id !== undefined) {
+          const vigente = await cantidadVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId, "alevinaje");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, vigente);
         }
 
         return row;

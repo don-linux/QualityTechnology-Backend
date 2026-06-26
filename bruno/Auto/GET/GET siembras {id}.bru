@@ -1,0 +1,14 @@
+meta {
+  name: GET siembras {id}
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/siembras/{{id}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

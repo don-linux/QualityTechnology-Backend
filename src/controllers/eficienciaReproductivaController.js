@@ -2,14 +2,14 @@ import prisma from "../prisma.js";
 import { serializeEficienciaReproductiva } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
 import {
-  aplicarEstadoPiletaPorCantidad,
+  aplicarEstadoInfraestructuraFisicaPorCantidad,
   registrarMovimientoReproductorAEficienciaReproductiva,
   registrarDesoveEnInventarioReproductor,
 } from "../utils/reproductorInventario.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
-import { cantidadVigenteEnPileta, ultimoRegistroPorPileta } from "../utils/inventarioVigente.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { cantidadVigenteEnInfraestructuraFisica, ultimoRegistroPorInfraestructuraFisica } from "../utils/inventarioVigente.js";
 import { normalizarLoteEficienciaReproductiva } from "../utils/eficienciaReproductivaLote.js";
-import { calcularDiasEnPileta } from "../utils/eficienciaReproductivaRegistro.js";
+import { calcularDiasEnInfraestructuraFisica } from "../utils/eficienciaReproductivaRegistro.js";
 import { resolverLoteReproductorActivo } from "../utils/reproductorLote.js";
 import {
   generarCodigoDesoveEficienciaReproductiva,
@@ -43,7 +43,7 @@ function toDateOrNull(value) {
 }
 
 const eficienciaReproductivaInclude = {
-  piletas: {
+  infraestructuraFisica: {
     include: {
       ubicacion: true,
       observaciones: {
@@ -53,14 +53,14 @@ const eficienciaReproductivaInclude = {
       },
     },
   },
-  pileta_origen: {
+  infraestructura_fisica_origen: {
     select: { id: true, nombre: true, ubicacion: { select: { nombre: true } } },
   },
   observacion: true,
   biometrias: { include: { observacionBiometria: true } },
   siembra_origen: {
     include: {
-      piletas_siembra_pileta_origenTopiletas: {
+      infraestructuraFisicaOrigen: {
         include: { reproductores: true },
       },
     },
@@ -70,11 +70,11 @@ const eficienciaReproductivaInclude = {
 class EficienciaReproductivaController {
   static async getAll(req, res) {
     try {
-      const piletaIdQ = toInt(req.query.pileta_id);
+      const infraestructuraFisicaIdQ = toInt(req.query.infraestructura_fisica_id);
       const where = {};
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
-      if (ubicClause) where.piletas = ubicClause;
-      if (piletaIdQ) where.pileta_id = piletaIdQ;
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
+      if (ubicClause) where.infraestructuraFisica = ubicClause;
+      if (infraestructuraFisicaIdQ) where.infraestructura_fisica_id = infraestructuraFisicaIdQ;
 
       const rows = await prisma.eficiencia_reproductiva.findMany({
         where,
@@ -85,7 +85,7 @@ class EficienciaReproductivaController {
       const historial =
         req.query.historial === "1" ||
         String(req.query.historial || "").toLowerCase() === "true";
-      const vista = historial ? rows : ultimoRegistroPorPileta(rows);
+      const vista = historial ? rows : ultimoRegistroPorInfraestructuraFisica(rows);
       res.json(vista.map(serializeEficienciaReproductiva));
     } catch (err) {
       console.error("GET /eficiencia-reproductiva Error:", err);
@@ -110,17 +110,17 @@ class EficienciaReproductivaController {
   }
 
   /**
-   * Registra un desove (cosecha) y su ingreso a la pileta de incubación en un solo paso.
+   * Registra un desove (cosecha) y su ingreso a la infraestructura física de incubación en un solo paso.
    * Toda la información vive en la tabla `eficiencia_reproductiva`; se conservan los efectos de inventario:
    * contador de desovez del reproductor, descuento de hembras y movimiento `siembra`.
    */
   static async create(req, res) {
     try {
-      const piletaId = toInt(
-        pick(req.body, "pileta_id", "pileta_destino_id"),
+      const infraestructuraFisicaId = toInt(
+        pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"),
       );
-      const piletaOrigenId = toInt(
-        pick(req.body, "pileta_origen_id", "pileta_origen"),
+      const infraestructuraFisicaOrigenId = toInt(
+        pick(req.body, "infraestructura_fisica_origen_id", "infraestructura_fisica_origen"),
       );
       const reproductorId = toInt(
         pick(req.body, "reproductor_id", "lote_reproductor_id"),
@@ -153,7 +153,7 @@ class EficienciaReproductivaController {
           );
       const fechaIngreso = toDateOrNull(pick(req.body, "fecha_ingreso"));
       const fechaEgreso = toDateOrNull(pick(req.body, "fecha_egreso"));
-      const diasBody = toInt(pick(req.body, "dias_en_pileta"));
+      const diasBody = toInt(pick(req.body, "dias_en_infraestructura_fisica"));
       const marcarAgotado =
         req.body.marcar_agotado === true ||
         String(pick(req.body, "estado_ciclo") ?? "")
@@ -164,8 +164,8 @@ class EficienciaReproductivaController {
       const usuarioId = req.user.usuario_id;
       const obsTexto = pick(req.body, "observacion", "observaciones");
 
-      if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id (pileta de eficiencia reproductiva) es obligatorio" });
+      if (!infraestructuraFisicaId) {
+        return res.status(400).json({ error: "infraestructura_fisica_id (infraestructura física de eficiencia reproductiva) es obligatorio" });
       }
       if (!fechaCosecha) {
         return res.status(400).json({ error: "fecha_cosecha es obligatoria" });
@@ -182,21 +182,21 @@ class EficienciaReproductivaController {
         });
       }
 
-      const pil = await prisma.pileta.findUnique({
-        where: { id: piletaId },
+      const pil = await prisma.infraestructuraFisica.findUnique({
+        where: { id: infraestructuraFisicaId },
         select: { id: true, tipo: true, nombre: true },
       });
-      if (!pil) return res.status(400).json({ error: "Pileta no existe" });
+      if (!pil) return res.status(400).json({ error: "Infraestructura física no existe" });
       if (pil.tipo !== "incubacion") {
         return res.status(400).json({
-          error: `La pileta '${pil.nombre}' debe ser tipo incubación (eficiencia reproductiva)`,
+          error: `La infraestructura física '${pil.nombre}' debe ser tipo incubación (eficiencia reproductiva)`,
         });
       }
 
       const creado = await prisma.$transaction(async (tx) => {
         const lote = await resolverLoteReproductorActivo(tx, {
           reproductorId,
-          piletaId: piletaOrigenId,
+          infraestructuraFisicaId: infraestructuraFisicaOrigenId,
         });
 
         const hembrasDisponibles = lote.hembras ?? 0;
@@ -220,8 +220,8 @@ class EficienciaReproductivaController {
         const fechaIngresoFinal = fechaIngreso ?? fechaCosecha;
 
         const mov = await registrarMovimientoReproductorAEficienciaReproductiva(tx, {
-          piletaOrigenId: lote.pileta_id,
-          piletaDestinoId: piletaId,
+          infraestructuraFisicaOrigenId: lote.infraestructura_fisica_id,
+          infraestructuraFisicaDestinoId: infraestructuraFisicaId,
           cantidad: hembrasOvadas,
           usuarioId,
           observacion: obsTexto,
@@ -232,17 +232,17 @@ class EficienciaReproductivaController {
         });
 
         const obsId = await crearObservacionSiHay(tx, obsTexto, usuarioId, {
-          piletaId,
+          infraestructuraFisicaId,
           proceso: "eficiencia_reproductiva",
         });
 
-        const diasCalc = calcularDiasEnPileta(fechaIngresoFinal, fechaEgreso);
+        const diasCalc = calcularDiasEnInfraestructuraFisica(fechaIngresoFinal, fechaEgreso);
 
         const creadoNuevo = await tx.eficiencia_reproductiva.create({
           data: {
             codigo,
-            pileta_id: piletaId,
-            pileta_origen_id: lote.pileta_id,
+            infraestructura_fisica_id: infraestructuraFisicaId,
+            infraestructura_fisica_origen_id: lote.infraestructura_fisica_id,
             reproductor_id: lote.id,
             lote: loteGenetico,
             tipo_cosecha: tiposCosecha,
@@ -252,7 +252,7 @@ class EficienciaReproductivaController {
             huevos_ml: huevosMl,
             volumen_por_tipo: volumenPorTipo,
             fecha_ingreso: fechaIngresoFinal,
-            dias_en_pileta: diasBody != null ? diasBody : diasCalc,
+            dias_en_infraestructura_fisica: diasBody != null ? diasBody : diasCalc,
             fecha_egreso: fechaEgreso,
             observacion_id: obsId,
             biometria_id: biometriaId ?? null,
@@ -268,7 +268,7 @@ class EficienciaReproductivaController {
         });
 
         const ocupada = fechaEgreso ? 0 : 1;
-        await aplicarEstadoPiletaPorCantidad(tx, piletaId, ocupada);
+        await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, ocupada);
         return creadoNuevo;
       });
 
@@ -292,11 +292,11 @@ class EficienciaReproductivaController {
       }
       if (err.code === "P2002") {
         return res.status(409).json({
-          error: "Ya existe un registro de eficiencia reproductiva con ese código o lote en la pileta",
+          error: "Ya existe un registro de eficiencia reproductiva con ese código o lote en la infraestructura física",
         });
       }
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta o referencias inválidas" });
+        return res.status(400).json({ error: "InfraestructuraFisica o referencias inválidas" });
       }
       console.error("POST /eficiencia-reproductiva Error:", err);
       res.status(500).json({ error: "Error creando registro de eficiencia reproductiva", detalle: err.message });
@@ -311,7 +311,7 @@ class EficienciaReproductivaController {
       const prev = await prisma.eficiencia_reproductiva.findUnique({
         where: { id },
         select: {
-          pileta_id: true,
+          infraestructura_fisica_id: true,
           fecha_ingreso: true,
           fecha_egreso: true,
           tipo_cosecha: true,
@@ -320,22 +320,22 @@ class EficienciaReproductivaController {
       if (!prev) return res.status(404).json({ error: "Registro no encontrado" });
 
       const updateData = {};
-      let piletaId = prev.pileta_id;
+      let infraestructuraFisicaId = prev.infraestructura_fisica_id;
       let tiposActualizados = null;
 
-      if (req.body.pileta_id !== undefined || req.body.pileta_destino_id !== undefined) {
-        const nid = toInt(pick(req.body, "pileta_id", "pileta_destino_id"));
-        if (!nid) return res.status(400).json({ error: "pileta_id inválido" });
-        const pd = await prisma.pileta.findUnique({
+      if (req.body.infraestructura_fisica_id !== undefined || req.body.infraestructura_fisica_destino_id !== undefined) {
+        const nid = toInt(pick(req.body, "infraestructura_fisica_id", "infraestructura_fisica_destino_id"));
+        if (!nid) return res.status(400).json({ error: "infraestructura_fisica_id inválido" });
+        const pd = await prisma.infraestructuraFisica.findUnique({
           where: { id: nid },
           select: { tipo: true, nombre: true },
         });
-        if (!pd) return res.status(400).json({ error: "Pileta no existe" });
+        if (!pd) return res.status(400).json({ error: "Infraestructura física no existe" });
         if (pd.tipo !== "incubacion") {
-          return res.status(400).json({ error: `La pileta '${pd.nombre}' debe ser tipo incubación (eficiencia reproductiva)` });
+          return res.status(400).json({ error: `La infraestructura física '${pd.nombre}' debe ser tipo incubación (eficiencia reproductiva)` });
         }
-        updateData.pileta_id = nid;
-        piletaId = nid;
+        updateData.infraestructura_fisica_id = nid;
+        infraestructuraFisicaId = nid;
       }
 
       if (
@@ -401,8 +401,8 @@ class EficienciaReproductivaController {
       if (req.body.fecha_egreso !== undefined) {
         updateData.fecha_egreso = toDateOrNull(pick(req.body, "fecha_egreso"));
       }
-      if (req.body.dias_en_pileta !== undefined) {
-        updateData.dias_en_pileta = toInt(pick(req.body, "dias_en_pileta"));
+      if (req.body.dias_en_infraestructura_fisica !== undefined) {
+        updateData.dias_en_infraestructura_fisica = toInt(pick(req.body, "dias_en_infraestructura_fisica"));
       }
       if (req.body.biometria_id !== undefined) {
         updateData.biometria_id = toInt(req.body.biometria_id);
@@ -419,7 +419,7 @@ class EficienciaReproductivaController {
             tx,
             pick(req.body, "observacion", "observaciones"),
             usuarioId,
-            { piletaId, proceso: "eficiencia_reproductiva" },
+            { infraestructuraFisicaId, proceso: "eficiencia_reproductiva" },
           );
           if (obsId) updateData.observacion_id = obsId;
         }
@@ -430,10 +430,10 @@ class EficienciaReproductivaController {
           updateData.fecha_egreso !== undefined ? updateData.fecha_egreso : prev.fecha_egreso;
 
         if (
-          updateData.dias_en_pileta === undefined &&
+          updateData.dias_en_infraestructura_fisica === undefined &&
           (updateData.fecha_ingreso !== undefined || updateData.fecha_egreso !== undefined)
         ) {
-          updateData.dias_en_pileta = calcularDiasEnPileta(fechaIngresoFutura, fechaEgresoFutura);
+          updateData.dias_en_infraestructura_fisica = calcularDiasEnInfraestructuraFisica(fechaIngresoFutura, fechaEgresoFutura);
         }
 
         const row = await tx.eficiencia_reproductiva.update({
@@ -442,9 +442,9 @@ class EficienciaReproductivaController {
           include: eficienciaReproductivaInclude,
         });
 
-        if (updateData.pileta_id !== undefined || updateData.fecha_egreso !== undefined) {
-          const vigente = await cantidadVigenteEnPileta(tx, piletaId, "incubacion");
-          await aplicarEstadoPiletaPorCantidad(tx, piletaId, vigente);
+        if (updateData.infraestructura_fisica_id !== undefined || updateData.fecha_egreso !== undefined) {
+          const vigente = await cantidadVigenteEnInfraestructuraFisica(tx, infraestructuraFisicaId, "incubacion");
+          await aplicarEstadoInfraestructuraFisicaPorCantidad(tx, infraestructuraFisicaId, vigente);
         }
 
         return row;
@@ -459,7 +459,7 @@ class EficienciaReproductivaController {
         return res.status(400).json({ error: err.message });
       }
       if (err.code === "P2002") {
-        return res.status(409).json({ error: "Ya existe un registro con ese código o lote en la pileta" });
+        return res.status(409).json({ error: "Ya existe un registro con ese código o lote en la infraestructura física" });
       }
       if (err.code === "P2025") return res.status(404).json({ error: "Registro no encontrado" });
       console.error("PUT /eficiencia-reproductiva/:id Error:", err);

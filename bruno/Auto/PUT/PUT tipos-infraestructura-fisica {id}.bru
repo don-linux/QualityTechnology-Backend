@@ -1,0 +1,19 @@
+meta {
+  name: PUT tipos-infraestructura-fisica {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/tipos-infraestructura-fisica/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {"nombre": "Catalogo QA"}
+}

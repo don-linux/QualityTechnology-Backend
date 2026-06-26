@@ -2,23 +2,23 @@ import prisma from "../prisma.js";
 import { listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
 import { serializeBiometria } from "../utils/serializers.js";
 import { crearObservacionSiHay } from "../utils/observacion.js";
-import { piletaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
+import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaUbicacion.js";
 
-// El schema actual de Biometria se relaciona directamente con Pileta
-// (`pileta_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
+// El schema actual de Biometria se relaciona directamente con InfraestructuraFisica
+// (`infraestructura_fisica_id`) y ya no con Instalacion/Ubicacion ni Reproductor por FK
 // directa. Tampoco existen los campos `tipo`, `observacionId` ni
 // `instalacionId`. Conservamos las rutas y traducimos el body al nuevo
-// modelo: se requiere `pileta_id`.
+// modelo: se requiere `infraestructura_fisica_id`.
 
 const MAX_OBSERVACIONES = 500;
 const MAX_ENCARGADO = 100;
 
 const bitacoraInclude = {
-  piletas: { include: { ubicacion: true } },
+  infraestructuraFisica: { include: { ubicacion: true } },
   observacionBiometria: true,
 };
 
-async function syncObservacionBiometria(tx, biometriaId, piletaId, usuarioId, textoObs) {
+async function syncObservacionBiometria(tx, biometriaId, infraestructuraFisicaId, usuarioId, textoObs) {
   const t =
     textoObs != null && String(textoObs).trim()
       ? String(textoObs).trim().slice(0, MAX_OBSERVACIONES)
@@ -34,7 +34,7 @@ async function syncObservacionBiometria(tx, biometriaId, piletaId, usuarioId, te
         where: { id: existing.id },
         data: {
           comentario: t,
-          pileta_id: piletaId,
+          infraestructura_fisica_id: infraestructuraFisicaId,
           proceso: "biometria",
           usuario_id: usuarioId,
         },
@@ -42,7 +42,7 @@ async function syncObservacionBiometria(tx, biometriaId, piletaId, usuarioId, te
       return existing.id;
     }
     return crearObservacionSiHay(tx, t, usuarioId, {
-      piletaId,
+      infraestructuraFisicaId,
       proceso: "biometria",
       biometriaId,
     });
@@ -95,11 +95,11 @@ class BitacoraBiometriaController {
 
   static async getByGranja(req, res) {
     try {
-      const ubicClause = piletaWhereUbicacionFromRequest(req);
+      const ubicClause = infraestructuraFisicaWhereUbicacionFromRequest(req);
       if (!ubicClause) return res.json([]);
       const rows = await prisma.biometria.findMany({
         where: {
-          piletas: ubicClause,
+          infraestructuraFisica: ubicClause,
         },
         include: bitacoraInclude,
         orderBy: { fecha: "desc" },
@@ -130,9 +130,9 @@ class BitacoraBiometriaController {
         return res.status(400).json({ error: errorTexto });
       }
 
-      const piletaId = toInt(pick(req.body, "pileta_id"));
-      if (!piletaId) {
-        return res.status(400).json({ error: "pileta_id es obligatorio en el schema actual" });
+      const infraestructuraFisicaId = toInt(pick(req.body, "infraestructura_fisica_id"));
+      if (!infraestructuraFisicaId) {
+        return res.status(400).json({ error: "infraestructura_fisica_id es obligatorio en el schema actual" });
       }
 
       const pesoProm =
@@ -145,7 +145,7 @@ class BitacoraBiometriaController {
       const row = await prisma.$transaction(async (tx) => {
         const bio = await tx.biometria.create({
           data: {
-            pileta_id: piletaId,
+            infraestructura_fisica_id: infraestructuraFisicaId,
             fecha: fechaRegistro,
             pesoTotalGramos:
               peso_total_gramos === "" || peso_total_gramos == null
@@ -164,7 +164,7 @@ class BitacoraBiometriaController {
         await syncObservacionBiometria(
           tx,
           bio.id,
-          piletaId,
+          infraestructuraFisicaId,
           usuarioId,
           pick(req.body, "observaciones"),
         );
@@ -182,7 +182,7 @@ class BitacoraBiometriaController {
       });
     } catch (err) {
       if (err.code === "P2003") {
-        return res.status(400).json({ error: "Pileta invalida" });
+        return res.status(400).json({ error: "InfraestructuraFisica invalida" });
       }
       console.error("POST /biometrias Error:", err);
       res.status(500).json({ error: "Error creando biometría" });
@@ -204,16 +204,16 @@ class BitacoraBiometriaController {
 
       const prev = await prisma.biometria.findUnique({
         where: { id },
-        select: { pileta_id: true },
+        select: { infraestructura_fisica_id: true },
       });
       if (!prev) return res.status(404).json({ error: "Biometría no encontrada" });
 
       const updateData = {};
-      const piletaId = toInt(pick(req.body, "pileta_id"));
-      if (piletaId !== null) updateData.pileta_id = piletaId;
+      const infraestructuraFisicaId = toInt(pick(req.body, "infraestructura_fisica_id"));
+      if (infraestructuraFisicaId !== null) updateData.infraestructura_fisica_id = infraestructuraFisicaId;
 
-      const piletaFinal =
-        piletaId !== null && piletaId !== undefined ? piletaId : prev.pileta_id;
+      const infraestructuraFisicaFinal =
+        infraestructuraFisicaId !== null && infraestructuraFisicaId !== undefined ? infraestructuraFisicaId : prev.infraestructura_fisica_id;
 
       if (fecha !== undefined) updateData.fecha = new Date(fecha);
       if (peso_total_gramos !== undefined) {
@@ -250,7 +250,7 @@ class BitacoraBiometriaController {
           await syncObservacionBiometria(
             tx,
             id,
-            piletaFinal,
+            infraestructuraFisicaFinal,
             usuarioId,
             pick(req.body, "observaciones"),
           );
@@ -272,8 +272,8 @@ class BitacoraBiometriaController {
 
   static async getInfo(req, res) {
     // El schema actual no permite resolver biometria por instalacion: la
-    // relacion directa es con Pileta. Quien necesite info debe consultar
-    // por pileta_id.
+    // relacion directa es con InfraestructuraFisica. Quien necesite info debe consultar
+    // por infraestructura_fisica_id.
     res.json({ tipo: null });
   }
 

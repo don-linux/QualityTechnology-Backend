@@ -1,0 +1,14 @@
+meta {
+  name: GET historial-peso
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/historial-peso
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

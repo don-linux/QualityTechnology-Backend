@@ -24,7 +24,7 @@ class BitacoraInventarioController {
   static async create(req, res) {
     try {
       const {
-        pileta_id,
+        infraestructura_fisica_id,
         cantidad,
         talla,
         lote_nombre,
@@ -53,9 +53,9 @@ class BitacoraInventarioController {
         await tx.inventarioAlevin.create({
           data: {
             ubicacionId: u.ubicacionId,
-            pileta_id:
-              BitacoraInventarioController.parseNum(pileta_id) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(pileta_id))
+            infraestructura_fisica_id:
+              BitacoraInventarioController.parseNum(infraestructura_fisica_id) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(infraestructura_fisica_id))
                 : null,
             cantidad:
               BitacoraInventarioController.parseNum(cantidad) != null
@@ -86,7 +86,7 @@ class BitacoraInventarioController {
   static async update(req, res) {
     try {
       const {
-        pileta_id,
+        infraestructura_fisica_id,
         cantidad,
         talla,
         lote_nombre,
@@ -129,9 +129,9 @@ class BitacoraInventarioController {
           where: { id },
           data: {
             ubicacionId: u.ubicacionId,
-            pileta_id:
-              BitacoraInventarioController.parseNum(pileta_id) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(pileta_id))
+            infraestructura_fisica_id:
+              BitacoraInventarioController.parseNum(infraestructura_fisica_id) != null
+                ? Math.trunc(BitacoraInventarioController.parseNum(infraestructura_fisica_id))
                 : null,
             cantidad:
               BitacoraInventarioController.parseNum(cantidad) != null

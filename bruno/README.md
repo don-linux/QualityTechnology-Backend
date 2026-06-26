@@ -27,8 +27,8 @@ La colección está organizada para pruebas funcionales rápidas y smoke. Puedes
 
 Carpeta `Auto/` con un request por cada endpoint montado en `index.mjs` (incluye bitácoras, RRHH, ubicaciones, unidades de negocio, documentos de empleado y actas administrativas).
 
-- Total: **229 requests**
-- Organización por método: `Auto/GET` (88), `Auto/POST` (45), `Auto/PUT` (35), `Auto/PATCH` (14), `Auto/DELETE` (47)
+- Total: **221 requests** (un request por endpoint montado en `index.mjs`, sin alias `/incubacion`)
+- Organización por método: `Auto/GET` (92), `Auto/POST` (49), `Auto/PUT` (40), `Auto/PATCH` (34), `Auto/DELETE` (6)
 - Los endpoints protegidos ya incluyen `Authorization: Bearer {{token}}`. Las rutas públicas (`POST /api/usuarios/login` y `POST /api/usuarios/refresh`) no envían el header.
 - Los uploads multipart se generan con `body:multipart-form` y un campo `@file()` placeholder:
    - `POST /api/control-visitas` y `PUT /api/control-visitas/:id` (`foto_identificacion`)

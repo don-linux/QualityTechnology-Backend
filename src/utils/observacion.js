@@ -1,15 +1,15 @@
 /**
- * Crea observación cuando hay texto. Opciones: pileta/proceso (consulta última por pileta) y biometria_id (1:1 con biometría).
+ * Crea observación cuando hay texto. Opciones: infraestructuraFisica/proceso (consulta última por infraestructura física) y biometria_id (1:1 con biometría).
  *
  * @param {import('@prisma/client').PrismaClient | import('@prisma/client').Prisma.TransactionClient} tx
  * @param {string|null|undefined} texto
  * @param {number|null|undefined} usuarioId
- * @param {{ piletaId?: number|null, proceso?: string|null, biometriaId?: number|null }} [opts]
+ * @param {{ infraestructuraFisicaId?: number|null, proceso?: string|null, biometriaId?: number|null }} [opts]
  * @returns {Promise<number|null>}
  */
 export async function crearObservacionSiHay(tx, texto, usuarioId, opts = {}) {
   if (texto === undefined || texto === null || String(texto).trim() === "") return null;
-  const piletaId = opts.piletaId ?? opts.pileta_id ?? undefined;
+  const infraestructuraFisicaId = opts.infraestructuraFisicaId ?? opts.infraestructura_fisica_id ?? undefined;
   const procesoIn = opts.proceso ?? undefined;
   const proceso =
     procesoIn != null && String(procesoIn).trim()
@@ -26,7 +26,7 @@ export async function crearObservacionSiHay(tx, texto, usuarioId, opts = {}) {
     data: {
       comentario: String(texto).slice(0, 500),
       usuario_id: uid,
-      ...(piletaId != null ? { pileta_id: piletaId } : {}),
+      ...(infraestructuraFisicaId != null ? { infraestructura_fisica_id: infraestructuraFisicaId } : {}),
       ...(proceso !== undefined ? { proceso } : {}),
       ...(biometriaId != null ? { biometria_id: biometriaId } : {}),
     },
@@ -90,10 +90,10 @@ export async function crearObservacionEgresoInventario(
   tx,
   params,
   usuarioId,
-  { piletaId, proceso } = {},
+  { infraestructuraFisicaId, proceso } = {},
 ) {
   const texto = textoObservacionEgresoInventario(params);
-  return crearObservacionSiHay(tx, texto, usuarioId, { piletaId, proceso });
+  return crearObservacionSiHay(tx, texto, usuarioId, { infraestructuraFisicaId, proceso });
 }
 
 /**
@@ -114,8 +114,8 @@ export async function crearObservacionCancelacionVenta(
   tx,
   params,
   usuarioId,
-  { piletaId, proceso } = {},
+  { infraestructuraFisicaId, proceso } = {},
 ) {
   const texto = textoObservacionCancelacionVenta(params);
-  return crearObservacionSiHay(tx, texto, usuarioId, { piletaId, proceso });
+  return crearObservacionSiHay(tx, texto, usuarioId, { infraestructuraFisicaId, proceso });
 }

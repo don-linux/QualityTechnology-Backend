@@ -1,0 +1,22 @@
+meta {
+  name: POST historial-peso
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/historial-peso
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "peso_gramos": 12.5,
+    "fecha": "2026-06-26"
+  }
+}

@@ -4,7 +4,7 @@ import prisma from "../prisma.js";
 // retiro `responsable` y `instalacionId` de varios modelos; aqui guardamos
 // la observacion solo con `comentario` y `usuario_id`. Las funciones que
 // actualizaban fecha de biometria por instalacion quedan como no-op porque
-// la relacion Pileta/Engorda/Reproductor -> Instalacion ya no existe.
+// la relacion InfraestructuraFisica/Engorda/Reproductor -> Instalacion ya no existe.
 
 /**
  * Lista empleados activos con el contrato de la API (empleado_id, nombre_completo).
@@ -71,7 +71,7 @@ export async function guardarObservacion(tx, { observacionIdExistente, texto, re
 }
 
 /**
- * No-op tras el rediseno del schema: Pileta/Engorda/Reproductor ya no se
+ * No-op tras el rediseno del schema: InfraestructuraFisica/Engorda/Reproductor ya no se
  * relacionan directamente con Instalacion, por lo que no hay propagacion
  * automatica de fecha de biometria por instalacion. Se conserva la firma
  * para minimizar cambios en los controllers.
@@ -82,7 +82,7 @@ export async function actualizarFechaBiometriaPorInstalacion() {
 
 /**
  * Tras el rediseno, no existe `tipoInstalacion` ni una relacion clara
- * Instalacion -> Pileta/Engorda/Reproductor. Devolvemos null para indicar
+ * Instalacion -> InfraestructuraFisica/Engorda/Reproductor. Devolvemos null para indicar
  * que la informacion no esta disponible.
  */
 export async function obtenerInfoBiometriaPorInstalacion() {
