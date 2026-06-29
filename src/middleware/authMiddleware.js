@@ -41,7 +41,7 @@ export const authStaticMiddleware = (req, res, next) => {
   try {
     jwt.verify(token, JWT_SECRET);
     next();
-  } catch (err) {
+  } catch {
     res.status(403).json({ error: "Token inválido o expirado." });
   }
 };
