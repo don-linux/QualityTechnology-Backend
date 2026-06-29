@@ -1,5 +1,5 @@
 {
-  "name": "express-dev",
+  "name": "quality-backend",
   "dockerComposeFile": ["../docker/dev/compose.yaml", "compose.yaml"],
   "service": "express",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
@@ -9,36 +9,19 @@
   "forwardPorts": [5000],
   "postCreateCommand": "npm install && npx prisma generate && npx prisma migrate deploy && npx prisma db seed",
   "postStartCommand": "npm install && npx prisma generate && npx prisma migrate deploy && npm run dev",
-  "remoteEnv": {
-    "SHELL": "/bin/bash"
-  },
   "customizations": {
-    "vscode": {
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "terminal.integrated.profiles.linux": {
-          "bash": {
-            "path": "/bin/bash"
-          }
-        },
-        "terminal.integrated.automationProfile.linux": {
-          "path": "/bin/bash"
-        }
-      },
       "extensions": [
         "esbenp.prettier-vscode",
         "christian-kohler.path-intellisense",
         "PKief.material-icon-theme",
-        "GitHub.copilot-chat",
-        "GitHub.copilot",
-        "dbaeumer.vscode-eslint",
+        "oxc.oxc-vscode",
         "EditorConfig.EditorConfig",
         "ms-azuretools.vscode-docker",
-        "ms-vscode-remote.remote-containers",
         "ms-azuretools.vscode-containers",
         "Prisma.prisma",
-        "bruno-api-client.bruno"
+        "bruno-api-client.bruno",
+        "anysphere.remote-containers"
+        //"ms-vscode-remote.remote-containers"
       ]
-    }
   }
 }
