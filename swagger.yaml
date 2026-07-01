@@ -776,6 +776,50 @@ components:
       additionalProperties: true
       description: fi_usuario_id is assigned from the authenticated JWT and ignored if sent in the request body.
 
+    FlujoInsumoInput:
+      type: object
+      required:
+        - tipo_movimiento
+        - fecha
+      description: >-
+        Formulario dinamico segun `tipo_movimiento`. Ingreso/egreso usan `ubicacion` y `destino`.
+        Traspaso usa `ubicacion_salida` y `ubicacion_entrada`: el `destino` se autocompleta con la
+        granja de entrada y el servidor crea dos filas enlazadas (una en cada unidad de negocio).
+        El folio (`codigo`) se genera en el servidor y el usuario se toma del JWT.
+      properties:
+        tipo_movimiento:
+          type: string
+          enum: [ingreso, egreso, traspaso]
+        ubicacion:
+          type: string
+          description: Unidad de negocio (granja). Requerido para ingreso y egreso.
+        fecha:
+          type: string
+          format: date
+        insumo_id:
+          type: integer
+          nullable: true
+          description: Producto del catalogo de insumos (`/insumos/activos`).
+        destino:
+          type: string
+          nullable: true
+          description: >-
+            Ingreso: "Almacén de Alimento" o "Auto". Egreso: Alevinaje, Engorda, Reproductores,
+            Venta u Otros. En traspaso se ignora (se autocompleta con la granja de entrada).
+        responsable:
+          type: string
+          nullable: true
+          description: Nombre completo del empleado responsable.
+        observaciones:
+          type: string
+          nullable: true
+        ubicacion_salida:
+          type: string
+          description: Unidad de negocio de salida. Requerido solo para traspaso.
+        ubicacion_entrada:
+          type: string
+          description: Unidad de negocio de entrada. Requerido solo para traspaso.
+
     BitacoraAlimentacionInput:
       type: object
       required:
@@ -3580,16 +3624,23 @@ paths:
         '200':
           description: "Actualizado"
 
-  /recepcion_insumos:
+  /flujo_insumos:
     get:
-      summary: "Listar recepción de insumos"
+      summary: "Listar flujo de insumos"
+      description: "Filtra por unidad de negocio con el query param `ubicacion`."
       security:
         - bearerAuth: []
+      parameters:
+        - name: ubicacion
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Registrar recepción de insumo"
+      summary: "Registrar movimiento de flujo de insumos (ingreso, egreso o traspaso)"
       security:
         - bearerAuth: []
       requestBody:
@@ -3597,12 +3648,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraRequestBody'
+              $ref: '#/components/schemas/FlujoInsumoInput'
       responses:
-        '201':
-          description: "Creado"
+        '200':
+          description: "Creado (traspaso genera dos filas enlazadas)"
     put:
-      summary: "Actualizar recepción de insumo"
+      summary: "Actualizar movimiento de flujo de insumos"
       security:
         - bearerAuth: []
       parameters:
@@ -3616,14 +3667,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraRequestBody'
+              $ref: '#/components/schemas/FlujoInsumoInput'
       responses:
         '200':
           description: "Actualizado"
 
-  /recepcion_insumos/empleados:
+  /flujo_insumos/empleados:
     get:
-      summary: "Listar empleados activos para recepción de insumos"
+      summary: "Listar empleados activos para flujo de insumos"
       security:
         - bearerAuth: []
       responses:

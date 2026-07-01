@@ -27,7 +27,7 @@ const MODULOS = [
   ["Biometrias", "/biometrias", true],
   ["Control de Fauna Nociva", "/control-fauna-nociva", true],
   ["Alimentacion", "/alimentacion", true],
-  ["Recepcion Insumos", "/recepcion_insumos", true],
+  ["Flujo de insumos", "/flujo_insumos", true],
   ["Control de Visitas", "/control-visitas", true],
   ["Control de Limpieza", "/control-limpieza", true],
   ["Parametros Fisico Quimicos", "/parametros-fisico-quimicos", true],

@@ -1,0 +1,27 @@
+meta {
+  name: POST flujo_insumos egreso
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{baseUrl}}/api/flujo_insumos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "tipo_movimiento": "egreso",
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-24",
+    "insumo_id": 1,
+    "destino": "Engorda",
+    "responsable": "Juan Pérez",
+    "observaciones": "Egreso QA"
+  }
+}

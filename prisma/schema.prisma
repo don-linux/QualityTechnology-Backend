@@ -44,7 +44,7 @@ model Usuario {
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   controlFaunaNociva ControlFaunaNociva[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  recepcionInsumos   RecepcionInsumo[]
+  flujoInsumos       FlujoInsumo[]
   refreshTokens      RefreshToken[]
   siembra            siembra[]
   rol                Rol                @relation(fields: [rolId], references: [id])
@@ -787,29 +787,42 @@ model LimpiezaInstalacion {
   @@schema("public")
 }
 
-model RecepcionInsumo {
-  id                 Int          @id @default(autoincrement())
-  ubicacionId        Int          @map("ubicacion_id")
-  fecha              DateTime     @db.Date
-  proveedor_nombre   String?      @db.VarChar(100)
-  producto           String?      @db.VarChar(255)
-  unidadMedida       String?      @map("unidad_medida") @db.VarChar(255)
-  cantidad           Decimal?     @db.Decimal(15, 2)
-  numero_lote        String?      @db.VarChar(100)
-  condicionesEntrega String?      @map("condiciones_entrega") @db.VarChar(150)
-  encargadoEntrega   String?      @map("encargado_entrega") @db.VarChar(100)
-  verificador        String?      @db.VarChar(100)
-  observacionId      Int?         @map("observacion_id")
-  usuarioId          Int?         @map("usuario_id")
-  created_at         DateTime     @default(now()) @db.Timestamp(6)
-  updated_at         DateTime     @updatedAt @db.Timestamp(6)
-  observacion        observacion? @relation(fields: [observacionId], references: [id])
-  ubicacion          ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario            Usuario?     @relation(fields: [usuarioId], references: [id])
+/// Flujo de insumos: movimiento de insumos por unidad de negocio (granja).
+/// tipo_movimiento define los campos dinamicos. Un traspaso genera dos filas
+/// enlazadas por `traspaso_grupo_id` (una en la UdN de salida, otra en la de entrada).
+/// NOTA: existe un indice unico PARCIAL sobre `codigo` (WHERE tipo_movimiento <> 'traspaso')
+/// creado por SQL crudo en la migracion; Prisma no lo modela. No lo elimines al
+/// regenerar migraciones: garantiza folios unicos para ingreso/egreso permitiendo
+/// que el par de un traspaso comparta folio.
+model FlujoInsumo {
+  id                 Int                  @id @default(autoincrement())
+  codigo             String               @db.VarChar(30)
+  tipoMovimiento     TipoMovimientoInsumo @map("tipo_movimiento")
+  ubicacionId        Int                  @map("ubicacion_id")
+  fecha              DateTime             @db.Date
+  insumoId           Int?                 @map("insumo_id")
+  destino            String?              @db.VarChar(150)
+  responsable        String?              @db.VarChar(100)
+  ubicacionSalidaId  Int?                 @map("ubicacion_salida_id")
+  ubicacionEntradaId Int?                 @map("ubicacion_entrada_id")
+  traspasoSentido    TraspasoSentido?     @map("traspaso_sentido")
+  traspasoGrupoId    String?              @map("traspaso_grupo_id") @db.VarChar(40)
+  observacionId      Int?                 @map("observacion_id")
+  usuarioId          Int?                 @map("usuario_id")
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  updated_at         DateTime             @updatedAt @db.Timestamp(6)
+  observacion        observacion?         @relation(fields: [observacionId], references: [id])
+  ubicacion          ubicacion            @relation("FlujoInsumoUbicacion", fields: [ubicacionId], references: [id])
+  ubicacionSalida    ubicacion?           @relation("FlujoInsumoUbicacionSalida", fields: [ubicacionSalidaId], references: [id])
+  ubicacionEntrada   ubicacion?           @relation("FlujoInsumoUbicacionEntrada", fields: [ubicacionEntradaId], references: [id])
+  insumo             Insumo?              @relation(fields: [insumoId], references: [id], onDelete: SetNull)
+  usuario            Usuario?             @relation(fields: [usuarioId], references: [id])
 
   @@index([ubicacionId])
   @@index([usuarioId])
-  @@map("recepcion_insumos")
+  @@index([codigo])
+  @@index([traspasoGrupoId])
+  @@map("flujo_insumos")
   @@schema("public")
 }
 
@@ -925,6 +938,7 @@ model Insumo {
   created_at     DateTime @default(now()) @db.Timestamp(6)
   updated_at     DateTime @updatedAt @db.Timestamp(6)
   cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  flujoInsumos   FlujoInsumo[]
 
   @@index([clienteId])
   @@map("insumos")
@@ -1044,7 +1058,7 @@ model observacion {
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  recepcionInsumos   RecepcionInsumo[]
+  flujoInsumos       FlujoInsumo[]
   reproductores      Reproductor[]
   ventas             Venta[]
   controlVisitas     ControlVisita[]
@@ -1097,7 +1111,9 @@ model ubicacion {
   infraestructuraFisica InfraestructuraFisica[]
   controlFaunaNociva ControlFaunaNociva[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  recepcionInsumos   RecepcionInsumo[]
+  flujoInsumos       FlujoInsumo[]  @relation("FlujoInsumoUbicacion")
+  flujoInsumosSalida FlujoInsumo[]  @relation("FlujoInsumoUbicacionSalida")
+  flujoInsumosEntrada FlujoInsumo[] @relation("FlujoInsumoUbicacionEntrada")
   controlVisitas     ControlVisita[]
   unidadesNegocio    UnidadNegocio[]
 
@@ -1138,6 +1154,21 @@ enum TipoCosecha {
 enum EstadoCicloReproductor {
   activo
   agotado
+
+  @@schema("public")
+}
+
+enum TipoMovimientoInsumo {
+  ingreso
+  egreso
+  traspaso
+
+  @@schema("public")
+}
+
+enum TraspasoSentido {
+  salida
+  entrada
 
   @@schema("public")
 }
