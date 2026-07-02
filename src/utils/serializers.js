@@ -1033,23 +1033,30 @@ export function serializeControlVisita(row) {
   };
 }
 
-export function serializeRecepcionInsumo(row) {
+export function serializeFlujoInsumo(row) {
   if (!row) return null;
   return {
     id: row.id,
+    codigo: row.codigo,
+    tipo_movimiento: row.tipoMovimiento,
     fecha: row.fecha,
-    proveedor_nombre: row.proveedor_nombre,
-    producto: row.producto,
-    unidad_medida: row.unidadMedida,
-    cantidad: toNumberSafe(row.cantidad),
-    numero_lote: row.numero_lote,
-    condiciones_entrega: row.condicionesEntrega,
-    encargado_entrega: row.encargadoEntrega,
-    verificador: row.verificador,
+    insumo_id: row.insumoId ?? null,
+    producto: row.insumo?.nombre ?? null,
+    insumo_nombre: row.insumo?.nombre ?? null,
+    insumo_codigo: row.insumo?.codigo ?? null,
+    unidad_medida: row.insumo?.unidadMedida ?? null,
+    destino: row.destino ?? null,
+    responsable: row.responsable ?? null,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    ubicacion_id: row.ubicacionId,
+    ubicacion_salida_id: row.ubicacionSalidaId ?? null,
+    ubicacion_entrada_id: row.ubicacionEntradaId ?? null,
+    unidad_negocio_salida: row.ubicacionSalida?.nombre ?? null,
+    unidad_negocio_entrada: row.ubicacionEntrada?.nombre ?? null,
+    traspaso_sentido: row.traspasoSentido ?? null,
+    traspaso_grupo_id: row.traspasoGrupoId ?? null,
     observaciones: row.observacion?.comentario ?? null,
     observacion_id: row.observacionId ?? null,
     usuario_id: row.usuarioId,
-    ubicacion: row.ubicacion?.nombre ?? null,
-    ubicacion_id: row.ubicacionId,
   };
 }

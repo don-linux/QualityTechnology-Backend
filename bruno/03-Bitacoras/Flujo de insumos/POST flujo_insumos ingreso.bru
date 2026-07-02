@@ -1,0 +1,27 @@
+meta {
+  name: POST flujo_insumos ingreso
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{baseUrl}}/api/flujo_insumos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "tipo_movimiento": "ingreso",
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-24",
+    "insumo_id": 1,
+    "destino": "Almacén de Alimento",
+    "responsable": "Juan Pérez",
+    "observaciones": "Ingreso QA"
+  }
+}
