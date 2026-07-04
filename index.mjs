@@ -30,6 +30,7 @@ import eficienciaReproductivaRoutes from "./src/routes/eficienciaReproductivaRou
 import trazabilidadRoutes from "./src/routes/trazabilidadRoutes.js";
 import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
+import cicloAvicolaRoutes from "./src/routes/cicloAvicolaRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
@@ -125,6 +126,7 @@ api.use("/incubacion", eficienciaReproductivaRoutes);
 api.use("/historial-peso", historialPesoRoutes);
 api.use("/siembras", siembraRoutes);
 api.use("/trazabilidad", trazabilidadRoutes);
+api.use("/ciclos-avicola", cicloAvicolaRoutes);
 api.use("/equipos", equipoRoutes);
 
 // Ventas / CRM

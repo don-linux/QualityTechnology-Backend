@@ -1828,6 +1828,48 @@ paths:
         '500':
           description: "Error del servidor"
 
+  /ciclos-avicola:
+    get:
+      summary: "Listar ciclos avícola"
+      parameters:
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [engorda, postura, patos, kikiriki, otro]
+      responses:
+        '200':
+          description: "Listado de ciclos avícola"
+    post:
+      summary: "Crear ciclo avícola"
+      responses:
+        '201':
+          description: "Ciclo creado"
+
+  /ciclos-avicola/{id}:
+    get:
+      summary: "Detalle de ciclo avícola con KPIs"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Detalle del ciclo"
+    put:
+      summary: "Actualizar ciclo avícola"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Ciclo actualizado"
+
   /empleados:
     get:
       summary: "Obtener empleados"

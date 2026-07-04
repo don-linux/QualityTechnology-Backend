@@ -1,4 +1,5 @@
 import prisma from "../src/prisma.js";
+import { seedCicloEngorda2026 } from "./seedCicloEngorda.mjs";
 
 const MODULOS = [
   ["Dashboard", "/", true],
@@ -240,6 +241,8 @@ async function main() {
     skipDuplicates: true,
   });
 
+  await seedCicloEngorda2026();
+
   await syncSequence("roles", "id");
   await syncSequence("usuarios", "id");
   await syncSequence("modulos", "id");
@@ -253,6 +256,7 @@ async function main() {
   await syncSequence("evidencias_fauna", "id", "catalogos");
   await syncSequence("estados_trampa", "id", "catalogos");
   await syncSequence("acciones_correctivas", "id", "catalogos");
+  await syncSequence("ciclos_avicola", "id");
 }
 
 main()

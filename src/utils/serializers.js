@@ -1060,3 +1060,395 @@ export function serializeFlujoInsumo(row) {
     usuario_id: row.usuarioId,
   };
 }
+
+// ============================================================================
+// Ciclos avícola
+// ============================================================================
+
+const ESTADO_CICLO_AVICOLA_LABEL = {
+  activo: "Activo",
+  cerrado: "Cerrado",
+};
+
+const TIPO_CICLO_AVICOLA_LABEL = {
+  engorda: "Engorda",
+  postura: "Postura",
+  patos: "Patos",
+  kikiriki: "Kikiriki",
+  otro: "Otro",
+};
+
+function toIsoDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function serializeDecimal(value) {
+  if (value === null || value === undefined) return null;
+  return Number(value);
+}
+
+export function serializeCicloCalendarioEvento(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    tipo_evento: row.tipo_evento,
+    actividad: row.actividad,
+    producto: row.producto,
+    dosis: row.dosis,
+    responsable: row.responsable,
+    estado_evento: row.estado_evento,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloGasto(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    categoria: row.categoria,
+    cantidad: serializeDecimal(row.cantidad),
+    unidad: row.unidad,
+    descripcion: row.descripcion,
+    proveedor: row.proveedor,
+    precio_unitario: serializeDecimal(row.precio_unitario),
+    importe_final: serializeDecimal(row.importe_final),
+    metodo_pago: row.metodo_pago,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloVenta(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    producto: row.producto,
+    cantidad: serializeDecimal(row.cantidad),
+    unidad: row.unidad,
+    cliente: row.cliente,
+    precio_unitario: serializeDecimal(row.precio_unitario),
+    importe_final: serializeDecimal(row.importe_final),
+    estado_pago: row.estado_pago,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloBiometria(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    animales_pesados: row.animales_pesados,
+    peso_promedio_g: serializeDecimal(row.peso_promedio_g),
+    peso_promedio_kg: serializeDecimal(row.peso_promedio_kg),
+    indice_crecimiento_g_dia: serializeDecimal(row.indice_crecimiento_g_dia),
+    dias_transcurridos: row.dias_transcurridos,
+    ganancia_ultima_g: serializeDecimal(row.ganancia_ultima_g),
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloMortalidad(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    muertes: row.muertes,
+    descartes: row.descartes,
+    causa: row.causa,
+    accion_correctiva: row.accion_correctiva,
+    responsable: row.responsable,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloAlimentoFase(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    fase_alimento: row.fase_alimento,
+    producto: row.producto,
+    kg_ingreso: serializeDecimal(row.kg_ingreso),
+    kg_consumidos: serializeDecimal(row.kg_consumidos),
+    existencia_final: serializeDecimal(row.existencia_final),
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloConsumoEstimado(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    semana: row.semana,
+    rango_dias: row.rango_dias,
+    fase_alimento: row.fase_alimento,
+    producto: row.producto,
+    kg_ingreso: serializeDecimal(row.kg_ingreso),
+    consumo_individual: serializeDecimal(row.consumo_individual),
+    consumo_conjunto: serializeDecimal(row.consumo_conjunto),
+    consumo_acumulado: serializeDecimal(row.consumo_acumulado),
+    gdp: serializeDecimal(row.gdp),
+    conversion: serializeDecimal(row.conversion),
+    mortalidad_semanal: serializeDecimal(row.mortalidad_semanal),
+    mortalidad_acumulada: serializeDecimal(row.mortalidad_acumulada),
+  };
+}
+
+export function serializeCicloSanidad(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    tipo: row.tipo,
+    producto: row.producto,
+    dosis: row.dosis,
+    via: row.via,
+    responsable: row.responsable,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloAvicola(row, kpis = null) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    id_ciclo: row.id_ciclo,
+    nombre_lote: row.nombre_lote,
+    tipo: row.tipo,
+    tipo_label: TIPO_CICLO_AVICOLA_LABEL[row.tipo] ?? row.tipo,
+    especie: row.especie,
+    objetivo: row.objetivo,
+    fecha_inicio: toIsoDateOnly(row.fecha_inicio),
+    fecha_salida_estimada: toIsoDateOnly(row.fecha_salida_estimada),
+    animales_iniciales: row.animales_iniciales,
+    responsable: row.responsable,
+    estado: row.estado,
+    estado_label: ESTADO_CICLO_AVICOLA_LABEL[row.estado] ?? row.estado,
+    observaciones: row.observaciones,
+    ubicacion_id: row.ubicacion_id,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    kpis: kpis ?? undefined,
+    calendario: row.calendario?.map(serializeCicloCalendarioEvento),
+    gastos: row.gastos?.map(serializeCicloGasto),
+    ventas: row.ventas?.map(serializeCicloVenta),
+    biometrias: row.biometrias?.map(serializeCicloBiometria),
+    mortalidad: row.mortalidad?.map(serializeCicloMortalidad),
+    alimento_fases: row.alimento_fases?.map(serializeCicloAlimentoFase),
+    consumo_estimado: row.consumo_estimado?.map(serializeCicloConsumoEstimado),
+    sanidad: row.sanidad?.map(serializeCicloSanidad),
+  };
+}
+
+// ============================================================================
+// Ciclos avícola
+// ============================================================================
+
+const ESTADO_CICLO_AVICOLA_LABEL = {
+  activo: "Activo",
+  cerrado: "Cerrado",
+};
+
+const TIPO_CICLO_AVICOLA_LABEL = {
+  engorda: "Engorda",
+  postura: "Postura",
+  patos: "Patos",
+  kikiriki: "Kikiriki",
+  otro: "Otro",
+};
+
+function toIsoDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function serializeDecimal(value) {
+  if (value === null || value === undefined) return null;
+  return Number(value);
+}
+
+export function serializeCicloCalendarioEvento(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    tipo_evento: row.tipo_evento,
+    actividad: row.actividad,
+    producto: row.producto,
+    dosis: row.dosis,
+    responsable: row.responsable,
+    estado_evento: row.estado_evento,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloGasto(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    categoria: row.categoria,
+    cantidad: serializeDecimal(row.cantidad),
+    unidad: row.unidad,
+    descripcion: row.descripcion,
+    proveedor: row.proveedor,
+    precio_unitario: serializeDecimal(row.precio_unitario),
+    importe_final: serializeDecimal(row.importe_final),
+    metodo_pago: row.metodo_pago,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloVenta(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    producto: row.producto,
+    cantidad: serializeDecimal(row.cantidad),
+    unidad: row.unidad,
+    cliente: row.cliente,
+    precio_unitario: serializeDecimal(row.precio_unitario),
+    importe_final: serializeDecimal(row.importe_final),
+    estado_pago: row.estado_pago,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloBiometria(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    animales_pesados: row.animales_pesados,
+    peso_promedio_g: serializeDecimal(row.peso_promedio_g),
+    peso_promedio_kg: serializeDecimal(row.peso_promedio_kg),
+    indice_crecimiento_g_dia: serializeDecimal(row.indice_crecimiento_g_dia),
+    dias_transcurridos: row.dias_transcurridos,
+    ganancia_ultima_g: serializeDecimal(row.ganancia_ultima_g),
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloMortalidad(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    muertes: row.muertes,
+    descartes: row.descartes,
+    causa: row.causa,
+    accion_correctiva: row.accion_correctiva,
+    responsable: row.responsable,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloAlimentoFase(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    fase_alimento: row.fase_alimento,
+    producto: row.producto,
+    kg_ingreso: serializeDecimal(row.kg_ingreso),
+    kg_consumidos: serializeDecimal(row.kg_consumidos),
+    existencia_final: serializeDecimal(row.existencia_final),
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloConsumoEstimado(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    semana: row.semana,
+    rango_dias: row.rango_dias,
+    fase_alimento: row.fase_alimento,
+    producto: row.producto,
+    kg_ingreso: serializeDecimal(row.kg_ingreso),
+    consumo_individual: serializeDecimal(row.consumo_individual),
+    consumo_conjunto: serializeDecimal(row.consumo_conjunto),
+    consumo_acumulado: serializeDecimal(row.consumo_acumulado),
+    gdp: serializeDecimal(row.gdp),
+    conversion: serializeDecimal(row.conversion),
+    mortalidad_semanal: serializeDecimal(row.mortalidad_semanal),
+    mortalidad_acumulada: serializeDecimal(row.mortalidad_acumulada),
+  };
+}
+
+export function serializeCicloSanidad(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ciclo_avicola_id: row.ciclo_avicola_id,
+    fecha: toIsoDateOnly(row.fecha),
+    dia_ciclo: row.dia_ciclo,
+    tipo: row.tipo,
+    producto: row.producto,
+    dosis: row.dosis,
+    via: row.via,
+    responsable: row.responsable,
+    observaciones: row.observaciones,
+  };
+}
+
+export function serializeCicloAvicola(row, kpis = null) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    id_ciclo: row.id_ciclo,
+    nombre_lote: row.nombre_lote,
+    tipo: row.tipo,
+    tipo_label: TIPO_CICLO_AVICOLA_LABEL[row.tipo] ?? row.tipo,
+    especie: row.especie,
+    objetivo: row.objetivo,
+    fecha_inicio: toIsoDateOnly(row.fecha_inicio),
+    fecha_salida_estimada: toIsoDateOnly(row.fecha_salida_estimada),
+    animales_iniciales: row.animales_iniciales,
+    responsable: row.responsable,
+    estado: row.estado,
+    estado_label: ESTADO_CICLO_AVICOLA_LABEL[row.estado] ?? row.estado,
+    observaciones: row.observaciones,
+    ubicacion_id: row.ubicacion_id,
+    ubicacion: row.ubicacion?.nombre ?? null,
+    kpis: kpis ?? undefined,
+    calendario: row.calendario?.map(serializeCicloCalendarioEvento),
+    gastos: row.gastos?.map(serializeCicloGasto),
+    ventas: row.ventas?.map(serializeCicloVenta),
+    biometrias: row.biometrias?.map(serializeCicloBiometria),
+    mortalidad: row.mortalidad?.map(serializeCicloMortalidad),
+    alimento_fases: row.alimento_fases?.map(serializeCicloAlimentoFase),
+    consumo_estimado: row.consumo_estimado?.map(serializeCicloConsumoEstimado),
+    sanidad: row.sanidad?.map(serializeCicloSanidad),
+  };
+}

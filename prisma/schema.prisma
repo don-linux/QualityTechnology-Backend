@@ -1116,6 +1116,235 @@ model ubicacion {
   flujoInsumosEntrada FlujoInsumo[] @relation("FlujoInsumoUbicacionEntrada")
   controlVisitas     ControlVisita[]
   unidadesNegocio    UnidadNegocio[]
+  ciclosAvicola      CicloAvicola[]
+
+  @@schema("public")
+}
+
+/// Ciclo/lote avícola (engorda, postura, etc.) independiente del inventario acuícola.
+model CicloAvicola {
+  id                     Int                      @id @default(autoincrement())
+  id_ciclo               String                   @unique @db.VarChar(40) @map("id_ciclo")
+  nombre_lote            String                   @db.VarChar(120) @map("nombre_lote")
+  tipo                   TipoCicloAvicola         @default(engorda)
+  especie                String                   @db.VarChar(120)
+  objetivo               String?                  @db.VarChar(80)
+  fecha_inicio           DateTime                 @db.Date @map("fecha_inicio")
+  fecha_salida_estimada  DateTime?                @db.Date @map("fecha_salida_estimada")
+  animales_iniciales     Int                      @map("animales_iniciales")
+  responsable            String?                  @db.VarChar(120)
+  estado                 EstadoCicloAvicola       @default(activo)
+  observaciones          String?                  @db.VarChar(500)
+  ubicacion_id           Int?                     @map("ubicacion_id")
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @updatedAt @db.Timestamp(6)
+  ubicacion              ubicacion?               @relation(fields: [ubicacion_id], references: [id], onDelete: SetNull)
+  calendario             CicloCalendarioEvento[]
+  gastos                 CicloGasto[]
+  ventas                 CicloVenta[]
+  biometrias             CicloBiometria[]
+  mortalidad             CicloMortalidad[]
+  alimento_fases         CicloAlimentoFase[]
+  consumo_estimado       CicloConsumoEstimado[]
+  sanidad                CicloSanidad[]
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([ubicacion_id])
+  @@map("ciclos_avicola")
+  @@schema("public")
+}
+
+model CicloCalendarioEvento {
+  id               Int       @id @default(autoincrement())
+  ciclo_avicola_id Int       @map("ciclo_avicola_id")
+  fecha            DateTime? @db.Date
+  dia_ciclo        Int?      @map("dia_ciclo")
+  tipo_evento      String    @db.VarChar(80) @map("tipo_evento")
+  actividad        String    @db.VarChar(200)
+  producto         String?   @db.VarChar(120)
+  dosis            String?   @db.VarChar(80)
+  responsable      String?   @db.VarChar(120)
+  estado_evento    String    @default("Pendiente") @db.VarChar(40) @map("estado_evento")
+  observaciones    String?   @db.VarChar(500)
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @updatedAt @db.Timestamp(6)
+  cicloAvicola     CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_calendario_evento")
+  @@schema("public")
+}
+
+model CicloGasto {
+  id               Int      @id @default(autoincrement())
+  ciclo_avicola_id Int      @map("ciclo_avicola_id")
+  fecha            DateTime @db.Date
+  categoria        String   @db.VarChar(80)
+  cantidad         Decimal  @db.Decimal(12, 3)
+  unidad           String   @db.VarChar(40)
+  descripcion      String?  @db.VarChar(200)
+  proveedor        String?  @db.VarChar(120)
+  precio_unitario  Decimal  @db.Decimal(12, 4) @map("precio_unitario")
+  importe_final    Decimal  @db.Decimal(12, 2) @map("importe_final")
+  metodo_pago      String?  @db.VarChar(40) @map("metodo_pago")
+  observaciones    String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola     CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_gasto")
+  @@schema("public")
+}
+
+model CicloVenta {
+  id               Int      @id @default(autoincrement())
+  ciclo_avicola_id Int      @map("ciclo_avicola_id")
+  fecha            DateTime @db.Date
+  producto         String   @db.VarChar(120)
+  cantidad         Decimal  @db.Decimal(12, 3)
+  unidad           String   @db.VarChar(40)
+  cliente          String?  @db.VarChar(120)
+  precio_unitario  Decimal  @db.Decimal(12, 4) @map("precio_unitario")
+  importe_final    Decimal  @db.Decimal(12, 2) @map("importe_final")
+  estado_pago      String?  @db.VarChar(40) @map("estado_pago")
+  observaciones    String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola     CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_venta")
+  @@schema("public")
+}
+
+model CicloBiometria {
+  id                      Int      @id @default(autoincrement())
+  ciclo_avicola_id        Int      @map("ciclo_avicola_id")
+  fecha                   DateTime @db.Date
+  dia_ciclo               Int?     @map("dia_ciclo")
+  animales_pesados        Int?     @map("animales_pesados")
+  peso_promedio_g         Decimal  @db.Decimal(12, 4) @map("peso_promedio_g")
+  peso_promedio_kg        Decimal? @db.Decimal(12, 6) @map("peso_promedio_kg")
+  indice_crecimiento_g_dia Decimal? @db.Decimal(12, 4) @map("indice_crecimiento_g_dia")
+  dias_transcurridos      Int?     @map("dias_transcurridos")
+  ganancia_ultima_g       Decimal? @db.Decimal(12, 4) @map("ganancia_ultima_g")
+  observaciones           String?  @db.VarChar(500)
+  created_at              DateTime @default(now()) @db.Timestamp(6)
+  updated_at              DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola            CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_biometria")
+  @@schema("public")
+}
+
+model CicloMortalidad {
+  id                 Int      @id @default(autoincrement())
+  ciclo_avicola_id   Int      @map("ciclo_avicola_id")
+  fecha              DateTime @db.Date
+  dia_ciclo          Int?     @map("dia_ciclo")
+  muertes            Int      @default(0)
+  descartes          Int      @default(0)
+  causa              String?  @db.VarChar(200)
+  accion_correctiva  String?  @db.VarChar(200) @map("accion_correctiva")
+  responsable        String?  @db.VarChar(120)
+  observaciones      String?  @db.VarChar(500)
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  updated_at         DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola       CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_mortalidad")
+  @@schema("public")
+}
+
+model CicloAlimentoFase {
+  id               Int      @id @default(autoincrement())
+  ciclo_avicola_id Int      @map("ciclo_avicola_id")
+  fecha            DateTime @db.Date
+  dia_ciclo        Int?     @map("dia_ciclo")
+  fase_alimento    String?  @db.VarChar(80) @map("fase_alimento")
+  producto         String?  @db.VarChar(120)
+  kg_ingreso       Decimal? @db.Decimal(12, 3) @map("kg_ingreso")
+  kg_consumidos    Decimal? @db.Decimal(12, 3) @map("kg_consumidos")
+  existencia_final Decimal? @db.Decimal(12, 3) @map("existencia_final")
+  observaciones    String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola     CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_alimento_fase")
+  @@schema("public")
+}
+
+model CicloConsumoEstimado {
+  id                   Int      @id @default(autoincrement())
+  ciclo_avicola_id     Int      @map("ciclo_avicola_id")
+  semana               Int
+  rango_dias           String?  @db.VarChar(40) @map("rango_dias")
+  fase_alimento        String?  @db.VarChar(80) @map("fase_alimento")
+  producto             String?  @db.VarChar(120)
+  kg_ingreso           Decimal? @db.Decimal(12, 4) @map("kg_ingreso")
+  consumo_individual   Decimal? @db.Decimal(12, 4) @map("consumo_individual")
+  consumo_conjunto     Decimal? @db.Decimal(12, 3) @map("consumo_conjunto")
+  consumo_acumulado    Decimal? @db.Decimal(12, 3) @map("consumo_acumulado")
+  gdp                  Decimal? @db.Decimal(12, 2)
+  conversion           Decimal? @db.Decimal(12, 4)
+  mortalidad_semanal   Decimal? @db.Decimal(12, 4) @map("mortalidad_semanal")
+  mortalidad_acumulada Decimal? @db.Decimal(12, 4) @map("mortalidad_acumulada")
+  created_at           DateTime @default(now()) @db.Timestamp(6)
+  updated_at           DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola         CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([semana])
+  @@map("ciclos_consumo_estimado")
+  @@schema("public")
+}
+
+model CicloSanidad {
+  id               Int      @id @default(autoincrement())
+  ciclo_avicola_id Int      @map("ciclo_avicola_id")
+  fecha            DateTime? @db.Date
+  dia_ciclo        Int?     @map("dia_ciclo")
+  tipo             String   @db.VarChar(80)
+  producto         String?  @db.VarChar(120)
+  dosis            String?  @db.VarChar(80)
+  via              String?  @db.VarChar(40)
+  responsable      String?  @db.VarChar(120)
+  observaciones    String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @updatedAt @db.Timestamp(6)
+  cicloAvicola     CicloAvicola @relation(fields: [ciclo_avicola_id], references: [id], onDelete: Cascade)
+
+  @@index([ciclo_avicola_id])
+  @@index([fecha])
+  @@map("ciclos_sanidad")
+  @@schema("public")
+}
+
+enum TipoCicloAvicola {
+  engorda
+  postura
+  patos
+  kikiriki
+  otro
+
+  @@schema("public")
+}
+
+enum EstadoCicloAvicola {
+  activo
+  cerrado
 
   @@schema("public")
 }
