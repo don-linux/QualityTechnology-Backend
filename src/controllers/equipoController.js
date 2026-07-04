@@ -19,32 +19,6 @@ function toInt(value, fallback = null) {
 }
 
 class EquipoController {
-  static async getEmpleados(req, res) {
-    try {
-      const empleados = await prisma.empleado.findMany({
-        where: { esta_activo: true },
-        select: {
-          id: true,
-          nombre: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-        },
-      });
-      const result = empleados
-        .map((e) => ({
-          empleado_id: e.id,
-          nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
-            .filter(Boolean)
-            .join(" "),
-        }))
-        .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
-      res.json(result);
-    } catch (err) {
-      console.error("Error al obtener empleados:", err);
-      res.status(500).json({ error: err.message });
-    }
-  }
-
   static async getByUsuario(req, res) {
     try {
       const usuarioId = toInt(req.params.usuario_id);

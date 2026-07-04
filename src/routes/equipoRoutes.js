@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/empleados", equipoController.getEmpleados);
 router.get("/:usuario_id", equipoController.getByUsuario);
 router.post("/", equipoController.create);
 router.put("/:id", equipoController.update);

@@ -499,8 +499,6 @@ components:
           type: string
         fc_ubicacion:
           type: string
-        fc_responsable:
-          type: string
         fc_notas:
           type: string
         fi_usuario_id:
