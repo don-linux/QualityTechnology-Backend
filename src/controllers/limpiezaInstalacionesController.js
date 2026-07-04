@@ -5,7 +5,7 @@ import { serializeLimpiezaInstalacion } from "../utils/serializers.js";
 
 const LIMITES = {
   desinfectante_utilizado: 500,
-  encargado: 120,
+  responsable: 120,
   observaciones: 500,
   ubicacion: 50,
 };
@@ -21,7 +21,7 @@ const inc = {
 function validarLongitudes(body) {
   const etiquetas = {
     desinfectante_utilizado: "El desinfectante utilizado",
-    encargado: "El encargado",
+    responsable: "El responsable",
     observaciones: "Las observaciones",
     ubicacion: "La ubicación",
   };
@@ -55,7 +55,7 @@ function parseOptInt(v) {
 }
 
 function validarPayload(body) {
-  const { ubicacion, fecha, infraestructura_fisica_id, desinfectante_utilizado, encargado } = body;
+  const { ubicacion, fecha, infraestructura_fisica_id, desinfectante_utilizado, responsable } = body;
 
   if (!ubicacion || !String(ubicacion).trim()) {
     return { error: "ubicacion es requerido" };
@@ -78,8 +78,8 @@ function validarPayload(body) {
     return { error: "desinfectante_utilizado es requerido" };
   }
 
-  if (!encargado || !String(encargado).trim()) {
-    return { error: "encargado es requerido" };
+  if (!responsable || !String(responsable).trim()) {
+    return { error: "responsable es requerido" };
   }
 
   const errorLongitud = validarLongitudes(body);
@@ -157,7 +157,7 @@ class LimpiezaInstalacionesController {
             tipoLimpieza,
             porcentajeRecambioAgua: porcentaje,
             desinfectanteUtilizado: String(req.body.desinfectante_utilizado).trim(),
-            encargado: String(req.body.encargado).trim(),
+            responsable: String(req.body.responsable).trim(),
             usuarioId,
             observacionId,
           },
@@ -216,7 +216,7 @@ class LimpiezaInstalacionesController {
             tipoLimpieza,
             porcentajeRecambioAgua: porcentaje,
             desinfectanteUtilizado: String(req.body.desinfectante_utilizado).trim(),
-            encargado: String(req.body.encargado).trim(),
+            responsable: String(req.body.responsable).trim(),
             observacionId,
           },
         });

@@ -5,7 +5,7 @@ import { serializeControlLimpieza } from "../utils/serializers.js";
 
 const LIMITES_CONTROL_LIMPIEZA = {
   tipo_instalacion: 20,
-  realizado_por: 100,
+  responsable: 100,
   observaciones: 500,
   ubicacion: 50,
 };
@@ -13,7 +13,7 @@ const LIMITES_CONTROL_LIMPIEZA = {
 const validarLongitudesControlLimpieza = (body) => {
   const etiquetas = {
     tipo_instalacion: "El tipo de instalación",
-    realizado_por: "Realizó",
+    responsable: "El responsable",
     observaciones: "Las observaciones",
     ubicacion: "La ubicación",
   };
@@ -95,7 +95,7 @@ class ControlLimpiezaController {
       if (!u) return res.status(400).json({ error: "ubicacion inválida" });
 
       const usuarioId = req.user.usuario_id;
-      const { realizado_por, observaciones } = req.body;
+      const { responsable, observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
@@ -110,7 +110,7 @@ class ControlLimpiezaController {
             ubicacionId: u.ubicacionId,
             fecha: new Date(fecha),
             tipoInstalacion,
-            realizado_por: realizado_por || null,
+            responsable: responsable || null,
             usuarioId,
             observacionId,
           },
@@ -160,7 +160,7 @@ class ControlLimpiezaController {
       }
 
       const usuarioId = req.user?.usuario_id ?? existing.usuarioId;
-      const { realizado_por, observaciones } = req.body;
+      const { responsable, observaciones } = req.body;
 
       await prisma.$transaction(async (tx) => {
         const observacionId = await guardarObservacion(tx, {
@@ -179,7 +179,7 @@ class ControlLimpiezaController {
             ubicacionId: u.ubicacionId,
             fecha: new Date(fecha),
             tipoInstalacion,
-            realizado_por: realizado_por || null,
+            responsable: responsable || null,
             observacionId,
           },
         });

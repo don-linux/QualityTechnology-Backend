@@ -941,7 +941,7 @@ components:
         - infraestructura_fisica_id
         - tipo_limpieza
         - desinfectante_utilizado
-        - encargado
+        - responsable
       properties:
         ubicacion:
           type: string
@@ -961,7 +961,7 @@ components:
         desinfectante_utilizado:
           type: string
           maxLength: 500
-        encargado:
+        responsable:
           type: string
           maxLength: 120
         observaciones:
@@ -1006,7 +1006,7 @@ components:
         fc_tipo_instalacion:
           type: string
           enum: ["Baño de Hombres", "Baño de Mujeres", "Regadera"]
-        fc_realizo:
+        responsable:
           type: string
           maxLength: 100
         fc_observaciones:

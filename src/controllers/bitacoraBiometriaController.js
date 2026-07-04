@@ -11,7 +11,7 @@ import { infraestructuraFisicaWhereUbicacionFromRequest } from "../utils/granjaU
 // modelo: se requiere `infraestructura_fisica_id`.
 
 const MAX_OBSERVACIONES = 500;
-const MAX_ENCARGADO = 100;
+const MAX_RESPONSABLE = 120;
 
 const bitacoraInclude = {
   infraestructuraFisica: { include: { ubicacion: true } },
@@ -72,9 +72,9 @@ const validarTextosBiometria = (body) => {
   if (obsLen > MAX_OBSERVACIONES) {
     return `Las observaciones no pueden superar los ${MAX_OBSERVACIONES} caracteres.`;
   }
-  const encLen = body.encargado == null ? 0 : String(body.encargado).length;
-  if (encLen > MAX_ENCARGADO) {
-    return `El encargado no puede superar los ${MAX_ENCARGADO} caracteres.`;
+  const respLen = body.responsable == null ? 0 : String(body.responsable).length;
+  if (respLen > MAX_RESPONSABLE) {
+    return `El responsable no puede superar los ${MAX_RESPONSABLE} caracteres.`;
   }
   return null;
 };
@@ -122,7 +122,7 @@ class BitacoraBiometriaController {
 
   static async create(req, res) {
     try {
-      const { fecha, peso_total_gramos, organismos_muestreados, encargado } = req.body;
+      const { fecha, peso_total_gramos, organismos_muestreados, responsable } = req.body;
       const usuarioId = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
@@ -156,7 +156,7 @@ class BitacoraBiometriaController {
                 ? null
                 : Number(organismos_muestreados),
             pesoPromedio: pesoProm,
-            encargado: encargado || null,
+            responsable: responsable || null,
             usuarioId,
           },
         });
@@ -194,7 +194,7 @@ class BitacoraBiometriaController {
       const id = toInt(req.params.id);
       if (!id) return res.status(400).json({ error: "id invalido" });
 
-      const { fecha, peso_total_gramos, organismos_muestreados, encargado } = req.body;
+      const { fecha, peso_total_gramos, organismos_muestreados, responsable } = req.body;
       const usuarioId = req.user.usuario_id;
 
       const errorTexto = validarTextosBiometria(req.body);
@@ -236,7 +236,7 @@ class BitacoraBiometriaController {
       ) {
         updateData.pesoPromedio = Number(peso_total_gramos) / Number(organismos_muestreados);
       }
-      if (encargado !== undefined) updateData.encargado = encargado || null;
+      if (responsable !== undefined) updateData.responsable = responsable || null;
       updateData.usuarioId = usuarioId;
 
       const textoObsExplicito = req.body.observaciones !== undefined;
