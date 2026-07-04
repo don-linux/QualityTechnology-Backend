@@ -1,0 +1,21 @@
+meta {
+  name: POST mantenimiento-equipo-herramientas
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{baseUrl}}/api/mantenimiento-equipo-herramientas
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "fecha_mantenimiento": "2026-07-04"
+  }
+}

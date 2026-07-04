@@ -42,6 +42,7 @@ import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFis
 import medicamentoRoutes from './src/routes/bitacoras/medicamentoRoutes.js';
 import limpiezaInstalacionesRoutes from './src/routes/bitacoras/limpiezaInstalacionesRoutes.js';
 import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
+import mantenimientoEquipoHerramientasRoutes from './src/routes/bitacoras/mantenimientoEquipoHerramientasRoutes.js';
 
 // rrhh
 import departamentoRoutes from "./src/routes/departamentoRoutes.js";
@@ -171,6 +172,7 @@ api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
 api.use("/medicamentos", medicamentoRoutes);
 api.use("/limpieza-instalaciones", limpiezaInstalacionesRoutes);
 api.use("/inventario", bitacoraInventarioRoutes);
+api.use("/mantenimiento-equipo-herramientas", mantenimientoEquipoHerramientasRoutes);
 
 app.use("/api", api);
 

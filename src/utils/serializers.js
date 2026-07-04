@@ -462,15 +462,13 @@ export function serializeEquipo(eq) {
   };
 }
 
-export function serializeMantenimiento(m) {
-  if (!m) return null;
+export function serializeBitacoraMantenimientoEquipo(row) {
+  if (!row) return null;
   return {
-    mantenimiento_id: m.id,
-    equipo_id: m.equipoId,
-    fecha: m.fecha,
-    descripcion: m.descripcion,
-    costo: m.costo,
-    responsable: m.responsable ?? null,
+    mantenimiento_equipo_id: row.id,
+    folio: row.folio,
+    fecha_mantenimiento: row.fechaMantenimiento,
+    usuario_id: row.usuarioId ?? null,
   };
 }
 

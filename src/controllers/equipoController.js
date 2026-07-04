@@ -1,14 +1,9 @@
 import prisma from "../prisma.js";
-import {
-  serializeEquipo,
-  serializeMantenimiento,
-} from "../utils/serializers.js";
+import { serializeEquipo } from "../utils/serializers.js";
 
 // El schema actual simplifica Equipo (nombre, tipo, marca, modelo, serial,
-// estado, observaciones) y Mantenimiento (descripcion, fecha, costo,
-// responsable). Los campos del API previo (fecha_compra, costo en equipo,
-// ubicacion, proximo_mantenimiento, notas, tipo y estado_post en
-// mantenimiento) ya no existen y se ignoran si vienen en el body.
+// estado, observaciones). Los campos del API previo (fecha_compra, costo,
+// ubicacion, proximo_mantenimiento, notas) ya no existen y se ignoran si vienen en el body.
 
 function pick(body, ...keys) {
   for (const k of keys) {
@@ -21,18 +16,6 @@ function toInt(value, fallback = null) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
   return Number.isInteger(n) ? n : fallback;
-}
-
-function toDecimal(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function toDateOrNull(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 class EquipoController {
@@ -145,88 +128,6 @@ class EquipoController {
       res.status(500).json({ error: "Error al actualizar equipo" });
     }
   }
-
-  // ===== Mantenimientos =====
-  static async getMantenimientos(req, res) {
-    try {
-      const equipoId = toInt(req.params.equipo_id);
-      if (!equipoId) return res.json([]);
-      const mantenimientos = await prisma.mantenimiento.findMany({
-        where: { equipoId },
-        orderBy: { fecha: "desc" },
-      });
-      res.json(mantenimientos.map(serializeMantenimiento));
-    } catch (err) {
-      console.error("Error al obtener mantenimientos:", err);
-      res.status(500).json({ error: "Error al obtener mantenimientos" });
-    }
-  }
-
-  static async createMantenimiento(req, res) {
-    try {
-      const equipoId = toInt(req.params.equipo_id);
-      if (!equipoId) return res.status(400).json({ error: "equipo_id invalido" });
-
-      const fecha = toDateOrNull(pick(req.body, "fecha"));
-      if (!fecha) {
-        return res.status(400).json({ error: "fecha es obligatoria" });
-      }
-      const descripcion = pick(req.body, "descripcion");
-      if (!descripcion) {
-        return res.status(400).json({ error: "descripcion es obligatoria" });
-      }
-
-      const creado = await prisma.mantenimiento.create({
-        data: {
-          equipoId,
-          fecha,
-          descripcion: String(descripcion),
-          costo: toDecimal(pick(req.body, "costo")),
-          responsable: pick(req.body, "responsable") ?? null,
-        },
-      });
-
-      res.status(201).json(serializeMantenimiento(creado));
-    } catch (err) {
-      if (err.code === "P2003") {
-        return res.status(400).json({ error: "Equipo invalido" });
-      }
-      console.error("Error al registrar mantenimiento:", err);
-      res.status(500).json({ error: "Error al registrar mantenimiento" });
-    }
-  }
-
-  static async updateMantenimiento(req, res) {
-    const id = toInt(req.params.mantenimiento_id);
-    if (!id) return res.status(400).json({ error: "mantenimiento_id invalido" });
-
-    try {
-      const updateData = {};
-      const fecha = toDateOrNull(pick(req.body, "fecha"));
-      if (fecha) updateData.fecha = fecha;
-
-      if (req.body.descripcion !== undefined) {
-        updateData.descripcion = String(pick(req.body, "descripcion") ?? "");
-      }
-      if (req.body.costo !== undefined) {
-        updateData.costo = toDecimal(pick(req.body, "costo"));
-      }
-      if (req.body.responsable !== undefined) {
-        updateData.responsable = pick(req.body, "responsable") ?? null;
-      }
-
-      const actualizado = await prisma.mantenimiento.update({
-        where: { id },
-        data: updateData,
-      });
-      res.json(serializeMantenimiento(actualizado));
-    } catch (err) {
-      if (err.code === "P2025") return res.status(404).json({ error: "Mantenimiento no encontrado" });
-      console.error("Error al actualizar mantenimiento:", err);
-      res.status(500).json({ error: "Error al actualizar mantenimiento" });
-    }
-  }
-
 }
 
 export default EquipoController;

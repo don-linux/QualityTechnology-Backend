@@ -501,9 +501,6 @@ components:
           type: string
         fc_responsable:
           type: string
-        fd_proximo_mantenimiento:
-          type: string
-          format: date
         fc_notas:
           type: string
         fi_usuario_id:
@@ -511,27 +508,27 @@ components:
           readOnly: true
           description: Assigned from the authenticated JWT. Ignored if sent in the request body.
 
-    Mantenimiento:
+    BitacoraMantenimientoEquipo:
       type: object
       properties:
-        fi_mantenimiento_id:
+        mantenimiento_equipo_id:
           type: integer
-        fi_equipo_id:
-          type: integer
-        fd_fecha:
+        folio:
+          type: string
+          example: "MAN-20260704-001"
+        fecha_mantenimiento:
           type: string
           format: date
-        fc_tipo:
-          type: string
-        fc_responsable:
-          type: string
-        fc_descripcion:
-          type: string
-        fn_costo:
-          type: number
-        fc_estado_post:
-          type: string
-        fd_proximo_mantenimiento:
+        usuario_id:
+          type: integer
+          readOnly: true
+
+    BitacoraMantenimientoEquipoInput:
+      type: object
+      required:
+        - fecha_mantenimiento
+      properties:
+        fecha_mantenimiento:
           type: string
           format: date
 
@@ -2684,60 +2681,6 @@ paths:
       responses:
         '200':
           description: "Equipo actualizado"
-  /equipos/{equipo_id}/mantenimientos:
-    get:
-      summary: "Obtener mantenimientos por equipo"
-      parameters:
-        - name: equipo_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Listado de mantenimientos"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Mantenimiento'
-    post:
-      summary: "Registrar mantenimiento para un equipo"
-      parameters:
-        - name: equipo_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Mantenimiento'
-      responses:
-        '201':
-          description: "Mantenimiento registrado"
-
-  /equipos/mantenimientos/{mantenimiento_id}:
-    put:
-      summary: "Actualizar mantenimiento"
-      parameters:
-        - name: mantenimiento_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Mantenimiento'
-      responses:
-        '200':
-          description: "Mantenimiento actualizado"
   /expedientes:
     get:
       summary: "Listar expedientes o buscar por nombre"
@@ -4061,6 +4004,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BitacoraInventarioInput'
+      responses:
+        '200':
+          description: "Actualizado"
+        '400':
+          description: "Solicitud inválida"
+        '404':
+          description: "Registro no encontrado"
+
+  /mantenimiento-equipo-herramientas:
+    get:
+      summary: "Listar mantenimiento de equipo y herramientas"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BitacoraMantenimientoEquipo'
+    post:
+      summary: "Registrar mantenimiento de equipo y herramientas"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraMantenimientoEquipoInput'
+      responses:
+        '201':
+          description: "Creado"
+        '400':
+          description: "Solicitud inválida"
+
+  /mantenimiento-equipo-herramientas/{id}:
+    put:
+      summary: "Actualizar mantenimiento de equipo y herramientas"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BitacoraMantenimientoEquipoInput'
       responses:
         '200':
           description: "Actualizado"

@@ -4,22 +4,11 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// APLICAR PROTECCION GLOBAL A ESTE MODULO
 router.use(authMiddleware);
 
-/* =========================================================
-   RUTAS DE EQUIPOS
-========================================================= */
 router.get("/empleados", equipoController.getEmpleados);
 router.get("/:usuario_id", equipoController.getByUsuario);
 router.post("/", equipoController.create);
 router.put("/:id", equipoController.update);
-
-/* =========================================================
-   RUTAS DE MANTENIMIENTOS
-========================================================= */
-router.get("/:equipo_id/mantenimientos", equipoController.getMantenimientos);
-router.post("/:equipo_id/mantenimientos", equipoController.createMantenimiento);
-router.put("/mantenimientos/:mantenimiento_id", equipoController.updateMantenimiento);
 
 export default router;
