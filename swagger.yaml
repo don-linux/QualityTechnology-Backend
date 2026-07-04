@@ -506,7 +506,7 @@ components:
           readOnly: true
           description: Assigned from the authenticated JWT. Ignored if sent in the request body.
 
-    BitacoraMantenimientoEquipo:
+    MantenimientoEquipo:
       type: object
       properties:
         mantenimiento_equipo_id:
@@ -521,7 +521,7 @@ components:
           type: integer
           readOnly: true
 
-    BitacoraMantenimientoEquipoInput:
+    MantenimientoEquipoInput:
       type: object
       required:
         - fecha_mantenimiento
@@ -968,7 +968,7 @@ components:
           type: string
           maxLength: 500
 
-    BitacoraInventarioInput:
+    InventarioAlevinInput:
       type: object
       required:
         - ubicacion
@@ -3963,16 +3963,16 @@ paths:
         '200':
           description: "Listado"
 
-  /inventario:
+  /inventario-alevines:
     get:
-      summary: "Listar inventario"
+      summary: "Listar inventario de alevines"
       security:
         - bearerAuth: []
       responses:
         '200':
           description: "Listado"
     post:
-      summary: "Crear registro de inventario"
+      summary: "Crear registro de inventario de alevines"
       security:
         - bearerAuth: []
       requestBody:
@@ -3980,14 +3980,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraInventarioInput'
+              $ref: '#/components/schemas/InventarioAlevinInput'
       responses:
         '201':
           description: "Creado"
         '400':
           description: "Solicitud inválida"
     put:
-      summary: "Actualizar registro de inventario"
+      summary: "Actualizar registro de inventario de alevines"
       security:
         - bearerAuth: []
       parameters:
@@ -4001,7 +4001,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraInventarioInput'
+              $ref: '#/components/schemas/InventarioAlevinInput'
       responses:
         '200':
           description: "Actualizado"
@@ -4023,7 +4023,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BitacoraMantenimientoEquipo'
+                  $ref: '#/components/schemas/MantenimientoEquipo'
     post:
       summary: "Registrar mantenimiento de equipo y herramientas"
       security:
@@ -4033,7 +4033,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraMantenimientoEquipoInput'
+              $ref: '#/components/schemas/MantenimientoEquipoInput'
       responses:
         '201':
           description: "Creado"
@@ -4056,7 +4056,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BitacoraMantenimientoEquipoInput'
+              $ref: '#/components/schemas/MantenimientoEquipoInput'
       responses:
         '200':
           description: "Actualizado"

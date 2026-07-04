@@ -3,7 +3,7 @@ import { resolverOCrearUbicacion } from "../utils/ubicacion.js";
 import { guardarObservacion } from "../utils/bitacoraHelpers.js";
 import { serializeInventarioAlevin } from "../utils/serializers.js";
 
-class BitacoraInventarioController {
+class InventarioAlevinController {
   static parseNum(v) {
     return v === "" || v == null ? null : Number(v);
   }
@@ -16,7 +16,7 @@ class BitacoraInventarioController {
       });
       res.json(rows.map(serializeInventarioAlevin));
     } catch (err) {
-      console.error("Error en GET /inventario:", err.message);
+      console.error("Error en GET /inventario-alevines:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -54,16 +54,16 @@ class BitacoraInventarioController {
           data: {
             ubicacionId: u.ubicacionId,
             infraestructura_fisica_id:
-              BitacoraInventarioController.parseNum(infraestructura_fisica_id) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(infraestructura_fisica_id))
+              InventarioAlevinController.parseNum(infraestructura_fisica_id) != null
+                ? Math.trunc(InventarioAlevinController.parseNum(infraestructura_fisica_id))
                 : null,
             cantidad:
-              BitacoraInventarioController.parseNum(cantidad) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(cantidad))
+              InventarioAlevinController.parseNum(cantidad) != null
+                ? Math.trunc(InventarioAlevinController.parseNum(cantidad))
                 : null,
             talla:
-              BitacoraInventarioController.parseNum(talla) != null
-                ? String(BitacoraInventarioController.parseNum(talla))
+              InventarioAlevinController.parseNum(talla) != null
+                ? String(InventarioAlevinController.parseNum(talla))
                 : null,
             lote_nombre: lote_nombre || null,
             fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
@@ -78,7 +78,7 @@ class BitacoraInventarioController {
 
       res.json({ message: "Registro agregado correctamente" });
     } catch (err) {
-      console.error("Error en POST /inventario:", err.message);
+      console.error("Error en POST /inventario-alevines:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -130,16 +130,16 @@ class BitacoraInventarioController {
           data: {
             ubicacionId: u.ubicacionId,
             infraestructura_fisica_id:
-              BitacoraInventarioController.parseNum(infraestructura_fisica_id) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(infraestructura_fisica_id))
+              InventarioAlevinController.parseNum(infraestructura_fisica_id) != null
+                ? Math.trunc(InventarioAlevinController.parseNum(infraestructura_fisica_id))
                 : null,
             cantidad:
-              BitacoraInventarioController.parseNum(cantidad) != null
-                ? Math.trunc(BitacoraInventarioController.parseNum(cantidad))
+              InventarioAlevinController.parseNum(cantidad) != null
+                ? Math.trunc(InventarioAlevinController.parseNum(cantidad))
                 : null,
             talla:
-              BitacoraInventarioController.parseNum(talla) != null
-                ? String(BitacoraInventarioController.parseNum(talla))
+              InventarioAlevinController.parseNum(talla) != null
+                ? String(InventarioAlevinController.parseNum(talla))
                 : null,
             lote_nombre: lote_nombre || null,
             fechaSiembra: fecha_siembra ? new Date(fecha_siembra) : null,
@@ -153,11 +153,11 @@ class BitacoraInventarioController {
 
       res.json({ message: "Registro actualizado correctamente" });
     } catch (err) {
-      console.error("Error en PUT /inventario:", err.message);
+      console.error("Error en PUT /inventario-alevines:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
 
 }
 
-export default BitacoraInventarioController;
+export default InventarioAlevinController;

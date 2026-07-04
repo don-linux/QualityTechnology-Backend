@@ -79,7 +79,7 @@ const validarTextosBiometria = (body) => {
   return null;
 };
 
-class BitacoraBiometriaController {
+class BiometriaController {
   static async getAll(req, res) {
     try {
       const rows = await prisma.biometria.findMany({
@@ -279,4 +279,4 @@ class BitacoraBiometriaController {
 
 }
 
-export default BitacoraBiometriaController;
+export default BiometriaController;

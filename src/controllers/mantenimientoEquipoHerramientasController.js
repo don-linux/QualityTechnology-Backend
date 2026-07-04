@@ -1,5 +1,5 @@
 import prisma from "../prisma.js";
-import { serializeBitacoraMantenimientoEquipo } from "../utils/serializers.js";
+import { serializeMantenimientoEquipo } from "../utils/serializers.js";
 
 function toDateOrNull(value) {
   if (!value) return null;
@@ -15,7 +15,7 @@ function formatDateForFolio(date) {
 }
 
 async function generateFolio(fechaMantenimiento) {
-  const count = await prisma.bitacoraMantenimientoEquipo.count({
+  const count = await prisma.mantenimientoEquipo.count({
     where: { fechaMantenimiento },
   });
   const nnn = String(count + 1).padStart(3, "0");
@@ -25,10 +25,10 @@ async function generateFolio(fechaMantenimiento) {
 class MantenimientoEquipoHerramientasController {
   static async getAll(req, res) {
     try {
-      const rows = await prisma.bitacoraMantenimientoEquipo.findMany({
+      const rows = await prisma.mantenimientoEquipo.findMany({
         orderBy: { fechaMantenimiento: "desc" },
       });
-      res.json(rows.map(serializeBitacoraMantenimientoEquipo));
+      res.json(rows.map(serializeMantenimientoEquipo));
     } catch (err) {
       console.error("Error en GET /mantenimiento-equipo-herramientas:", err.message);
       res.status(500).json({ error: err.message });
@@ -43,7 +43,7 @@ class MantenimientoEquipoHerramientasController {
       }
 
       const folio = await generateFolio(fechaMantenimiento);
-      const creado = await prisma.bitacoraMantenimientoEquipo.create({
+      const creado = await prisma.mantenimientoEquipo.create({
         data: {
           folio,
           fechaMantenimiento,
@@ -51,7 +51,7 @@ class MantenimientoEquipoHerramientasController {
         },
       });
 
-      res.status(201).json(serializeBitacoraMantenimientoEquipo(creado));
+      res.status(201).json(serializeMantenimientoEquipo(creado));
     } catch (err) {
       console.error("Error en POST /mantenimiento-equipo-herramientas:", err.message);
       res.status(500).json({ error: err.message });
@@ -65,7 +65,7 @@ class MantenimientoEquipoHerramientasController {
         return res.status(400).json({ error: "id invalido" });
       }
 
-      const existing = await prisma.bitacoraMantenimientoEquipo.findUnique({
+      const existing = await prisma.mantenimientoEquipo.findUnique({
         where: { id },
       });
       if (!existing) {
@@ -85,12 +85,12 @@ class MantenimientoEquipoHerramientasController {
         updateData.folio = await generateFolio(fechaMantenimiento);
       }
 
-      const actualizado = await prisma.bitacoraMantenimientoEquipo.update({
+      const actualizado = await prisma.mantenimientoEquipo.update({
         where: { id },
         data: updateData,
       });
 
-      res.json(serializeBitacoraMantenimientoEquipo(actualizado));
+      res.json(serializeMantenimientoEquipo(actualizado));
     } catch (err) {
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Registro no encontrado" });

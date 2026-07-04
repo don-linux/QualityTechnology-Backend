@@ -49,7 +49,7 @@ model Usuario {
   rol                Rol                @relation(fields: [rolId], references: [id])
   ventas             Venta[]
   controlVisitas     ControlVisita[]
-  bitacoraMantenimientoEquipos BitacoraMantenimientoEquipo[]
+  mantenimientoEquipos MantenimientoEquipo[]
 
   @@index([rolId])
   @@map("usuarios")
@@ -296,7 +296,7 @@ model Equipo {
   @@schema("public")
 }
 
-model BitacoraMantenimientoEquipo {
+model MantenimientoEquipo {
   id                 Int      @id @default(autoincrement())
   folio              String   @unique @db.VarChar(20)
   fechaMantenimiento DateTime @map("fecha_mantenimiento") @db.Date
@@ -307,7 +307,7 @@ model BitacoraMantenimientoEquipo {
 
   @@index([fechaMantenimiento(sort: Desc)])
   @@index([usuarioId])
-  @@map("bitacora_mantenimiento_equipos")
+  @@map("mantenimiento_equipo_herramientas")
   @@schema("public")
 }
 

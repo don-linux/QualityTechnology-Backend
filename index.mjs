@@ -34,14 +34,14 @@ import cicloAvicolaRoutes from "./src/routes/cicloAvicolaRoutes.js";
 import inventarioInsumoRoutes from "./src/routes/inventarioInsumoRoutes.js";
 
 // Rutas de Bitácoras
-import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
+import biometriaRoutes from "./src/routes/bitacoras/biometriaRoutes.js";
 import controlFaunaNocivaRoutes from './src/routes/bitacoras/controlFaunaNocivaRoutes.js';
 import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
 import controlLimpiezaRoutes from './src/routes/bitacoras/controlLimpiezaRoutes.js';
 import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFisicoQuimicosRoutes.js';
 import medicamentoRoutes from './src/routes/bitacoras/medicamentoRoutes.js';
 import limpiezaInstalacionesRoutes from './src/routes/bitacoras/limpiezaInstalacionesRoutes.js';
-import bitacoraInventarioRoutes from './src/routes/bitacoras/bitacoraInventarioRoutes.js';
+import inventarioAlevinRoutes from './src/routes/bitacoras/inventarioAlevinRoutes.js';
 import mantenimientoEquipoHerramientasRoutes from './src/routes/bitacoras/mantenimientoEquipoHerramientasRoutes.js';
 
 // rrhh
@@ -163,14 +163,14 @@ api.use("/acciones-correctivas", accionCorrectivaRoutes);
 api.use("/catalogo-insumos", catalogoInsumoRoutes);
 
 // Bitácoras
-api.use("/biometrias", bitacoraBiometriaRoutes);
+api.use("/biometrias", biometriaRoutes);
 api.use("/control-fauna-nociva", controlFaunaNocivaRoutes);
 api.use("/control-visitas", controlVisitaRoutes);
 api.use("/control-limpieza", controlLimpiezaRoutes);
 api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
 api.use("/medicamentos", medicamentoRoutes);
 api.use("/limpieza-instalaciones", limpiezaInstalacionesRoutes);
-api.use("/inventario", bitacoraInventarioRoutes);
+api.use("/inventario-alevines", inventarioAlevinRoutes);
 api.use("/mantenimiento-equipo-herramientas", mantenimientoEquipoHerramientasRoutes);
 
 app.use("/api", api);

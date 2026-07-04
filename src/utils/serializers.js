@@ -462,7 +462,7 @@ export function serializeEquipo(eq) {
   };
 }
 
-export function serializeBitacoraMantenimientoEquipo(row) {
+export function serializeMantenimientoEquipo(row) {
   if (!row) return null;
   return {
     mantenimiento_equipo_id: row.id,

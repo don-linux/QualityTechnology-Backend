@@ -40,7 +40,7 @@
 - Operations and production: `/infraestructura-fisica`, `/tipos-infraestructura-fisica`, `/reproductores`, `/engorda`, `/equipos`, `/lista-espera`, `/eficiencia-reproductiva`, `/alevinaje`, `/trazabilidad`
 - Sales and finance: `/clientes`, `/ventas`, `/proveedores`, `/tesoreria`, `/cuentas`, `/flujo-caja`
 - HR and catalogs: `/empleados`, `/departamentos`, `/vacaciones`, `/expedientes`, `/nomina`, `/caja-ahorro`, `/estados`
-- Field logs / bitacoras: `/biometrias`, `/control-fauna-nociva`, `/control-visitas`, `/control-limpieza`, `/parametros`, `/medicamentos`, `/limpieza-instalaciones`, `/inventario`
+- Field logs / bitacoras: `/biometrias`, `/control-fauna-nociva`, `/control-visitas`, `/control-limpieza`, `/parametros-fisico-quimicos`, `/medicamentos`, `/limpieza-instalaciones`, `/inventario-alevines`, `/mantenimiento-equipo-herramientas`
 - Inventarios: `/inventario-insumos`, `/equipos`, `/trazabilidad`, ...
 - Catalogos: `/catalogo-insumos`, `/areas-instalacion`, ...
 
@@ -49,7 +49,7 @@
 - `src/routes/bitacoras/controlVisitaRoutes.js` stores uploaded images in `uploads/`.
 
 ## Verified gaps and legacy notes
-- Inventario de alevines en bitacoras uses `GET/POST /api/inventario` (not `/api/alevines`, removed).
+- Inventario de alevines en bitacoras uses `GET/POST /api/inventario-alevines` (not `/api/alevines`, removed).
 - No background worker, queue, scheduler, or separate build step was verified.
 - No automated test runner or CI workflow was verified in the repository.
 - `swagger.yaml` remains in Spanish even though the main repository documentation is now in English.
