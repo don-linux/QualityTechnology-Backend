@@ -1,11 +1,11 @@
 meta {
-  name: POST insumos
+  name: PUT insumos {id}
   type: http
   seq: 1
 }
 
-post {
-  url: {{baseUrl}}/api/insumos
+put {
+  url: {{baseUrl}}/api/catalogo-insumos/{{id}}
   body: json
 }
 

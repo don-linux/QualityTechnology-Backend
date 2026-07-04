@@ -17,12 +17,12 @@ La colección sigue el orden del menú del frontend (`menuConfig.jsx`):
 | Carpeta | Módulo frontend |
 |---------|-----------------|
 | `01-Dashboard/` | Inicio, login, Mi Perfil, Mi Expediente |
-| `02-Inventarios/` | Inventario de organismos, trazabilidad, infraestructura, equipos |
-| `03-Bitacoras/` | Control fauna, insumos, visitas, limpieza, biometrías, etc. |
+| `02-Inventarios/` | Inventario de organismos, trazabilidad, infraestructura, equipos, insumos |
+| `03-Bitacoras/` | Control fauna, visitas, limpieza, biometrías, etc. |
 | `04-Ventas/` | Lista de espera, ventas, clientes |
 | `05-Finanzas/` | Flujo de caja, tesorería, proveedores, cuentas |
 | `06-RRHH/` | Nómina, empleados, vacaciones, caja de ahorro |
-| `07-Catalogos/` | Usuarios, roles, ubicaciones, catálogos de fauna, insumos |
+| `07-Catalogos/` | Usuarios, roles, ubicaciones, catálogos de fauna, catálogo de insumos |
 | `08-Seguridad/` | Módulos por rol |
 | `Infra/` | Health check y Swagger UI |
 | `Rondas/` | Flujos end-to-end (smoke, CRUD, seguridad) |

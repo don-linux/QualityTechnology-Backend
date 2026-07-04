@@ -1,12 +1,12 @@
 import { normalizarGranjaParam } from "./granjaUbicacion.js";
 
 /**
- * Sigla de la unidad de negocio (granja) para el folio de flujo de insumos.
+ * Sigla de la unidad de negocio (granja) para el folio de inventario de insumos.
  * GAC = La Ceiba, GAM = Medellin (misma convencion que control de fauna nociva).
  * @param {string} nombreUbicacion
  * @returns {"GAC"|"GAM"|"GAX"}
  */
-export function siglaGranjaFlujoInsumo(nombreUbicacion) {
+export function siglaGranjaInventarioInsumo(nombreUbicacion) {
   const n = normalizarGranjaParam(nombreUbicacion);
   if (n.includes("ceiba")) return "GAC";
   if (n.includes("medell")) return "GAM";
@@ -20,7 +20,7 @@ export function siglaGranjaFlujoInsumo(nombreUbicacion) {
  * @param {string} tipoMovimiento
  * @returns {"ALI"|"IN"}
  */
-export function prefijoFlujoInsumo(tipoMovimiento) {
+export function prefijoInventarioInsumo(tipoMovimiento) {
   return String(tipoMovimiento) === "traspaso" ? "IN" : "ALI";
 }
 
@@ -29,7 +29,7 @@ export function prefijoFlujoInsumo(tipoMovimiento) {
  * @param {string|Date} fecha
  * @returns {string}
  */
-export function formatFechaCodigoFlujoInsumo(fecha) {
+export function formatFechaCodigoInventarioInsumo(fecha) {
   if (typeof fecha === "string") {
     const match = fecha.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) return `${match[1]}${match[2]}${match[3]}`;
@@ -51,20 +51,20 @@ export function formatFechaCodigoFlujoInsumo(fecha) {
 }
 
 /**
- * Genera folio {PREFIJO}-{SIGLA}-{YYYYMMDD}-{NNN} para un registro de flujo de insumos.
+ * Genera folio {PREFIJO}-{SIGLA}-{YYYYMMDD}-{NNN} para un registro de inventario de insumos.
  * - ingreso/egreso: ALI-<sigla UdN>-<fecha>-NNN
  * - traspaso:       IN-<sigla UdN de salida>-<fecha>-NNN (compartido por el par de filas)
  * El consecutivo reinicia en 001 cada dia por (prefijo, sigla).
  * @param {import("@prisma/client").Prisma.TransactionClient | import("@prisma/client").PrismaClient} client
  * @param {{ tipoMovimiento: string, ubicacionNombre: string, fecha: string|Date }} opts
  */
-export async function generarCodigoFlujoInsumo(client, { tipoMovimiento, ubicacionNombre, fecha }) {
-  const prefijo = prefijoFlujoInsumo(tipoMovimiento);
-  const sigla = siglaGranjaFlujoInsumo(ubicacionNombre);
-  const ymd = formatFechaCodigoFlujoInsumo(fecha);
+export async function generarCodigoInventarioInsumo(client, { tipoMovimiento, ubicacionNombre, fecha }) {
+  const prefijo = prefijoInventarioInsumo(tipoMovimiento);
+  const sigla = siglaGranjaInventarioInsumo(ubicacionNombre);
+  const ymd = formatFechaCodigoInventarioInsumo(fecha);
   const prefix = `${prefijo}-${sigla}-${ymd}-`;
 
-  const last = await client.flujoInsumo.findFirst({
+  const last = await client.inventarioInsumo.findFirst({
     where: { codigo: { startsWith: prefix } },
     orderBy: { codigo: "desc" },
     select: { codigo: true },

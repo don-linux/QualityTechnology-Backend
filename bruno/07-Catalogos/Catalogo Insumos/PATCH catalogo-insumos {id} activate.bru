@@ -1,11 +1,11 @@
 meta {
-  name: PATCH insumos {id} deactivate
+  name: PATCH insumos {id} activate
   type: http
   seq: 1
 }
 
 patch {
-  url: {{baseUrl}}/api/insumos/{{id}}/deactivate
+  url: {{baseUrl}}/api/catalogo-insumos/{{id}}/activate
   body: json
 }
 

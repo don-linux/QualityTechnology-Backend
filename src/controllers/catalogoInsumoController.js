@@ -1,10 +1,10 @@
 import prisma from "../prisma.js";
-import { serializeInsumo } from "../utils/serializers.js";
-import { generarCodigoInsumo } from "../utils/insumoCodigo.js";
+import { serializeCatalogoInsumo } from "../utils/serializers.js";
+import { generarCodigoCatalogoInsumo } from "../utils/catalogoInsumoCodigo.js";
 
 const UNIDADES_MEDIDA = ["ml", "l", "mg", "g", "kg"];
 
-const insumoInclude = {
+const catalogoInsumoInclude = {
   cliente: {
     select: {
       id: true,
@@ -41,7 +41,7 @@ function calcularPrecioUnitario(precioBulto, presentacion) {
   return Math.round(raw * 10000) / 10000;
 }
 
-function buildInsumoPayload(body) {
+function buildCatalogoInsumoPayload(body) {
   const nombre = normalizeText(pick(body, "nombre"));
   const marcaRaw = pick(body, "marca");
   const marca = marcaRaw !== undefined ? normalizeText(marcaRaw) || null : null;
@@ -106,14 +106,14 @@ async function assertClienteValido(clienteId) {
   }
 }
 
-class InsumoController {
+class CatalogoInsumoController {
   static async getAll(req, res) {
     try {
-      const items = await prisma.insumo.findMany({
-        include: insumoInclude,
+      const items = await prisma.catalogoInsumo.findMany({
+        include: catalogoInsumoInclude,
         orderBy: { id: "desc" },
       });
-      res.json(items.map(serializeInsumo));
+      res.json(items.map(serializeCatalogoInsumo));
     } catch (err) {
       console.error("Error al obtener insumos:", err);
       res.status(500).json({ error: "Error al obtener insumos" });
@@ -122,12 +122,12 @@ class InsumoController {
 
   static async getActivos(req, res) {
     try {
-      const items = await prisma.insumo.findMany({
+      const items = await prisma.catalogoInsumo.findMany({
         where: { esta_activo: true },
-        include: insumoInclude,
+        include: catalogoInsumoInclude,
         orderBy: { nombre: "asc" },
       });
-      res.json(items.map(serializeInsumo));
+      res.json(items.map(serializeCatalogoInsumo));
     } catch (err) {
       console.error("Error al obtener insumos activos:", err);
       res.status(500).json({ error: "Error al obtener insumos activos" });
@@ -136,22 +136,22 @@ class InsumoController {
 
   static async create(req, res) {
     try {
-      const { error, payload } = buildInsumoPayload(req.body);
+      const { error, payload } = buildCatalogoInsumoPayload(req.body);
       if (error) return res.status(400).json({ error });
 
       await assertClienteValido(payload.clienteId);
 
       const item = await prisma.$transaction(async (tx) => {
-        const codigo = await generarCodigoInsumo(tx);
-        return tx.insumo.create({
+        const codigo = await generarCodigoCatalogoInsumo(tx);
+        return tx.catalogoInsumo.create({
           data: { codigo, ...payload },
-          include: insumoInclude,
+          include: catalogoInsumoInclude,
         });
       });
 
       res.status(201).json({
         mensaje: "Insumo creado correctamente",
-        insumo: serializeInsumo(item),
+        insumo: serializeCatalogoInsumo(item),
       });
     } catch (err) {
       if (err.code === "CLIENTE_NOT_FOUND" || err.code === "CLIENTE_INACTIVO") {
@@ -170,20 +170,20 @@ class InsumoController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const { error, payload } = buildInsumoPayload(req.body);
+      const { error, payload } = buildCatalogoInsumoPayload(req.body);
       if (error) return res.status(400).json({ error });
 
       await assertClienteValido(payload.clienteId);
 
-      const item = await prisma.insumo.update({
+      const item = await prisma.catalogoInsumo.update({
         where: { id },
         data: payload,
-        include: insumoInclude,
+        include: catalogoInsumoInclude,
       });
 
       res.json({
         mensaje: "Insumo actualizado correctamente",
-        insumo: serializeInsumo(item),
+        insumo: serializeCatalogoInsumo(item),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Insumo no encontrado" });
@@ -203,14 +203,14 @@ class InsumoController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const item = await prisma.insumo.update({
+      const item = await prisma.catalogoInsumo.update({
         where: { id },
         data: { esta_activo: true },
-        include: insumoInclude,
+        include: catalogoInsumoInclude,
       });
       res.json({
         mensaje: "Insumo activado correctamente",
-        insumo: serializeInsumo(item),
+        insumo: serializeCatalogoInsumo(item),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Insumo no encontrado" });
@@ -224,14 +224,14 @@ class InsumoController {
     if (!id) return res.status(400).json({ error: "id invalido" });
 
     try {
-      const item = await prisma.insumo.update({
+      const item = await prisma.catalogoInsumo.update({
         where: { id },
         data: { esta_activo: false },
-        include: insumoInclude,
+        include: catalogoInsumoInclude,
       });
       res.json({
         mensaje: "Insumo desactivado correctamente",
-        insumo: serializeInsumo(item),
+        insumo: serializeCatalogoInsumo(item),
       });
     } catch (err) {
       if (err.code === "P2025") return res.status(404).json({ error: "Insumo no encontrado" });
@@ -241,4 +241,4 @@ class InsumoController {
   }
 }
 
-export default InsumoController;
+export default CatalogoInsumoController;

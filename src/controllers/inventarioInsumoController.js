@@ -2,20 +2,20 @@ import { randomUUID } from "crypto";
 import prisma from "../prisma.js";
 import { resolverOCrearUbicacion, resolverUbicacion } from "../utils/ubicacion.js";
 import { guardarObservacion, listarEmpleadosActivosBitacora } from "../utils/bitacoraHelpers.js";
-import { serializeFlujoInsumo } from "../utils/serializers.js";
-import { generarCodigoFlujoInsumo } from "../utils/flujoInsumoCodigo.js";
+import { serializeInventarioInsumo } from "../utils/serializers.js";
+import { generarCodigoInventarioInsumo } from "../utils/inventarioInsumoCodigo.js";
 
 const inc = {
   ubicacion: true,
   ubicacionSalida: true,
   ubicacionEntrada: true,
-  insumo: true,
+  catalogoInsumo: true,
   observacion: true,
 };
 
 const TIPOS = ["ingreso", "egreso", "traspaso"];
 
-async function filtroUbicacionFlujoInsumo(ubicacionQuery) {
+async function filtroUbicacionInventarioInsumo(ubicacionQuery) {
   if (!ubicacionQuery || !String(ubicacionQuery).trim()) return {};
   const u = await resolverUbicacion(ubicacionQuery);
   if (u) return { ubicacionId: u.ubicacionId };
@@ -40,7 +40,7 @@ function normalizeStr(value, max) {
   return s.slice(0, max);
 }
 
-class FlujoInsumoController {
+class InventarioInsumoController {
   static async getEmpleados(req, res) {
     try {
       const empleados = await listarEmpleadosActivosBitacora();
@@ -53,15 +53,15 @@ class FlujoInsumoController {
   static async getAll(req, res) {
     try {
       const { ubicacion } = req.query;
-      const where = await filtroUbicacionFlujoInsumo(ubicacion);
-      const rows = await prisma.flujoInsumo.findMany({
+      const where = await filtroUbicacionInventarioInsumo(ubicacion);
+      const rows = await prisma.inventarioInsumo.findMany({
         where,
         include: inc,
         orderBy: { id: "desc" },
       });
-      res.json(rows.map(serializeFlujoInsumo));
+      res.json(rows.map(serializeInventarioInsumo));
     } catch (err) {
-      console.error("Error GET /flujo_insumos:", err.message);
+      console.error("Error GET /inventario-insumos:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -83,12 +83,12 @@ class FlujoInsumoController {
         return res.status(400).json({ error: "Las observaciones no pueden superar los 500 caracteres." });
       }
 
-      const insumoId = parseInsumoId(req.body.insumo_id ?? req.body.producto_id);
+      const insumoId = parseInsumoId(req.body.insumo_id);
       const responsable = normalizeStr(req.body.responsable, 100);
       const fechaRegistro = fecha ? new Date(fecha) : new Date();
 
       if (tipo === "traspaso") {
-        return await FlujoInsumoController.crearTraspaso(req, res, {
+        return await InventarioInsumoController.crearTraspaso(req, res, {
           usuarioId,
           fecha,
           fechaRegistro,
@@ -111,7 +111,7 @@ class FlujoInsumoController {
 
       let codigoCreado = null;
       for (let intento = 0; intento < 5; intento++) {
-        const codigo = await generarCodigoFlujoInsumo(prisma, {
+        const codigo = await generarCodigoInventarioInsumo(prisma, {
           tipoMovimiento: tipo,
           ubicacionNombre: u.nombre,
           fecha: fecha ?? fechaRegistro,
@@ -124,7 +124,7 @@ class FlujoInsumoController {
               responsable: null,
               usuarioId,
             });
-            await tx.flujoInsumo.create({
+            await tx.inventarioInsumo.create({
               data: {
                 codigo,
                 tipoMovimiento: tipo,
@@ -148,7 +148,7 @@ class FlujoInsumoController {
 
       res.json({ message: "Registro agregado correctamente", codigo: codigoCreado });
     } catch (err) {
-      console.error("Error POST /flujo_insumos:", err.message);
+      console.error("Error POST /inventario-insumos:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
@@ -178,7 +178,7 @@ class FlujoInsumoController {
     }
 
     const grupoId = randomUUID();
-    const codigo = await generarCodigoFlujoInsumo(prisma, {
+    const codigo = await generarCodigoInventarioInsumo(prisma, {
       tipoMovimiento: "traspaso",
       ubicacionNombre: salida.nombre,
       fecha: fecha ?? fechaRegistro,
@@ -207,11 +207,11 @@ class FlujoInsumoController {
       };
 
       // Fila en la UdN de salida (egreso)
-      await tx.flujoInsumo.create({
+      await tx.inventarioInsumo.create({
         data: { ...comun, ubicacionId: salida.ubicacionId, traspasoSentido: "salida" },
       });
       // Fila en la UdN de entrada (ingreso)
-      await tx.flujoInsumo.create({
+      await tx.inventarioInsumo.create({
         data: { ...comun, ubicacionId: entrada.ubicacionId, traspasoSentido: "entrada" },
       });
     });
@@ -222,7 +222,7 @@ class FlujoInsumoController {
   static async update(req, res) {
     try {
       const id = Number(req.params.id);
-      const existing = await prisma.flujoInsumo.findUnique({
+      const existing = await prisma.inventarioInsumo.findUnique({
         where: { id },
         include: { observacion: true },
       });
@@ -237,8 +237,8 @@ class FlujoInsumoController {
       }
 
       const insumoId =
-        req.body.insumo_id !== undefined || req.body.producto_id !== undefined
-          ? parseInsumoId(req.body.insumo_id ?? req.body.producto_id)
+        req.body.insumo_id !== undefined
+          ? parseInsumoId(req.body.insumo_id)
           : existing.insumoId;
       const responsable =
         req.body.responsable !== undefined ? normalizeStr(req.body.responsable, 100) : existing.responsable;
@@ -255,7 +255,7 @@ class FlujoInsumoController {
             responsable: null,
             usuarioId,
           });
-          await tx.flujoInsumo.updateMany({
+          await tx.inventarioInsumo.updateMany({
             where: { traspasoGrupoId: existing.traspasoGrupoId },
             data: { insumoId, responsable, fecha: fechaVal, observacionId, usuarioId },
           });
@@ -280,7 +280,7 @@ class FlujoInsumoController {
           responsable: null,
           usuarioId,
         });
-        await tx.flujoInsumo.update({
+        await tx.inventarioInsumo.update({
           where: { id },
           data: {
             ubicacionId,
@@ -296,10 +296,10 @@ class FlujoInsumoController {
 
       res.json({ message: "Registro actualizado correctamente" });
     } catch (err) {
-      console.error("Error PUT /flujo_insumos:", err.message);
+      console.error("Error PUT /inventario-insumos:", err.message);
       res.status(500).json({ error: err.message });
     }
   }
 }
 
-export default FlujoInsumoController;
+export default InventarioInsumoController;

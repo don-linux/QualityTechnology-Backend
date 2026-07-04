@@ -1,11 +1,11 @@
 meta {
-  name: PUT flujo_insumos {id}
+  name: POST inventario-insumos egreso
   type: http
-  seq: 30
+  seq: 41
 }
 
-put {
-  url: {{baseUrl}}/api/flujo_insumos/{{id}}
+post {
+  url: {{baseUrl}}/api/inventario-insumos
   body: json
 }
 
@@ -16,12 +16,12 @@ headers {
 
 body:json {
   {
-    "tipo_movimiento": "ingreso",
+    "tipo_movimiento": "egreso",
     "ubicacion": "Granja Acuicola Medellin",
     "fecha": "2026-06-24",
     "insumo_id": 1,
-    "destino": "Auto",
-    "responsable": "Ana López",
-    "observaciones": "Actualización QA"
+    "destino": "Engorda",
+    "responsable": "Juan Pérez",
+    "observaciones": "Egreso QA"
   }
 }

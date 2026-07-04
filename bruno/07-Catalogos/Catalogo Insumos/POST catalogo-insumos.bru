@@ -1,11 +1,11 @@
 meta {
-  name: PATCH insumos {id} activate
+  name: POST insumos
   type: http
   seq: 1
 }
 
-patch {
-  url: {{baseUrl}}/api/insumos/{{id}}/activate
+post {
+  url: {{baseUrl}}/api/catalogo-insumos
   body: json
 }
 
@@ -15,5 +15,5 @@ headers {
 }
 
 body:json {
-  {}
+  {"nombre": "Catalogo QA"}
 }

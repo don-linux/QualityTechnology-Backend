@@ -43,7 +43,7 @@ model Usuario {
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   controlFaunaNociva ControlFaunaNociva[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  flujoInsumos       FlujoInsumo[]
+  inventarioInsumos  InventarioInsumo[]
   refreshTokens      RefreshToken[]
   siembra            siembra[]
   rol                Rol                @relation(fields: [rolId], references: [id])
@@ -430,7 +430,7 @@ model Cliente {
   unidadNegocio       UnidadNegocio? @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
   ejecutivo           Empleado?      @relation(fields: [ejecutivoEmpleadoId], references: [id], onDelete: SetNull)
   lista_espera        ListaEspera[]
-  insumos             Insumo[]
+  catalogoInsumos     CatalogoInsumo[]
 
   @@index([nombre])
   @@index([unidadNegocioId])
@@ -755,14 +755,14 @@ model LimpiezaInstalacion {
   @@schema("public")
 }
 
-/// Flujo de insumos: movimiento de insumos por unidad de negocio (granja).
+/// Inventario de insumos: movimiento de insumos por unidad de negocio (granja).
 /// tipo_movimiento define los campos dinamicos. Un traspaso genera dos filas
 /// enlazadas por `traspaso_grupo_id` (una en la UdN de salida, otra en la de entrada).
 /// NOTA: existe un indice unico PARCIAL sobre `codigo` (WHERE tipo_movimiento <> 'traspaso')
 /// creado por SQL crudo en la migracion; Prisma no lo modela. No lo elimines al
 /// regenerar migraciones: garantiza folios unicos para ingreso/egreso permitiendo
 /// que el par de un traspaso comparta folio.
-model FlujoInsumo {
+model InventarioInsumo {
   id                 Int                  @id @default(autoincrement())
   codigo             String               @db.VarChar(30)
   tipoMovimiento     TipoMovimientoInsumo @map("tipo_movimiento")
@@ -780,17 +780,17 @@ model FlujoInsumo {
   created_at         DateTime             @default(now()) @db.Timestamp(6)
   updated_at         DateTime             @updatedAt @db.Timestamp(6)
   observacion        observacion?         @relation(fields: [observacionId], references: [id])
-  ubicacion          ubicacion            @relation("FlujoInsumoUbicacion", fields: [ubicacionId], references: [id])
-  ubicacionSalida    ubicacion?           @relation("FlujoInsumoUbicacionSalida", fields: [ubicacionSalidaId], references: [id])
-  ubicacionEntrada   ubicacion?           @relation("FlujoInsumoUbicacionEntrada", fields: [ubicacionEntradaId], references: [id])
-  insumo             Insumo?              @relation(fields: [insumoId], references: [id], onDelete: SetNull)
+  ubicacion          ubicacion            @relation("InventarioInsumoUbicacion", fields: [ubicacionId], references: [id])
+  ubicacionSalida    ubicacion?           @relation("InventarioInsumoUbicacionSalida", fields: [ubicacionSalidaId], references: [id])
+  ubicacionEntrada   ubicacion?           @relation("InventarioInsumoUbicacionEntrada", fields: [ubicacionEntradaId], references: [id])
+  catalogoInsumo     CatalogoInsumo?      @relation(fields: [insumoId], references: [id], onDelete: SetNull)
   usuario            Usuario?             @relation(fields: [usuarioId], references: [id])
 
   @@index([ubicacionId])
   @@index([usuarioId])
   @@index([codigo])
   @@index([traspasoGrupoId])
-  @@map("flujo_insumos")
+  @@map("inventario_insumos")
   @@schema("public")
 }
 
@@ -891,25 +891,25 @@ model AccionCorrectiva {
   @@schema("catalogos")
 }
 
-model Insumo {
-  id             Int      @id @default(autoincrement())
-  codigo         String   @unique @db.VarChar(20)
-  nombre         String   @db.VarChar(150)
-  marca          String?  @db.VarChar(100)
-  unidadMedida   String   @map("unidad_medida") @db.VarChar(10)
-  clienteId      Int?     @map("cliente_id")
-  presentacion   Decimal  @db.Decimal(12, 3)
-  precioBulto    Decimal  @map("precio_bulto") @db.Decimal(12, 2)
-  precioUnitario Decimal  @map("precio_unitario") @db.Decimal(14, 4)
-  stockMinimo    Decimal  @map("stock_minimo") @db.Decimal(12, 3)
-  esta_activo    Boolean  @default(true)
-  created_at     DateTime @default(now()) @db.Timestamp(6)
-  updated_at     DateTime @updatedAt @db.Timestamp(6)
-  cliente        Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  flujoInsumos   FlujoInsumo[]
+model CatalogoInsumo {
+  id               Int                @id @default(autoincrement())
+  codigo           String             @unique @db.VarChar(20)
+  nombre           String             @db.VarChar(150)
+  marca            String?            @db.VarChar(100)
+  unidadMedida     String             @map("unidad_medida") @db.VarChar(10)
+  clienteId        Int?               @map("cliente_id")
+  presentacion     Decimal            @db.Decimal(12, 3)
+  precioBulto      Decimal            @map("precio_bulto") @db.Decimal(12, 2)
+  precioUnitario   Decimal            @map("precio_unitario") @db.Decimal(14, 4)
+  stockMinimo      Decimal            @map("stock_minimo") @db.Decimal(12, 3)
+  esta_activo      Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamp(6)
+  updated_at       DateTime           @updatedAt @db.Timestamp(6)
+  cliente          Cliente?           @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  inventarioInsumos InventarioInsumo[]
 
   @@index([clienteId])
-  @@map("insumos")
+  @@map("catalogo_insumos")
   @@schema("catalogos")
 }
 
@@ -1025,7 +1025,7 @@ model observacion {
   usuarios           Usuario            @relation(fields: [usuario_id], references: [id])
   parametrosFisicoQuimicos ParametrosFisicoQuimico[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  flujoInsumos       FlujoInsumo[]
+  inventarioInsumos  InventarioInsumo[]
   reproductores      Reproductor[]
   ventas             Venta[]
   controlVisitas     ControlVisita[]
@@ -1077,9 +1077,9 @@ model ubicacion {
   infraestructuraFisica InfraestructuraFisica[]
   controlFaunaNociva ControlFaunaNociva[]
   limpiezaInstalaciones LimpiezaInstalacion[]
-  flujoInsumos       FlujoInsumo[]  @relation("FlujoInsumoUbicacion")
-  flujoInsumosSalida FlujoInsumo[]  @relation("FlujoInsumoUbicacionSalida")
-  flujoInsumosEntrada FlujoInsumo[] @relation("FlujoInsumoUbicacionEntrada")
+  inventarioInsumos        InventarioInsumo[] @relation("InventarioInsumoUbicacion")
+  inventarioInsumosSalida  InventarioInsumo[] @relation("InventarioInsumoUbicacionSalida")
+  inventarioInsumosEntrada InventarioInsumo[] @relation("InventarioInsumoUbicacionEntrada")
   controlVisitas     ControlVisita[]
   unidadesNegocio    UnidadNegocio[]
   ciclosAvicola      CicloAvicola[]

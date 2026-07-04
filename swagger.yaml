@@ -776,7 +776,7 @@ components:
       additionalProperties: true
       description: fi_usuario_id is assigned from the authenticated JWT and ignored if sent in the request body.
 
-    FlujoInsumoInput:
+    InventarioInsumoInput:
       type: object
       required:
         - tipo_movimiento
@@ -799,7 +799,7 @@ components:
         insumo_id:
           type: integer
           nullable: true
-          description: Producto del catalogo de insumos (`/insumos/activos`).
+          description: Producto del catalogo de insumos (`/catalogo-insumos/activos`).
         destino:
           type: string
           nullable: true
@@ -819,6 +819,33 @@ components:
         ubicacion_entrada:
           type: string
           description: Unidad de negocio de entrada. Requerido solo para traspaso.
+
+    CatalogoInsumoInput:
+      type: object
+      required:
+        - nombre
+        - unidad_medida
+        - cliente_id
+        - presentacion
+        - precio_bulto
+        - stock_minimo
+      properties:
+        nombre:
+          type: string
+        marca:
+          type: string
+          nullable: true
+        unidad_medida:
+          type: string
+          enum: [ml, l, mg, g, kg]
+        cliente_id:
+          type: integer
+        presentacion:
+          type: number
+        precio_bulto:
+          type: number
+        stock_minimo:
+          type: number
 
     ParametrosFisicoQuimicoInput:
       type: object
@@ -3569,9 +3596,9 @@ paths:
         '200':
           description: "Listado"
 
-  /flujo_insumos:
+  /inventario-insumos:
     get:
-      summary: "Listar flujo de insumos"
+      summary: "Listar inventario de insumos"
       description: "Filtra por unidad de negocio con el query param `ubicacion`."
       security:
         - bearerAuth: []
@@ -3585,7 +3612,7 @@ paths:
         '200':
           description: "Listado"
     post:
-      summary: "Registrar movimiento de flujo de insumos (ingreso, egreso o traspaso)"
+      summary: "Registrar movimiento de insumos (ingreso, egreso o traspaso)"
       security:
         - bearerAuth: []
       requestBody:
@@ -3593,12 +3620,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FlujoInsumoInput'
+              $ref: '#/components/schemas/InventarioInsumoInput'
       responses:
         '200':
           description: "Creado (traspaso genera dos filas enlazadas)"
+
+  /inventario-insumos/{id}:
     put:
-      summary: "Actualizar movimiento de flujo de insumos"
+      summary: "Actualizar movimiento de insumos"
       security:
         - bearerAuth: []
       parameters:
@@ -3612,19 +3641,101 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FlujoInsumoInput'
+              $ref: '#/components/schemas/InventarioInsumoInput'
       responses:
         '200':
           description: "Actualizado"
 
-  /flujo_insumos/empleados:
+  /inventario-insumos/empleados:
     get:
-      summary: "Listar empleados activos para flujo de insumos"
+      summary: "Listar empleados activos para inventario de insumos"
       security:
         - bearerAuth: []
       responses:
         '200':
           description: "Listado"
+
+  /catalogo-insumos:
+    get:
+      summary: "Listar catálogo de insumos"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+    post:
+      summary: "Crear insumo en catálogo"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogoInsumoInput'
+      responses:
+        '201':
+          description: "Creado"
+
+  /catalogo-insumos/activos:
+    get:
+      summary: "Listar insumos activos del catálogo"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Listado"
+
+  /catalogo-insumos/{id}:
+    put:
+      summary: "Actualizar insumo del catálogo"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogoInsumoInput'
+      responses:
+        '200':
+          description: "Actualizado"
+
+  /catalogo-insumos/{id}/activate:
+    patch:
+      summary: "Activar insumo del catálogo"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Activado"
+
+  /catalogo-insumos/{id}/deactivate:
+    patch:
+      summary: "Desactivar insumo del catálogo"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Desactivado"
 
   /control-visitas:
     get:

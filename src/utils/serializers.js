@@ -690,7 +690,7 @@ export function serializeCliente(c) {
   };
 }
 
-export function serializeInsumo(i) {
+export function serializeCatalogoInsumo(i) {
   if (!i) return null;
   const clienteId = i.clienteId ?? i.cliente?.id ?? null;
   return {
@@ -1009,7 +1009,7 @@ export function serializeControlVisita(row) {
   };
 }
 
-export function serializeFlujoInsumo(row) {
+export function serializeInventarioInsumo(row) {
   if (!row) return null;
   return {
     id: row.id,
@@ -1017,10 +1017,10 @@ export function serializeFlujoInsumo(row) {
     tipo_movimiento: row.tipoMovimiento,
     fecha: row.fecha,
     insumo_id: row.insumoId ?? null,
-    producto: row.insumo?.nombre ?? null,
-    insumo_nombre: row.insumo?.nombre ?? null,
-    insumo_codigo: row.insumo?.codigo ?? null,
-    unidad_medida: row.insumo?.unidadMedida ?? null,
+    producto: row.catalogoInsumo?.nombre ?? null,
+    insumo_nombre: row.catalogoInsumo?.nombre ?? null,
+    insumo_codigo: row.catalogoInsumo?.codigo ?? null,
+    unidad_medida: row.catalogoInsumo?.unidadMedida ?? null,
     destino: row.destino ?? null,
     responsable: row.responsable ?? null,
     ubicacion: row.ubicacion?.nombre ?? null,

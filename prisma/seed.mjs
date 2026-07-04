@@ -27,7 +27,7 @@ const MODULOS = [
   ["Cuentas", "/cuentas", true],
   ["Biometrias", "/biometrias", true],
   ["Control de Fauna Nociva", "/control-fauna-nociva", true],
-  ["Flujo de insumos", "/flujo_insumos", true],
+  ["Insumos", "/inventario-insumos", true],
   ["Control de Visitas", "/control-visitas", true],
   ["Control de Limpieza", "/control-limpieza", true],
   ["Parametros Fisico Quimicos", "/parametros-fisico-quimicos", true],
@@ -48,6 +48,7 @@ const MODULOS = [
   ["Evidencias fauna", "/evidencias-fauna", true],
   ["Estados de trampa", "/estados-trampa", true],
   ["Acciones correctivas", "/acciones-correctivas", true],
+  ["Catálogo de insumos", "/catalogo-insumos", true],
 ];
 
 const ADMIN_PASSWORD_HASH =
@@ -255,6 +256,7 @@ async function main() {
   await syncSequence("evidencias_fauna", "id", "catalogos");
   await syncSequence("estados_trampa", "id", "catalogos");
   await syncSequence("acciones_correctivas", "id", "catalogos");
+  await syncSequence("catalogo_insumos", "id", "catalogos");
   await syncSequence("ciclos_avicola", "id");
 }
 

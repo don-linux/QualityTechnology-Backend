@@ -3,9 +3,9 @@
  * El consecutivo es global (no reinicia por día).
  * @param {import("@prisma/client").Prisma.TransactionClient | import("@prisma/client").PrismaClient} client
  */
-export async function generarCodigoInsumo(client) {
+export async function generarCodigoCatalogoInsumo(client) {
   const prefix = "IN-";
-  const last = await client.insumo.findFirst({
+  const last = await client.catalogoInsumo.findFirst({
     where: { codigo: { startsWith: prefix } },
     orderBy: { codigo: "desc" },
     select: { codigo: true },

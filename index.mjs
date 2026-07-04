@@ -31,11 +31,11 @@ import trazabilidadRoutes from "./src/routes/trazabilidadRoutes.js";
 import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
 import siembraRoutes from "./src/routes/siembraRoutes.js";
 import cicloAvicolaRoutes from "./src/routes/cicloAvicolaRoutes.js";
+import inventarioInsumoRoutes from "./src/routes/inventarioInsumoRoutes.js";
 
 // Rutas de Bitácoras
 import bitacoraBiometriaRoutes from "./src/routes/bitacoras/bitacoraBiometriaRoutes.js";
 import controlFaunaNocivaRoutes from './src/routes/bitacoras/controlFaunaNocivaRoutes.js';
-import flujoInsumoRoutes from './src/routes/bitacoras/flujoInsumoRoutes.js';
 import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
 import controlLimpiezaRoutes from './src/routes/bitacoras/controlLimpiezaRoutes.js';
 import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFisicoQuimicosRoutes.js';
@@ -59,7 +59,7 @@ import faunaDetectadaRoutes from "./src/routes/faunaDetectadaRoutes.js";
 import evidenciaFaunaRoutes from "./src/routes/evidenciaFaunaRoutes.js";
 import estadoTrampaRoutes from "./src/routes/estadoTrampaRoutes.js";
 import accionCorrectivaRoutes from "./src/routes/accionCorrectivaRoutes.js";
-import insumoRoutes from "./src/routes/insumoRoutes.js";
+import catalogoInsumoRoutes from "./src/routes/catalogoInsumoRoutes.js";
 
 // Rutas de Seguridad - Roles y Módulos
 import modulosRoutes from "./src/routes/modulosRoutes.js";
@@ -127,6 +127,7 @@ api.use("/siembras", siembraRoutes);
 api.use("/trazabilidad", trazabilidadRoutes);
 api.use("/ciclos-avicola", cicloAvicolaRoutes);
 api.use("/equipos", equipoRoutes);
+api.use("/inventario-insumos", inventarioInsumoRoutes);
 
 // Ventas / CRM
 api.use("/clientes", clienteRoutes);
@@ -159,12 +160,11 @@ api.use("/faunas-detectadas", faunaDetectadaRoutes);
 api.use("/evidencias-fauna", evidenciaFaunaRoutes);
 api.use("/estados-trampa", estadoTrampaRoutes);
 api.use("/acciones-correctivas", accionCorrectivaRoutes);
-api.use("/insumos", insumoRoutes);
+api.use("/catalogo-insumos", catalogoInsumoRoutes);
 
 // Bitácoras
 api.use("/biometrias", bitacoraBiometriaRoutes);
 api.use("/control-fauna-nociva", controlFaunaNocivaRoutes);
-api.use("/flujo_insumos", flujoInsumoRoutes);
 api.use("/control-visitas", controlVisitaRoutes);
 api.use("/control-limpieza", controlLimpiezaRoutes);
 api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
