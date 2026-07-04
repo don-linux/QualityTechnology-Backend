@@ -877,30 +877,6 @@ export function serializeBiometria(b) {
   };
 }
 
-export function serializeAlimentacion(a) {
-  if (!a) return null;
-  return {
-    id: a.id,
-    mes: a.mes,
-    infraestructura_fisica_id: a.infraestructura_fisica_id ?? null,
-    peso_promedio_entrada: toNumberSafe(a.pesoPromedioEntrada),
-    fecha_siembra: a.fechaSiembra,
-    origen_alevines: a.origenAlevines,
-    fecha: a.fecha,
-    total_alimento_gramos: toNumberSafe(a.totalAlimentoGramos),
-    mortalidad: a.mortalidad,
-    recambio_agua: a.recambioAgua,
-    temperatura_agua: toNumberSafe(a.temperatura_agua),
-    amonio: toNumberSafe(a.amonio),
-    ph: toNumberSafe(a.ph),
-    observaciones: a.observacion?.comentario ?? null,
-    observacion_id: a.observacionId ?? null,
-    usuario_id: a.usuarioId,
-    ubicacion: a.ubicacion?.nombre ?? null,
-    ubicacion_id: a.ubicacionId,
-  };
-}
-
 export function serializeControlLimpieza(row) {
   if (!row) return null;
   return {

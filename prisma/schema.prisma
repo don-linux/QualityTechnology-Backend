@@ -32,7 +32,6 @@ model Usuario {
   esta_activo        Boolean            @default(true)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
-  alimentacion       Alimentacion[]
   controlLimpieza    ControlLimpieza[]
   biometrias         Biometria[]
   empleados          Empleado?
@@ -233,7 +232,6 @@ model InfraestructuraFisica {
   eficiencia_reproductiva                                                 eficiencia_reproductiva[] @relation("EficienciaReproductivaInfraestructuraFisicaDestino")
   eficiencia_reproductiva_origen                                          eficiencia_reproductiva[] @relation("EficienciaReproductivaInfraestructuraFisicaOrigen")
   eventos_cosecha                                                         EventoCosecha[]
-  alimentacion                                                            Alimentacion[]
   biometrias                                                              Biometria[]
   engorda                                                                 Engorda[]
   inventario_alevines                                                     InventarioAlevin[]
@@ -570,36 +568,6 @@ model FlujoCaja {
   @@index([ubicacionId])
   @@index([venta_id])
   @@map("flujo_caja")
-  @@schema("public")
-}
-
-model Alimentacion {
-  id                  Int          @id @default(autoincrement())
-  ubicacionId         Int          @map("ubicacion_id")
-  fecha               DateTime?    @db.Date
-  mes                 String?      @db.VarChar(20)
-  infraestructura_fisica_id           Int?         @map("infraestructura_fisica_id")
-  fechaSiembra        DateTime?    @map("fecha_siembra") @db.Date
-  origenAlevines      String?      @map("origen_alevines") @db.VarChar(200)
-  pesoPromedioEntrada Decimal?     @map("peso_promedio_entrada") @db.Decimal(12, 3)
-  totalAlimentoGramos Decimal?     @map("total_alimento_gramos") @db.Decimal(12, 3)
-  mortalidad          Int?
-  recambioAgua        String?      @map("recambio_agua") @db.VarChar(50)
-  temperatura_agua    Decimal?     @db.Decimal(6, 2)
-  amonio              Decimal?     @db.Decimal(10, 4)
-  ph                  Decimal?     @db.Decimal(5, 2)
-  observacionId       Int?         @map("observacion_id")
-  usuarioId           Int          @map("usuario_id")
-  created_at          DateTime     @default(now()) @db.Timestamp(6)
-  updated_at          DateTime     @updatedAt @db.Timestamp(6)
-  observacion         observacion? @relation(fields: [observacionId], references: [id])
-  infraestructuraFisica             InfraestructuraFisica?      @relation(fields: [infraestructura_fisica_id], references: [id])
-  ubicacion           ubicacion    @relation(fields: [ubicacionId], references: [id])
-  usuario             Usuario      @relation(fields: [usuarioId], references: [id])
-
-  @@index([ubicacionId])
-  @@index([usuarioId])
-  @@map("alimentacion")
   @@schema("public")
 }
 
@@ -1051,7 +1019,6 @@ model observacion {
   biometria          Biometria?         @relation("ObservacionBiometria", fields: [biometria_id], references: [id], onDelete: Cascade)
   eficiencia_reproductiva eficiencia_reproductiva[]
   eventosCosecha          EventoCosecha[]
-  alimentacion       Alimentacion[]
   controlLimpieza    ControlLimpieza[]
   engorda            Engorda[]
   inventarioAlevines InventarioAlevin[]
@@ -1102,7 +1069,6 @@ model ubicacion {
   direccion          String?            @db.VarChar(255)
   created_at         DateTime           @default(now()) @db.Timestamp(6)
   updated_at         DateTime           @updatedAt @db.Timestamp(6)
-  alimentacion       Alimentacion[]
   controlLimpieza    ControlLimpieza[]
   flujoCaja          FlujoCaja[]
   inventarioAlevines InventarioAlevin[]

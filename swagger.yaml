@@ -820,56 +820,6 @@ components:
           type: string
           description: Unidad de negocio de entrada. Requerido solo para traspaso.
 
-    BitacoraAlimentacionInput:
-      type: object
-      required:
-        - ubicacion
-      properties:
-        ubicacion:
-          type: string
-          description: Granja o unidad de negocio.
-        fc_mes:
-          type: string
-        fn_num_instalacion:
-          type: number
-        fn_peso_promedio_entrada:
-          type: number
-        fd_fecha_siembra:
-          type: string
-          format: date
-        fc_origen_alevines:
-          type: string
-        fd_fecha:
-          type: string
-          format: date
-        fn_total_alimento_gramos:
-          type: number
-        fn_mortalidad:
-          type: number
-        fc_recambio_agua:
-          type: string
-        fn_temp_agua:
-          type: number
-        fn_amonio:
-          type: number
-        fn_ph:
-          type: number
-        fc_observaciones:
-          type: string
-
-    BitacoraAlimentacion:
-      allOf:
-        - $ref: '#/components/schemas/BitacoraAlimentacionInput'
-        - type: object
-          properties:
-            fi_id:
-              type: integer
-              readOnly: true
-            fi_usuario_id:
-              type: integer
-              readOnly: true
-              description: Assigned from the authenticated JWT. Ignored if sent in the request body.
-
     ParametrosFisicoQuimicoInput:
       type: object
       required:
@@ -3618,53 +3568,6 @@ paths:
       responses:
         '200':
           description: "Listado"
-
-  /alimentacion:
-    get:
-      summary: "Listar bitácora de alimentación"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Listado"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/BitacoraAlimentacion'
-    post:
-      summary: "Crear registro de alimentación"
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BitacoraAlimentacionInput'
-      responses:
-        '201':
-          description: "Creado"
-    put:
-      summary: "Actualizar registro de alimentación"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BitacoraAlimentacionInput'
-      responses:
-        '200':
-          description: "Actualizado"
 
   /flujo_insumos:
     get:

@@ -27,7 +27,6 @@ const MODULOS = [
   ["Cuentas", "/cuentas", true],
   ["Biometrias", "/biometrias", true],
   ["Control de Fauna Nociva", "/control-fauna-nociva", true],
-  ["Alimentacion", "/alimentacion", true],
   ["Flujo de insumos", "/flujo_insumos", true],
   ["Control de Visitas", "/control-visitas", true],
   ["Control de Limpieza", "/control-limpieza", true],
