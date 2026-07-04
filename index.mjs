@@ -122,7 +122,6 @@ api.use("/reproductores", reproductorRoutes);
 api.use("/engorda", engordaRoutes);
 api.use("/alevinaje", alevinajeRoutes);
 api.use("/eficiencia-reproductiva", eficienciaReproductivaRoutes);
-api.use("/incubacion", eficienciaReproductivaRoutes);
 api.use("/historial-peso", historialPesoRoutes);
 api.use("/siembras", siembraRoutes);
 api.use("/trazabilidad", trazabilidadRoutes);
