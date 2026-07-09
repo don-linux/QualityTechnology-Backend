@@ -1,0 +1,29 @@
+meta {
+  name: 08 PUT Proveedor
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/proveedores/{{proveedorId}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "{{runTag}} Proveedor UPD",
+    "rfc": "XAXX010101000",
+    "producto_servicio": "Insumos {{runTag}} UPD",
+    "unidad_negocio_id": 1,
+    "nombre_contacto": "Contacto {{runTag}} UPD",
+    "telefono": "5552003999",
+    "email": "{{runTag}}_proveedor_upd@test.local",
+    "localidad": "Localidad {{runTag}} UPD",
+    "estado": "Jalisco"
+  }
+}

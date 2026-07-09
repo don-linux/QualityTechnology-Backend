@@ -1,0 +1,19 @@
+meta {
+  name: POST lista-espera convertir {id}
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/api/lista-espera/convertir/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

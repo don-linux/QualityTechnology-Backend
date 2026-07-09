@@ -1,0 +1,14 @@
+meta {
+  name: GET tipos-infraestructura-fisica activos
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/tipos-infraestructura-fisica/activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

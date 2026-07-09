@@ -1,0 +1,14 @@
+meta {
+  name: GET vacaciones
+  type: http
+  seq: 64
+}
+
+get {
+  url: {{baseUrl}}/api/vacaciones
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

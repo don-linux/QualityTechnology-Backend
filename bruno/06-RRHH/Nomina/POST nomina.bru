@@ -1,0 +1,27 @@
+meta {
+  name: POST nomina
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/api/nomina
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "empleado_id": 1,
+    "periodo": "2026-06",
+    "sueldo_bruto": 15000,
+    "descuentos": 1000,
+    "sueldo_neto": 14000,
+    "fecha_pago": "2026-06-30",
+    "observaciones": "Nómina QA"
+  }
+}

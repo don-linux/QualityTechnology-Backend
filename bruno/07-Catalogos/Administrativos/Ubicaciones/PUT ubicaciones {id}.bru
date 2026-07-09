@@ -1,0 +1,22 @@
+meta {
+  name: PUT ubicaciones {id}
+  type: http
+  seq: 25
+}
+
+put {
+  url: {{baseUrl}}/api/ubicaciones/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Granja QA UPD",
+    "direccion": "Calle 2 #200"
+  }
+}

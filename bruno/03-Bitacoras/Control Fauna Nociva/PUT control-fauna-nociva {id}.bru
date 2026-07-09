@@ -1,0 +1,24 @@
+meta {
+  name: PUT control-fauna-nociva {id}
+  type: http
+  seq: 27
+}
+
+put {
+  url: {{baseUrl}}/api/control-fauna-nociva/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-24",
+    "condicion_malla": "Regular",
+    "responsable": "Responsable QA"
+  }
+}

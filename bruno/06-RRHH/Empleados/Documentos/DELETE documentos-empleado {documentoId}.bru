@@ -1,0 +1,14 @@
+meta {
+  name: DELETE documentos-empleado {documentoId}
+  type: http
+  seq: 23
+}
+
+delete {
+  url: {{baseUrl}}/api/documentos-empleado/{{documentoId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

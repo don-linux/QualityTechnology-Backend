@@ -1,0 +1,21 @@
+meta {
+  name: POST roles-modulos {rolId} modulos
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/roles-modulos/{{rolId}}/modulos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "moduloId": 1
+  }
+}

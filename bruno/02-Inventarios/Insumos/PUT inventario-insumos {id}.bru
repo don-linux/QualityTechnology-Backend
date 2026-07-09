@@ -1,0 +1,27 @@
+meta {
+  name: PUT inventario-insumos {id}
+  type: http
+  seq: 30
+}
+
+put {
+  url: {{baseUrl}}/api/inventario-insumos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "tipo_movimiento": "ingreso",
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-24",
+    "insumo_id": 1,
+    "destino": "Auto",
+    "responsable": "Ana López",
+    "observaciones": "Actualización QA"
+  }
+}

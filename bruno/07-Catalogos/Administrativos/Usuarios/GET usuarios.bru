@@ -1,0 +1,14 @@
+meta {
+  name: GET usuarios
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/usuarios
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

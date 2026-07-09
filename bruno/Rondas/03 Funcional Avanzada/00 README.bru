@@ -1,0 +1,31 @@
+meta {
+  name: 00 README
+  type: http
+  seq: 0
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+}
+
+notes {
+  Ronda 03 - Funcional Avanzada
+
+  Objetivo:
+  - Validar flujo Lista de Espera -> Convertir a Venta -> Cleanup.
+
+  Nota: El flujo de caja es ahora una bitacora de solo lectura; los
+  movimientos se generan automaticamente (p. ej. pagos de ventas), por
+  lo que ya no se prueban create/update/delete aqui.
+
+  Antes de iniciar:
+  1) Ejecuta 01 Login.
+  2) Copia token a {{token}}.
+
+  Flujo A (Lista Espera):
+  - Ejecuta 02 y toma lista_id -> {{listaId}}.
+  - Ejecuta 03 y 04.
+  - Toma venta_id de 04 -> {{ventaId}}.
+  - Ejecuta 05 y 06.
+}

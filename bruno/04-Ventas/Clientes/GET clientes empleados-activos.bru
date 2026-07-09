@@ -1,0 +1,14 @@
+meta {
+  name: GET clientes empleados-activos
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{baseUrl}}/api/clientes/empleados-activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

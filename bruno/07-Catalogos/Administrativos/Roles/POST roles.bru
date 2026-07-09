@@ -1,0 +1,22 @@
+meta {
+  name: POST roles
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/roles
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "QA Rol",
+    "es_root": false
+  }
+}

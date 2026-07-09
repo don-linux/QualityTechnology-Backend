@@ -1,0 +1,21 @@
+meta {
+  name: PUT departamentos {id}
+  type: http
+  seq: 19
+}
+
+put {
+  url: {{baseUrl}}/api/departamentos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Departamento QA UPD"
+  }
+}

@@ -1,0 +1,27 @@
+meta {
+  name: PUT limpieza-instalaciones {id}
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/limpieza-instalaciones/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "fecha": "2026-06-26",
+    "infraestructura_fisica_id": 1,
+    "tipo_limpieza": "desinfeccion",
+    "desinfectante_utilizado": "Yodo",
+    "responsable": "Responsable QA",
+    "observaciones": "Desinfeccion QA"
+  }
+}

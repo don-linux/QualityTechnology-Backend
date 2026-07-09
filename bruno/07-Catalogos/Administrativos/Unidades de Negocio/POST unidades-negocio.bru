@@ -1,0 +1,22 @@
+meta {
+  name: POST unidades-negocio
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/api/unidades-negocio
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Unidad Negocio QA",
+    "ubicacion_id": 1
+  }
+}

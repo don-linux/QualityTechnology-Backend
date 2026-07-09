@@ -1,0 +1,14 @@
+meta {
+  name: GET biometrias
+  type: http
+  seq: 70
+}
+
+get {
+  url: {{baseUrl}}/api/biometrias
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

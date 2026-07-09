@@ -1,0 +1,14 @@
+meta {
+  name: GET mantenimiento-equipo-herramientas
+  type: http
+  seq: 90
+}
+
+get {
+  url: {{baseUrl}}/api/mantenimiento-equipo-herramientas
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

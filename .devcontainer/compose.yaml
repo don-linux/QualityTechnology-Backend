@@ -1,0 +1,6 @@
+services:
+  express:
+    volumes:
+      - ../../../:/workspaces:cached
+      - node_modules:/workspaces/QualityTechnology-Backend/node_modules
+    command: sleep infinity

@@ -1,0 +1,14 @@
+meta {
+  name: GET infraestructura-fisica
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/infraestructura-fisica
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

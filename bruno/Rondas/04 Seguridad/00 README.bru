@@ -1,0 +1,32 @@
+meta {
+  name: 00 README
+  type: http
+  seq: 0
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+}
+
+notes {
+  Ronda 04 - Seguridad (Auth)
+
+  Objetivo:
+  - Validar comportamiento de seguridad JWT en rutas protegidas.
+
+  Cobertura:
+  - 401 sin token
+  - 403 con token inválido
+  - 200 con token válido
+  - 401 en login con credenciales incorrectas
+
+  Flujo sugerido:
+  1) Ejecuta 01 y valida 401.
+  2) Ejecuta 02 y valida 403.
+  3) Ejecuta 03 y guarda token en {{token}}.
+  4) Ejecuta 04 y valida 200.
+  5) Ejecuta 05 y valida 401.
+  6) Ejecuta 06 y valida 403.
+  7) Ejecuta 07 y valida 401.
+}

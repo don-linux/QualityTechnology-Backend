@@ -1,0 +1,21 @@
+meta {
+  name: PUT mantenimiento-equipo-herramientas {id}
+  type: http
+  seq: 47
+}
+
+put {
+  url: {{baseUrl}}/api/mantenimiento-equipo-herramientas/{{mantenimiento_equipo_id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "fecha_mantenimiento": "2026-07-05"
+  }
+}

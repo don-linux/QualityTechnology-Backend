@@ -1,0 +1,29 @@
+meta {
+  name: POST infraestructura-fisica
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/infraestructura-fisica
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "IF QA-01",
+    "ubicacion_id": 1,
+    "largo": 10,
+    "ancho": 5,
+    "alto": 1.5,
+    "material": "Concreto",
+    "tipo": "engorda",
+    "estado": "vacia",
+    "estado_conservacion": "bueno"
+  }
+}

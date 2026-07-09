@@ -1,0 +1,14 @@
+meta {
+  name: 04 GET Ventas (auth)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/ventas
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

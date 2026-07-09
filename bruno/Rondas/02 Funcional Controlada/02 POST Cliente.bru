@@ -1,0 +1,26 @@
+meta {
+  name: 02 POST Cliente
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/clientes
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "{{runTag}} Cliente",
+    "telefono": "5551002000",
+    "email": "{{runTag}}_cliente@test.local",
+    "localidad": "Merida",
+    "cp": "97000",
+    "usuario_id": {{fiUsuarioId}}
+  }
+}

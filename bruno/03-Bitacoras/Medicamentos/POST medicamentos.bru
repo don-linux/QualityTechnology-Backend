@@ -1,0 +1,26 @@
+meta {
+  name: POST medicamentos
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{baseUrl}}/api/medicamentos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "infraestructura_fisica_id": 1,
+    "diagnostico": "Infección branquial",
+    "farmaco": "Oxytetraciclina",
+    "fecha_inicio": "2026-06-24",
+    "fecha_final": "2026-06-26"
+  }
+}

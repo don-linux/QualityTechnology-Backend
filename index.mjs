@@ -1,95 +1,190 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import helmet from "helmet";
+
+import fs from "node:fs";
+import swaggerUi from "swagger-ui-express";
+import { parse } from "yaml";
 
 // Importar rutas
-import rolesRoutes from "./routes/roles.routes.js";
-import usuariosRoutes from "./routes/usuarios.routes.js";
-import piletaRoutes from "./routes/pileta.routes.js";
-import instalacionesRoutes from "./routes/instalaciones.routes.js";
-import alimentosRoutes from "./routes/alimentos.routes.js";
-import lotesRoutes from "./routes/lotes.routes.js"; 
-import reproductoresRouter from "./routes/reproductores.routes.js";
-import engordaRoutes from "./routes/engorda.routes.js";
-import empleadosRoutes from "./routes/empleados.routes.js";
-import clientesRoutes from "./routes/clientes.routes.js";
-import ventasRoutes from "./routes/venta.routes.js";
-import listaEsperaRoutes from "./routes/lista_espera.routes.js";
-import equiposRoutes from "./routes/equipos.routes.js";
-import expedientesRoutes from "./routes/expedientes.routes.js";
-import nominaRoutes from "./routes/nomina.routes.js";
-import vacacionesRoutes from "./routes/vacaciones.routes.js";
-import cajaAhorroRoutes from "./routes/cajaAhorro.routes.js";
-import proveedoresRoutes from "./routes/proveedores.routes.js";
-import flujoCajaRoutes from "./routes/flujoCaja.routes.js";
-import tesoreriaRoutes from "./routes/tesoreria.routes.js";
-import cuentasRoutes from "./routes/cuentas.routes.js";
+
+import rolRoutes from "./src/routes/rolRoutes.js";
+import usuarioRoutes from "./src/routes/usuarioRoutes.js";
+import infraestructuraFisicaRoutes from "./src/routes/infraestructuraFisicaRoutes.js";
+import reproductorRoutes from "./src/routes/reproductorRoutes.js";
+import engordaRoutes from "./src/routes/engordaRoutes.js";
+import clienteRoutes from "./src/routes/clienteRoutes.js";
+import ventaRoutes from "./src/routes/ventaRoutes.js";
+import listaEsperaRoutes from "./src/routes/listaEsperaRoutes.js";
+import equipoRoutes from "./src/routes/equipoRoutes.js";
+import nominaRoutes from "./src/routes/nominaRoutes.js";
+import vacacionRoutes from "./src/routes/vacacionRoutes.js";
+import cajaAhorroRoutes from "./src/routes/cajaAhorroRoutes.js";
+import proveedorRoutes from "./src/routes/proveedorRoutes.js";
+import flujoCajaRoutes from "./src/routes/flujoCajaRoutes.js";
+import tesoreriaRoutes from "./src/routes/tesoreriaRoutes.js";
+import cuentaRoutes from "./src/routes/cuentaRoutes.js";
+import unidadNegocioRoutes from "./src/routes/unidadNegocioRoutes.js";
+import alevinajeRoutes from "./src/routes/alevinajeRoutes.js";
+import eficienciaReproductivaRoutes from "./src/routes/eficienciaReproductivaRoutes.js";
+import trazabilidadRoutes from "./src/routes/trazabilidadRoutes.js";
+import historialPesoRoutes from "./src/routes/historialPesoRoutes.js";
+import siembraRoutes from "./src/routes/siembraRoutes.js";
+import cicloAvicolaRoutes from "./src/routes/cicloAvicolaRoutes.js";
+import inventarioInsumoRoutes from "./src/routes/inventarioInsumoRoutes.js";
+
 // Rutas de Bitácoras
-import biometriaCeiba from "./routes/bitacoras/biometria.routes.js";
-// import alimentacionCeiba from './routes/bitacoras/alimentacion.routes.js';
-// import insumosCeiba from './routes/bitacoras/insumos.routes.js';
-// import plagasRoutes from './routes/bitacoras/plagas.routes.js';
-// import recepcionRoutes from './routes/bitacoras/recepcion_insumos.routes.js';
-// import visitasRoutes from './routes/bitacoras/visitas.routes.js';
-// import banosMedellin from './routes/bitacoras/banos.routes.js';
-// import parametrosMedellin from './routes/bitacoras/parametros.routes.js';
-// import medicamentosMedellin from './routes/bitacoras/medicamentos.routes.js';
-// import recambiosMedellin from './routes/bitacoras/recambios.routes.js';
-// import inventarioMedellin from './routes/bitacoras/inventario.routes.js';
-dotenv.config();
+import biometriaRoutes from "./src/routes/bitacoras/biometriaRoutes.js";
+import controlFaunaNocivaRoutes from './src/routes/bitacoras/controlFaunaNocivaRoutes.js';
+import controlVisitaRoutes from './src/routes/bitacoras/controlVisitaRoutes.js';
+import controlLimpiezaRoutes from './src/routes/bitacoras/controlLimpiezaRoutes.js';
+import parametrosFisicoQuimicosRoutes from './src/routes/bitacoras/parametrosFisicoQuimicosRoutes.js';
+import medicamentoRoutes from './src/routes/bitacoras/medicamentoRoutes.js';
+import limpiezaInstalacionesRoutes from './src/routes/bitacoras/limpiezaInstalacionesRoutes.js';
+import inventarioAlevinRoutes from './src/routes/bitacoras/inventarioAlevinRoutes.js';
+import mantenimientoEquipoHerramientasRoutes from './src/routes/bitacoras/mantenimientoEquipoHerramientasRoutes.js';
+
+// rrhh
+import departamentoRoutes from "./src/routes/departamentoRoutes.js";
+import puestoRoutes from "./src/routes/puestoRoutes.js";
+import empleadoRoutes from "./src/routes/empleadoRoutes.js";
+import tipoDocumentoRoutes from "./src/routes/tipoDocumentoRoutes.js";
+import documentoEmpleadoRoutes from "./src/routes/documentoEmpleadoRoutes.js";
+import actaAdministrativaRoutes from "./src/routes/actaAdministrativaRoutes.js";
+
+// Ubicaciones
+import ubicacionRoutes from "./src/routes/ubicacionRoutes.js";
+import tipoInfraestructuraFisicaRoutes from "./src/routes/tipoInfraestructuraFisicaRoutes.js";
+import areaInstalacionRoutes from "./src/routes/areaInstalacionRoutes.js";
+import faunaDetectadaRoutes from "./src/routes/faunaDetectadaRoutes.js";
+import evidenciaFaunaRoutes from "./src/routes/evidenciaFaunaRoutes.js";
+import estadoTrampaRoutes from "./src/routes/estadoTrampaRoutes.js";
+import accionCorrectivaRoutes from "./src/routes/accionCorrectivaRoutes.js";
+import catalogoInsumoRoutes from "./src/routes/catalogoInsumoRoutes.js";
+
+// Rutas de Seguridad - Roles y Módulos
+import modulosRoutes from "./src/routes/modulosRoutes.js";
+import rolesModulosRoutes from "./src/routes/rolesModulosRoutes.js";
 
 const app = express();
 
-// 🛡️ Configurar CORS correctamente
+// Headers de seguridad HTTP
+app.use(helmet());
+
+// Documentación Swagger (solo en desarrollo)
+if (process.env.NODE_ENV !== "production") {
+  let swaggerDocument;
+
+  try {
+    const swaggerFile = fs.readFileSync("./swagger.yaml", "utf8");
+    swaggerDocument = parse(swaggerFile);
+  } catch (error) {
+    console.error(
+      "Error loading or parsing './swagger.yaml'. Please ensure the file exists and contains valid YAML.\nDetails:",
+      error.message
+    );
+    process.exit(1);
+  }
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
+
+// Configurar CORS
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: "http://localhost:3000", // tu frontend React
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
 );
 
-// 🧩 Para leer JSON en las peticiones
+// Para leer JSON en las peticiones
 app.use(express.json());
 
-// 🔗 Registrar rutas
-app.use("/roles", rolesRoutes);
-app.use("/usuarios", usuariosRoutes);
-app.use("/piletas", piletaRoutes);
-app.use("/instalaciones", instalacionesRoutes);
-app.use("/lotes", lotesRoutes);
-app.use("/reproductores", reproductoresRouter);
-app.use("/engorda", engordaRoutes);
-app.use("/empleados", empleadosRoutes);
-app.use("/clientes", clientesRoutes);
-app.use("/ventas", ventasRoutes);
-app.use("/alimentos", alimentosRoutes);
-app.use("/lista-espera", listaEsperaRoutes);
-app.use("/equipos", equiposRoutes);
-app.use("/expedientes", expedientesRoutes);
-app.use("/nomina", nominaRoutes);
-app.use("/vacaciones", vacacionesRoutes);
-app.use("/caja-ahorro", cajaAhorroRoutes);
-app.use("/proveedores", proveedoresRoutes);
-app.use("/flujo-caja", flujoCajaRoutes);
-app.use("/tesoreria", tesoreriaRoutes);
-app.use("/cuentas", cuentasRoutes);
-app.use("/uploads", express.static("uploads"));
-//bitacoras
-app.use("/biometrias", biometriaCeiba);
-//app.use("/plagas", plagasRoutes);
-//app.use("/ceiba/alimentacion", alimentacionCeiba);
-//app.use("/ceiba/insumos", insumosCeiba);
-//app.use("/recepcion_insumos", recepcionRoutes);
-//app.use("/visitas", visitasRoutes);
-//app.use("/medellin/banos", banosMedellin);
-//app.use("/medellin/parametros", parametrosMedellin);
-//app.use("/medellin/medicamentos", medicamentosMedellin);
-//app.use("/medellin/recambios", recambiosMedellin);
-//app.use("/medellin/inventario", inventarioMedellin);
+// ============================================================================
+// Router con prefijo /api
+// ============================================================================
+const api = express.Router();
 
-// 🚀 Iniciar servidor
+// Core / Seguridad
+api.use("/roles", rolRoutes);
+api.use("/usuarios", usuarioRoutes);
+api.use("/modulos", modulosRoutes);
+api.use("/roles-modulos", rolesModulosRoutes);
+
+// Operaciones
+api.use("/infraestructura-fisica", infraestructuraFisicaRoutes);
+api.use("/reproductores", reproductorRoutes);
+api.use("/engorda", engordaRoutes);
+api.use("/alevinaje", alevinajeRoutes);
+api.use("/eficiencia-reproductiva", eficienciaReproductivaRoutes);
+api.use("/historial-peso", historialPesoRoutes);
+api.use("/siembras", siembraRoutes);
+api.use("/trazabilidad", trazabilidadRoutes);
+api.use("/ciclos-avicola", cicloAvicolaRoutes);
+api.use("/equipos", equipoRoutes);
+api.use("/inventario-insumos", inventarioInsumoRoutes);
+
+// Ventas / CRM
+api.use("/clientes", clienteRoutes);
+api.use("/ventas", ventaRoutes);
+api.use("/lista-espera", listaEsperaRoutes);
+api.use("/proveedores", proveedorRoutes);
+
+// Finanzas
+api.use("/flujo-caja", flujoCajaRoutes);
+api.use("/tesoreria", tesoreriaRoutes);
+api.use("/cuentas", cuentaRoutes);
+api.use("/caja-ahorro", cajaAhorroRoutes);
+
+// RRHH
+api.use("/empleados", empleadoRoutes);
+api.use("/departamentos", departamentoRoutes);
+api.use("/puestos", puestoRoutes);
+api.use("/tipos-documento", tipoDocumentoRoutes);
+api.use("/documentos-empleado", documentoEmpleadoRoutes);
+api.use("/actas-administrativas", actaAdministrativaRoutes);
+api.use("/nomina", nominaRoutes);
+api.use("/vacaciones", vacacionRoutes);
+
+// Catalogos
+api.use("/unidades-negocio", unidadNegocioRoutes);
+api.use("/ubicaciones", ubicacionRoutes);
+api.use("/tipos-infraestructura-fisica", tipoInfraestructuraFisicaRoutes);
+api.use("/areas-instalacion", areaInstalacionRoutes);
+api.use("/faunas-detectadas", faunaDetectadaRoutes);
+api.use("/evidencias-fauna", evidenciaFaunaRoutes);
+api.use("/estados-trampa", estadoTrampaRoutes);
+api.use("/acciones-correctivas", accionCorrectivaRoutes);
+api.use("/catalogo-insumos", catalogoInsumoRoutes);
+
+// Bitácoras
+api.use("/biometrias", biometriaRoutes);
+api.use("/control-fauna-nociva", controlFaunaNocivaRoutes);
+api.use("/control-visitas", controlVisitaRoutes);
+api.use("/control-limpieza", controlLimpiezaRoutes);
+api.use("/parametros-fisico-quimicos", parametrosFisicoQuimicosRoutes);
+api.use("/medicamentos", medicamentoRoutes);
+api.use("/limpieza-instalaciones", limpiezaInstalacionesRoutes);
+api.use("/inventario-alevines", inventarioAlevinRoutes);
+api.use("/mantenimiento-equipo-herramientas", mantenimientoEquipoHerramientasRoutes);
+
+app.use("/api", api);
+
+// Servir archivos estaticos protegidos (fuera del prefijo /api por ser recurso)
+import { authStaticMiddleware } from "./src/middleware/authMiddleware.js";
+app.use("/uploads", authStaticMiddleware, express.static("uploads"));
+
+app.get("/", (req, res) => {
+  res.json({ message: "Backend 2.0, de Quality Technology trabajando satisfactoriamente" });
+});
+
+// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

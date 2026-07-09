@@ -1,0 +1,14 @@
+meta {
+  name: GET control-fauna-nociva empleados
+  type: http
+  seq: 74
+}
+
+get {
+  url: {{baseUrl}}/api/control-fauna-nociva/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

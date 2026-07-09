@@ -1,0 +1,14 @@
+meta {
+  name: GET cuentas activos
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/api/cuentas/activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

@@ -1,0 +1,18 @@
+meta {
+  name: GET inventario-insumos
+  type: http
+  seq: 80
+}
+
+get {
+  url: {{baseUrl}}/api/inventario-insumos?ubicacion=Granja Acuicola Medellin
+  body: none
+}
+
+params:query {
+  ubicacion: Granja Acuicola Medellin
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

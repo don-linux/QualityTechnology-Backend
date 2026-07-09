@@ -1,0 +1,29 @@
+meta {
+  name: POST clientes
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/clientes
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Cliente QA",
+    "rfc": "XAXX010101000",
+    "unidad_negocio_id": 1,
+    "empresa": "Empresa QA",
+    "telefono": "5551002000",
+    "email": "cliente@test.local",
+    "localidad": "Mérida",
+    "estado": "Yucatán",
+    "ejecutivo_empleado_id": 1
+  }
+}

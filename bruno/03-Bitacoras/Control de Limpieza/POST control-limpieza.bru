@@ -1,0 +1,25 @@
+meta {
+  name: POST control-limpieza
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{baseUrl}}/api/control-limpieza
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "fecha": "2026-06-23",
+    "tipo_instalacion": "Baño de Hombres",
+    "responsable": "Empleado Ejemplo",
+    "observaciones": "Limpieza general",
+    "ubicacion": "Granja Acuicola Medellin"
+  }
+}

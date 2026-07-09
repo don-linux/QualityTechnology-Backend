@@ -1,0 +1,14 @@
+meta {
+  name: GET insumos activos
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/catalogo-insumos/activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

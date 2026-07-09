@@ -1,0 +1,27 @@
+meta {
+  name: POST inventario-insumos traspaso
+  type: http
+  seq: 42
+}
+
+post {
+  url: {{baseUrl}}/api/inventario-insumos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "tipo_movimiento": "traspaso",
+    "ubicacion_salida": "Granja Acuicola Medellin",
+    "ubicacion_entrada": "Granja Acuicola La Ceiba",
+    "fecha": "2026-06-24",
+    "insumo_id": 1,
+    "responsable": "Juan Pérez",
+    "observaciones": "Traspaso QA"
+  }
+}

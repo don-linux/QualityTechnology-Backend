@@ -1,0 +1,19 @@
+meta {
+  name: POST control-visitas
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{baseUrl}}/api/control-visitas
+  body: multipartForm
+}
+
+headers {
+  Content-Type: multipart/form-data
+  Authorization: Bearer {{token}}
+}
+
+body:multipart-form {
+  foto_identificacion: @file()
+}

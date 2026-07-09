@@ -1,0 +1,21 @@
+meta {
+  name: 03 Login valido
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/usuarios/login
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "nombre": "{{username}}",
+    "contraseña": "{{password}}"
+  }
+}

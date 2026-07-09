@@ -1,0 +1,14 @@
+meta {
+  name: GET caja-ahorro {granja}
+  type: http
+  seq: 44
+}
+
+get {
+  url: {{baseUrl}}/api/caja-ahorro/{{granja}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

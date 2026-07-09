@@ -1,0 +1,27 @@
+meta {
+  name: PUT equipos {id}
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/equipos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Bomba QA UPD",
+    "marca": "Marca X",
+    "modelo": "M-2",
+    "tipo": "Bomba",
+    "serial": "SN-002",
+    "estado": "En mantenimiento",
+    "observaciones": "Equipo QA UPD"
+  }
+}

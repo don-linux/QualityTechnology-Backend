@@ -1,0 +1,32 @@
+meta {
+  name: 02 POST ListaEspera
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/lista-espera
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "fecha_entrega": "2026-03-06",
+    "tipo_venta": "ALEVIN",
+    "granja": "Granja Acuicola Medellin",
+    "infraestructura_fisica_origen_id": 1,
+    "cantidad_peces": 120,
+    "cliente_nombre": "{{runTag}} Cliente Espera",
+    "lugar_entrega": "CEIBA",
+    "encargado_venta": "QA",
+    "unidad_produccion": "UP1",
+    "hora_embolsado": "08:00",
+    "hora_entrega": "10:00",
+    "precio_unitario": 4.5
+  }
+}

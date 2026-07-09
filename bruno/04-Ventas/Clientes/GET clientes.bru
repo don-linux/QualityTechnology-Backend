@@ -1,0 +1,14 @@
+meta {
+  name: GET clientes
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/api/clientes
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

@@ -1,0 +1,18 @@
+meta {
+  name: PUT eficiencia-reproductiva {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/eficiencia-reproductiva/{{id}}
+    body: json
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

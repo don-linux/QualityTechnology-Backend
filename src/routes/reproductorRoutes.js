@@ -1,0 +1,19 @@
+import express from "express";
+import reproductorController from "../controllers/reproductorController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+// APLICAR PROTECCION GLOBAL A ESTE MODULO
+router.use(authMiddleware);
+
+/* =========================================================
+   RUTAS DE REPRODUCTORES
+========================================================= */
+router.get("/granja/:granja", reproductorController.getByGranja);
+router.get("/", reproductorController.getAll);
+router.get("/:id", reproductorController.getById);
+router.post("/", reproductorController.create);
+router.put("/:id", reproductorController.update);
+
+export default router;

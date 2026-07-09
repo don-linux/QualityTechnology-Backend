@@ -1,0 +1,21 @@
+meta {
+  name: POST usuarios logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/usuarios/logout
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}

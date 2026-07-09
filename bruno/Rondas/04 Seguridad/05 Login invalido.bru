@@ -1,0 +1,21 @@
+meta {
+  name: 05 Login invalido
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/usuarios/login
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "nombre": "usuario_que_no_existe",
+    "contraseña": "password_incorrecto"
+  }
+}

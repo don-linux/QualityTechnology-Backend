@@ -1,0 +1,14 @@
+meta {
+  name: 08 DELETE RolesModulos relacion inexistente
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/roles-modulos/{{rolId}}/modulos/{{moduloId}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

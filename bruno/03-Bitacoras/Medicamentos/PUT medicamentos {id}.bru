@@ -1,0 +1,26 @@
+meta {
+  name: PUT medicamentos {id}
+  type: http
+  seq: 34
+}
+
+put {
+  url: {{baseUrl}}/api/medicamentos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "ubicacion": "Granja Acuicola Medellin",
+    "infraestructura_fisica_id": 1,
+    "diagnostico": "Infección branquial (ajuste)",
+    "farmaco": "Oxytetraciclina 500mg",
+    "fecha_inicio": "2026-06-24",
+    "fecha_final": "2026-06-27"
+  }
+}

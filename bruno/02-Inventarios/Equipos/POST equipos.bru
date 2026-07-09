@@ -1,0 +1,27 @@
+meta {
+  name: POST equipos
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/equipos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Bomba QA",
+    "marca": "Marca X",
+    "modelo": "M-1",
+    "tipo": "Bomba",
+    "serial": "SN-001",
+    "estado": "Operativo",
+    "observaciones": "Equipo QA"
+  }
+}

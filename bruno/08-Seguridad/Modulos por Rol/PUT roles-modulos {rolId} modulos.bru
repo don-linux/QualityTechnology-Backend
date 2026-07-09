@@ -1,0 +1,21 @@
+meta {
+  name: PUT roles-modulos {rolId} modulos
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/roles-modulos/{{rolId}}/modulos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "modulosIds": [1, 2, 3]
+  }
+}

@@ -1,0 +1,14 @@
+meta {
+  name: GET evidencias-fauna activos
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/evidencias-fauna/activos
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

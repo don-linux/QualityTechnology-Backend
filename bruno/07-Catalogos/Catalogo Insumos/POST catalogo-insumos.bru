@@ -1,0 +1,19 @@
+meta {
+  name: POST insumos
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/catalogo-insumos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {"nombre": "Catalogo QA"}
+}

@@ -1,0 +1,14 @@
+meta {
+  name: 09 GET FlujoCaja granga
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/flujo-caja/{{granja}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

@@ -1,0 +1,14 @@
+meta {
+  name: GET infraestructura-fisica {id} observaciones
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/infraestructura-fisica/{{id}}/observaciones
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

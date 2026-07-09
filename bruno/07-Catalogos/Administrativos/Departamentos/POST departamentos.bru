@@ -1,0 +1,21 @@
+meta {
+  name: POST departamentos
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/api/departamentos
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "Departamento QA"
+  }
+}

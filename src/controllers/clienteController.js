@@ -1,0 +1,283 @@
+import prisma from "../prisma.js";
+import { serializeCliente } from "../utils/serializers.js";
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+const clienteInclude = {
+  ejecutivo: {
+    select: {
+      id: true,
+      nombre: true,
+      apellidoPaterno: true,
+      apellidoMaterno: true,
+    },
+  },
+  unidadNegocio: {
+    select: {
+      id: true,
+      nombre: true,
+    },
+  },
+};
+
+function normalizeText(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function parseRequiredId(value) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function pick(body, ...keys) {
+  for (const k of keys) {
+    if (body[k] !== undefined && body[k] !== null && body[k] !== "") return body[k];
+  }
+  return undefined;
+}
+
+function buildClientePayload(body) {
+  const nombre = normalizeText(pick(body, "nombre"));
+  const rfc = normalizeText(pick(body, "rfc") ?? "");
+  const empresa = normalizeText(pick(body, "empresa") ?? "");
+  const telefono = normalizeText(pick(body, "telefono") ?? "");
+  const email = normalizeText(pick(body, "email", "correo") ?? "");
+  const localidad = normalizeText(pick(body, "localidad") ?? "");
+  const estado = normalizeText(pick(body, "estado") ?? "");
+  const unidadNegocioId = parseRequiredId(
+    pick(body, "unidad_negocio_id"),
+  );
+  const ejecutivoEmpleadoId = parseRequiredId(
+    pick(body, "ejecutivo_empleado_id", "ejecutivo_id"),
+  );
+
+  if (!nombre) {
+    return { error: "Campo obligatorio: nombre" };
+  }
+  if (!rfc) {
+    return { error: "Campo obligatorio: rfc" };
+  }
+  if (rfc.length > 20) {
+    return { error: "rfc debe tener maximo 20 caracteres" };
+  }
+  if (!unidadNegocioId) {
+    return { error: "Campo obligatorio: unidad de negocio" };
+  }
+  if (!empresa) {
+    return { error: "Campo obligatorio: nombre de contacto" };
+  }
+  if (!telefono) {
+    return { error: "Campo obligatorio: telefono" };
+  }
+  if (!email) {
+    return { error: "Campo obligatorio: correo" };
+  }
+  if (!localidad) {
+    return { error: "Campo obligatorio: localidad" };
+  }
+  if (!estado) {
+    return { error: "Campo obligatorio: estado" };
+  }
+  if (!ejecutivoEmpleadoId) {
+    return { error: "Campo obligatorio: ejecutivo (empleado)" };
+  }
+  if (!EMAIL_RE.test(email)) {
+    return { error: "email debe tener formato de correo electronico valido" };
+  }
+
+  return {
+    payload: {
+      nombre,
+      rfc,
+      empresa,
+      telefono,
+      email,
+      localidad,
+      estado,
+      unidadNegocioId,
+      ejecutivoEmpleadoId,
+    },
+  };
+}
+
+async function assertEmpleadoEjecutivoValido(empleadoId) {
+  const emp = await prisma.empleado.findUnique({
+    where: { id: empleadoId },
+    select: { id: true, esta_activo: true },
+  });
+  if (!emp) {
+    const err = new Error("Ejecutivo (empleado) no encontrado");
+    err.code = "EJECUTIVO_NOT_FOUND";
+    throw err;
+  }
+  if (!emp.esta_activo) {
+    const err = new Error("El ejecutivo seleccionado no está activo");
+    err.code = "EJECUTIVO_INACTIVO";
+    throw err;
+  }
+}
+
+async function assertUnidadNegocioValida(unidadNegocioId) {
+  const unidad = await prisma.unidadNegocio.findUnique({
+    where: { id: unidadNegocioId },
+    select: { id: true, esta_activo: true },
+  });
+  if (!unidad) {
+    const err = new Error("Unidad de negocio no encontrada");
+    err.code = "UDN_NOT_FOUND";
+    throw err;
+  }
+  if (!unidad.esta_activo) {
+    const err = new Error("La unidad de negocio seleccionada no está activa");
+    err.code = "UDN_INACTIVA";
+    throw err;
+  }
+}
+
+class ClienteController {
+  static async getAll(req, res) {
+    try {
+      const clientes = await prisma.cliente.findMany({
+        include: clienteInclude,
+        orderBy: [{ nombre: "asc" }, { id: "asc" }],
+      });
+      res.json(clientes.map(serializeCliente));
+    } catch (err) {
+      console.error("Error al obtener clientes:", err);
+      res.status(500).json({ error: "Error al obtener clientes" });
+    }
+  }
+
+  static async getEmpleadosActivos(req, res) {
+    try {
+      const empleados = await prisma.empleado.findMany({
+        where: { esta_activo: true },
+        select: {
+          id: true,
+          nombre: true,
+          apellidoPaterno: true,
+          apellidoMaterno: true,
+        },
+      });
+      const result = empleados
+        .map((e) => ({
+          empleado_id: e.id,
+          nombre: e.nombre,
+          apellido_paterno: e.apellidoPaterno,
+          apellido_materno: e.apellidoMaterno ?? null,
+          nombre_completo: [e.nombre, e.apellidoPaterno, e.apellidoMaterno]
+            .filter(Boolean)
+            .join(" "),
+        }))
+        .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+      res.json(result);
+    } catch (err) {
+      console.error("Error al obtener empleados activos:", err);
+      res.status(500).json({ error: "Error al obtener empleados activos" });
+    }
+  }
+
+  static async create(req, res) {
+    try {
+      const { error, payload } = buildClientePayload(req.body);
+      if (error) return res.status(400).json({ error });
+
+      await assertUnidadNegocioValida(payload.unidadNegocioId);
+      await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
+
+      const cliente = await prisma.cliente.create({
+        data: payload,
+        include: clienteInclude,
+      });
+      res.status(201).json(serializeCliente(cliente));
+    } catch (err) {
+      if (
+        err.code === "EJECUTIVO_NOT_FOUND"
+        || err.code === "EJECUTIVO_INACTIVO"
+        || err.code === "UDN_NOT_FOUND"
+        || err.code === "UDN_INACTIVA"
+      ) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Referencia inválida (ejecutivo o unidad de negocio)" });
+      }
+      console.error("Error al registrar cliente:", err);
+      res.status(500).json({ error: "Error al registrar cliente" });
+    }
+  }
+
+  static async update(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const { error, payload } = buildClientePayload(req.body);
+      if (error) return res.status(400).json({ error });
+
+      await assertUnidadNegocioValida(payload.unidadNegocioId);
+      await assertEmpleadoEjecutivoValido(payload.ejecutivoEmpleadoId);
+
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: payload,
+        include: clienteInclude,
+      });
+      res.json(serializeCliente(cliente));
+    } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
+      if (
+        err.code === "EJECUTIVO_NOT_FOUND"
+        || err.code === "EJECUTIVO_INACTIVO"
+        || err.code === "UDN_NOT_FOUND"
+        || err.code === "UDN_INACTIVA"
+      ) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (err.code === "P2003") {
+        return res.status(400).json({ error: "Referencia inválida (ejecutivo o unidad de negocio)" });
+      }
+      console.error("Error al actualizar cliente:", err);
+      res.status(500).json({ error: "Error al actualizar cliente" });
+    }
+  }
+
+  static async activate(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: { esta_activo: true },
+        include: clienteInclude,
+      });
+      res.json({ mensaje: "Cliente activado correctamente", cliente: serializeCliente(cliente) });
+    } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
+      console.error("Error al activar cliente:", err);
+      res.status(500).json({ error: "Error al activar cliente" });
+    }
+  }
+
+  static async deactivate(req, res) {
+    const id = parseRequiredId(req.params.id);
+    if (!id) return res.status(400).json({ error: "id invalido" });
+
+    try {
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: { esta_activo: false },
+        include: clienteInclude,
+      });
+      res.json({ mensaje: "Cliente desactivado correctamente", cliente: serializeCliente(cliente) });
+    } catch (err) {
+      if (err.code === "P2025") return res.status(404).json({ error: "Cliente no encontrado" });
+      console.error("Error al desactivar cliente:", err);
+      res.status(500).json({ error: "Error al desactivar cliente" });
+    }
+  }
+}
+
+export default ClienteController;

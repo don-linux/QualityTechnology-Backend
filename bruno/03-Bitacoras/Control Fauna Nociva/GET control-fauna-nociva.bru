@@ -1,0 +1,14 @@
+meta {
+  name: GET control-fauna-nociva
+  type: http
+  seq: 75
+}
+
+get {
+  url: {{baseUrl}}/api/control-fauna-nociva
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

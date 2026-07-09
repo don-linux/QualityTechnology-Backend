@@ -1,0 +1,19 @@
+meta {
+  name: PATCH clientes {id} deactivate
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/api/clientes/{{id}}/deactivate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

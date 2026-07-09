@@ -1,0 +1,14 @@
+meta {
+  name: DELETE lista-espera {id}
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{baseUrl}}/api/lista-espera/{{id}}
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

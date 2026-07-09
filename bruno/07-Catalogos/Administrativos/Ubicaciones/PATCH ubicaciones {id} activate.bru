@@ -1,0 +1,19 @@
+meta {
+  name: PATCH ubicaciones {id} activate
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{baseUrl}}/api/ubicaciones/{{id}}/activate
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {}
+}

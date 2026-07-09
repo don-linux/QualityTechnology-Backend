@@ -1,0 +1,19 @@
+meta {
+  name: PUT insumos {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/catalogo-insumos/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {"nombre": "Catalogo QA"}
+}

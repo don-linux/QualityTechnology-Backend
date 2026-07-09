@@ -1,0 +1,22 @@
+meta {
+  name: PUT engorda {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/engorda/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "cantidad_total": 500,
+    "cantidad_alimento": 50
+  }
+}

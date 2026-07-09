@@ -1,0 +1,25 @@
+meta {
+  name: POST caja-ahorro
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/api/caja-ahorro
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "granja": "Granja Acuicola Medellin",
+    "categoria": "Aporte",
+    "concepto": "Aporte mensual QA",
+    "monto": 500,
+    "fecha": "2026-06-24"
+  }
+}

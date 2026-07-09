@@ -1,0 +1,23 @@
+meta {
+  name: POST usuarios
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/usuarios
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "qa_user",
+    "contraseña": "Secret123",
+    "rol_id": 1
+  }
+}

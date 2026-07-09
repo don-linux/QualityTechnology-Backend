@@ -1,0 +1,27 @@
+meta {
+  name: POST vacaciones
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/api/vacaciones
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "empleado_id": 1,
+    "fecha_inicio": "2026-07-01",
+    "fecha_fin": "2026-07-10",
+    "dias_tomados": 9,
+    "tipo": "ordinarias",
+    "estatus": "aprobadas",
+    "observaciones": "Vacaciones QA"
+  }
+}

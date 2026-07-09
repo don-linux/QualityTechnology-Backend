@@ -1,0 +1,14 @@
+meta {
+  name: GET control-limpieza
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/api/control-limpieza
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

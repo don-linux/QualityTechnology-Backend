@@ -1,0 +1,14 @@
+meta {
+  name: GET parametros-fisico-quimicos empleados
+  type: http
+  seq: 84
+}
+
+get {
+  url: {{baseUrl}}/api/parametros-fisico-quimicos/empleados
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}

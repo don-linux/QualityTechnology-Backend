@@ -1,0 +1,14 @@
+meta {
+  name: 02 GET Roles token invalido
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/roles
+  body: none
+}
+
+headers {
+  Authorization: Bearer {{invalidToken}}
+}

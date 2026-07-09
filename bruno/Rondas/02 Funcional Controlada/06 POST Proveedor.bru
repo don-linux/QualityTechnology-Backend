@@ -1,0 +1,29 @@
+meta {
+  name: 06 POST Proveedor
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/proveedores
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "{{runTag}} Proveedor",
+    "rfc": "XAXX010101000",
+    "producto_servicio": "Insumos {{runTag}}",
+    "unidad_negocio_id": 1,
+    "nombre_contacto": "Contacto {{runTag}}",
+    "telefono": "5552003000",
+    "email": "{{runTag}}_proveedor@test.local",
+    "localidad": "Localidad {{runTag}}",
+    "estado": "CDMX"
+  }
+}

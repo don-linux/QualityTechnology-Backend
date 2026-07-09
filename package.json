@@ -1,25 +1,42 @@
 {
-  "name": "backend",
+  "name": "Quality-Backend",
   "version": "1.0.0",
   "type": "module",
   "main": "index.mjs",
   "scripts": {
     "start": "node index.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch index.mjs",
+    "db:reset": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml down -v && docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml up -d",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:repair-migration-history": "prisma db execute --schema prisma/schema.prisma --file scripts/truncate-prisma-migrations.sql && prisma migrate diff --from-empty --to-schema-datasource prisma/schema.prisma --script -o prisma/migrations/20260512120000_baseline/migration.sql && prisma migrate resolve --applied 20260512120000_baseline && prisma generate",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:baseline-resolve": "prisma migrate resolve --applied 20260512120000_baseline",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format",
+    "prisma:seed": "prisma db seed",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "axios": "^1.9.0",
-    "bcrypt": "^6.0.0",
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
-    "dotenv": "^16.6.1",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2",
-    "nodemon": "^3.1.11",
-    "pg": "^8.17.2"
+    "express-rate-limit": "^8.4.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "pg": "^8.20.0",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "oxlint": "^1.71.0",
+    "prisma": "^6.19.3"
   }
 }

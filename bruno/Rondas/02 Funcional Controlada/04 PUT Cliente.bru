@@ -1,0 +1,26 @@
+meta {
+  name: 04 PUT Cliente
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/clientes/{{clienteId}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "nombre": "{{runTag}} Cliente UPD",
+    "telefono": "5551002999",
+    "email": "{{runTag}}_cliente_upd@test.local",
+    "localidad": "Merida",
+    "cp": "97100",
+    "usuario_id": {{fiUsuarioId}}
+  }
+}

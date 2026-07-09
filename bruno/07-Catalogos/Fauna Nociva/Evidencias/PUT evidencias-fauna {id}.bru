@@ -1,0 +1,19 @@
+meta {
+  name: PUT evidencias-fauna {id}
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/api/evidencias-fauna/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {"nombre": "Catalogo QA"}
+}

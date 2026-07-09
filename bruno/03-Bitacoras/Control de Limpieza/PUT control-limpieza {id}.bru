@@ -1,0 +1,25 @@
+meta {
+  name: PUT control-limpieza {id}
+  type: http
+  seq: 45
+}
+
+put {
+  url: {{baseUrl}}/api/control-limpieza/{{id}}
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "fecha": "2026-06-23",
+    "tipo_instalacion": "Regadera",
+    "responsable": "Empleado Ejemplo",
+    "observaciones": "Limpieza actualizada",
+    "ubicacion": "Granja Acuicola Medellin"
+  }
+}
